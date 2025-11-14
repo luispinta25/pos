@@ -2400,7 +2400,7 @@ function mostrarBotonesProveedoresNotificar(proveedores) {
     `).join('');
 }
 
-function seleccionarProveedorNotificar(btn) {
+window.seleccionarProveedorNotificar = function(btn) {
     const proveedorId = btn.dataset.id;
     const proveedorNombre = btn.dataset.nombre;
     
@@ -2421,7 +2421,7 @@ function seleccionarProveedorNotificar(btn) {
     mostrarNotasPendientesProveedor(proveedorId, proveedorNombre);
 }
 
-function mostrarNotasPendientesProveedor(proveedorId, proveedorNombre) {
+window.mostrarNotasPendientesProveedor = function(proveedorId, proveedorNombre) {
     const notasPendientes = proveedoresData.notas.filter(n => 
         n.proveedor_id === proveedorId && n.estado === 'Pendiente'
     );
@@ -2516,7 +2516,16 @@ async function enviarNotificacionProveedor(e) {
     }
     
     try {
-        showAppLoader();
+        // Mostrar loader
+        if (typeof showAppLoader === 'function') {
+            showAppLoader();
+        }
+        
+        // Deshabilitar botón de envío para evitar doble clic
+        const btnEnviar = document.getElementById('btnEnviarNotificacion');
+        const textoOriginal = btnEnviar.innerHTML;
+        btnEnviar.disabled = true;
+        btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
         
         // Obtener facturas pendientes del proveedor
         const facturasPendientes = proveedoresData.facturas.filter(f => 
@@ -2557,6 +2566,10 @@ async function enviarNotificacionProveedor(e) {
         // Enviar notificación por WhatsApp
         const resultadoWhatsApp = await enviarWhatsAppProveedor(mensaje);
         
+        // Restaurar botón
+        btnEnviar.innerHTML = textoOriginal;
+        btnEnviar.disabled = false;
+        
         if (resultadoWhatsApp && resultadoWhatsApp.success) {
             cerrarModalNotificar();
             mostrarNotificacionProveedor(`Notificación enviada a ${proveedorNombre}`, 'success');
@@ -2566,9 +2579,20 @@ async function enviarNotificacionProveedor(e) {
         }
         
     } catch (error) {
-        mostrarNotificacionProveedor('Error al preparar la notificación', 'error');
+        console.error('Error al enviar notificación:', error);
+        mostrarNotificacionProveedor('Error al preparar la notificación: ' + error.message, 'error');
+        
+        // Restaurar botón en caso de error
+        const btnEnviar = document.getElementById('btnEnviarNotificacion');
+        if (btnEnviar) {
+            btnEnviar.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Notificación';
+            btnEnviar.disabled = false;
+        }
     } finally {
-        hideAppLoader();
+        // Ocultar loader
+        if (typeof hideAppLoader === 'function') {
+            hideAppLoader();
+        }
     }
 }
 
