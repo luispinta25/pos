@@ -1,0 +1,940 @@
+
+
+<div class="container-full" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px;">
+
+    
+    <div style="display: grid; grid-template-columns: 350px 1fr; gap: 20px; height: 100%;">
+        
+        
+        <div style="overflow-y: auto; padding-right: 10px; height: 100%; scrollbar-width: thin;">
+            
+            
+            <div class="card" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                <h3 style="margin-bottom: 15px; font-size: 1.1em; color: #666;">
+                    <i class="fas fa-chart-line"></i> Resumen
+                </h3>
+                
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Total Ventas</div>
+                    <div id="statsTotal" style="font-size: 1.5em; font-weight: 800; color: #28a745;">$0.00</div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Ganancia</div>
+                    <div id="statsGanancia" style="font-size: 1.3em; font-weight: 700; color: #d4a017;">$0.00</div>
+                </div>
+
+                <div>
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Cantidad</div>
+                    <div id="statsCantidad" style="font-size: 1.1em; font-weight: 600; color: #666;">0 ventas</div>
+                </div>
+            </div>
+
+            
+            <div class="card">
+                <h3 style="margin-bottom: 15px; font-size: 1.2em;">
+                    <i class="fas fa-calendar-alt"></i> Filtrar por Fecha
+                </h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Día</label>
+                    <select id="diaSelect" class="form-select">
+                        
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Mes</label>
+                    <select id="mesSelect" class="form-select">
+                        <option value="0">Enero</option>
+                        <option value="1">Febrero</option>
+                        <option value="2">Marzo</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Mayo</option>
+                        <option value="5">Junio</option>
+                        <option value="6">Julio</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Septiembre</option>
+                        <option value="9">Octubre</option>
+                        <option value="10">Noviembre</option>
+                        <option value="11">Diciembre</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Año</label>
+                    <select id="anioSelect" class="form-select">
+                        
+                    </select>
+                </div>
+
+                <button class="btn btn-accent" onclick="aplicarFiltroFecha()" style="width: 100%;">
+                    <i class="fas fa-filter"></i>
+                    <span>Aplicar Filtro</span>
+                </button>
+
+                <button class="btn btn-secondary" onclick="resetearFiltros()" style="width: 100%; margin-top: 10px;">
+                    <i class="fas fa-redo"></i>
+                    <span>Hoy</span>
+                </button>
+            </div>
+
+            
+            <div class="card">
+                <h3 style="margin-bottom: 15px; font-size: 1.2em;">
+                    <i class="fas fa-search"></i> Buscar por Código
+                </h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Código de Venta</label>
+                    <input 
+                        type="text" 
+                        id="codigoVentaInput" 
+                        class="form-input" 
+                        placeholder="Ej: S1730752800000"
+                        autocomplete="off">
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Dejar vacío para ver todas las ventas del día
+                    </small>
+                </div>
+            </div>
+
+        </div>
+
+        
+        <div style="overflow-y: auto; padding-right: 10px; height: 100%; scrollbar-width: thin;">
+            
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 1.3em;">
+                        <i class="fas fa-receipt"></i> Ventas del Día
+                    </h3>
+                    <div id="fechaActual" style="color: #666; font-weight: 600;">
+                        
+                    </div>
+                </div>
+
+                
+                <div id="ventasLoading" class="loading-inline hidden">
+                    <div class="spinner-small"></div>
+                    <span>Cargando ventas...</span>
+                </div>
+
+                
+                <div id="ventasGallery" class="ventas-gallery">
+                    
+                </div>
+
+                
+                <div id="noVentas" class="hidden" style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-inbox" style="font-size: 3em; margin-bottom: 15px; opacity: 0.3;"></i>
+                    <p>No hay ventas registradas para esta fecha</p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div id="modalDetalleVenta" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="fas fa-file-invoice"></i> Detalle de Venta</h2>
+            <button class="modal-close" onclick="cerrarModalDetalle()">&times;</button>
+        </div>
+        <div id="modalDetalleBody">
+            
+        </div>
+    </div>
+</div>
+
+<style>
+    
+    
+    .ventas-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .venta-card {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .venta-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: #d4a017;
+        transform: scaleY(0);
+        transition: transform 0.3s ease;
+    }
+
+    .venta-card:hover {
+        border-color: #d4a017;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(212, 160, 23, 0.2);
+    }
+
+    .venta-card:hover::before {
+        transform: scaleY(1);
+    }
+
+    .venta-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .venta-id {
+        font-size: 0.9em;
+        font-weight: 700;
+        color: #666;
+        font-family: 'Courier New', monospace;
+    }
+
+    .venta-tipo {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.75em;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .venta-tipo.recibo {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .venta-tipo.factura {
+        background: #f3e5f5;
+        color: #7b1fa2;
+    }
+
+    .venta-card-body {
+        margin-bottom: 12px;
+    }
+
+    .venta-info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 0.9em;
+    }
+
+    .venta-info-label {
+        color: #666;
+        font-weight: 500;
+    }
+
+    .venta-info-value {
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+    .venta-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .venta-hora {
+        font-size: 0.85em;
+        color: #999;
+    }
+
+    .venta-total {
+        font-size: 1.3em;
+        font-weight: 800;
+        color: #28a745;
+    }
+
+    .loading-inline {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 20px;
+        color: #666;
+    }
+
+    .spinner-small {
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #d4a017;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    
+    .detalle-header-info {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .detalle-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .detalle-info-item {
+        padding: 12px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .detalle-info-item label {
+        display: block;
+        font-size: 0.85em;
+        color: #666;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+
+    .detalle-info-item .value {
+        font-size: 1.1em;
+        color: #1a1a1a;
+        font-weight: 600;
+    }
+
+    .detalle-productos {
+        margin-top: 20px;
+    }
+
+    .detalle-productos h4 {
+        margin-bottom: 15px;
+        color: #666;
+        font-size: 1.1em;
+    }
+
+    .producto-detalle-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        margin-bottom: 8px;
+    }
+
+    .producto-detalle-info {
+        flex: 1;
+    }
+
+    .producto-detalle-nombre {
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+    }
+
+    .producto-detalle-datos {
+        font-size: 0.9em;
+        color: #666;
+    }
+
+    .producto-detalle-subtotal {
+        font-size: 1.1em;
+        font-weight: 700;
+        color: #28a745;
+        text-align: right;
+    }
+
+    .detalle-totales {
+        margin-top: 20px;
+        padding: 20px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 8px;
+    }
+
+    .detalle-total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 1.1em;
+    }
+
+    .detalle-total-row.total-final {
+        padding-top: 15px;
+        border-top: 2px solid #d4a017;
+        font-size: 1.4em;
+        font-weight: 800;
+        color: #d4a017;
+    }
+
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95);
+        }
+    }
+
+    #modalDetalleVenta.active {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    #modalDetalleVenta.active .modal-content {
+        animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    #modalDetalleVenta.closing {
+        animation: fadeIn 0.2s ease-in reverse;
+    }
+
+    #modalDetalleVenta.closing .modal-content {
+        animation: slideUp 0.2s ease-in;
+    }
+
+    
+    .detalle-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        gap: 20px;
+    }
+
+    .detalle-loading .spinner-large {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #d4a017;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    .detalle-loading-text {
+        color: #666;
+        font-size: 1.1em;
+    }
+
+    
+    .container > div > div {
+        scrollbar-width: thin;
+        scrollbar-color: #d4a017 #f1f1f1;
+    }
+
+    .container > div > div::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .container > div > div::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .container > div > div::-webkit-scrollbar-thumb {
+        background: #d4a017;
+        border-radius: 10px;
+    }
+
+    .container > div > div::-webkit-scrollbar-thumb:hover {
+        background: #b8860b;
+    }
+</style>
+
+<script>
+    (function() {
+        // =====================================================
+        // ESTADO DEL MÓDULO (encapsulado en IIFE)
+        // =====================================================
+        
+        const ventasState = {
+            ventas: [],
+            ventaSeleccionada: null,
+            filtroFecha: new Date(),
+            filtroCodigo: '',
+            cargando: false
+        };
+
+    // =====================================================
+    // INICIALIZACIÓN
+    // =====================================================
+    
+    async function initVentas() {
+        
+        // Validar que los elementos críticos existan
+        const ventasGallery = document.getElementById('ventasGallery');
+        const diaSelect = document.getElementById('diaSelect');
+        
+        if (!ventasGallery || !diaSelect) {
+            return;
+        }
+        
+        // Inicializar selectores de fecha
+        inicializarSelectoresFecha();
+        
+        // Configurar fecha actual en el header
+        actualizarFechaActual();
+        
+        // Configurar event listeners
+        setupVentasEventListeners();
+        
+        // Cargar ventas del día
+        await cargarVentas();
+        
+        // Actualizar contador del navbar
+        actualizarContadorNavbar();
+    }
+
+    function inicializarSelectoresFecha() {
+        const hoy = new Date();
+        
+        // Llenar selector de días (1-31)
+        const diaSelect = document.getElementById('diaSelect');
+        for (let i = 1; i <= 31; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i;
+            if (i === hoy.getDate()) option.selected = true;
+            diaSelect.appendChild(option);
+        }
+        
+        // Seleccionar mes actual
+        document.getElementById('mesSelect').value = hoy.getMonth();
+        
+        // Llenar selector de años (últimos 5 años)
+        const anioSelect = document.getElementById('anioSelect');
+        const anioActual = hoy.getFullYear();
+        for (let i = anioActual; i >= anioActual - 5; i--) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i;
+            if (i === anioActual) option.selected = true;
+            anioSelect.appendChild(option);
+        }
+    }
+
+    function actualizarFechaActual() {
+        const fechaEl = document.getElementById('fechaActual');
+        if (!fechaEl) return;
+        
+        const fecha = ventasState.filtroFecha;
+        const fechaFormateada = fecha.toLocaleDateString('es-EC', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        fechaEl.textContent = fechaFormateada;
+    }
+
+    function setupVentasEventListeners() {
+        // Búsqueda por código
+        const codigoInput = document.getElementById('codigoVentaInput');
+        if (codigoInput) {
+            codigoInput.addEventListener('input', window.app.debounce(async (e) => {
+                ventasState.filtroCodigo = e.target.value.trim();
+                await cargarVentas();
+            }, 500));
+        }
+    }
+
+    // =====================================================
+    // CARGA DE DATOS
+    // =====================================================
+    
+    async function cargarVentas() {
+        try {
+            ventasState.cargando = true;
+            mostrarLoading(true);
+            
+            const db = window.app.db;
+            
+            // Construir filtro de fecha
+            const fechaInicio = new Date(ventasState.filtroFecha);
+            fechaInicio.setHours(0, 0, 0, 0);
+            
+            const fechaFin = new Date(ventasState.filtroFecha);
+            fechaFin.setHours(23, 59, 59, 999);
+            
+            let query = db
+                .from('ventas')
+                .select('*')
+                .gte('fecha_hora_venta', fechaInicio.toISOString())
+                .lte('fecha_hora_venta', fechaFin.toISOString())
+                .order('fecha_hora_venta', { ascending: false });
+            
+            // Aplicar filtro por código si existe
+            if (ventasState.filtroCodigo) {
+                query = query.ilike('id_venta', `%${ventasState.filtroCodigo}%`);
+            }
+            
+            const { data, error } = await query;
+            
+            if (error) throw error;
+            
+            ventasState.ventas = data || [];
+            
+            // Renderizar gallery
+            renderizarVentasGallery();
+            
+            // Actualizar estadísticas
+            actualizarEstadisticas();
+            
+            // Actualizar contador del navbar
+            actualizarContadorNavbar();
+            
+        } catch (error) {
+            window.app.showToast('Error al cargar ventas: ' + error.message, 'danger', 5000);
+        } finally {
+            ventasState.cargando = false;
+            mostrarLoading(false);
+        }
+    }
+
+    // =====================================================
+    // RENDERIZADO
+    // =====================================================
+    
+    function renderizarVentasGallery() {
+        const gallery = document.getElementById('ventasGallery');
+        const noVentas = document.getElementById('noVentas');
+        
+        // Validar que los elementos existan
+        if (!gallery || !noVentas) {
+            return;
+        }
+        
+        if (ventasState.ventas.length === 0) {
+            gallery.innerHTML = '';
+            noVentas.classList.remove('hidden');
+            return;
+        }
+        
+        noVentas.classList.add('hidden');
+        
+        gallery.innerHTML = ventasState.ventas.map(venta => {
+            const fecha = new Date(venta.fecha_hora_venta);
+            const hora = fecha.toLocaleTimeString('es-EC', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            return `
+                <div class="venta-card" onclick="verDetalleVenta('${venta.id}')">
+                    <div class="venta-card-header">
+                        <div class="venta-id">${venta.id_venta}</div>
+                        <div class="venta-tipo ${venta.tipo.toLowerCase()}">${venta.tipo}</div>
+                    </div>
+                    <div class="venta-card-body">
+                        <div class="venta-info-row">
+                            <span class="venta-info-label">Cliente:</span>
+                            <span class="venta-info-value">${venta.cliente_id === '9999999999999' ? 'Consumidor Final' : venta.cliente_id}</span>
+                        </div>
+                        <div class="venta-info-row">
+                            <span class="venta-info-label">Estado:</span>
+                            <span class="venta-info-value">${venta.estado}</span>
+                        </div>
+                        ${venta.ganancia ? `
+                        <div class="venta-info-row">
+                            <span class="venta-info-label">Ganancia:</span>
+                            <span class="venta-info-value" style="color: #d4a017;">${window.app.formatCurrency(venta.ganancia)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="venta-card-footer">
+                        <div class="venta-hora"><i class="fas fa-clock"></i> ${hora}</div>
+                        <div class="venta-total">${window.app.formatCurrency(venta.total)}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function actualizarEstadisticas() {
+        const total = ventasState.ventas.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+        const ganancia = ventasState.ventas.reduce((sum, v) => sum + parseFloat(v.ganancia || 0), 0);
+        const cantidad = ventasState.ventas.length;
+        
+        const statsTotal = document.getElementById('statsTotal');
+        const statsGanancia = document.getElementById('statsGanancia');
+        const statsCantidad = document.getElementById('statsCantidad');
+        
+        if (statsTotal) statsTotal.textContent = window.app.formatCurrency(total);
+        if (statsGanancia) statsGanancia.textContent = window.app.formatCurrency(ganancia);
+        if (statsCantidad) statsCantidad.textContent = `${cantidad} venta${cantidad !== 1 ? 's' : ''}`;
+    }
+
+    function actualizarContadorNavbar() {
+        if (window.app && window.app.updateNavbarCounter) {
+            window.app.updateNavbarCounter('ventas', ventasState.ventas.length);
+        }
+    }
+
+    // =====================================================
+    // DETALLE DE VENTA
+    // =====================================================
+    
+    async function verDetalleVenta(ventaId) {
+        try {
+            // Mostrar modal con loading inmediatamente
+            mostrarModalLoading();
+            
+            const db = window.app.db;
+            
+            // Obtener venta
+            const { data: venta, error: ventaError } = await db
+                .from('ventas')
+                .select('*')
+                .eq('id', ventaId)
+                .single();
+            
+            if (ventaError) throw ventaError;
+            
+            // Obtener detalles de la venta
+            const { data: detalles, error: detallesError } = await db
+                .from('ventas_detalle')
+                .select('*')
+                .eq('venta_id', ventaId);
+            
+            if (detallesError) throw detallesError;
+            
+            // Obtener información de productos
+            const productosIds = detalles.map(d => d.producto_id);
+            const { data: productos, error: productosError } = await db
+                .from('inventario')
+                .select('codigo, producto')
+                .in('codigo', productosIds);
+            
+            if (productosError) throw productosError;
+            
+            // Crear un mapa de productos para fácil acceso
+            const productosMap = {};
+            productos.forEach(p => {
+                productosMap[p.codigo] = p.producto;
+            });
+            
+            // Renderizar modal
+            mostrarModalDetalle(venta, detalles, productosMap);
+            
+        } catch (error) {
+            window.app.showToast('Error al cargar detalle de venta', 'danger', 3000);
+        }
+    }
+
+    function mostrarModalDetalle(venta, detalles, productosMap) {
+        const fecha = new Date(venta.fecha_hora_venta);
+        const fechaFormateada = fecha.toLocaleString('es-EC');
+        
+        const modalBody = document.getElementById('modalDetalleBody');
+        modalBody.innerHTML = `
+            <div class="detalle-header-info">
+                <h3 style="margin-bottom: 15px; color: #d4a017;">Venta ${venta.id_venta}</h3>
+                
+                <div class="detalle-info-grid">
+                    <div class="detalle-info-item">
+                        <label>Fecha y Hora</label>
+                        <div class="value">${fechaFormateada}</div>
+                    </div>
+                    <div class="detalle-info-item">
+                        <label>Tipo</label>
+                        <div class="value">${venta.tipo}</div>
+                    </div>
+                    <div class="detalle-info-item">
+                        <label>Cliente</label>
+                        <div class="value">${venta.cliente_id === '9999999999999' ? 'Consumidor Final' : venta.cliente_id}</div>
+                    </div>
+                    <div class="detalle-info-item">
+                        <label>Estado</label>
+                        <div class="value">${venta.estado}</div>
+                    </div>
+                    ${venta.usuario_email ? `
+                    <div class="detalle-info-item">
+                        <label>Vendedor</label>
+                        <div class="value">${venta.usuario_email}</div>
+                    </div>
+                    ` : ''}
+                    <div class="detalle-info-item">
+                        <label>Pagado con</label>
+                        <div class="value">${window.app.formatCurrency(venta.pagado_con)}</div>
+                    </div>
+                    <div class="detalle-info-item">
+                        <label>Vuelto</label>
+                        <div class="value">${window.app.formatCurrency(venta.vuelto)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detalle-productos">
+                <h4><i class="fas fa-box"></i> Productos Vendidos</h4>
+                ${detalles.map(detalle => `
+                    <div class="producto-detalle-item">
+                        <div class="producto-detalle-info">
+                            <div class="producto-detalle-nombre">
+                                ${productosMap[detalle.producto_id] || detalle.producto_id}
+                            </div>
+                            <div class="producto-detalle-datos">
+                                ${detalle.cantidad} × ${window.app.formatCurrency(detalle.precio)}
+                                ${detalle.ganancia ? ` | Ganancia: ${window.app.formatCurrency(detalle.ganancia)}` : ''}
+                            </div>
+                        </div>
+                        <div class="producto-detalle-subtotal">
+                            ${window.app.formatCurrency(detalle.subtotal)}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div class="detalle-totales">
+                ${venta.ganancia ? `
+                <div class="detalle-total-row">
+                    <span>Ganancia Total:</span>
+                    <strong style="color: #d4a017;">${window.app.formatCurrency(venta.ganancia)}</strong>
+                </div>
+                ` : ''}
+                <div class="detalle-total-row total-final">
+                    <span>TOTAL:</span>
+                    <strong>${window.app.formatCurrency(venta.total)}</strong>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="cerrarModalDetalle()">Cerrar</button>
+            </div>
+        `;
+        
+        document.getElementById('modalDetalleVenta').classList.add('active');
+    }
+
+    function mostrarModalLoading() {
+        const modalBody = document.getElementById('modalDetalleBody');
+        modalBody.innerHTML = `
+            <div class="detalle-loading">
+                <div class="spinner-large"></div>
+                <div class="detalle-loading-text">Cargando detalles...</div>
+            </div>
+        `;
+        
+        const modal = document.getElementById('modalDetalleVenta');
+        modal.classList.remove('closing');
+        modal.classList.add('active');
+    }
+
+    function cerrarModalDetalle() {
+        const modal = document.getElementById('modalDetalleVenta');
+        modal.classList.add('closing');
+        
+        // Esperar a que termine la animación antes de ocultar
+        setTimeout(() => {
+            modal.classList.remove('active', 'closing');
+        }, 200);
+    }
+
+    // =====================================================
+    // FILTROS
+    // =====================================================
+    
+    function aplicarFiltroFecha() {
+        const dia = parseInt(document.getElementById('diaSelect').value);
+        const mes = parseInt(document.getElementById('mesSelect').value);
+        const anio = parseInt(document.getElementById('anioSelect').value);
+        
+        ventasState.filtroFecha = new Date(anio, mes, dia);
+        actualizarFechaActual();
+        cargarVentas();
+    }
+
+    function resetearFiltros() {
+        const hoy = new Date();
+        ventasState.filtroFecha = hoy;
+        ventasState.filtroCodigo = '';
+        
+        // Resetear selectores
+        document.getElementById('diaSelect').value = hoy.getDate();
+        document.getElementById('mesSelect').value = hoy.getMonth();
+        document.getElementById('anioSelect').value = hoy.getFullYear();
+        document.getElementById('codigoVentaInput').value = '';
+        
+        actualizarFechaActual();
+        cargarVentas();
+    }
+
+    // =====================================================
+    // UTILIDADES
+    // =====================================================
+    
+    function mostrarLoading(show) {
+        const loading = document.getElementById('ventasLoading');
+        if (loading) {
+            if (show) {
+                loading.classList.remove('hidden');
+            } else {
+                loading.classList.add('hidden');
+            }
+        }
+    }
+
+    // =====================================================
+    // EXPORTAR FUNCIONES GLOBALES
+    // =====================================================
+    
+    window.initVentas = initVentas;
+    window.verDetalleVenta = verDetalleVenta;
+    window.cerrarModalDetalle = cerrarModalDetalle;
+    window.aplicarFiltroFecha = aplicarFiltroFecha;
+    window.resetearFiltros = resetearFiltros;
+    window.mostrarModalLoading = mostrarModalLoading;
+
+    })(); // Fin del IIFE
+
+</script>
+
+

@@ -1,0 +1,4274 @@
+
+
+<div class="container" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px;">
+
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: 100%;">
+        
+        
+        <div style="overflow-y: auto; padding-right: 10px; height: 100%;">
+            
+            
+            <div class="card">
+                <h3 style="margin-bottom: 15px; font-size: 1.2em;">
+                    <i class="fas fa-search"></i> Buscar Producto
+                </h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Código o Nombre</label>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="form-input" 
+                        placeholder="Escanea código de barras o escribe nombre..."
+                        autocomplete="off"
+                        autofocus>
+                </div>
+
+                
+                <div id="searchResults" class="search-results"></div>
+            </div>
+
+            
+            <div class="card">
+                <h3 style="margin-bottom: 15px; font-size: 1.2em;">
+                    <i class="fas fa-user"></i> Cliente
+                </h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Cliente</label>
+                    
+                    
+                    <div id="clienteSeleccionadoBox" class="cliente-seleccionado-box consumidor-final">
+                        <div class="cliente-header">
+                            <div class="cliente-icon">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div class="cliente-datos">
+                                <div class="cliente-nombre" id="clienteNombreSeleccionado">Consumidor Final</div>
+                                <div class="cliente-cedula" id="clienteCedulaSeleccionado">CI/RUC: 9999999999999</div>
+                            </div>
+                        </div>
+                        <div class="cliente-detalles" id="clienteDetallesBox" style="display: none;">
+                            <div class="cliente-detalle-item">
+                                <i class="fas fa-envelope"></i>
+                                <span id="clienteCorreoSeleccionado">-</span>
+                            </div>
+                            <div class="cliente-detalle-item">
+                                <i class="fas fa-phone"></i>
+                                <span id="clienteTelefonoSeleccionado">-</span>
+                            </div>
+                        </div>
+                        <div class="cliente-acciones">
+                            <button class="btn-cliente-accion btn-editar" id="btnEditarCliente" onclick="editarCliente()" title="Editar información del cliente" style="display: none;">
+                                <i class="fas fa-pencil-alt"></i>
+                                <span>Editar</span>
+                            </button>
+                            <button class="btn-cliente-accion btn-cambiar" onclick="cambiarCliente()" title="Cambiar cliente">
+                                <i class="fas fa-exchange-alt"></i>
+                                <span>Cambiar</span>
+                            </button>
+                            <button class="btn-cliente-accion btn-borrar" id="btnQuitarCliente" onclick="borrarCliente()" title="Quitar cliente" style="display: none;">
+                                <i class="fas fa-times"></i>
+                                <span>Quitar</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    
+                    <div id="clienteBusquedaBox" style="display: none;">
+                        <input 
+                            type="text" 
+                            id="clienteCedula" 
+                            class="form-input" 
+                            placeholder="Buscar por cédula o nombre..."
+                            maxlength="50"
+                            onkeypress="if(event.key === 'Enter') buscarClienteDirecto()">
+                        
+                        
+                        <div id="clienteSearchResults" class="search-results" style="max-height: 250px;"></div>
+                        
+                        <div style="display: flex; gap: 8px; margin-top: 10px;">
+                            <button class="btn btn-secondary" onclick="cancelarBusqueda()" style="width: 100%;">
+                                <i class="fas fa-times"></i>
+                                <span>Cancelar</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        
+        <div style="overflow-y: auto; padding-right: 10px; height: 100%;" id="carritoColumn">
+            
+            <div class="card" id="carritoCard" style="position: relative;">
+                
+                <div class="edit-mode-badge" id="editModeBadge">
+                    <div class="edit-mode-indicator"></div>
+                    <span>EDITANDO</span>
+                </div>
+                
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 1.2em;">
+                        <i class="fas fa-shopping-cart"></i> Carrito de Compra
+                    </h3>
+                    <div class="items-counter" id="itemsCounter">
+                        <i class="fas fa-box"></i>
+                        <span id="itemsCount">0</span>
+                        <span class="items-label">items</span>
+                    </div>
+                </div>
+                
+                
+                <div class="table-container">
+                    <table class="table" id="carritoTable">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th style="width: 80px;">Cant.</th>
+                                <th style="width: 100px;">Precio</th>
+                                <th style="width: 100px;">Subtotal</th>
+                                <th style="width: 90px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="carritoBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #999; padding: 40px;">
+                                    Carrito vacío. Escanea productos para comenzar.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<div id="modalVenta" class="modal-venta-overlay">
+    <div class="modal-venta-container">
+        <div class="modal-venta-header">
+            <h2><i class="fas fa-cash-register"></i> Procesar Venta</h2>
+            <button class="modal-venta-close" onclick="cerrarModalVenta()">&times;</button>
+        </div>
+        <div class="modal-venta-content">
+            
+            <div class="modal-venta-left">
+                
+                <div class="venta-section">
+                    <h3><i class="fas fa-user"></i> Cliente</h3>
+                    <div class="cliente-info-card" id="modalClienteInfo">
+                        
+                    </div>
+                </div>
+                
+                
+                <div class="venta-section">
+                    <h3><i class="fas fa-file-invoice"></i> Tipo de Comprobante</h3>
+                    <div class="tipo-comprobante-selector">
+                        <button class="btn-tipo-comprobante active" data-tipo="RECIBO" onclick="seleccionarTipoComprobante('RECIBO')">
+                            <i class="fas fa-receipt"></i>
+                            <span>Recibo</span>
+                        </button>
+                        <button class="btn-tipo-comprobante" data-tipo="FACTURA" onclick="seleccionarTipoComprobante('FACTURA')">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span>Factura</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            
+            <div class="modal-venta-right">
+                
+                <div class="venta-section">
+                    <div class="total-grande">
+                        <span>TOTAL:</span>
+                        <strong id="modalTotal">$0.00</strong>
+                    </div>
+                </div>
+                
+                
+                <div class="venta-section">
+                    <h3><i class="fas fa-money-bill-wave"></i> Pago</h3>
+                    <div class="pago-group">
+                        <label>Pagado con:</label>
+                        <input 
+                            type="number" 
+                            id="pagadoCon" 
+                            class="input-pago" 
+                            placeholder="0.00" 
+                            step="0.01"
+                            min="0"
+                            oninput="calcularVuelto()">
+                    </div>
+                    
+                    <div class="vuelto-display">
+                        <span>Vuelto:</span>
+                        <strong id="vueltoDisplay">$0.00</strong>
+                    </div>
+                </div>
+                
+                
+                <div class="modal-venta-actions">
+                    <button class="btn-modal-cancelar" onclick="cerrarModalVenta()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button class="btn-modal-confirmar" id="btnConfirmarVenta" onclick="procesarVentaConValidacion()">
+                        <i class="fas fa-check"></i> Confirmar Venta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="custom-confirm-overlay" id="customConfirmOverlay">
+    <div class="custom-confirm-box">
+        <div class="custom-confirm-title" id="customConfirmTitle">
+            <i class="fas fa-question-circle"></i>
+            <span>Confirmación</span>
+        </div>
+        <div class="custom-confirm-message" id="customConfirmMessage">
+            ¿Estás seguro?
+        </div>
+        <div class="custom-confirm-buttons" id="customConfirmButtons">
+            <button class="custom-confirm-btn custom-confirm-btn-cancel" id="customConfirmCancel">
+                Cancelar
+            </button>
+            <button class="custom-confirm-btn custom-confirm-btn-confirm" id="customConfirmOk">
+                Confirmar
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal-cantidad-overlay" id="modalCantidadOverlay">
+    <div class="modal-cantidad-box">
+        <div class="modal-cantidad-header">
+            <h3 id="modalCantidadProducto">Producto</h3>
+            <button class="modal-cantidad-close" onclick="cerrarModalCantidad()">&times;</button>
+        </div>
+        <div class="modal-cantidad-body">
+            <div class="stock-disponible">
+                <i class="fas fa-box"></i>
+                <span>Stock disponible:</span>
+                <strong id="modalCantidadStock">0</strong>
+            </div>
+            <div class="cantidad-input-group">
+                <label for="modalCantidadInput">Cantidad a agregar:</label>
+                <input 
+                    type="number" 
+                    id="modalCantidadInput" 
+                    class="modal-cantidad-input" 
+                    placeholder="0.00"
+                    step="0.001"
+                    min="0.001"
+                    autofocus>
+            </div>
+        </div>
+        <div class="modal-cantidad-footer">
+            <button class="btn btn-secondary" onclick="cerrarModalCantidad()">Cancelar</button>
+            <button class="btn btn-accent" onclick="confirmarCantidadRapida()">
+                <i class="fas fa-plus"></i>
+                <span>Agregar al Carrito</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal" id="modalGarantia">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-shield-alt"></i> Generar Garantía</h3>
+            <button class="modal-close" onclick="cerrarModalGarantia()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="detail-item">
+                <label>Producto</label>
+                <span id="garantiaProductoNombre">-</span>
+            </div>
+            <div class="detail-item">
+                <label>Código</label>
+                <span id="garantiaProductoCodigo">-</span>
+            </div>
+            <div class="detail-item" style="margin-top: 20px;">
+                <label for="garantiaPeriodo">Años de Garantía</label>
+                <input 
+                    type="number" 
+                    id="garantiaPeriodo" 
+                    class="form-input" 
+                    value="1" 
+                    min="1" 
+                    max="10"
+                    style="max-width: 150px;">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="cerrarModalGarantia()">
+                <i class="fas fa-times"></i>
+                <span>Cancelar</span>
+            </button>
+            <button class="btn btn-accent" onclick="generarGarantia()">
+                <i class="fas fa-print"></i>
+                <span>Generar Garantía</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal-overlay" id="modalActualizarCliente">
+    <div class="modal-box" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-edit"></i> Actualizar Datos del Cliente</h3>
+            <button class="modal-close" onclick="cerrarModalActualizarCliente()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="background: #fff3cd; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
+                <i class="fas fa-info-circle"></i> Este cliente tiene un correo genérico. Por favor actualiza sus datos.
+            </p>
+            
+            <div class="form-group">
+                <label class="form-label">Razón Social / Nombre *</label>
+                <input type="text" id="updateClienteNombre" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Cédula / RUC</label>
+                <input type="text" id="updateClienteCedula" class="form-input" readonly style="background: #f8f9fa;">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Dirección</label>
+                <input type="text" id="updateClienteDireccion" class="form-input" placeholder="Opcional">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" id="updateClienteTelefono" class="form-input" placeholder="Opcional">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Correo Electrónico *</label>
+                <input type="email" id="updateClienteCorreo" class="form-input" required placeholder="ejemplo@correo.com">
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Debe ser un correo válido (no puede terminar en @cambiar.com)
+                </small>
+            </div>
+
+            <p style="font-size: 0.85em; color: #666; margin-top: 10px;">
+                * Campos obligatorios
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="cerrarModalActualizarCliente()">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn btn-accent" onclick="confirmarActualizacionCliente()">
+                <i class="fas fa-save"></i> Guardar y Continuar
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    
+    
+    .search-results {
+        margin-top: 15px;
+        max-height: 300px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+
+    .search-result-item {
+        padding: 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .search-result-item:hover {
+        background: #f8f9fa;
+        border-color: #d4a017;
+        transform: translateX(5px);
+    }
+
+    .search-result-item strong {
+        color: #1a1a1a;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .search-result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 8px;
+    }
+
+    .search-result-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .search-result-item small {
+        color: #666;
+    }
+
+    .search-result-item .precio {
+        color: #28a745;
+        font-weight: 700;
+        font-size: 1.1em;
+        white-space: nowrap;
+    }
+
+    .badge-zona-small {
+        background: #e9ecef;
+        color: #495057;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.65em;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+        border: 1px solid #dee2e6;
+    }
+
+    .search-result-item .stock {
+        color: #666;
+        font-size: 0.9em;
+    }
+
+    .search-result-item .stock.bajo {
+        color: #dc3545;
+        font-weight: 600;
+    }
+
+    .cliente-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+    }
+
+    .info-box {
+        margin-bottom: 8px;
+        padding: 8px;
+        background: white;
+        border-radius: 6px;
+    }
+
+    .info-box strong {
+        color: #666;
+        margin-right: 8px;
+    }
+
+    
+    .cliente-seleccionado-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 16px;
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .cliente-seleccionado-box.consumidor-final {
+        background: #f8f9fa;
+        border: 2px solid #dee2e6;
+        color: #212529;
+        box-shadow: none;
+    }
+
+    .cliente-seleccionado-box.consumidor-final .cliente-icon {
+        color: #6c757d;
+    }
+
+    .cliente-seleccionado-box.consumidor-final .cliente-nombre {
+        color: #212529;
+    }
+
+    .cliente-seleccionado-box.consumidor-final .cliente-cedula {
+        color: #6c757d;
+    }
+
+    .cliente-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .cliente-icon {
+        font-size: 2.5em;
+        opacity: 0.9;
+    }
+
+    .cliente-datos {
+        flex: 1;
+    }
+
+    .cliente-nombre {
+        font-weight: 700;
+        font-size: 1.1em;
+        margin-bottom: 4px;
+    }
+
+    .cliente-cedula {
+        font-size: 0.9em;
+        opacity: 0.9;
+    }
+
+    .cliente-detalles {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 12px;
+    }
+
+    .cliente-detalle-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+        font-size: 0.9em;
+    }
+
+    .cliente-detalle-item i {
+        opacity: 0.8;
+        width: 16px;
+    }
+
+    .cliente-acciones {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .btn-cliente-accion {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        font-size: 0.9em;
+    }
+
+    .btn-cambiar {
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
+    }
+
+    .btn-cambiar:hover {
+        background: rgba(255, 255, 255, 0.35);
+        transform: translateY(-2px);
+    }
+
+    .consumidor-final .btn-cambiar {
+        background: #d4a017;
+        color: white;
+    }
+
+    .consumidor-final .btn-cambiar:hover {
+        background: #b8891a;
+    }
+
+    .btn-editar {
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
+    }
+
+    .btn-editar:hover {
+        background: rgba(255, 255, 255, 0.35);
+        transform: translateY(-2px);
+    }
+
+    .btn-borrar {
+        background: rgba(220, 53, 69, 0.9);
+        color: white;
+    }
+
+    .btn-borrar:hover {
+        background: rgba(220, 53, 69, 1);
+        transform: translateY(-2px);
+    }
+
+    
+    .cantidad-editable-input {
+        width: 70px;
+        padding: 8px 6px;
+        text-align: center;
+        border: 2px solid #d4a017;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 1em;
+        background: #fffef5;
+        transition: all 0.2s ease;
+    }
+
+    .cantidad-editable-input:focus {
+        outline: none;
+        border-color: #b8860b;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.1);
+    }
+
+    
+    .cantidad-editable-input::-webkit-inner-spin-button,
+    .cantidad-editable-input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .cantidad-editable-input {
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+
+    .carrito-item-cantidad {
+        width: 60px;
+        padding: 6px;
+        text-align: center;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .btn-remove-item {
+        background: #dc3545;
+        color: white;
+        border: none;
+        width: 34px;
+        height: 34px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-remove-item:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .btn-warranty-item {
+        background: #28a745;
+        color: white;
+        border: none;
+        width: 34px;
+        height: 34px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-warranty-item:hover {
+        background: #218838;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .badge-zona {
+        background: #e9ecef;
+        color: #495057;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.7em;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+        border: 1px solid #dee2e6;
+    }
+
+    
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .modal.show {
+        display: flex;
+        opacity: 1;
+    }
+
+    
+    .container > div > div {
+        scrollbar-width: thin;
+        scrollbar-color: #d4a017 #f1f1f1;
+    }
+
+    .container > div > div::-webkit-scrollbar {
+        width: 3px;
+    }
+
+    .container > div > div::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .container > div > div::-webkit-scrollbar-thumb {
+        background: #d4a017;
+        border-radius: 10px;
+    }
+
+    .container > div > div::-webkit-scrollbar-thumb:hover {
+        background: #b8860b;
+    }
+
+    .search-results::-webkit-scrollbar {
+        width: 3px;
+    }
+
+    .search-results::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .search-results::-webkit-scrollbar-thumb {
+        background: #d4a017;
+        border-radius: 10px;
+    }
+
+    
+    .items-counter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 2px solid #d4a017;
+        font-weight: 600;
+    }
+
+    .items-counter i {
+        color: #d4a017;
+        font-size: 1.1em;
+    }
+
+    .items-counter #itemsCount {
+        font-size: 1.3em;
+        color: #d4a017;
+        font-weight: 800;
+        min-width: 25px;
+        text-align: center;
+    }
+
+    .items-counter .items-label {
+        font-size: 0.9em;
+        color: #666;
+        text-transform: lowercase;
+    }
+
+    
+    .edit-mode-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #007bff;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.85em;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.4);
+        z-index: 10;
+        animation: slideIn 0.3s ease;
+    }
+
+    .edit-mode-badge.active {
+        display: flex;
+    }
+
+    .edit-mode-indicator {
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+        animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0.3; }
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    
+    .modal-cantidad-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(3px);
+    }
+
+    .modal-cantidad-overlay.active {
+        display: flex;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    .modal-cantidad-box {
+        background: white;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 450px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: modalBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-cantidad-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .modal-cantidad-header h3 {
+        margin: 0;
+        color: #1a1a1a;
+        font-size: 1.2em;
+        font-weight: 700;
+    }
+
+    .modal-cantidad-close {
+        background: none;
+        border: none;
+        font-size: 2em;
+        color: #999;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        transition: all 0.2s ease;
+    }
+
+    .modal-cantidad-close:hover {
+        color: #dc3545;
+        transform: rotate(90deg);
+    }
+
+    .modal-cantidad-body {
+        padding: 25px 20px;
+    }
+
+    .stock-disponible {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 15px;
+        background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-left: 4px solid #28a745;
+    }
+
+    .stock-disponible i {
+        color: #28a745;
+        font-size: 1.2em;
+    }
+
+    .stock-disponible span {
+        color: #666;
+        font-size: 0.95em;
+    }
+
+    .stock-disponible strong {
+        color: #28a745;
+        font-size: 1.3em;
+        font-weight: 800;
+        margin-left: auto;
+    }
+
+    .cantidad-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .cantidad-input-group label {
+        font-weight: 600;
+        color: #666;
+        font-size: 0.95em;
+    }
+
+    .modal-cantidad-input {
+        padding: 15px;
+        font-size: 1.3em;
+        text-align: center;
+        border: 2px solid #d4a017;
+        border-radius: 8px;
+        font-weight: 700;
+        background: #fffef5;
+        transition: all 0.2s ease;
+    }
+
+    .modal-cantidad-input:focus {
+        outline: none;
+        border-color: #b8860b;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(212, 160, 23, 0.1);
+    }
+
+    .modal-cantidad-input::-webkit-inner-spin-button,
+    .modal-cantidad-input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .modal-cantidad-footer {
+        display: flex;
+        gap: 10px;
+        padding: 20px;
+        border-top: 2px solid #f0f0f0;
+        justify-content: flex-end;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes modalBounce {
+        from {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-box {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 550px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        animation: modalBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px;
+        border-bottom: 2px solid #f0f0f0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.3em;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .modal-header i {
+        font-size: 1.2em;
+    }
+
+    .modal-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        cursor: pointer;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5em;
+        transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: rotate(90deg);
+    }
+
+    .modal-body {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .modal-warning {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+        background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+        border-left: 4px solid #ffc107;
+        border-radius: 8px;
+        margin-bottom: 24px;
+    }
+
+    .modal-warning i {
+        color: #856404;
+        font-size: 1.3em;
+        margin-top: 2px;
+    }
+
+    .modal-warning p {
+        margin: 0;
+        color: #856404;
+        font-size: 0.95em;
+        line-height: 1.5;
+    }
+
+    .modal-form-group {
+        margin-bottom: 20px;
+    }
+
+    .modal-form-group label {
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        font-size: 0.95em;
+    }
+
+    .modal-form-group label .required {
+        color: #dc3545;
+        margin-left: 4px;
+    }
+
+    .modal-form-group input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1em;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .modal-form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    .modal-form-group input:disabled {
+        background: #f5f5f5;
+        color: #999;
+        cursor: not-allowed;
+    }
+
+    .modal-form-group small {
+        display: block;
+        margin-top: 6px;
+        color: #666;
+        font-size: 0.85em;
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 12px;
+        padding: 20px 24px;
+        border-top: 2px solid #f0f0f0;
+        justify-content: flex-end;
+        background: #fafafa;
+        border-radius: 0 0 16px 16px;
+    }
+
+    .modal-btn {
+        padding: 12px 28px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.95em;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .modal-btn-cancel {
+        background: #e0e0e0;
+        color: #666;
+    }
+
+    .modal-btn-cancel:hover {
+        background: #d0d0d0;
+        transform: translateY(-1px);
+    }
+
+    .modal-btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .modal-btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .modal-required-note {
+        font-size: 0.85em;
+        color: #666;
+        margin-bottom: 16px;
+        font-style: italic;
+    }
+
+    
+    .carrito-edit-mode {
+        border: 3px solid #007bff !important;
+        box-shadow: 0 0 20px rgba(0, 123, 255, 0.3) !important;
+    }
+
+    
+    .carrito-item-selected {
+        background: rgba(40, 167, 69, 0.15) !important;
+        border-left: 4px solid #28a745;
+    }
+
+    
+    .search-result-selected {
+        background: rgba(0, 123, 255, 0.15) !important;
+        border-left: 4px solid #007bff;
+    }
+
+    
+    .precio-editable {
+        border: 1px solid #007bff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: #f8f9fa;
+        cursor: text;
+        width: 80px;
+        text-align: right;
+        font-size: 0.95em;
+    }
+
+    .precio-editable:focus {
+        outline: 2px solid #007bff;
+        background: white;
+    }
+
+    
+    .modal-venta-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+        padding: 20px;
+    }
+
+    .modal-venta-overlay.active {
+        display: flex;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    .modal-venta-container {
+        background: white;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 900px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: modalBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-venta-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px 30px;
+        background: linear-gradient(135deg, #d4a017 0%, #b8891a 100%);
+        color: white;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .modal-venta-header h2 {
+        margin: 0;
+        font-size: 1.5em;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .modal-venta-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        cursor: pointer;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8em;
+        transition: all 0.2s ease;
+    }
+
+    .modal-venta-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: rotate(90deg);
+    }
+
+    .modal-venta-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        padding: 30px;
+    }
+
+    .modal-venta-left,
+    .modal-venta-right {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .venta-section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .venta-section h3 {
+        margin: 0 0 12px 0;
+        color: #333;
+        font-size: 1em;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .venta-section h3 i {
+        color: #d4a017;
+        font-size: 0.9em;
+    }
+
+    .cliente-info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        border-radius: 12px;
+        color: white;
+    }
+
+    .cliente-info-card .cliente-nombre {
+        font-size: 1.3em;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .cliente-info-card .cliente-detalle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 5px 0;
+        font-size: 0.95em;
+        opacity: 0.95;
+    }
+
+    .cliente-info-card .cliente-detalle i {
+        width: 16px;
+    }
+
+    .cliente-info-card.consumidor-final {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    }
+
+    .total-grande {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 25px;
+        background: linear-gradient(135deg, #fff8e1 0%, #ffe082 100%);
+        border-radius: 12px;
+        border-left: 5px solid #d4a017;
+    }
+
+    .total-grande span {
+        font-size: 1.8em;
+        font-weight: 800;
+        color: #d4a017;
+    }
+
+    .total-grande strong {
+        font-size: 2.2em;
+        font-weight: 900;
+        color: #d4a017;
+    }
+
+    .pago-group {
+        margin-bottom: 15px;
+    }
+
+    .pago-group label {
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 0.95em;
+    }
+
+    .input-pago {
+        width: 100%;
+        padding: 18px;
+        border: 3px solid #d4a017;
+        border-radius: 12px;
+        font-size: 1.5em;
+        font-weight: 700;
+        text-align: center;
+        background: #fffef5;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .input-pago:focus {
+        outline: none;
+        border-color: #b8891a;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(212, 160, 23, 0.15);
+    }
+
+    .vuelto-display {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px 20px;
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        border-radius: 12px;
+        border-left: 5px solid #28a745;
+    }
+
+    .vuelto-display span {
+        font-weight: 700;
+        color: #333;
+        font-size: 1.1em;
+    }
+
+    .vuelto-display strong {
+        font-size: 1.6em;
+        font-weight: 900;
+        color: #28a745;
+    }
+
+    .tipo-comprobante-selector {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .btn-tipo-comprobante {
+        padding: 15px 20px;
+        border: 3px solid #e0e0e0;
+        background: white;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        font-size: 1em;
+        font-weight: 600;
+        color: #666;
+    }
+
+    .btn-tipo-comprobante i {
+        font-size: 1.8em;
+        color: #999;
+        transition: all 0.2s ease;
+    }
+
+    .btn-tipo-comprobante:hover {
+        border-color: #d4a017;
+        background: #fffef5;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(212, 160, 23, 0.2);
+    }
+
+    .btn-tipo-comprobante:hover i {
+        color: #d4a017;
+    }
+
+    .btn-tipo-comprobante.active {
+        border-color: #d4a017;
+        background: linear-gradient(135deg, #fff8e1 0%, #ffe082 100%);
+        color: #d4a017;
+        font-weight: 700;
+    }
+
+    .btn-tipo-comprobante.active i {
+        color: #d4a017;
+    }
+
+    .modal-venta-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-top: 5px;
+    }
+
+    .btn-modal-cancelar,
+    .btn-modal-confirmar {
+        padding: 18px 24px;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1em;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .btn-modal-cancelar {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-modal-cancelar:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
+    }
+
+    .btn-modal-confirmar {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+
+    .btn-modal-confirmar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+    }
+
+    .btn-modal-confirmar:disabled {
+        background: #d0d0d0;
+        color: #999;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    
+    @media (max-width: 768px) {
+        .modal-venta-content {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    
+    .custom-confirm-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.2s ease;
+    }
+
+    .custom-confirm-overlay.active {
+        display: flex;
+    }
+
+    .custom-confirm-box {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 450px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+        from { 
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to { 
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .custom-confirm-title {
+        font-size: 1.3em;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .custom-confirm-message {
+        color: #666;
+        margin-bottom: 25px;
+        line-height: 1.5;
+    }
+
+    .custom-confirm-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .custom-confirm-btn {
+        padding: 10px 24px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.95em;
+        transition: all 0.2s ease;
+    }
+
+    .custom-confirm-btn-cancel {
+        background: #e0e0e0;
+        color: #666;
+    }
+
+    .custom-confirm-btn-cancel:hover {
+        background: #d0d0d0;
+    }
+
+    .custom-confirm-btn-confirm {
+        background: #28a745;
+        color: white;
+    }
+
+    .custom-confirm-btn-confirm:hover {
+        background: #218838;
+    }
+
+    .custom-confirm-btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .custom-confirm-btn-danger:hover {
+        background: #c82333;
+    }
+
+    .custom-confirm-btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .custom-confirm-btn-primary:hover {
+        background: #5568d3;
+    }
+
+    .custom-confirm-btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .custom-confirm-btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    @media (max-width: 992px) {
+        .container > div[style*="grid-template-columns"] {
+            grid-template-columns: 1fr !important;
+            height: auto !important;
+        }
+        
+        .container > div > div {
+            overflow-y: visible !important;
+            height: auto !important;
+        }
+    }
+</style>
+
+<script>
+    // =====================================================
+    // ESTADO DEL PUNTO DE VENTA
+    // =====================================================
+    
+    // Usar window para evitar redeclaración en recargas
+    if (!window.ventaState) {
+        window.ventaState = {
+            carrito: [],
+            clienteSeleccionado: null,
+            tipoComprobante: 'RECIBO',
+            // Modo edición
+            modoEdicion: false,
+            indiceSeleccionado: -1, // -1 = búsqueda, >= 0 = carrito
+            busquedaResultados: [],
+            busquedaSeleccionado: -1,
+            // Búsqueda de clientes
+            clientesBusqueda: [],
+            clienteSeleccionadoIndex: -1,
+            // Modal de actualización de cliente
+            clienteTemporal: null,
+            clienteAnterior: null
+        };
+        
+        // Cargar desde localStorage si existe
+        const carritoGuardado = localStorage.getItem('ferreteria_carrito');
+        if (carritoGuardado) {
+            try {
+                const data = JSON.parse(carritoGuardado);
+                window.ventaState.carrito = data.carrito || [];
+                window.ventaState.clienteSeleccionado = data.clienteSeleccionado || null;
+                window.ventaState.tipoComprobante = data.tipoComprobante || 'RECIBO';
+            } catch (error) {
+            }
+        }
+    }
+    
+    // Referencia local para facilitar el código (usar var para evitar redeclaración)
+    var ventaState = window.ventaState;
+
+    // Guardar carrito en localStorage
+    function guardarCarritoEnCache() {
+        try {
+            const data = {
+                carrito: ventaState.carrito,
+                clienteSeleccionado: ventaState.clienteSeleccionado,
+                tipoComprobante: ventaState.tipoComprobante,
+                fecha: new Date().toISOString()
+            };
+            localStorage.setItem('ferreteria_carrito', JSON.stringify(data));
+        } catch (error) {
+        }
+    }
+
+    // Limpiar caché del carrito
+    function limpiarCarritoCache() {
+        try {
+            localStorage.removeItem('ferreteria_carrito');
+        } catch (error) {
+        }
+    }
+
+    // Sistema de confirmación personalizado
+    function mostrarConfirmacion(titulo = 'Confirmación', mensaje, botones = null) {
+        return new Promise((resolve) => {
+            const overlay = document.getElementById('customConfirmOverlay');
+            const titleEl = document.getElementById('customConfirmTitle');
+            const messageEl = document.getElementById('customConfirmMessage');
+            const buttonsContainer = document.getElementById('customConfirmButtons');
+            
+            // Si no se pasaron botones personalizados, usar los por defecto
+            if (!botones) {
+                const cancelBtn = document.getElementById('customConfirmCancel');
+                const okBtn = document.getElementById('customConfirmOk');
+                
+                titleEl.innerHTML = `<i class="fas fa-question-circle"></i><span>${titulo}</span>`;
+                messageEl.innerHTML = mensaje;
+                
+                // Mostrar botones por defecto
+                cancelBtn.style.display = 'block';
+                okBtn.style.display = 'block';
+                
+                // Mostrar overlay
+                overlay.classList.add('active');
+                
+                const handleConfirm = () => {
+                    overlay.classList.remove('active');
+                    cleanup();
+                    resolve(true);
+                };
+                
+                const handleCancel = () => {
+                    overlay.classList.remove('active');
+                    cleanup();
+                    resolve(false);
+                };
+                
+                const cleanup = () => {
+                    okBtn.removeEventListener('click', handleConfirm);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                };
+                
+                okBtn.addEventListener('click', handleConfirm);
+                cancelBtn.addEventListener('click', handleCancel);
+                
+                // ESC para cancelar
+                const handleEsc = (e) => {
+                    if (e.key === 'Escape') {
+                        handleCancel();
+                        document.removeEventListener('keydown', handleEsc);
+                    }
+                };
+                document.addEventListener('keydown', handleEsc);
+            } else {
+                // Usar botones personalizados
+                titleEl.innerHTML = `<i class="fas fa-exclamation-circle"></i><span>${titulo}</span>`;
+                messageEl.innerHTML = mensaje;
+                
+                // Crear botones personalizados
+                buttonsContainer.innerHTML = '';
+                
+                botones.forEach(boton => {
+                    const btn = document.createElement('button');
+                    // Asegurar que siempre tenga la clase base custom-confirm-btn
+                    const clases = boton.clase || 'custom-confirm-btn-confirm';
+                    btn.className = clases.includes('custom-confirm-btn') ? clases : `custom-confirm-btn ${clases}`;
+                    btn.innerHTML = boton.texto;
+                    btn.style.cssText = 'white-space: nowrap;'; // Evitar que el texto se rompa
+                    btn.onclick = () => {
+                        overlay.classList.remove('active');
+                        if (boton.callback) boton.callback();
+                        resolve(true);
+                    };
+                    buttonsContainer.appendChild(btn);
+                });
+                
+                // Mostrar overlay
+                overlay.classList.add('active');
+                
+                // ESC para cerrar
+                const handleEsc = (e) => {
+                    if (e.key === 'Escape') {
+                        overlay.classList.remove('active');
+                        document.removeEventListener('keydown', handleEsc);
+                        resolve(false);
+                    }
+                };
+                document.addEventListener('keydown', handleEsc);
+            }
+        });
+    }
+
+    // =====================================================
+    // FUNCIONES AUXILIARES
+    // =====================================================
+    
+    // Calcular stock restante considerando el carrito
+    function calcularStockRestante(codigo, stockTotal) {
+        const itemEnCarrito = ventaState.carrito.find(item => item.codigo === codigo);
+        if (!itemEnCarrito) {
+            return stockTotal;
+        }
+        return stockTotal - itemEnCarrito.cantidad;
+    }
+
+    // =====================================================
+    // MODO EDICIÓN
+    // =====================================================
+
+    function toggleModoEdicion() {
+        ventaState.modoEdicion = !ventaState.modoEdicion;
+        
+        const badge = document.getElementById('editModeBadge');
+        const carritoCard = document.getElementById('carritoCard');
+        const carritoColumn = document.getElementById('carritoColumn');
+        
+        if (ventaState.modoEdicion) {
+            // Activar modo edición
+            badge.classList.add('active');
+            carritoCard.classList.add('carrito-edit-mode');
+            ventaState.indiceSeleccionado = ventaState.carrito.length > 0 ? 0 : -1;
+            ventaState.busquedaSeleccionado = -1;
+            actualizarCarrito();
+            
+            // Scroll al inicio del carrito
+            if (carritoColumn) {
+                carritoColumn.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        } else {
+            // Desactivar modo edición
+            badge.classList.remove('active');
+            carritoCard.classList.remove('carrito-edit-mode');
+            ventaState.indiceSeleccionado = -1;
+            actualizarCarrito();
+            
+            // Scroll al inicio del carrito
+            if (carritoColumn) {
+                carritoColumn.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+    }
+
+    function navegarCarrito(direccion) {
+        if (ventaState.carrito.length === 0) return;
+        
+        ventaState.indiceSeleccionado += direccion;
+        
+        // Limitar índice
+        if (ventaState.indiceSeleccionado < 0) {
+            ventaState.indiceSeleccionado = ventaState.carrito.length - 1;
+        } else if (ventaState.indiceSeleccionado >= ventaState.carrito.length) {
+            ventaState.indiceSeleccionado = 0;
+        }
+        
+        actualizarCarrito();
+        
+        // Hacer scroll al elemento seleccionado
+        const rows = document.querySelectorAll('#carritoBody tr');
+        if (rows[ventaState.indiceSeleccionado]) {
+            rows[ventaState.indiceSeleccionado].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function navegarBusqueda(direccion) {
+        if (ventaState.busquedaResultados.length === 0) return;
+        
+        ventaState.busquedaSeleccionado += direccion;
+        
+        // Limitar índice
+        if (ventaState.busquedaSeleccionado < 0) {
+            ventaState.busquedaSeleccionado = ventaState.busquedaResultados.length - 1;
+        } else if (ventaState.busquedaSeleccionado >= ventaState.busquedaResultados.length) {
+            ventaState.busquedaSeleccionado = 0;
+        }
+        
+        mostrarResultadosBusqueda(ventaState.busquedaResultados);
+        
+        // Hacer scroll al elemento seleccionado
+        const items = document.querySelectorAll('.search-result-item');
+        if (items[ventaState.busquedaSeleccionado]) {
+            items[ventaState.busquedaSeleccionado].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function ajustarCantidad(delta) {
+        if (ventaState.indiceSeleccionado < 0 || ventaState.indiceSeleccionado >= ventaState.carrito.length) {
+            return;
+        }
+        
+        const item = ventaState.carrito[ventaState.indiceSeleccionado];
+        const nuevaCantidad = item.cantidad + delta;
+        
+        // Validar límites
+        if (nuevaCantidad <= 0) {
+            window.app.showToast('Usa la X para eliminar el producto', 'warning', 2000);
+            return;
+        }
+        
+        if (nuevaCantidad > item.stock) {
+            window.app.showToast('No hay suficiente stock disponible', 'warning', 2000);
+            return;
+        }
+        
+        item.cantidad = nuevaCantidad;
+        actualizarCarrito();
+        guardarCarritoEnCache();
+    }
+
+    // =====================================================
+    // INICIALIZACIÓN
+    // =====================================================
+
+    function initPuntoVenta() {
+        // Cargar carrito desde caché y actualizar vista
+        actualizarCarrito();
+        
+        // Event listeners
+        setupEventListeners();
+        
+        // Focus en búsqueda después de configurar listeners
+        setTimeout(() => {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }, 100);
+    }
+
+    function setupEventListeners() {
+        // Atajos de teclado globales - Evitar duplicados
+        if (!window._puntoVentaKeydownListenerAdded) {
+            document.addEventListener('keydown', function(e) {
+                // Verificar que el módulo esté activo
+                if (!document.getElementById('searchInput')) return;
+                
+                // Verificar si hay algún modal abierto
+                const modalCantidad = document.getElementById('modalCantidadOverlay');
+                const modalVenta = document.getElementById('modalVenta');
+                const customConfirm = document.getElementById('custom-confirm-overlay');
+                const modalActualizarCliente = document.getElementById('modalActualizarCliente');
+                
+                const hayModalAbierto = (modalCantidad && modalCantidad.classList.contains('active')) ||
+                                       (modalVenta && modalVenta.classList.contains('active')) ||
+                                       (customConfirm && customConfirm.classList.contains('active')) ||
+                                       (modalActualizarCliente && modalActualizarCliente.classList.contains('active'));
+                
+                // ESC cierra modales
+                if (e.key === 'Escape') {
+                    if (modalActualizarCliente && modalActualizarCliente.classList.contains('active')) {
+                        e.preventDefault();
+                        cerrarModalActualizarCliente();
+                        return;
+                    }
+                    if (modalCantidad && modalCantidad.classList.contains('active')) {
+                        e.preventDefault();
+                        cerrarModalCantidad();
+                        return;
+                    }
+                }
+                
+                // Si hay modal abierto, no procesar teclas de atajo
+                if (hayModalAbierto && e.key !== 'Escape') {
+                    return;
+                }
+                
+                // F1 - Procesar Venta
+                if (e.key === 'F1') {
+                    e.preventDefault();
+                    if (ventaState.carrito.length > 0) {
+                        procesarVenta();
+                    } else {
+                        window.app.showToast('<i class="fas fa-exclamation-triangle"></i> El carrito está vacío. Agrega productos para continuar.', 'warning', 3000);
+                    }
+                }
+                // F3 - Activar búsqueda de cliente
+                if (e.key === 'F3') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    activarBusquedaCliente();
+                }
+                // F10 - Limpiar Venta
+                if (e.key === 'F10') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    limpiarVenta();
+                }
+                // F2 - Toggle Modo Edición
+                if (e.key === 'F2') {
+                    e.preventDefault();
+                    toggleModoEdicion();
+                }
+                
+                // Navegación con flechas
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    if (ventaState.modoEdicion) {
+                        // Navegar en carrito
+                        e.preventDefault();
+                        navegarCarrito(e.key === 'ArrowDown' ? 1 : -1);
+                    } else {
+                        // Navegar en resultados de búsqueda
+                        if (ventaState.busquedaResultados.length > 0) {
+                            e.preventDefault();
+                            navegarBusqueda(e.key === 'ArrowDown' ? 1 : -1);
+                        }
+                    }
+                }
+                
+                // + y - para ajustar cantidad (solo en modo edición)
+                if (ventaState.modoEdicion && ventaState.indiceSeleccionado >= 0) {
+                    if (e.key === '+' || e.key === '=') {
+                        e.preventDefault();
+                        ajustarCantidad(1);
+                    } else if (e.key === '-' || e.key === '_') {
+                        e.preventDefault();
+                        ajustarCantidad(-1);
+                    }
+                }
+                
+                // Enter para agregar desde búsqueda (solo cuando no está en modo edición)
+                if (e.key === 'Enter' && !ventaState.modoEdicion) {
+                    const searchInput = document.getElementById('searchInput');
+                    if (document.activeElement === searchInput) {
+                        return; // Dejar que el otro handler lo maneje
+                    }
+                    // Si hay un resultado seleccionado en búsqueda, agregarlo
+                    if (ventaState.busquedaSeleccionado >= 0 && ventaState.busquedaResultados[ventaState.busquedaSeleccionado]) {
+                        e.preventDefault();
+                        const producto = ventaState.busquedaResultados[ventaState.busquedaSeleccionado];
+                        agregarProducto(producto.codigo);
+                    }
+                }
+            });
+            window._puntoVentaKeydownListenerAdded = true;
+        }
+        
+        // Búsqueda de productos (con debounce)
+        const searchInput = document.getElementById('searchInput');
+        
+        if (!searchInput) {
+            return;
+        }
+        
+        // Input con debounce simple
+        let debounceTimer;
+        let currentSearchId = 0;
+        
+        searchInput.addEventListener('input', function(e) {
+            const valor = e.target.value;
+            clearTimeout(debounceTimer);
+            
+            // Si está vacío, limpiar resultados inmediatamente
+            if (!valor || valor.trim().length === 0) {
+                document.getElementById('searchResults').innerHTML = '';
+                ventaState.busquedaResultados = [];
+                ventaState.busquedaSeleccionado = -1;
+                return;
+            }
+            
+            // Resetear selección cuando cambia el texto
+            ventaState.busquedaSeleccionado = -1;
+            
+            // Buscar después del debounce
+            debounceTimer = setTimeout(function() {
+                currentSearchId++;
+                window.currentSearchId = currentSearchId; // Exponer globalmente
+                const searchId = currentSearchId;
+                buscarProductos(valor, searchId);
+            }, 300);
+        });
+        
+        searchInput.addEventListener('keydown', async function(e) {
+            // Si hay algún modal abierto, no procesar Shift o Enter
+            const modalCantidad = document.getElementById('modalCantidadOverlay');
+            const modalVenta = document.getElementById('modalVenta');
+            const customConfirm = document.getElementById('custom-confirm-overlay');
+            
+            const hayModalAbierto = (modalCantidad && modalCantidad.classList.contains('active')) ||
+                                   (modalVenta && modalVenta.classList.contains('active')) ||
+                                   (customConfirm && customConfirm.classList.contains('active'));
+            
+            // Si se presiona SOLO Shift (sin otra tecla), abrir modal de cantidad rápida
+            if (e.key === 'Shift' && !hayModalAbierto) {
+                const valor = e.target.value.trim();
+                
+                if (valor) {
+                    // Si hay un producto seleccionado en los resultados
+                    if (ventaState.busquedaResultados.length > 0 && ventaState.busquedaSeleccionado >= 0) {
+                        const productoSeleccionado = ventaState.busquedaResultados[ventaState.busquedaSeleccionado];
+                        if (productoSeleccionado) {
+                            mostrarModalCantidadRapida(productoSeleccionado);
+                            return;
+                        }
+                    }
+                    
+                    // Si es solo números, buscar el producto por código
+                    if (!/\D/.test(valor)) {
+                        try {
+                            const db = window.app.db;
+                            const { data, error } = await db
+                                .from('inventario')
+                                .select('*')
+                                .eq('codigo', valor)
+                                .single();
+                            
+                            if (!error && data) {
+                                mostrarModalCantidadRapida(data);
+                                return;
+                            }
+                        } catch (error) {
+                        }
+                    }
+                }
+                return;
+            }
+            
+            if (e.key === 'Enter' && !hayModalAbierto) {
+                e.preventDefault();
+                e.stopPropagation(); // Evitar propagación
+                
+                // Comportamiento normal de Enter (agregar 1 unidad)
+                // Cancelar cualquier búsqueda pendiente
+                clearTimeout(debounceTimer);
+                currentSearchId++; // Invalidar búsquedas anteriores
+                window.currentSearchId = currentSearchId; // Exponer globalmente
+                
+                const valor = e.target.value.trim();
+                
+                if (valor) {
+                    // Si hay resultados de búsqueda y uno está seleccionado, usar ese
+                    if (ventaState.busquedaResultados.length > 0 && ventaState.busquedaSeleccionado >= 0) {
+                        const productoSeleccionado = ventaState.busquedaResultados[ventaState.busquedaSeleccionado];
+                        if (productoSeleccionado) {
+                            await agregarProducto(productoSeleccionado.codigo);
+                            return;
+                        }
+                    }
+                    
+                    // Si no hay selección o es solo números, buscar por código
+                    if (!/\D/.test(valor)) {
+                        // Solo números - buscar por código
+                        e.target.value = '';
+                        document.getElementById('searchResults').innerHTML = '';
+                        await agregarProductoPorCodigo(valor);
+                        e.target.focus();
+                    } else {
+                        // Tiene letras - si hay un resultado seleccionado, agregarlo
+                        if (ventaState.busquedaResultados.length > 0 && ventaState.busquedaSeleccionado >= 0) {
+                            const productoSeleccionado = ventaState.busquedaResultados[ventaState.busquedaSeleccionado];
+                            if (productoSeleccionado) {
+                                await agregarProducto(productoSeleccionado.codigo);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Enfocar el campo
+        searchInput.focus();
+
+        // Búsqueda de cliente
+        const clienteCedula = document.getElementById('clienteCedula');
+        if (clienteCedula) {
+            clienteCedula.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    buscarCliente();
+                }
+            });
+        }
+
+        // Tipo de comprobante
+        const tipoComprobante = document.getElementById('tipoComprobante');
+        if (tipoComprobante) {
+            tipoComprobante.addEventListener('change', function(e) {
+                ventaState.tipoComprobante = e.target.value;
+            });
+        }
+
+        // Modal de cantidad rápida - Confirmar con Enter
+        const modalCantidadInput = document.getElementById('modalCantidadInput');
+        if (modalCantidadInput) {
+            modalCantidadInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation(); // Evitar que se propague al searchInput
+                    confirmarCantidadRapida();
+                }
+            });
+            
+            modalCantidadInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation(); // Evitar propagación
+                    cerrarModalCantidad();
+                }
+            });
+        }
+
+        // Modal de garantía - Confirmar con Enter
+        const garantiaPeriodoInput = document.getElementById('garantiaPeriodo');
+        if (garantiaPeriodoInput) {
+            garantiaPeriodoInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    generarGarantia();
+                }
+            });
+        }
+
+        // Modal de actualización de cliente - Confirmar con Enter
+        const modalActualizarClienteInputs = [
+            document.getElementById('updateClienteNombre'),
+            document.getElementById('updateClienteDireccion'),
+            document.getElementById('updateClienteTelefono'),
+            document.getElementById('updateClienteCorreo')
+        ].filter(input => input !== null);
+
+        modalActualizarClienteInputs.forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    confirmarActualizacionCliente();
+                }
+            });
+        });
+    }
+
+    // =====================================================
+    // BÚSQUEDA DE PRODUCTOS
+    // =====================================================
+
+    async function buscarProductos(query, searchId) {
+        // Limpiar si no hay query o es muy corto
+        if (!query || query.trim().length < 2) {
+            document.getElementById('searchResults').innerHTML = '';
+            return;
+        }
+
+        try {
+            if (!window.app || !window.app.db) {
+                const dbDirect = typeof getDB === 'function' ? getDB() : (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+                
+                if (!dbDirect) {
+                    window.app.showToast('Error: Base de datos no inicializada', 'danger');
+                    return;
+                }
+            }
+
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+
+            // Verificar si es búsqueda numérica de 4+ dígitos
+            const esNumerico = /^\d+$/.test(query.trim());
+            const longitudNumeros = query.trim().length;
+            
+            let queryBuilder = db.from('inventario').select('*');
+            
+            // Si son 4 o más dígitos numéricos, buscar SOLO por código que EMPIECE con esos dígitos
+            if (esNumerico && longitudNumeros >= 4) {
+                queryBuilder = queryBuilder.ilike('codigo', `${query.trim()}%`);
+            } else {
+                // Búsqueda normal: dividir en palabras
+                const palabras = query.trim().split(/\s+/).filter(p => p.length > 0);
+                
+                // Si es una sola palabra, buscar en código o producto
+                if (palabras.length === 1) {
+                    const searchPattern = `%${palabras[0]}%`;
+                    queryBuilder = queryBuilder.or(`codigo.ilike.${searchPattern},producto.ilike.${searchPattern}`);
+                } else {
+                    // Para múltiples palabras, buscar que todas estén en el producto
+                    const conditions = palabras.map(palabra => `producto.ilike.%${palabra}%`).join(',');
+                    queryBuilder = queryBuilder.or(conditions);
+                }
+            }
+            
+            const { data, error } = await queryBuilder.limit(20);
+
+            if (error) {
+                throw error;
+            }
+
+            // Verificar si esta búsqueda sigue siendo válida
+            if (searchId && searchId !== window.currentSearchId) {
+                return; // Búsqueda obsoleta, ignorar resultados
+            }
+
+            // Si hay múltiples palabras (y NO es búsqueda numérica de 4+), filtrar localmente
+            let resultados = data;
+            if (!esNumerico || longitudNumeros < 4) {
+                const palabras = query.trim().split(/\s+/).filter(p => p.length > 0);
+                if (palabras.length > 1) {
+                    resultados = data.filter(producto => {
+                        const productoLower = producto.producto.toLowerCase();
+                        const codigoLower = producto.codigo.toLowerCase();
+                        
+                        // Verificar que todas las palabras estén en el producto o código
+                        return palabras.every(palabra => 
+                            productoLower.includes(palabra.toLowerCase()) || 
+                            codigoLower.includes(palabra.toLowerCase())
+                        );
+                    });
+                }
+            }
+            
+            // Ordenar resultados: coincidencia exacta primero
+            const queryLower = query.trim().toLowerCase();
+            resultados.sort((a, b) => {
+                const codigoA = a.codigo.toLowerCase();
+                const codigoB = b.codigo.toLowerCase();
+                const nombreA = a.producto.toLowerCase();
+                const nombreB = b.producto.toLowerCase();
+                
+                // Prioridad 1: Coincidencia exacta de código
+                const exactoCodigoA = codigoA === queryLower;
+                const exactoCodigoB = codigoB === queryLower;
+                if (exactoCodigoA && !exactoCodigoB) return -1;
+                if (!exactoCodigoA && exactoCodigoB) return 1;
+                
+                // Prioridad 2: Código que empieza con el query
+                const empiezaCodigoA = codigoA.startsWith(queryLower);
+                const empiezaCodigoB = codigoB.startsWith(queryLower);
+                if (empiezaCodigoA && !empiezaCodigoB) return -1;
+                if (!empiezaCodigoA && empiezaCodigoB) return 1;
+                
+                // Prioridad 3: Coincidencia exacta de nombre
+                const exactoNombreA = nombreA === queryLower;
+                const exactoNombreB = nombreB === queryLower;
+                if (exactoNombreA && !exactoNombreB) return -1;
+                if (!exactoNombreA && exactoNombreB) return 1;
+                
+                // Prioridad 4: Nombre que empieza con el query
+                const empiezaNombreA = nombreA.startsWith(queryLower);
+                const empiezaNombreB = nombreB.startsWith(queryLower);
+                if (empiezaNombreA && !empiezaNombreB) return -1;
+                if (!empiezaNombreA && empiezaNombreB) return 1;
+                
+                // Por defecto: orden alfabético por código
+                return codigoA.localeCompare(codigoB);
+            });
+
+            mostrarResultadosBusqueda(resultados);
+
+        } catch (error) {
+            if (window.app && window.app.showToast) {
+                window.app.showToast('Error al buscar productos: ' + error.message, 'danger');
+            }
+        }
+    }
+
+    function mostrarResultadosBusqueda(productos) {
+        const container = document.getElementById('searchResults');
+        
+        // Guardar resultados para navegación
+        ventaState.busquedaResultados = productos || [];
+        
+        if (!productos || productos.length === 0) {
+            container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No se encontraron productos</p>';
+            ventaState.busquedaResultados = [];
+            ventaState.busquedaResultados = [];
+            ventaState.busquedaSeleccionado = -1;
+            return;
+        }
+
+        // Seleccionar el primer resultado por defecto si no hay ninguno seleccionado
+        if (ventaState.busquedaSeleccionado === -1) {
+            ventaState.busquedaSeleccionado = 0;
+        }
+
+        container.innerHTML = productos.map((p, index) => {
+            const stockRestante = calcularStockRestante(p.codigo, p.stock);
+            const isSelected = index === ventaState.busquedaSeleccionado;
+            return `
+                <div class="search-result-item ${isSelected ? 'search-result-selected' : ''}" onclick="agregarProducto('${p.codigo}')">
+                    <div class="search-result-header">
+                        <div>
+                            <strong>${p.producto}</strong>
+                            <div class="search-result-meta">
+                                <small>Código: ${p.codigo}</small>
+                                ${p.zona ? `<span class="badge-zona-small">ZONA: ${p.zona}</span>` : ''}
+                            </div>
+                        </div>
+                        <span class="precio">${window.app.formatCurrency(p.precio)}</span>
+                    </div>
+                    <div class="stock ${stockRestante < 10 ? 'bajo' : ''}">
+                        Stock: ${stockRestante} ${p.unidad_paquete}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function agregarProductoPorCodigo(codigo) {
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            const { data, error } = await db
+                .from('inventario')
+                .select('*')
+                .eq('codigo', codigo)
+                .single();
+
+            if (error) {
+                window.app.showToast(`Producto no encontrado: ${codigo}`, 'warning');
+                return;
+            }
+
+            agregarAlCarrito(data);
+
+        } catch (error) {
+            window.app.showToast('Error al agregar producto', 'danger');
+        }
+    }
+
+    async function agregarProducto(codigo) {
+        await agregarProductoPorCodigo(codigo);
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchInput').focus();
+        document.getElementById('searchResults').innerHTML = '';
+        
+        // Resetear selección de búsqueda
+        ventaState.busquedaResultados = [];
+        ventaState.busquedaSeleccionado = -1;
+    }
+
+    // =====================================================
+    // GESTIÓN DEL CARRITO
+    // =====================================================
+
+    function agregarAlCarrito(producto) {
+        // Verificar stock
+        if (producto.stock <= 0) {
+            window.app.showToast('Producto sin stock disponible', 'danger');
+            return;
+        }
+
+        // Buscar si ya existe en el carrito
+        const existente = ventaState.carrito.find(item => item.codigo === producto.codigo);
+
+        if (existente) {
+            // Verificar que no exceda el stock
+            if (existente.cantidad >= producto.stock) {
+                window.app.showToast('No hay suficiente stock disponible', 'warning');
+                return;
+            }
+            existente.cantidad++;
+        } else {
+            // Agregar al inicio del array (más antiguo arriba)
+            ventaState.carrito.unshift({
+                codigo: producto.codigo,
+                nombre: producto.producto,
+                precio: producto.precio,
+                cantidad: 1,
+                stock: producto.stock,
+                unidad: producto.unidad_paquete
+            });
+        }
+
+        actualizarCarrito();
+        guardarCarritoEnCache();
+        
+        // Hacer scroll al inicio del carrito para ver el producto recién agregado
+        const carritoColumn = document.getElementById('carritoColumn');
+        if (carritoColumn) {
+            carritoColumn.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        window.app.showToast(`Producto agregado: ${producto.producto}`, 'success', 2000);
+    }
+
+    function actualizarCantidad(codigo, cantidad) {
+        const item = ventaState.carrito.find(i => i.codigo === codigo);
+        if (!item) return;
+
+        cantidad = parseFloat(cantidad);
+
+        if (cantidad <= 0) {
+            eliminarDelCarrito(codigo);
+            return;
+        }
+
+        if (cantidad > item.stock) {
+            window.app.showToast('Cantidad excede el stock disponible', 'warning');
+            return;
+        }
+
+        item.cantidad = cantidad;
+        actualizarCarrito();
+        guardarCarritoEnCache();
+    }
+
+    function manejarTeclasCantidad(event, codigo, cantidadActual) {
+        // Detectar teclas + y -
+        if (event.key === '+' || event.key === '=') {
+            event.preventDefault();
+            const nuevaCantidad = parseFloat(cantidadActual) + 1;
+            actualizarCantidad(codigo, nuevaCantidad);
+        } else if (event.key === '-' || event.key === '_') {
+            event.preventDefault();
+            const nuevaCantidad = parseFloat(cantidadActual) - 1;
+            actualizarCantidad(codigo, nuevaCantidad);
+        }
+    }
+
+    function eliminarDelCarrito(codigo) {
+        ventaState.carrito = ventaState.carrito.filter(item => item.codigo !== codigo);
+        
+        // Ajustar índice seleccionado si es necesario
+        if (ventaState.modoEdicion && ventaState.indiceSeleccionado >= ventaState.carrito.length) {
+            ventaState.indiceSeleccionado = Math.max(0, ventaState.carrito.length - 1);
+        }
+        
+        actualizarCarrito();
+        guardarCarritoEnCache();
+        window.app.showToast('Producto eliminado del carrito', 'info', 2000);
+    }
+
+    function actualizarPrecio(codigo, nuevoPrecio) {
+        const item = ventaState.carrito.find(i => i.codigo === codigo);
+        if (!item) return;
+
+        const precio = parseFloat(nuevoPrecio);
+        
+        if (isNaN(precio) || precio <= 0) {
+            window.app.showToast('Precio inválido', 'warning');
+            actualizarCarrito();
+            return;
+        }
+
+        item.precio = precio;
+        actualizarCarrito();
+        guardarCarritoEnCache();
+        window.app.showToast('Precio actualizado', 'success', 1500);
+    }
+
+    function actualizarCarrito() {
+        const tbody = document.getElementById('carritoBody');
+        
+        if (ventaState.carrito.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #999; padding: 40px;">
+                        Carrito vacío. Escanea productos para comenzar.
+                    </td>
+                </tr>
+            `;
+        } else {
+            tbody.innerHTML = ventaState.carrito.map((item, index) => {
+                const subtotal = item.cantidad * item.precio;
+                const stockRestante = item.stock - item.cantidad;
+                const isSelected = ventaState.modoEdicion && index === ventaState.indiceSeleccionado;
+                const precioId = `precio-${item.codigo}`;
+                const cantidadId = `cantidad-${item.codigo}`;
+                
+                return `
+                    <tr class="${isSelected ? 'carrito-item-selected' : ''}">
+                        <td>
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div>
+                                    <strong>${item.nombre}</strong><br>
+                                    <small style="color: #666;">${item.codigo}</small><br>
+                                    <small style="color: ${stockRestante < 10 ? '#dc3545' : '#28a745'};">
+                                        Stock restante: ${stockRestante} ${item.unidad}
+                                    </small>
+                                </div>
+                                ${item.zona ? `<span class="badge-zona">ZONA: ${item.zona}</span>` : ''}
+                            </div>
+                        </td>
+                        <td style="text-align: center;">
+                            ${ventaState.modoEdicion ? 
+                                `<input type="number" 
+                                    id="${cantidadId}" 
+                                    class="cantidad-editable-input" 
+                                    value="${item.cantidad}" 
+                                    step="0.001" 
+                                    min="0.001"
+                                    max="${item.stock}"
+                                    onchange="actualizarCantidad('${item.codigo}', this.value)"
+                                    onkeydown="manejarTeclasCantidad(event, '${item.codigo}', ${item.cantidad})"
+                                    onclick="this.select()">` 
+                                : 
+                                `<strong>${item.cantidad}</strong>`
+                            }
+                        </td>
+                        <td>
+                            ${ventaState.modoEdicion ? 
+                                `<input type="number" 
+                                    id="${precioId}" 
+                                    class="precio-editable" 
+                                    value="${item.precio}" 
+                                    step="0.01" 
+                                    min="0.01"
+                                    onchange="actualizarPrecio('${item.codigo}', this.value)"
+                                    onclick="this.select()">` 
+                                : 
+                                window.app.formatCurrency(item.precio)
+                            }
+                        </td>
+                        <td><strong>${window.app.formatCurrency(subtotal)}</strong></td>
+                        <td>
+                            <div class="action-buttons">
+                                ${item.nombre.toLowerCase().includes('ducha') ? 
+                                    `<button class="btn-warranty-item" onclick="abrirModalGarantia('${item.codigo}')" title="Generar Garantía">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </button>` 
+                                    : ''
+                                }
+                                <button class="btn-remove-item" onclick="eliminarDelCarrito('${item.codigo}')" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        calcularTotales();
+        actualizarContadorItems();
+    }
+
+    function actualizarContadorItems() {
+        const itemsCount = document.getElementById('itemsCount');
+        if (itemsCount) {
+            const totalItems = ventaState.carrito.length;
+            itemsCount.textContent = totalItems;
+        }
+    }
+
+    function calcularTotales() {
+        // El precio ya incluye IVA, solo sumamos el total
+        const total = ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
+        
+        // Actualizar total en navbar usando la función global
+        if (window.app && window.app.updateNavbarCounter) {
+            window.app.updateNavbarCounter('punto-venta', total);
+        }
+    }
+
+    async function limpiarVenta() {
+        if (ventaState.carrito.length > 0 || ventaState.clienteSeleccionado) {
+            const confirmado = await mostrarConfirmacion(
+                'Limpiar Todo',
+                '¿Estás seguro de limpiar todo? Se eliminará el carrito y el cliente seleccionado.',
+                null
+            );
+            
+            if (!confirmado) {
+                return;
+            }
+        }
+
+        // Limpiar TODO
+        ventaState.carrito = [];
+        ventaState.clienteSeleccionado = null;
+        ventaState.busquedaResultados = [];
+        ventaState.busquedaSeleccionado = -1;
+        ventaState.clientesBusqueda = [];
+        ventaState.clienteSeleccionadoIndex = -1;
+        
+        // Limpiar campos de búsqueda de productos
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchResults').innerHTML = '';
+        
+        // Limpiar campos de búsqueda de clientes
+        document.getElementById('clienteCedula').value = '';
+        document.getElementById('clienteSearchResults').innerHTML = '';
+        
+        // Restablecer vista de cliente a Consumidor Final
+        document.getElementById('clienteSeleccionadoBox').style.display = 'block';
+        document.getElementById('clienteBusquedaBox').style.display = 'none';
+        
+        // Actualizar UI
+        actualizarCarrito();
+        mostrarClienteSeleccionado();
+        limpiarCarritoCache();
+        
+        // Enfocar en búsqueda de productos
+        document.getElementById('searchInput').focus();
+        
+        window.app.showToast('<i class="fas fa-check-circle"></i> Todo limpiado - Listo para nueva venta', 'success', 2500);
+    }
+
+    // =====================================================
+    // BÚSQUEDA DE CLIENTE
+    // =====================================================
+
+    async function buscarCliente() {
+        const query = document.getElementById('clienteCedula').value.trim();
+        
+        if (!query || query.length < 2) {
+            document.getElementById('clienteSearchResults').innerHTML = '';
+            ventaState.clientesBusqueda = [];
+            ventaState.clienteSeleccionadoIndex = -1;
+            return;
+        }
+
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            
+            // Determinar si es búsqueda por cédula (solo números) o por nombre
+            const esNumerico = /^\d+$/.test(query);
+            
+            let queryBuilder = db.from('clientes').select('*');
+            
+            if (esNumerico) {
+                // Buscar por cédula que EMPIECE con el query
+                queryBuilder = queryBuilder.ilike('cedula', `${query}%`);
+            } else {
+                // Buscar por razón social que CONTENGA el query
+                queryBuilder = queryBuilder.ilike('razon_social', `%${query}%`);
+            }
+            
+            const { data, error } = await queryBuilder.limit(10);
+
+            if (error) {
+                console.error('Error buscando clientes:', error);
+                return;
+            }
+
+            // Guardar resultados
+            ventaState.clientesBusqueda = data || [];
+            ventaState.clienteSeleccionadoIndex = data && data.length > 0 ? 0 : -1;
+            
+            mostrarResultadosClientes();
+
+        } catch (error) {
+        }
+    }
+
+    function mostrarResultadosClientes() {
+        const container = document.getElementById('clienteSearchResults');
+        const clientes = ventaState.clientesBusqueda || [];
+        
+        if (!clientes || clientes.length === 0) {
+            container.innerHTML = '<p style="color: #999; text-align: center; padding: 15px; margin: 10px 0;">No se encontraron clientes</p>';
+            return;
+        }
+
+        container.innerHTML = clientes.map((cliente, index) => {
+            const isSelected = index === ventaState.clienteSeleccionadoIndex;
+            return `
+                <div class="search-result-item ${isSelected ? 'search-result-selected' : ''}" 
+                     onclick="seleccionarCliente('${cliente.cedula}')"
+                     style="cursor: pointer;">
+                    <strong>${cliente.razon_social}</strong>
+                    <small>CI/RUC: ${cliente.cedula}</small>
+                    <div style="font-size: 0.85em; color: #666; margin-top: 4px;">
+                        ${cliente.correo ? `<i class="fas fa-envelope"></i> ${cliente.correo}` : ''}
+                        ${cliente.telefono ? ` | <i class="fas fa-phone"></i> ${cliente.telefono}` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function seleccionarCliente(cedula) {
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            const { data, error } = await db
+                .from('clientes')
+                .select('*')
+                .eq('cedula', cedula)
+                .single();
+
+            if (error || !data) {
+                window.app.showToast('Error al seleccionar cliente', 'danger');
+                return;
+            }
+
+            // *** VERIFICAR SI ES UN CORREO GENÉRICO ***
+            if (data.correo && data.correo.toLowerCase().includes('@cambiar.com')) {
+                // Ocultar búsqueda primero
+                document.getElementById('clienteBusquedaBox').style.display = 'none';
+                document.getElementById('clienteCedula').value = '';
+                document.getElementById('clienteSearchResults').innerHTML = '';
+                
+                // Remover listener de click fuera
+                document.removeEventListener('click', handleClickOutsideClienteSearch);
+                
+                // Abrir modal para actualizar datos
+                mostrarModalActualizarCliente(data);
+                return;  // No seleccionar hasta que actualice los datos
+            }
+
+            ventaState.clienteSeleccionado = data;
+            mostrarClienteSeleccionado();
+            
+            // Ocultar búsqueda y mostrar cliente seleccionado
+            document.getElementById('clienteSeleccionadoBox').style.display = 'block';
+            document.getElementById('clienteBusquedaBox').style.display = 'none';
+            document.getElementById('clienteCedula').value = '';
+            document.getElementById('clienteSearchResults').innerHTML = '';
+            
+            // Remover listener de click fuera
+            document.removeEventListener('click', handleClickOutsideClienteSearch);
+            
+            window.app.showToast(`Cliente seleccionado: ${data.razon_social}`, 'success', 2000);
+
+        } catch (error) {
+            console.error('Error seleccionando cliente:', error);
+            window.app.showToast('Error al seleccionar cliente', 'danger');
+        }
+    }
+
+    // Función para activar búsqueda de cliente (F3)
+    function activarBusquedaCliente() {
+        // Mostrar el campo de búsqueda de cliente
+        document.getElementById('clienteSeleccionadoBox').style.display = 'none';
+        document.getElementById('clienteBusquedaBox').style.display = 'block';
+        
+        // Enfocar en el input de búsqueda de cliente con un pequeño delay para asegurar visibilidad
+        setTimeout(() => {
+            const inputCliente = document.getElementById('clienteCedula');
+            if (inputCliente) {
+                inputCliente.focus();
+                inputCliente.select();
+                
+                // Agregar listener para iniciar búsqueda automática al escribir
+                inputCliente.addEventListener('input', buscarCliente);
+            }
+        }, 50);
+        
+        window.app.showToast('<i class="fas fa-search"></i> Buscar cliente - Escribe cédula o nombre', 'info', 2000);
+    }
+
+    // Función para buscar con Enter (primer resultado o búsqueda exacta)
+    async function buscarClienteDirecto() {
+        const query = document.getElementById('clienteCedula').value.trim();
+        
+        if (!query) {
+            return;
+        }
+
+        // Si hay resultados de búsqueda y uno está seleccionado, usar ese
+        if (ventaState.clientesBusqueda && ventaState.clientesBusqueda.length > 0 && ventaState.clienteSeleccionadoIndex >= 0) {
+            const clienteSeleccionado = ventaState.clientesBusqueda[ventaState.clienteSeleccionadoIndex];
+            if (clienteSeleccionado) {
+                seleccionarCliente(clienteSeleccionado.cedula);
+                return;
+            }
+        }
+
+        // Si no hay resultados, mostrar mensaje
+        window.app.showToast('No se encontraron clientes', 'warning');
+    }
+
+    function mostrarClienteSeleccionado() {
+        const cliente = ventaState.clienteSeleccionado;
+        const detallesBox = document.getElementById('clienteDetallesBox');
+        const btnQuitar = document.getElementById('btnQuitarCliente');
+        const btnEditar = document.getElementById('btnEditarCliente');
+        const clienteBox = document.getElementById('clienteSeleccionadoBox');
+        
+        if (!cliente) {
+            // Mostrar Consumidor Final
+            document.getElementById('clienteNombreSeleccionado').textContent = 'Consumidor Final';
+            document.getElementById('clienteCedulaSeleccionado').textContent = 'CI/RUC: 9999999999999';
+            detallesBox.style.display = 'none';
+            btnQuitar.style.display = 'none';
+            btnEditar.style.display = 'none'; // Ocultar botón editar para Consumidor Final
+            clienteBox.classList.add('consumidor-final');
+            return;
+        }
+
+        // Actualizar datos del cliente (usar razon_social)
+        document.getElementById('clienteNombreSeleccionado').textContent = cliente.razon_social;
+        document.getElementById('clienteCedulaSeleccionado').textContent = `CI/RUC: ${cliente.cedula}`;
+        document.getElementById('clienteCorreoSeleccionado').textContent = cliente.correo || 'No registrado';
+        document.getElementById('clienteTelefonoSeleccionado').textContent = cliente.telefono || 'No registrado';
+
+        // Mostrar detalles, botón quitar y botón editar
+        detallesBox.style.display = 'block';
+        btnQuitar.style.display = 'flex';
+        btnEditar.style.display = 'flex'; // Mostrar botón editar para clientes reales
+        clienteBox.classList.remove('consumidor-final');
+    }
+
+    function cambiarCliente() {
+        // Limpiar input de búsqueda
+        document.getElementById('clienteCedula').value = '';
+        document.getElementById('clienteSearchResults').innerHTML = '';
+        ventaState.clientesBusqueda = [];
+        ventaState.clienteSeleccionadoIndex = -1;
+        
+        // Mostrar formulario de búsqueda
+        document.getElementById('clienteSeleccionadoBox').style.display = 'none';
+        document.getElementById('clienteBusquedaBox').style.display = 'block';
+        
+        // Enfocar en el input
+        setTimeout(() => {
+            document.getElementById('clienteCedula').focus();
+        }, 100);
+        
+        // Agregar listener para click fuera del formulario
+        setTimeout(() => {
+            document.addEventListener('click', handleClickOutsideClienteSearch);
+        }, 200);
+        
+        // Configurar búsqueda dinámica si no está configurada
+        if (!window._clienteBusquedaListenerAdded) {
+            const clienteInput = document.getElementById('clienteCedula');
+            let debounceTimer;
+            
+            clienteInput.addEventListener('input', function(e) {
+                const valor = e.target.value;
+                clearTimeout(debounceTimer);
+                
+                // Si está vacío, limpiar resultados
+                if (!valor || valor.trim().length === 0) {
+                    document.getElementById('clienteSearchResults').innerHTML = '';
+                    ventaState.clientesBusqueda = [];
+                    ventaState.clienteSeleccionadoIndex = -1;
+                    return;
+                }
+                
+                // Buscar después del debounce
+                debounceTimer = setTimeout(() => {
+                    buscarCliente();
+                }, 300);
+            });
+            
+            window._clienteBusquedaListenerAdded = true;
+        }
+    }
+
+    function cancelarBusqueda() {
+        // Volver a mostrar el cliente actual (o consumidor final)
+        document.getElementById('clienteSeleccionadoBox').style.display = 'block';
+        document.getElementById('clienteBusquedaBox').style.display = 'none';
+        document.getElementById('clienteCedula').value = '';
+        document.getElementById('clienteSearchResults').innerHTML = '';
+        ventaState.clientesBusqueda = [];
+        ventaState.clienteSeleccionadoIndex = -1;
+        
+        // Remover listener de click fuera
+        document.removeEventListener('click', handleClickOutsideClienteSearch);
+    }
+
+    function handleClickOutsideClienteSearch(e) {
+        const busquedaBox = document.getElementById('clienteBusquedaBox');
+        const clienteBox = document.getElementById('clienteSeleccionadoBox');
+        
+        // Verificar si el clic fue fuera del formulario de búsqueda
+        if (busquedaBox.style.display === 'block' && 
+            !busquedaBox.contains(e.target) && 
+            !clienteBox.contains(e.target)) {
+            
+            const inputValue = document.getElementById('clienteCedula').value.trim();
+            
+            // Solo cancelar si no hay nada escrito
+            if (!inputValue) {
+                cancelarBusqueda();
+            }
+        }
+    }
+
+    function borrarCliente() {
+        ventaState.clienteSeleccionado = null;
+        mostrarClienteSeleccionado();
+        cancelarBusqueda();
+        
+        // Remover listener si existe
+        document.removeEventListener('click', handleClickOutsideClienteSearch);
+        
+        window.app.showToast('Cliente removido - Consumidor Final activo', 'info', 2000);
+    }
+
+    function editarCliente() {
+        const cliente = ventaState.clienteSeleccionado;
+        
+        if (!cliente) {
+            window.app.showToast('No hay cliente seleccionado para editar', 'warning', 2000);
+            return;
+        }
+
+        // Abrir modal de actualización con los datos actuales del cliente
+        mostrarModalActualizarCliente(cliente);
+    }
+
+    // Exportar funciones al scope global
+    window.buscarCliente = buscarCliente;
+    window.seleccionarCliente = seleccionarCliente;
+    window.buscarClienteDirecto = buscarClienteDirecto;
+    window.cambiarCliente = cambiarCliente;
+    window.cancelarBusqueda = cancelarBusqueda;
+    window.borrarCliente = borrarCliente;
+    window.editarCliente = editarCliente;
+
+    // =====================================================
+    // PROCESAR VENTA
+    // =====================================================
+
+    function procesarVenta() {
+        if (ventaState.carrito.length === 0) {
+            window.app.showToast('El carrito está vacío', 'warning');
+            return;
+        }
+
+        // Mostrar modal de confirmación
+        mostrarModalVenta();
+    }
+
+    function mostrarModalVenta() {
+        // El precio ya incluye IVA
+        const totalConIva = ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
+
+        // Información del cliente
+        const cliente = ventaState.clienteSeleccionado;
+        const clienteHTML = cliente ? `
+            <div class="cliente-nombre">${cliente.razon_social}</div>
+            <div class="cliente-detalle">
+                <i class="fas fa-id-card"></i>
+                <span>${cliente.cedula}</span>
+            </div>
+        ` : `
+            <div class="cliente-nombre">Consumidor Final</div>
+            <div class="cliente-detalle">
+                <i class="fas fa-id-card"></i>
+                <span>9999999999999</span>
+            </div>
+        `;
+
+        document.getElementById('modalClienteInfo').innerHTML = clienteHTML;
+        document.getElementById('modalClienteInfo').className = cliente ? 'cliente-info-card' : 'cliente-info-card consumidor-final';
+
+        // Total
+        document.getElementById('modalTotal').textContent = window.app.formatCurrency(totalConIva);
+
+        // Input de pago
+        document.getElementById('pagadoCon').value = totalConIva.toFixed(2);
+
+        // Establecer tipo de comprobante por defecto (RECIBO)
+        if (!ventaState.tipoComprobante) {
+            ventaState.tipoComprobante = 'RECIBO';
+        }
+        
+        // Actualizar UI del selector de tipo
+        const btnTipoSelector = document.querySelector(`[data-tipo="${ventaState.tipoComprobante}"]`);
+        if (btnTipoSelector) {
+            document.querySelectorAll('.btn-tipo-comprobante').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            btnTipoSelector.classList.add('active');
+        }
+
+        // Mostrar modal
+        document.getElementById('modalVenta').classList.add('active');
+        
+        // Focus en el input de pago
+        setTimeout(() => {
+            const inputPagado = document.getElementById('pagadoCon');
+            if (inputPagado) {
+                inputPagado.focus();
+                inputPagado.select();
+            }
+            calcularVuelto();
+        }, 100);
+    }
+
+    function calcularVuelto() {
+        const totalConIva = ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
+        const pagadoCon = parseFloat(document.getElementById('pagadoCon').value) || 0;
+        const vuelto = Math.max(0, pagadoCon - totalConIva);
+        
+        document.getElementById('vueltoDisplay').textContent = window.app.formatCurrency(vuelto);
+        
+        // Deshabilitar botón si no hay suficiente pago
+        const btnConfirmar = document.getElementById('btnConfirmarVenta');
+        if (pagadoCon < totalConIva) {
+            btnConfirmar.disabled = true;
+            btnConfirmar.style.opacity = '0.5';
+            btnConfirmar.style.cursor = 'not-allowed';
+        } else {
+            btnConfirmar.disabled = false;
+            btnConfirmar.style.opacity = '1';
+            btnConfirmar.style.cursor = 'pointer';
+        }
+    }
+
+    function seleccionarTipoComprobante(tipo) {
+        // Actualizar estado
+        ventaState.tipoComprobante = tipo;
+        
+        // Actualizar UI - remover active de todos
+        document.querySelectorAll('.btn-tipo-comprobante').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Agregar active al seleccionado
+        document.querySelector(`[data-tipo="${tipo}"]`).classList.add('active');
+    }
+
+    function procesarVentaConValidacion() {
+        // Validar que el carrito no esté vacío
+        if (ventaState.carrito.length === 0) {
+            window.app.showToast('<i class="fas fa-exclamation-triangle"></i> El carrito está vacío. Agrega productos para continuar.', 'warning', 3000);
+            return;
+        }
+        
+        const cliente = ventaState.clienteSeleccionado;
+        const tipoComprobante = ventaState.tipoComprobante;
+        const esConsumidorFinal = !cliente || cliente.cedula === '9999999999999';
+        
+        // Caso 1: Consumidor Final + Recibo → Procesar directo
+        if (esConsumidorFinal && tipoComprobante === 'RECIBO') {
+            confirmarVenta();
+            return;
+        }
+        
+        // Caso 2: Cliente + Factura → Procesar directo
+        if (!esConsumidorFinal && tipoComprobante === 'FACTURA') {
+            confirmarVenta();
+            return;
+        }
+        
+        // Caso 3: Cliente + Recibo → Alerta
+        if (!esConsumidorFinal && tipoComprobante === 'RECIBO') {
+            mostrarAlertaClienteConRecibo();
+            return;
+        }
+        
+        // Caso 4: Consumidor Final + Factura → Alerta
+        if (esConsumidorFinal && tipoComprobante === 'FACTURA') {
+            mostrarAlertaConsumidorFinalConFactura();
+            return;
+        }
+    }
+
+    function mostrarAlertaClienteConRecibo() {
+        const cliente = ventaState.clienteSeleccionado;
+        
+        mostrarConfirmacion(
+            '⚠️ Cliente Seleccionado',
+            `Tienes seleccionado a <strong>${cliente.razon_social}</strong>.<br>¿Estás seguro de que deseas emitir un <strong>RECIBO</strong>?`,
+            [
+                {
+                    texto: '<i class="fas fa-receipt"></i> Sí, Emitir Recibo',
+                    clase: 'custom-confirm-btn custom-confirm-btn-confirm',
+                    callback: () => {
+                        confirmarVenta();
+                    }
+                },
+                {
+                    texto: '<i class="fas fa-file-invoice-dollar"></i> Cambiar a Factura',
+                    clase: 'custom-confirm-btn custom-confirm-btn-primary',
+                    callback: () => {
+                        seleccionarTipoComprobante('FACTURA');
+                        window.app.showToast('Cambiado a Factura. Presiona "Confirmar Venta" para continuar.', 'info', 3000);
+                    }
+                }
+            ]
+        );
+    }
+
+    function mostrarAlertaConsumidorFinalConFactura() {
+        mostrarConfirmacion(
+            '⚠️ Consumidor Final',
+            '¿Estás seguro de que deseas emitir una <strong>FACTURA</strong> con Consumidor Final?',
+            [
+                {
+                    texto: '<i class="fas fa-user-plus"></i> Agregar Cliente',
+                    clase: 'custom-confirm-btn custom-confirm-btn-primary',
+                    callback: () => {
+                        cerrarModalVenta();
+                        cambiarCliente();
+                        window.app.showToast('Busca y selecciona un cliente para la factura', 'info', 3000);
+                    }
+                },
+                {
+                    texto: '<i class="fas fa-file-invoice-dollar"></i> Sí, Emitir Factura',
+                    clase: 'custom-confirm-btn custom-confirm-btn-confirm',
+                    callback: () => {
+                        confirmarVenta();
+                    }
+                },
+                {
+                    texto: '<i class="fas fa-receipt"></i> Cambiar a Recibo',
+                    clase: 'custom-confirm-btn custom-confirm-btn-secondary',
+                    callback: () => {
+                        seleccionarTipoComprobante('RECIBO');
+                        confirmarVenta();
+                    }
+                }
+            ]
+        );
+    }
+
+    function cerrarModalVenta() {
+        document.getElementById('modalVenta').classList.remove('active');
+    }
+
+    // Funciones para Modal de Cantidad Rápida
+    function mostrarModalCantidadRapida(producto) {
+        if (!producto) return;
+        
+        // Actualizar información del producto en el modal
+        const modalProducto = document.getElementById('modalCantidadProducto');
+        const modalStock = document.getElementById('modalCantidadStock');
+        const inputCantidad = document.getElementById('modalCantidadInput');
+        const modal = document.getElementById('modalCantidadOverlay');
+        
+        if (!modalProducto || !modalStock || !inputCantidad || !modal) {
+            console.error('❌ No se encontraron todos los elementos del modal');
+            return;
+        }
+        
+        // Calcular stock disponible (restando lo que ya está en el carrito)
+        const enCarrito = ventaState.carrito.find(item => item.codigo === producto.codigo);
+        const cantidadEnCarrito = enCarrito ? enCarrito.cantidad : 0;
+        const stockDisponible = (producto.stock || 0) - cantidadEnCarrito;
+        
+        modalProducto.textContent = producto.producto;
+        modalStock.textContent = `Stock disponible: ${stockDisponible}`;
+        
+        // Limpiar y preparar input
+        inputCantidad.value = '';
+        inputCantidad.max = stockDisponible; // Establecer límite máximo
+        
+        // Mostrar modal
+        modal.classList.add('active');
+        
+        // Enfocar input después de la animación
+        setTimeout(() => {
+            inputCantidad.focus();
+        }, 100);
+        
+        // Guardar producto temporalmente con stock disponible
+        ventaState.productoTemporal = {
+            ...producto,
+            stockDisponible: stockDisponible
+        };
+    }
+
+    function cerrarModalCantidad() {
+        const modal = document.getElementById('modalCantidadOverlay');
+        modal.classList.remove('active');
+        
+        // Limpiar datos temporales
+        ventaState.productoTemporal = null;
+        document.getElementById('modalCantidadInput').value = '';
+        
+        // Volver a enfocar búsqueda
+        setTimeout(() => {
+            document.getElementById('searchInput').focus();
+        }, 200);
+    }
+
+    function confirmarCantidadRapida() {
+        const producto = ventaState.productoTemporal;
+        if (!producto) return;
+        
+        const inputCantidad = document.getElementById('modalCantidadInput');
+        const cantidad = parseFloat(inputCantidad.value);
+        
+        // Validar cantidad
+        if (!cantidad || cantidad <= 0) {
+            window.app.showToast('Ingrese una cantidad válida', 'warning', 2000);
+            inputCantidad.focus();
+            return;
+        }
+        
+        // Validar stock disponible (ya considerando lo que está en el carrito)
+        if (cantidad > producto.stockDisponible) {
+            window.app.showToast(`Stock insuficiente. Disponible: ${producto.stockDisponible}`, 'warning', 3000);
+            inputCantidad.focus();
+            return;
+        }
+        
+        // Verificar si el producto ya está en el carrito
+        const productoExistente = ventaState.carrito.find(item => item.codigo === producto.codigo);
+        
+        if (productoExistente) {
+            // Si ya existe, incrementar la cantidad
+            productoExistente.cantidad += cantidad;
+        } else {
+            // Si no existe, agregar nuevo item con la cantidad especificada
+            ventaState.carrito.push({
+                codigo: producto.codigo,
+                nombre: producto.producto,
+                precio: producto.precio,
+                cantidad: cantidad,
+                stock: producto.stock,
+                costo: producto.costo || 0,
+                unidad: producto.unidad_paquete || 'UNIDADES'
+            });
+        }
+        
+        // Actualizar vista y guardar
+        actualizarCarrito();
+        guardarCarritoEnCache();
+        
+        // Limpiar búsqueda
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchResults').innerHTML = '';
+        ventaState.busquedaResultados = [];
+        ventaState.busquedaSeleccionado = -1;
+        
+        // Mostrar confirmación
+        window.app.showToast(`✓ ${cantidad} unidad(es) agregada(s)`, 'success', 2000);
+        
+        // Cerrar modal
+        cerrarModalCantidad();
+    }
+
+    // Exportar funciones al scope global para que los botones onclick puedan accederlas
+    window.mostrarModalCantidadRapida = mostrarModalCantidadRapida;
+    window.cerrarModalCantidad = cerrarModalCantidad;
+    window.confirmarCantidadRapida = confirmarCantidadRapida;
+
+    // ========= MODAL DE ACTUALIZACIÓN DE CLIENTE =========
+    function mostrarModalActualizarCliente(cliente) {
+        // Guardar cliente temporal para actualizar después
+        ventaState.clienteTemporal = cliente;
+        
+        // Guardar estado anterior del cliente para poder restaurar si cancela
+        ventaState.clienteAnterior = ventaState.clienteSeleccionado ? { ...ventaState.clienteSeleccionado } : null;
+        
+        // Rellenar formulario con datos actuales
+        document.getElementById('updateClienteNombre').value = cliente.razon_social || '';
+        document.getElementById('updateClienteCedula').value = cliente.cedula || '';
+        document.getElementById('updateClienteDireccion').value = cliente.direccion || '';
+        document.getElementById('updateClienteTelefono').value = cliente.telefono || '';
+        
+        // Pre-llenar correo solo si NO es genérico (@cambiar.com)
+        const esCorreoGenerico = cliente.correo && cliente.correo.toLowerCase().includes('@cambiar.com');
+        document.getElementById('updateClienteCorreo').value = esCorreoGenerico ? '' : (cliente.correo || '');
+        
+        // Mostrar modal
+        const modal = document.getElementById('modalActualizarCliente');
+        modal.classList.add('active');
+        
+        // Enfocar en el correo para que sea lo primero que actualicen
+        setTimeout(() => {
+            document.getElementById('updateClienteCorreo').focus();
+        }, 300);
+    }
+
+    function cerrarModalActualizarCliente() {
+        const modal = document.getElementById('modalActualizarCliente');
+        modal.classList.remove('active');
+        
+        // Restaurar cliente anterior (si había uno) o dejar Consumidor Final
+        if (ventaState.clienteAnterior) {
+            ventaState.clienteSeleccionado = { ...ventaState.clienteAnterior };
+            mostrarClienteSeleccionado();
+            document.getElementById('clienteSeleccionadoBox').style.display = 'block';
+            window.app.showToast('Cliente anterior restaurado', 'info', 2000);
+        } else {
+            // Si no había cliente anterior, mostrar Consumidor Final
+            ventaState.clienteSeleccionado = null;
+            mostrarClienteSeleccionado();
+            document.getElementById('clienteSeleccionadoBox').style.display = 'block';
+            window.app.showToast('Cancelado - Consumidor Final seleccionado', 'info', 2000);
+        }
+        
+        // Asegurarse de que la búsqueda esté oculta
+        document.getElementById('clienteBusquedaBox').style.display = 'none';
+        
+        // Limpiar datos temporales
+        ventaState.clienteTemporal = null;
+        ventaState.clienteAnterior = null;
+        
+        // Limpiar formulario
+        document.getElementById('updateClienteNombre').value = '';
+        document.getElementById('updateClienteCedula').value = '';
+        document.getElementById('updateClienteDireccion').value = '';
+        document.getElementById('updateClienteTelefono').value = '';
+        document.getElementById('updateClienteCorreo').value = '';
+    }
+
+    async function confirmarActualizacionCliente() {
+        const cliente = ventaState.clienteTemporal;
+        if (!cliente) return;
+        
+        // Obtener valores del formulario
+        const razonSocial = document.getElementById('updateClienteNombre').value.trim();
+        const direccion = document.getElementById('updateClienteDireccion').value.trim();
+        const telefono = document.getElementById('updateClienteTelefono').value.trim();
+        const correo = document.getElementById('updateClienteCorreo').value.trim();
+        
+        // Validación de campos requeridos
+        if (!razonSocial) {
+            window.app.showToast('<i class="fas fa-exclamation-triangle"></i> El nombre del cliente es obligatorio', 'warning', 3000);
+            document.getElementById('updateClienteNombre').focus();
+            return;
+        }
+        
+        if (!correo) {
+            window.app.showToast('<i class="fas fa-exclamation-triangle"></i> El correo electrónico es obligatorio', 'warning', 3000);
+            document.getElementById('updateClienteCorreo').focus();
+            return;
+        }
+        
+        // Validar formato de correo
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(correo)) {
+            window.app.showToast('<i class="fas fa-exclamation-triangle"></i> Por favor ingrese un correo electrónico válido', 'warning', 3000);
+            document.getElementById('updateClienteCorreo').focus();
+            return;
+        }
+        
+        // Validar que no sea un correo genérico
+        if (correo.toLowerCase().includes('@cambiar.com')) {
+            window.app.showToast('<i class="fas fa-exclamation-triangle"></i> No puede usar un correo @cambiar.com. Ingrese el correo real del cliente', 'warning', 4000);
+            document.getElementById('updateClienteCorreo').focus();
+            return;
+        }
+        
+        try {
+            // Obtener referencia a la base de datos
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            
+            // Actualizar en Supabase
+            const { data, error } = await db
+                .from('clientes')
+                .update({
+                    razon_social: razonSocial,
+                    direccion: direccion || null,
+                    telefono: telefono || null,
+                    correo: correo
+                })
+                .eq('cedula', cliente.cedula)
+                .select()
+                .single();
+            
+            if (error) throw error;
+            
+            // Actualizar el cliente seleccionado directamente con los datos actualizados
+            ventaState.clienteSeleccionado = data;
+            ventaState.clienteTemporal = null;
+            ventaState.clienteAnterior = null;
+            
+            // Cerrar modal
+            const modal = document.getElementById('modalActualizarCliente');
+            modal.classList.remove('active');
+            
+            // Limpiar formulario
+            document.getElementById('updateClienteNombre').value = '';
+            document.getElementById('updateClienteCedula').value = '';
+            document.getElementById('updateClienteDireccion').value = '';
+            document.getElementById('updateClienteTelefono').value = '';
+            document.getElementById('updateClienteCorreo').value = '';
+            
+            // Actualizar la visualización del cliente
+            mostrarClienteSeleccionado();
+            document.getElementById('clienteSeleccionadoBox').style.display = 'block';
+            document.getElementById('clienteBusquedaBox').style.display = 'none';
+            
+            // Mostrar confirmación
+            window.app.showToast('✓ Cliente actualizado exitosamente', 'success', 2500);
+            
+        } catch (error) {
+            console.error('Error al actualizar cliente:', error);
+            window.app.showToast('✗ Error al actualizar el cliente. Por favor intente nuevamente.', 'error', 3000);
+        }
+    }
+
+    // Exportar funciones del modal de actualización
+    window.mostrarModalActualizarCliente = mostrarModalActualizarCliente;
+    window.cerrarModalActualizarCliente = cerrarModalActualizarCliente;
+    window.confirmarActualizacionCliente = confirmarActualizacionCliente;
+
+    // =====================================================
+    // GENERAR RECIBO
+    // =====================================================
+    
+    function abrirRecibo(ventaData) {
+        try {
+            // Preparar arrays para la URL
+            const cantidades = [];
+            const servicios = [];
+            const p_units = [];
+            const p_total = [];
+            
+            // Procesar productos
+            ventaData.productos.forEach(producto => {
+                cantidades.push(producto.cantidad);
+                // Reemplazar comas por puntos en el nombre del producto
+                const nombreProducto = producto.nombre.replace(/,/g, ".");
+                servicios.push(encodeURIComponent(nombreProducto));
+                p_units.push(producto.precio.toFixed(2));
+                p_total.push(producto.subtotal.toFixed(2));
+            });
+            
+            // Formatear fecha
+            const fecha = new Date(ventaData.fecha);
+            const formattedDate = fecha.toLocaleString('es-EC', { 
+                timeZone: 'America/Guayaquil', 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit', 
+                hour12: false 
+            }).replace(/[/]/g, '/').replace(',', '');
+            
+            // Construir URL del recibo
+            const url = "https://pos.manasakilla.com/RECIBO.html" +
+                "?fecha=" + encodeURIComponent(formattedDate) +
+                "&venta=" + encodeURIComponent(ventaData.saleCode) +
+                "&subtotal=" + encodeURIComponent(ventaData.total.toFixed(2)) +
+                "&descuento=0" +
+                "&vendedor=CAJAPC" +
+                "&nombre_cliente=" + encodeURIComponent(ventaData.cliente.razon_social) +
+                "&cedula_cliente=" + encodeURIComponent(ventaData.cliente.cedula) +
+                "&direccion_cliente=" + encodeURIComponent(ventaData.cliente.direccion || 'S/N') +
+                "&telefono_cliente=" + encodeURIComponent(ventaData.cliente.telefono || 'S/N') +
+                "&cantidades=" + cantidades.join(',') +
+                "&servicios=" + servicios.join(',') +
+                "&p_units=" + p_units.join(',') +
+                "&total=" + encodeURIComponent(ventaData.total.toFixed(2)) +
+                "&p_total=" + p_total.join(',') +
+                "&tipo_documento=RECIBO";
+            
+            // Abrir en nueva pestaña
+            window.open(url, '_blank');
+            
+        } catch (error) {
+            console.error('Error al abrir recibo:', error);
+            window.app.showToast('<i class="fas fa-exclamation-triangle"></i> Error al generar recibo', 'warning', 3000);
+        }
+    }
+
+    // =====================================================
+    // FUNCIONES DE FACTURACIÓN ELECTRÓNICA
+    // =====================================================
+
+    
+    function padWithZeroes(num, length) {
+        const str = String(num);
+        if (str.length >= length) return str;
+        return '0'.repeat(length - str.length) + str;
+    }
+
+    
+    function calcularDigitoVerificador(cadena) {
+        try {
+            // Verificar longitud
+            if (!cadena || cadena.length !== 48) {
+                return {
+                    success: false,
+                    message: "La cadena debe tener exactamente 48 dígitos"
+                };
+            }
+
+            // Factores para el cálculo (se repiten en ciclo)
+            const factores = [2, 3, 4, 5, 6, 7];
+            let suma = 0;
+
+            // Recorrer cada dígito de derecha a izquierda
+            for (let i = 0; i < cadena.length; i++) {
+                const digito = parseInt(cadena[cadena.length - 1 - i], 10);
+                const factor = factores[i % factores.length];
+                suma += digito * factor;
+            }
+
+            // Calcular dígito verificador
+            let digitoVerificador = 11 - (suma % 11);
+            
+            // Reglas especiales
+            if (digitoVerificador === 10) digitoVerificador = 1;
+            if (digitoVerificador === 11) digitoVerificador = 0;
+
+            // Resultado
+            const resultado = cadena + digitoVerificador;
+
+            return {
+                success: true,
+                resultado: resultado,
+                digito: digitoVerificador
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: "Error calculando dígito verificador: " + error.message
+            };
+        }
+    }
+
+    
+    function generarClaveAcceso(fecha, config) {
+        try {
+            // Validar fecha
+            if (!fecha || fecha.length !== 8 || !/^\d{8}$/.test(fecha)) {
+                return {
+                    success: false,
+                    message: "La fecha debe estar en formato ddMMyyyy (8 dígitos)"
+                };
+            }
+
+            // Tipo de comprobante: 01 = Factura
+            const tipoComprobante = "01";
+
+            // Formatear valores a longitudes requeridas
+            const ruc = padWithZeroes(config.ruc, 13);
+            const ambiente = padWithZeroes(config.ambiente, 1);
+            const establecimiento = padWithZeroes(config.establecimiento, 3);
+            const puntoEmision = padWithZeroes(config.punto_emision, 3);
+            const serie = establecimiento + puntoEmision; // 6 dígitos
+            const comprobante = padWithZeroes(config.comprobante_actual, 9);
+            const codigoNumerico = padWithZeroes(config.codigo_numerico, 8);
+            const tipoEmision = padWithZeroes(config.tipo_emision, 1);
+
+            // Componer clave de acceso (48 dígitos)
+            const claveAcceso48 = 
+                fecha +                 // 8 dígitos
+                tipoComprobante +       // 2 dígitos
+                ruc +                   // 13 dígitos
+                ambiente +              // 1 dígito
+                serie +                 // 6 dígitos (establecimiento + punto emisión)
+                comprobante +           // 9 dígitos
+                codigoNumerico +        // 8 dígitos
+                tipoEmision;            // 1 dígito
+                                        // TOTAL: 48 dígitos
+
+            // Calcular dígito verificador
+            const resultado = calcularDigitoVerificador(claveAcceso48);
+
+            if (!resultado.success) {
+                return resultado;
+            }
+
+            return {
+                success: true,
+                claveAcceso: resultado.resultado,
+                digito: resultado.digito
+            };
+
+        } catch (error) {
+            return {
+                success: false,
+                message: "Error generando clave de acceso: " + error.message
+            };
+        }
+    }
+
+    
+    function getTipoIdentificacion(identificacion) {
+        if (!identificacion) return "07"; // Consumidor final
+        const id = String(identificacion).trim();
+        if (id === "9999999999999") return "07"; // Consumidor final
+        if (id.length === 10) return "05"; // Cédula
+        if (id.length === 13) return "04"; // RUC
+        return "06"; // Pasaporte u otro
+    }
+
+    
+    function formatIdentificacion(identificacion) {
+        if (!identificacion) return "9999999999999";
+        let id = String(identificacion).trim();
+        
+        // Si es consumidor final
+        if (id === "9999999999999") return id;
+        
+        // Si es cédula (10 dígitos)
+        if (id.length <= 10) {
+            return padWithZeroes(id, 10);
+        }
+        
+        // Si es RUC (13 dígitos)
+        return id;
+    }
+
+    
+    function formatearTelefonoEcuador(telefono) {
+        if (!telefono) return "S/N";
+        let tel = String(telefono).replace(/\D/g, ''); // Solo dígitos
+        if (tel.length === 0) return "S/N";
+        if (tel.length === 9) tel = '0' + tel; // Agregar 0 al inicio
+        return tel;
+    }
+
+    
+    async function obtenerConfiguracionFacturacion() {
+        try {
+            const db = window.app.db;
+
+            // Obtener configuración SRI
+            const { data: configSRI, error: errorSRI } = await db
+                .from('facelectronicaconfig')
+                .select('*')
+                .single();
+
+            if (errorSRI) {
+                console.error('❌ Error obteniendo configuración SRI:', errorSRI);
+                throw new Error('No se pudo obtener configuración de facturación SRI');
+            }
+
+            // Obtener configuración de servicios
+            const { data: configServicios, error: errorServicios } = await db
+                .from('config_servicios')
+                .select('*')
+                .single();
+
+            if (errorServicios) {
+                console.error('❌ Error obteniendo configuración de servicios:', errorServicios);
+                throw new Error('No se pudo obtener configuración de servicios');
+            }
+
+
+            return {
+                success: true,
+                configSRI: configSRI,
+                configServicios: configServicios
+            };
+
+        } catch (error) {
+            console.error('❌ Error en obtenerConfiguracionFacturacion:', error);
+            return {
+                success: false,
+                message: error.message
+            };
+        }
+    }
+
+    
+    function generarJsonFacturacion(ventaData, configSRI, configServicios, claveAcceso, docNumber) {
+        try {
+            // Calcular totales
+            let subtotal = 0;
+            const productos = ventaData.productos.map(prod => {
+                const subtotalProducto = prod.cantidad * prod.precio;
+                subtotal += subtotalProducto;
+                return {
+                    codigoPrincipal: prod.codigo,
+                    codigoAuxiliar: prod.codigo,
+                    descripcion: prod.nombre.replace(/,/g, '.'), // Sin comas
+                    cantidad: prod.cantidad.toFixed(2),
+                    precioUnitario: prod.precio.toFixed(2),
+                    subtotalSinIVA: subtotalProducto.toFixed(2),
+                    codigoPorcentaje: "0",
+                    tarifa: "0",
+                    iva: "0.00",
+                    descuento: "0.00"
+                };
+            });
+
+            // Extraer partes del documento
+            const docParts = docNumber.split('-');
+            const estab = docParts[0];
+            const ptoEmi = docParts[1];
+            const secuencial = docParts[2];
+
+            // Fecha de emisión
+            const now = new Date();
+            const fechaEmision = now.toLocaleDateString('es-EC', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+
+            // Datos del cliente
+            const cliente = ventaData.cliente;
+            const identificacionComprador = formatIdentificacion(cliente.cedula);
+            const tipoIdentificacionComprador = getTipoIdentificacion(identificacionComprador);
+            const telefonoCliente = formatearTelefonoEcuador(cliente.telefono);
+
+            // Construir JSON
+            const jsonFactura = {
+                // WhatsApp config
+                instance_id: configServicios.whatsapp_instance_id || "",
+                access_token: configServicios.whatsapp_access_token || "",
+                
+                // Archivos
+                archivo: `FACTURA-${estab}-${ptoEmi}-${secuencial}.xml`,
+                facturaPDF: `FACTURA-${estab}-${ptoEmi}-${secuencial}.pdf`,
+                
+                // Correo del cliente
+                correo: cliente.correo || "consumidor@final.com",
+                
+                // Configuración SRI
+                ambiente: String(configSRI.ambiente),
+                razonSocial: configServicios.empresa_razon_social,
+                nombreComercial: configServicios.empresa_nombre_comercial,
+                ruc: configServicios.empresa_ruc,
+                claveAcceso: claveAcceso,
+                estab: estab,
+                ptoEmi: ptoEmi,
+                secuencial: secuencial,
+                
+                // Direcciones
+                dirMatriz: configServicios.empresa_dir_matriz,
+                dirEstablecimiento: configServicios.empresa_dir_establecimiento,
+                
+                // Contribuyente
+                contribuyenteRimpe: configServicios.empresa_contribuyente_rimpe || "",
+                contribuyenteRIDE: configServicios.empresa_contribuyente_ride || "",
+                obligadoContabilidad: configServicios.empresa_obligado_contabilidad,
+                
+                // Fecha
+                fechaEmision: fechaEmision,
+                
+                // Cliente
+                tipoIdentificacionComprador: tipoIdentificacionComprador,
+                razonSocialComprador: cliente.razon_social,
+                identificacionComprador: identificacionComprador,
+                direccionComprador: cliente.direccion || "S/N",
+                telefonoCliente: telefonoCliente,
+                telefonoContribuyente: configServicios.empresa_telefono,
+                
+                // Documento
+                factura: docNumber,
+                formaPago: configServicios.factura_forma_pago_defecto || "01",
+                formaPagoRIDE: configServicios.factura_forma_pago_ride || "01 SIN UTILIZACIÓN DEL SISTEMA FINANCIERO",
+                
+                // Totales
+                codigoPorcentajeTotales: "0",
+                baseImponibleTotales: subtotal.toFixed(2),
+                valorTotales: "0.00",
+                totalSinImpuestos: subtotal.toFixed(2),
+                importeTotal: subtotal.toFixed(2),
+                totalDescuento: "0.00",
+                valor: "0.00",
+                
+                // Productos (arrays concatenados)
+                codigoPrincipal: productos.map(p => p.codigoPrincipal).join(' , '),
+                codigoAuxiliar: productos.map(p => p.codigoAuxiliar).join(' , '),
+                descripcion: productos.map(p => p.descripcion).join(' , '),
+                cantidad: productos.map(p => p.cantidad).join(' , '),
+                precioUnitario: productos.map(p => p.precioUnitario).join('|'),
+                subtotalSinIVA: productos.map(p => p.subtotalSinIVA).join('|'),
+                codigoPorcentaje: productos.map(p => p.codigoPorcentaje).join(','),
+                tarifa: productos.map(p => p.tarifa).join(','),
+                iva: productos.map(p => p.iva).join('|'),
+                descuento: productos.map(p => p.descuento).join('|'),
+                
+                // Subtotales IVA
+                subtotal12: "0.00",
+                subtotal0: subtotal.toFixed(2),
+                subtotalNoObjeto: "0.00",
+                subtotalExento: "0.00",
+                
+                // Campos adicionales
+                campoAdicional: 'campoAdicional nombre="Correo de cliente"',
+                codigoArtesano: configServicios.empresa_codigo_artesano || "",
+                artesanoRide: configServicios.empresa_codigo_artesano ? configServicios.empresa_codigo_artesano : "-",
+                
+                // Firma electrónica (.p12)
+                clave_12: configServicios.firma_clave_p12 || "",
+                
+                // URLs y logos
+                urlLogo: configServicios.url_logo_factura || "",
+                urlLogoPieCorreo: configServicios.url_logo_pie_correo || "",
+                
+                // SMTP
+                correoRemitente: configServicios.smtp_correo_remitente || "",
+                clavecorreoRemitente: configServicios.smtp_clave_remitente || "",
+                hostcorreoRemitente: configServicios.smtp_host || "smtp.gmail.com",
+                puertocorreoRemitente: String(configServicios.smtp_puerto || "587"),
+                
+                // Nombre del archivo .p12
+                nombrep12: configServicios.firma_nombre_p12 || "",
+                
+                // Ambiente SRI
+                ambientesri: configSRI.ambiente === 1 ? "https://celcer.sri.gob.ec" : "https://cel.sri.gob.ec"
+            };
+
+            return {
+                success: true,
+                json: jsonFactura
+            };
+
+        } catch (error) {
+            console.error('❌ Error generando JSON de facturación:', error);
+            return {
+                success: false,
+                message: error.message
+            };
+        }
+    }
+
+    async function confirmarVenta() {
+        try {
+            // Validar pago
+            const totalConIva = ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
+            const pagadoCon = parseFloat(document.getElementById('pagadoCon').value) || 0;
+            const vuelto = Math.max(0, pagadoCon - totalConIva);
+
+            if (pagadoCon < totalConIva) {
+                window.app.showToast('El monto pagado debe ser igual o mayor al total', 'warning', 3000);
+                return;
+            }
+
+            // Generar ID de venta (formato: S + timestamp)
+            const ventaIdText = `S${Date.now()}`;
+            const fechaActual = new Date().toISOString();
+
+            // Obtener cliente_id (default: consumidor final)
+            const clienteId = ventaState.clienteSeleccionado?.cedula || '9999999999999';
+            
+            // Obtener email del usuario autenticado
+            const userEmail = auth.getUserEmail ? auth.getUserEmail() : null;
+
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
+            
+            // Determinar tipo de documento
+            const tipoDocumento = ventaState.tipoComprobante || 'RECIBO';
+            
+            // Variables para facturación electrónica
+            let docNumber = null;
+            let claveAcceso = null;
+            let jsonFactura = null;
+            
+            // Si es FACTURA, generar datos de facturación electrónica
+            if (tipoDocumento === 'FACTURA') {
+                
+                // Obtener configuración
+                const configResult = await obtenerConfiguracionFacturacion();
+                
+                if (!configResult.success) {
+                    throw new Error('No se pudo obtener configuración de facturación: ' + configResult.message);
+                }
+                
+                const configSRI = configResult.configSRI;
+                const configServicios = configResult.configServicios;
+                
+                // Incrementar número de comprobante (NOTA: En producción se debe usar bloqueo para evitar duplicados)
+                const nuevoComprobante = configSRI.comprobante_actual + 1;
+                
+                // Generar número de documento (formato: 001-001-000000015)
+                docNumber = `${padWithZeroes(configSRI.establecimiento, 3)}-${padWithZeroes(configSRI.punto_emision, 3)}-${padWithZeroes(nuevoComprobante, 9)}`;
+                
+                // Generar clave de acceso
+                const now = new Date();
+                const fechaFormateada = now.toLocaleDateString('es-EC', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                }).split('/').join(''); // ddMMyyyy
+                
+                const claveResult = generarClaveAcceso(fechaFormateada, {
+                    ...configSRI,
+                    comprobante_actual: nuevoComprobante
+                });
+                
+                if (!claveResult.success) {
+                    throw new Error('Error generando clave de acceso: ' + claveResult.message);
+                }
+                
+                claveAcceso = claveResult.claveAcceso;
+                
+                
+                // Generar JSON completo de facturación
+                const datosVenta = {
+                    cliente: ventaState.clienteSeleccionado || {
+                        cedula: '9999999999999',
+                        razon_social: 'CONSUMIDOR FINAL',
+                        direccion: 'S/N',
+                        telefono: 'S/N',
+                        correo: 'consumidor@final.com'
+                    },
+                    productos: ventaState.carrito.map(item => ({
+                        codigo: item.codigo,
+                        nombre: item.nombre,
+                        cantidad: item.cantidad,
+                        precio: item.precio
+                    })),
+                    total: totalConIva
+                };
+                
+                const jsonResult = generarJsonFacturacion(datosVenta, configSRI, configServicios, claveAcceso, docNumber);
+                
+                if (!jsonResult.success) {
+                    throw new Error('Error generando JSON de facturación: ' + jsonResult.message);
+                }
+                
+                jsonFactura = jsonResult.json;
+                
+                
+                // Actualizar número de comprobante en la BD
+                const { error: updateConfigError } = await db
+                    .from('facelectronicaconfig')
+                    .update({ comprobante_actual: nuevoComprobante })
+                    .eq('id', configSRI.id);
+                
+                if (updateConfigError) {
+                    console.warn('⚠️ Advertencia: No se pudo actualizar número de comprobante:', updateConfigError);
+                    // No es crítico para la prueba, continuamos
+                }
+            }
+            
+            // PASO 1: Insertar venta principal
+            const ventaData = {
+                id_venta: ventaIdText,
+                fecha_hora_venta: fechaActual,
+                cliente_id: clienteId,
+                total: parseFloat(totalConIva.toFixed(2)),
+                pagado_con: parseFloat(pagadoCon.toFixed(2)),
+                vuelto: parseFloat(vuelto.toFixed(2)),
+                tipo: tipoDocumento,
+                estado: tipoDocumento === 'FACTURA' ? 'PENDIENTE' : 'COMPLETADO',
+                usuario_email: userEmail,
+                doc: docNumber,
+                clave_acceso: claveAcceso,
+                fecha_factura: tipoDocumento === 'FACTURA' ? new Date().toISOString().split('T')[0] : null
+                // ganancia se calculará después de insertar detalles
+            };
+
+            const { data: ventaInsertada, error: ventaError } = await db
+                .from('ventas')
+                .insert([ventaData])
+                .select()
+                .single();
+
+            if (ventaError) {
+                console.error('Error insertando venta:', ventaError);
+                throw new Error(`Error al registrar venta: ${ventaError.message}`);
+            }
+
+
+            // PASO 2: Insertar detalles de venta
+            const detalles = ventaState.carrito.map((item, index) => ({
+                id_detalle: `${ventaIdText}_${index + 1}`,
+                venta_id: ventaInsertada.id, // UUID generado automáticamente
+                id_venta: ventaIdText, // TEXT para búsquedas
+                producto_id: item.codigo,
+                cantidad: parseFloat(item.cantidad),
+                precio: parseFloat(item.precio),
+                estado: 'ACTIVO'
+                // ganancia se calcula automáticamente por trigger
+                // subtotal se calcula automáticamente (GENERATED COLUMN)
+            }));
+
+            const { data: detallesInsertados, error: detalleError } = await db
+                .from('ventas_detalle')
+                .insert(detalles)
+                .select();
+
+            if (detalleError) {
+                console.error('Error insertando detalles:', detalleError);
+                // Intentar revertir la venta si fallan los detalles
+                await db.from('ventas').delete().eq('id', ventaInsertada.id);
+                throw new Error(`Error al registrar productos: ${detalleError.message}`);
+            }
+
+
+            // NOTA: La ganancia total se actualiza automáticamente por el trigger 
+            // 'trigger_actualizar_ganancia_total' después de insertar detalles
+
+            // ÉXITO
+            cerrarModalVenta();
+            
+            if (tipoDocumento === 'FACTURA') {
+                window.app.showToast(`<i class="fas fa-check-circle"></i> Factura ${docNumber} generada exitosamente! Revisa la consola para ver el JSON`, 'success', 5000);
+            } else {
+                window.app.showToast(`¡Venta ${ventaIdText} procesada exitosamente!`, 'success', 3000);
+                
+                // Abrir recibo en nueva pestaña
+                abrirRecibo({
+                    saleCode: ventaIdText,
+                    fecha: fechaActual,
+                    total: totalConIva,
+                    pagadoCon: pagadoCon,
+                    vuelto: vuelto,
+                    cliente: ventaState.clienteSeleccionado || {
+                        cedula: '9999999999999',
+                        razon_social: 'CONSUMIDOR FINAL',
+                        direccion: 'S/N',
+                        telefono: 'S/N',
+                        correo: 'S/N'
+                    },
+                    productos: ventaState.carrito.map(item => ({
+                        codigo: item.codigo,
+                        nombre: item.nombre,
+                        cantidad: item.cantidad,
+                        precio: item.precio,
+                        subtotal: item.cantidad * item.precio
+                    }))
+                });
+            }
+            
+            // Limpiar carrito y caché (sin confirmación porque ya se procesó)
+            ventaState.carrito = [];
+            ventaState.clienteSeleccionado = null;
+            ventaState.tipoComprobante = 'RECIBO';
+            limpiarCarritoCache();
+            actualizarCarrito();
+            mostrarClienteSeleccionado();
+            
+            // Limpiar búsqueda de cliente
+            document.getElementById('clienteCedula').value = '';
+            
+            // Focus en búsqueda de productos
+            document.getElementById('searchInput').focus();
+
+        } catch (error) {
+            console.error('❌ Error procesando venta:', error);
+            window.app.showToast('Error al procesar la venta: ' + error.message, 'danger', 5000);
+        }
+    }
+
+    // =====================================================
+    // FUNCIONES DE GARANTÍA
+    // =====================================================
+    
+    let garantiaProductoActual = null;
+
+    function abrirModalGarantia(codigo) {
+        const producto = ventaState.carrito.find(item => item.codigo === codigo);
+        if (!producto) {
+            window.app.showToast('Producto no encontrado', 'danger');
+            return;
+        }
+
+        garantiaProductoActual = producto;
+        document.getElementById('garantiaProductoNombre').textContent = producto.nombre;
+        document.getElementById('garantiaProductoCodigo').textContent = producto.codigo;
+        document.getElementById('garantiaPeriodo').value = '1';
+        
+        // Mostrar modal
+        document.getElementById('modalGarantia').classList.add('show');
+        
+        // Enfocar input de años
+        setTimeout(() => {
+            document.getElementById('garantiaPeriodo').focus();
+            document.getElementById('garantiaPeriodo').select();
+        }, 100);
+    }
+
+    function cerrarModalGarantia() {
+        document.getElementById('modalGarantia').classList.remove('show');
+        garantiaProductoActual = null;
+    }
+
+    function generarGarantia() {
+        if (!garantiaProductoActual) {
+            window.app.showToast('No hay producto seleccionado', 'danger');
+            return;
+        }
+
+        const guaranteePeriod = parseInt(document.getElementById('garantiaPeriodo').value);
+        if (!guaranteePeriod || guaranteePeriod < 1) {
+            window.app.showToast('Por favor, ingrese un período de garantía válido', 'warning');
+            return;
+        }
+
+        // Preparar datos para la URL
+        const productName = garantiaProductoActual.nombre.split('-')[0].trim();
+        const now = new Date();
+        const formattedDate = now.toLocaleString('es-EC', { 
+            timeZone: 'America/Guayaquil', 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            hour12: false 
+        }).replace(/[/]/g, '/').replace(',', '');
+
+        const saleCode = 'G' + Date.now();
+
+        const url = "https://pos.manasakilla.com/GARANTIAS.html" +
+            "?fecha=" + encodeURIComponent(formattedDate) +
+            "&venta=" + encodeURIComponent(saleCode) +
+            "&nombre_cliente=" + encodeURIComponent(productName) +
+            "&cedula_cliente=" + encodeURIComponent(guaranteePeriod + " AÑO" + (guaranteePeriod > 1 ? "S" : "")) +
+            "&codigo_ducha=" + encodeURIComponent(garantiaProductoActual.codigo);
+
+        // Abrir en nueva ventana
+        window.open(url, '_blank');
+        
+        // Cerrar modal
+        cerrarModalGarantia();
+        
+        window.app.showToast('<i class="fas fa-check-circle"></i> Garantía generada exitosamente', 'success', 3000);
+    }
+
+    // =====================================================
+    // EXPORTAR FUNCIONES GLOBALES
+    // =====================================================
+    
+    // Exportar función de inicialización
+    window.initPuntoVenta = initPuntoVenta;
+    
+    // Exportar funciones auxiliares
+    window.calcularStockRestante = calcularStockRestante;
+    window.guardarCarritoEnCache = guardarCarritoEnCache;
+    window.limpiarCarritoCache = limpiarCarritoCache;
+    window.mostrarConfirmacion = mostrarConfirmacion;
+    window.toggleModoEdicion = toggleModoEdicion;
+    window.buscarProductos = buscarProductos;
+    window.mostrarResultadosBusqueda = mostrarResultadosBusqueda;
+    window.agregarProducto = agregarProducto;
+    window.agregarProductoPorCodigo = agregarProductoPorCodigo;
+    window.actualizarCantidad = actualizarCantidad;
+    window.actualizarPrecio = actualizarPrecio;
+    window.eliminarDelCarrito = eliminarDelCarrito;
+    window.limpiarVenta = limpiarVenta;
+    window.procesarVenta = procesarVenta;
+    window.buscarCliente = buscarCliente;
+    window.activarBusquedaCliente = activarBusquedaCliente;
+    window.buscarClienteDirecto = buscarClienteDirecto;
+    window.seleccionarCliente = seleccionarCliente;
+    window.cancelarBusqueda = cancelarBusqueda;
+    window.cerrarModalVenta = cerrarModalVenta;
+    window.confirmarVenta = confirmarVenta;
+    window.calcularVuelto = calcularVuelto;
+    window.manejarTeclasCantidad = manejarTeclasCantidad;
+    window.abrirRecibo = abrirRecibo;
+    window.seleccionarTipoComprobante = seleccionarTipoComprobante;
+    window.procesarVentaConValidacion = procesarVentaConValidacion;
+    window.abrirModalGarantia = abrirModalGarantia;
+    window.cerrarModalGarantia = cerrarModalGarantia;
+    window.generarGarantia = generarGarantia;
+
+</script>
+
+
