@@ -1,5 +1,5 @@
 // =====================================================
-// FERRESOLUCIONES - Configuración de Supabase
+// Ferrisoluciones - Configuración de Supabase
 // =====================================================
 
 const SUPABASE_URL = 'https://lpsupabase.manasakilla.com';
@@ -33,3 +33,4 @@ function getSupabaseClient() {
 
 // Intentar inicializar inmediatamente
 initSupabase();
+

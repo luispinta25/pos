@@ -1,5 +1,5 @@
 // =====================================================
-// FERRESOLUCIONES - Autenticación con Supabase
+// Ferrisoluciones - Autenticación con Supabase
 // Manejo de sesiones y roles de usuario
 // =====================================================
 
@@ -320,3 +320,4 @@ window.auth = {
     hasRole: hasRole,
     logout: logout
 };
+

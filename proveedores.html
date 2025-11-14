@@ -2163,7 +2163,7 @@ function generarComprobantePagoCanvasProveedor(datos) {
         ctx.font = '14px Arial';
         ctx.textAlign = 'center';
         ctx.fillStyle = '#9ca3af';
-        ctx.fillText('Generado por FERRESOLUCIONES', canvas.width / 2, 310);
+        ctx.fillText('Generado por Ferrisoluciones', canvas.width / 2, 310);
         
         const dataUrl = canvas.toDataURL('image/png');
         logProveedor('✅ Comprobante generado correctamente');
@@ -2279,7 +2279,7 @@ async function enviarNotificacionWhatsAppProveedor(transferencia, client) {
         const tipoMovimiento = 'EGRESO';
         const montoFormateado = parseFloat(transferencia.monto).toFixed(2);
         
-        const mensaje = `${emoji} *Pago a Proveedor Registrado*\n\n*DETALLES DEL PAGO*\n\n📅 *Fecha:* ${fechaFormateada}\n🕐 *Hora:* ${horaFormateada}\n\n❌ *Tipo:* ${tipoMovimiento}\n💵 *Monto:* $${montoFormateado}\n\n📝 *Motivo:*\n${transferencia.motivo}\n\n👤 *Registrado por:*\n${transferencia.subido_por_nombre || transferencia.subido_por || 'N/A'}\n\n📸 *Comprobante adjunto*\n\n_Sistema de Gestión FERRESOLUCIONES_\n_Powered by FERRESOLUCIONES Tech_`;
+        const mensaje = `${emoji} *Pago a Proveedor Registrado*\n\n*DETALLES DEL PAGO*\n\n📅 *Fecha:* ${fechaFormateada}\n🕐 *Hora:* ${horaFormateada}\n\n❌ *Tipo:* ${tipoMovimiento}\n💵 *Monto:* $${montoFormateado}\n\n📝 *Motivo:*\n${transferencia.motivo}\n\n👤 *Registrado por:*\n${transferencia.subido_por_nombre || transferencia.subido_por || 'N/A'}\n\n📸 *Comprobante adjunto*\n\n_Sistema de Gestión Ferrisoluciones_\n_Powered by Ferrisoluciones Tech_`;
         
         const url = `https://api.manasakilla.com/message/sendMedia/${ferredatos.instance}`;
         
@@ -2553,7 +2553,7 @@ async function enviarNotificacionProveedor(e) {
             mensaje += `📝 *Motivo de visita:*\n${motivoVisita}\n\n`;
         }
         
-        mensaje += `_Mensaje generado desde FERRESOLUCIONES_`;
+        mensaje += `_Mensaje generado desde Ferrisoluciones_`;
         
         // Enviar notificación por WhatsApp
         const resultadoWhatsApp = await enviarWhatsAppProveedor(mensaje);
@@ -2865,5 +2865,6 @@ window.cerrarAlertaModal = cerrarAlertaModal;
 logProveedor('✅ Módulo de proveedores cargado - Funciones globales exportadas');
 
 </script>
+
 
 

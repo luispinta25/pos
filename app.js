@@ -1,5 +1,5 @@
 // =====================================================
-// FERRESOLUCIONES - Aplicación Principal
+// Ferrisoluciones - Aplicación Principal
 // Gestor de módulos y navegación
 // =====================================================
 
@@ -439,3 +439,4 @@ window.app = {
 };
 
 // Removed debug scroll helper and floating debug button
+

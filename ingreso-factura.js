@@ -1459,7 +1459,7 @@ async function enviarNotificacionWhatsAppLocal(transferencia, ferredatos) {
         const tipoMovimiento = transferencia.caso === 'ingreso' ? 'INGRESO' : 'EGRESO';
         const montoFormateado = parseFloat(transferencia.monto).toFixed(2);
 
-        const mensaje = `${emoji} *Nueva Transferencia Registrada*\n\n*DETALLES DEL MOVIMIENTO*\n\n\n📅 *Fecha:* ${fechaFormateada}\n🕐 *Hora:* ${horaFormateada}\n\n${transferencia.caso === 'ingreso' ? '✅' : '❌'} *Tipo:* ${tipoMovimiento}\n💵 *Monto:* $${montoFormateado}\n\n📝 *Motivo:*\n${transferencia.motivo}\n\n👤 *Registrado por:*\n${transferencia.subido_por_nombre || transferencia.subido_por || 'N/A'}\n\n📸 *Comprobante adjunto*\n\n_Sistema de Gestión FERRESOLUCIONES_\n_Powered by FERRESOLUCIONES Tech_`;
+        const mensaje = `${emoji} *Nueva Transferencia Registrada*\n\n*DETALLES DEL MOVIMIENTO*\n\n\n📅 *Fecha:* ${fechaFormateada}\n🕐 *Hora:* ${horaFormateada}\n\n${transferencia.caso === 'ingreso' ? '✅' : '❌'} *Tipo:* ${tipoMovimiento}\n💵 *Monto:* $${montoFormateado}\n\n📝 *Motivo:*\n${transferencia.motivo}\n\n👤 *Registrado por:*\n${transferencia.subido_por_nombre || transferencia.subido_por || 'N/A'}\n\n📸 *Comprobante adjunto*\n\n_Sistema de Gestión Ferrisoluciones_\n_Powered by Ferrisoluciones Tech_`;
 
         const url = `https://api.manasakilla.com/message/sendMedia/${ferredatos.instance}`;
 
@@ -2591,4 +2591,5 @@ window.proveedoresConfirm = proveedoresConfirm;
 window.guardarCacheIngreso = guardarCacheIngreso;
 window.cargarCacheIngreso = cargarCacheIngreso;
 window.limpiarCacheIngreso = limpiarCacheIngreso;
+
 
