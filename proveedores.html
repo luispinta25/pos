@@ -435,7 +435,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        z-index: 10000;
+        z-index: 99999 !important;
         display: none;
         align-items: center;
         justify-content: center;
@@ -443,7 +443,8 @@
         transition: opacity 0.3s ease;
     }
 
-    .modal.show {
+    .modal.show,
+    .modal.active {
         display: flex;
         opacity: 1;
     }
@@ -1440,6 +1441,20 @@ async function cambiarModoProveedor(modo) {
         
         // Cargar módulo de ingreso de facturas
         await cargarModuloIngresoFactura();
+        
+        // Verificar si hay caché de ingreso de factura y mostrar notificación
+        const tieneCacheIngreso = verificarCacheIngresoFactura();
+        if (tieneCacheIngreso) {
+            setTimeout(() => {
+                if (typeof proveedoresAlert === 'function') {
+                    proveedoresAlert(
+                        'Tienes una factura en proceso. Puedes continuar desde donde lo dejaste.',
+                        'info',
+                        'Sesión Pendiente'
+                    );
+                }
+            }, 500);
+        }
     }
 }
 
@@ -1481,22 +1496,6 @@ async function initProveedores() {
     
     // Actualizar contador del navbar
     updateNavbarCounter('proveedores', 'Facturas');
-    
-    // Verificar si hay caché de ingreso de factura
-    const tieneCacheIngreso = verificarCacheIngresoFactura();
-    
-    if (tieneCacheIngreso) {
-        // Esperar un momento y mostrar notificación
-        setTimeout(() => {
-            if (typeof proveedoresAlert === 'function') {
-                proveedoresAlert(
-                    'Tienes una factura en proceso. Puedes continuar desde donde lo dejaste.',
-                    'info',
-                    'Sesión Pendiente'
-                );
-            }
-        }, 1000);
-    }
     
     // Cargar datos
     await Promise.all([

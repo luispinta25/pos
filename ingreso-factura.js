@@ -45,26 +45,68 @@ function normalizeDateForInput(value) {
 // =====================================================
 
 async function initIngresoFactura(proveedores) {
+    console.log('🚀 [INIT] Iniciando initIngresoFactura con proveedores:', proveedores?.length || 0);
     
     ingresoFacturaState.proveedoresDisponibles = proveedores || [];
     
+    // Mover modales al body para evitar problemas de z-index
+    console.log('🔧 [INIT] Llamando a moverModalesAlBody()');
+    moverModalesAlBody();
+    
     // Cargar proveedores en el paso 1 inmediatamente
+    console.log('📦 [INIT] Cargando proveedores en el paso 1');
     cargarProveedoresIngreso();
     
     // Configurar event listeners
+    console.log('🎧 [INIT] Configurando event listeners');
     setupEventListenersIngreso();
     
     // Intentar cargar caché inmediatamente (sin esperar inventario)
+    console.log('💾 [INIT] Intentando cargar caché');
     const cacheRestaurado = cargarCacheIngreso();
     
     // Si no hay caché, ir al paso 1
     if (!cacheRestaurado) {
+        console.log('➡️ [INIT] No hay caché, mostrando paso 1');
         mostrarPasoIngreso(1);
+    } else {
+        console.log('✅ [INIT] Caché restaurado');
     }
     
     // Cargar inventario en paralelo (no bloquea la UI)
+    console.log('📊 [INIT] Iniciando carga de inventario en paralelo');
     cargarInventarioCompleto().catch(err => {
+        console.error('❌ [INIT] Error al cargar inventario:', err);
     });
+    
+    console.log('✅ [INIT] initIngresoFactura completado');
+}
+
+function moverModalesAlBody() {
+    // Mover todos los modales de ingreso-factura al body para que tengan el z-index correcto
+    console.log('🔄 [MODALES] Iniciando moverModalesAlBody()');
+    const modales = [
+        'modalNuevoProveedorIngreso',
+        'modalNuevoProductoIngreso',
+        'modalCambiarZona',
+        'modalConfirmacionIngreso'
+    ];
+    
+    modales.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        console.log(`🔍 [MODALES] Buscando modal: ${modalId}`, {
+            encontrado: !!modal,
+            parentElement: modal?.parentElement?.tagName,
+            parentId: modal?.parentElement?.id,
+            parentClass: modal?.parentElement?.className
+        });
+        if (modal && modal.parentElement.id !== 'body') {
+            console.log(`📦 [MODALES] Moviendo ${modalId} al body`);
+            document.body.appendChild(modal);
+            console.log(`✅ [MODALES] ${modalId} movido. Nuevo parent:`, modal.parentElement.tagName);
+        }
+    });
+    console.log('✅ [MODALES] moverModalesAlBody() completado');
 }
 
 function setupEventListenersIngreso() {
@@ -1880,6 +1922,7 @@ async function procesarProductosNuevos(productos) {
 }
 
 function reiniciarIngresoFactura() {
+    console.log('🔄 [REINICIAR] Iniciando reinicio de ingreso de factura');
     ingresoFacturaState = {
         pasoActual: 1,
         proveedorSeleccionado: null,
@@ -1896,6 +1939,7 @@ function reiniciarIngresoFactura() {
     document.getElementById('notasFacturaIngreso').value = '';
     document.getElementById('busquedaProductoIngreso').value = '';
     
+    console.log('✅ [REINICIAR] Estado reiniciado, mostrando paso 1');
     mostrarPasoIngreso(1);
 }
 
@@ -1904,11 +1948,47 @@ function reiniciarIngresoFactura() {
 // =====================================================
 
 function mostrarModalNuevoProveedorIngreso() {
-    document.getElementById('modalNuevoProveedorIngreso').classList.add('active');
+    console.log('🎯 [MODAL PROVEEDOR] Intentando mostrar modal');
+    const modal = document.getElementById('modalNuevoProveedorIngreso');
+    
+    // Verificar todos los elementos con z-index alto
+    const allElements = document.querySelectorAll('*');
+    const highZIndex = [];
+    allElements.forEach(el => {
+        const zIndex = window.getComputedStyle(el).zIndex;
+        if (zIndex !== 'auto' && parseInt(zIndex) >= 999) {
+            highZIndex.push({
+                element: el.tagName,
+                id: el.id,
+                class: el.className,
+                zIndex: zIndex,
+                position: window.getComputedStyle(el).position
+            });
+        }
+    });
+    console.log('🔍 [MODAL PROVEEDOR] Elementos con z-index >= 999:', highZIndex);
+    
+    console.log('🔍 [MODAL PROVEEDOR] Estado del modal:', {
+        encontrado: !!modal,
+        display: modal?.style.display,
+        clases: modal?.className,
+        parentElement: modal?.parentElement?.tagName,
+        zIndex: window.getComputedStyle(modal || document.body).zIndex,
+        position: window.getComputedStyle(modal || document.body).position
+    });
+    modal.classList.add('active');
+    console.log('✅ [MODAL PROVEEDOR] Clase active agregada. Nuevas clases:', modal.className);
+    console.log('📊 [MODAL PROVEEDOR] Computed styles:', {
+        display: window.getComputedStyle(modal).display,
+        zIndex: window.getComputedStyle(modal).zIndex
+    });
 }
 
 function cerrarModalNuevoProveedorIngreso() {
-    document.getElementById('modalNuevoProveedorIngreso').classList.remove('active');
+    console.log('❌ [MODAL PROVEEDOR] Cerrando modal');
+    const modal = document.getElementById('modalNuevoProveedorIngreso');
+    modal.classList.remove('active');
+    console.log('✅ [MODAL PROVEEDOR] Modal cerrado. Clases:', modal.className);
 }
 
 async function guardarNuevoProveedorIngreso(e) {
@@ -1950,8 +2030,16 @@ async function guardarNuevoProveedorIngreso(e) {
 }
 
 async function mostrarModalNuevoProductoIngreso(initialCode = null) {
+    console.log('🎯 [MODAL PRODUCTO] Iniciando mostrarModalNuevoProductoIngreso, initialCode:', initialCode);
     // Al abrir el modal, solicitar al servidor (Supabase) el siguiente código sugerido
     const modal = document.getElementById('modalNuevoProductoIngreso');
+    console.log('🔍 [MODAL PRODUCTO] Estado inicial del modal:', {
+        encontrado: !!modal,
+        display: modal?.style.display,
+        clases: modal?.className,
+        parentElement: modal?.parentElement?.tagName,
+        parentId: modal?.parentElement?.id
+    });
     const codigoInput = document.getElementById('codigoNuevoProducto');
     try {
         showAppLoader && showAppLoader();
@@ -2081,16 +2169,27 @@ async function mostrarModalNuevoProductoIngreso(initialCode = null) {
                 } catch (errUpper) {  }
             }, 200);
         } catch (innerErr) {
+            console.log('⚠️ [MODAL PRODUCTO] Error al configurar botones:', innerErr);
             modal.classList.add('active');
         }
 
         // Finalmente mostrar modal
+        console.log('✅ [MODAL PRODUCTO] Agregando clase active');
         modal.classList.add('active');
+        console.log('📊 [MODAL PRODUCTO] Computed styles después de agregar active:', {
+            display: window.getComputedStyle(modal).display,
+            zIndex: window.getComputedStyle(modal).zIndex,
+            position: window.getComputedStyle(modal).position,
+            clases: modal.className
+        });
     }
 }
 
 function cerrarModalNuevoProductoIngreso() {
-    document.getElementById('modalNuevoProductoIngreso').classList.remove('active');
+    console.log('❌ [MODAL PRODUCTO] Cerrando modal');
+    const modal = document.getElementById('modalNuevoProductoIngreso');
+    modal.classList.remove('active');
+    console.log('✅ [MODAL PRODUCTO] Modal cerrado. Clases:', modal.className);
 }
 
 function agregarNuevoProductoIngreso(e) {
@@ -2498,9 +2597,9 @@ function cargarCacheIngreso() {
         actualizarBotonesNavegacion(pasoAMostrar);
         
         // Mostrar alerta solo si no estamos en paso 1
-        if (pasoAMostrar > 1) {
-            proveedoresAlert('Se ha restaurado una sesión anterior', 'info', 'Sesión Restaurada');
-        }
+        // if (pasoAMostrar > 1) {
+        //     proveedoresAlert('Se ha restaurado una sesión anterior', 'info', 'Sesión Restaurada');
+        // }
         
         return true;
         
