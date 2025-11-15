@@ -6,10 +6,10 @@
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: 100%;">
         
         
-        <div style="overflow-y: auto; padding-right: 10px; height: 100%;">
+        <div style="overflow-y: auto; padding-right: 10px; height: 100%; overflow-x: hidden; max-width: 100%;">
             
             
-            <div class="card">
+            <div class="card" style="min-width: 0;">
                 <h3 style="margin-bottom: 15px; font-size: 1.2em;">
                     <i class="fas fa-search"></i> Buscar Producto
                 </h3>
@@ -327,6 +327,28 @@
 </div>
 
 
+<div class="modal-cantidad-overlay" id="modalSeleccionProducto">
+    <div class="modal-cantidad-box" style="max-width: 650px;">
+        <div class="modal-cantidad-header">
+            <h3><i class="fas fa-box-open"></i> Seleccione Tipo y Cantidad</h3>
+            <button class="modal-cantidad-close" onclick="cerrarModalSeleccionProducto()">&times;</button>
+        </div>
+        <div class="modal-cantidad-body">
+            <p style="margin-bottom: 20px; color: #666; text-align: center; font-weight: 500;">Ingrese la cantidad del tipo que desea agregar:</p>
+            <div id="opcionesProductos" style="display: flex; flex-direction: column; gap: 15px;">
+                <!-- Opciones se llenarán dinámicamente -->
+            </div>
+            <p style="margin-top: 15px; color: #999; text-align: center; font-size: 0.9em;">
+                <i class="fas fa-info-circle"></i> Presione Enter en el campo con cantidad para agregar
+            </p>
+        </div>
+        <div class="modal-cantidad-footer">
+            <button class="btn btn-secondary" onclick="cerrarModalSeleccionProducto()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+
 <div class="modal" id="modalGarantia">
     <div class="modal-overlay"></div>
     <div class="modal-content">
@@ -430,7 +452,11 @@
         margin-top: 15px;
         max-height: 300px;
         overflow-y: auto;
+        overflow-x: hidden;
         scrollbar-width: thin;
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
     }
 
     .search-result-item {
@@ -441,6 +467,10 @@
         cursor: pointer;
         transition: all 0.2s ease;
         background: white;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
     .search-result-item:hover {
@@ -453,6 +483,8 @@
         color: #1a1a1a;
         display: block;
         margin-bottom: 4px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
 
     .search-result-header {
@@ -2836,14 +2868,48 @@
     }
 
     async function agregarProducto(codigo) {
-        await agregarProductoPorCodigo(codigo);
-        document.getElementById('searchInput').value = '';
-        document.getElementById('searchInput').focus();
-        document.getElementById('searchResults').innerHTML = '';
+        // Buscar si existen productos con código exacto y código + 001
+        const codigoConUnidades = codigo + '001';
         
-        // Resetear selección de búsqueda
+        // Limpiar búsqueda inmediatamente para dar sensación de velocidad
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchResults').innerHTML = '';
         ventaState.busquedaResultados = [];
         ventaState.busquedaSeleccionado = -1;
+        
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            
+            // Buscar ambos productos en paralelo
+            const [respuestaExacto, respuestaUnidades] = await Promise.all([
+                db.from('inventario').select('*').eq('codigo', codigo).maybeSingle(),
+                db.from('inventario').select('*').eq('codigo', codigoConUnidades).maybeSingle()
+            ]);
+            
+            const productoExacto = respuestaExacto.data;
+            const productoUnidades = respuestaUnidades.data;
+            
+            // Si existen ambos productos, mostrar modal de selección
+            if (productoExacto && productoUnidades) {
+                mostrarModalSeleccionProducto([productoExacto, productoUnidades]);
+                return;
+            }
+            
+            // Si solo existe uno, agregarlo directamente
+            if (productoExacto) {
+                await agregarProductoPorCodigo(codigo);
+            } else if (productoUnidades) {
+                await agregarProductoPorCodigo(codigoConUnidades);
+            } else {
+                window.app.showToast(`Producto no encontrado: ${codigo}`, 'warning');
+            }
+            
+        } catch (error) {
+            console.error('Error al buscar producto:', error);
+            window.app.showToast('Error al buscar producto', 'danger');
+        }
+        
+        document.getElementById('searchInput').focus();
     }
 
     // =====================================================
@@ -4004,6 +4070,260 @@
     window.mostrarModalIngresoDirecto = mostrarModalIngresoDirecto;
     window.cerrarModalIngresoDirecto = cerrarModalIngresoDirecto;
     window.confirmarIngresoDirecto = confirmarIngresoDirecto;
+
+    // ========= MODAL DE SELECCIÓN DE PRODUCTO =========
+    function mostrarModalSeleccionProducto(productos) {
+        const modal = document.getElementById('modalSeleccionProducto');
+        const opcionesContainer = document.getElementById('opcionesProductos');
+        
+        // Limpiar opciones previas
+        opcionesContainer.innerHTML = '';
+        
+        // Crear opción para cada producto
+        productos.forEach((producto, index) => {
+            const esPaquete = !producto.codigo.endsWith('001');
+            const iconoTipo = esPaquete ? 'fa-boxes' : 'fa-box';
+            const labelTipo = esPaquete ? 'PAQUETE/FUNDA' : 'UNIDADES';
+            const colorTipo = esPaquete ? '#2196F3' : '#4CAF50';
+            
+            // Calcular stock disponible (descontando lo que está en el carrito)
+            const enCarrito = ventaState.carrito.find(item => item.codigo === producto.codigo);
+            const cantidadEnCarrito = enCarrito ? enCarrito.cantidad : 0;
+            const stockDisponible = producto.stock - cantidadEnCarrito;
+            
+            const opcion = document.createElement('div');
+            opcion.style.cssText = `
+                padding: 20px;
+                border: 2px solid ${colorTipo};
+                border-radius: 12px;
+                background: white;
+                display: grid;
+                grid-template-columns: auto 1fr auto;
+                align-items: center;
+                gap: 20px;
+                transition: all 0.3s;
+            `;
+            
+            const inputId = `cantidadProducto${index}`;
+            const cantidadInicial = esPaquete ? 0 : 1; // Unidades por defecto en 1
+            
+            // Mostrar alerta si no hay stock disponible
+            const stockInfo = stockDisponible > 0 
+                ? `Stock: <strong style="color: ${colorTipo};">${stockDisponible}</strong>` 
+                : `<strong style="color: #f44336;">SIN STOCK</strong>`;
+            
+            const carritoInfo = cantidadEnCarrito > 0 
+                ? ` <span style="color: #ff9800; font-size: 0.85em;">(${cantidadEnCarrito} en carrito)</span>` 
+                : '';
+            
+            opcion.innerHTML = `
+                <div style="text-align: center;">
+                    <i class="fas ${iconoTipo}" style="font-size: 2.5em; color: ${colorTipo}; margin-bottom: 8px;"></i>
+                    <div style="background: ${colorTipo}; color: white; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.85em;">
+                        ${labelTipo}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 5px; color: #333;">${producto.producto}</div>
+                    <div style="color: #666; font-size: 0.9em; margin-bottom: 3px;">Código: <strong>${producto.codigo}</strong></div>
+                    <div style="color: #666; font-size: 0.9em;">${stockInfo}${carritoInfo} | Precio: <strong style="color: #d4a017;">$${producto.precio.toFixed(2)}</strong></div>
+                </div>
+                <div style="text-align: center; min-width: 120px;">
+                    <label style="display: block; margin-bottom: 5px; color: #666; font-size: 0.9em; font-weight: 600;">Cantidad:</label>
+                    <input 
+                        type="number" 
+                        id="${inputId}"
+                        class="input-cantidad-seleccion"
+                        value="${cantidadInicial}"
+                        min="0"
+                        max="${stockDisponible}"
+                        step="0.001"
+                        style="width: 100%; padding: 12px; font-size: 1.2em; font-weight: bold; text-align: center; border: 2px solid ${colorTipo}; border-radius: 8px; outline: none;"
+                        data-codigo="${producto.codigo}"
+                        data-producto='${JSON.stringify(producto).replace(/'/g, "&apos;")}'
+                        data-stock-disponible="${stockDisponible}"
+                        ${stockDisponible <= 0 ? 'disabled' : ''}
+                    >
+                </div>
+            `;
+            
+            opcionesContainer.appendChild(opcion);
+            
+            // Agregar event listeners después de insertar en el DOM
+            setTimeout(() => {
+                const input = document.getElementById(inputId);
+                if (!input) return;
+                
+                // Enfocar el input de unidades por defecto (solo si tiene stock)
+                if (!esPaquete && stockDisponible > 0) {
+                    input.focus();
+                    input.select();
+                } else if (esPaquete && stockDisponible > 0) {
+                    // Si unidades no tiene stock, enfocar paquete si tiene
+                    const inputUnidades = document.getElementById(`cantidadProducto${1 - index}`);
+                    if (!inputUnidades || inputUnidades.disabled) {
+                        input.focus();
+                        input.select();
+                    }
+                }
+                
+                // Cambiar borde al enfocar
+                input.addEventListener('focus', function() {
+                    this.style.borderColor = colorTipo;
+                    this.style.boxShadow = `0 0 0 3px ${colorTipo}33`;
+                    opcion.style.borderColor = colorTipo;
+                    opcion.style.boxShadow = `0 4px 12px ${colorTipo}44`;
+                    opcion.style.transform = 'scale(1.02)';
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.style.boxShadow = 'none';
+                    opcion.style.boxShadow = 'none';
+                    opcion.style.transform = 'scale(1)';
+                });
+                
+                // Enter para agregar
+                input.addEventListener('keydown', async function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        
+                        const cantidad = parseFloat(this.value);
+                        const stockDisponible = parseFloat(this.dataset.stockDisponible);
+                        
+                        if (cantidad > 0) {
+                            const codigo = this.dataset.codigo;
+                            const productoData = JSON.parse(this.dataset.producto);
+                            
+                            // Validar stock disponible (descontando lo que ya está en el carrito)
+                            if (cantidad > stockDisponible) {
+                                window.app.showToast(`Stock insuficiente. Disponible: ${stockDisponible}`, 'warning', 3000);
+                                this.value = stockDisponible;
+                                return;
+                            }
+                            
+                            cerrarModalSeleccionProducto();
+                            
+                            // Agregar al carrito con la cantidad especificada
+                            await agregarAlCarritoConCantidad(productoData, cantidad);
+                            
+                            // Enfocar búsqueda inmediatamente
+                            document.getElementById('searchInput').focus();
+                        } else {
+                            window.app.showToast('Ingrese una cantidad mayor a 0', 'warning', 2000);
+                            this.focus();
+                        }
+                    } else if (e.key === 'Tab') {
+                        e.preventDefault();
+                        // Buscar el otro input
+                        const inputs = opcionesContainer.querySelectorAll('.input-cantidad-seleccion:not([disabled])');
+                        const currentIndex = Array.from(inputs).indexOf(this);
+                        const nextIndex = (currentIndex + 1) % inputs.length;
+                        inputs[nextIndex].focus();
+                        inputs[nextIndex].select();
+                    } else if (e.key === 'Escape') {
+                        cerrarModalSeleccionProducto();
+                    }
+                });
+                
+                // Validar que no sea negativo ni mayor al stock disponible
+                input.addEventListener('input', function() {
+                    const stockDisponible = parseFloat(this.dataset.stockDisponible);
+                    if (this.value < 0) this.value = 0;
+                    if (this.value > stockDisponible) this.value = stockDisponible;
+                });
+            }, 50);
+        });
+        
+        // Mostrar modal
+        modal.classList.add('active');
+    }
+    
+    async function agregarAlCarritoConCantidad(producto, cantidad) {
+        // Verificar stock real en BD antes de agregar
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            
+            const { data: productoActual, error } = await db
+                .from('inventario')
+                .select('stock, precio')
+                .eq('codigo', producto.codigo)
+                .single();
+            
+            if (error || !productoActual) {
+                window.app.showToast('Error al verificar stock', 'danger');
+                return;
+            }
+            
+            // Actualizar stock y precio
+            producto.stock = productoActual.stock;
+            producto.precio = productoActual.precio;
+            
+        } catch (error) {
+            console.error('Error verificando stock:', error);
+        }
+        
+        // Verificar stock
+        if (producto.stock <= 0) {
+            window.app.showToast('⚠️ Producto sin stock disponible', 'danger');
+            return;
+        }
+        
+        if (cantidad > producto.stock) {
+            window.app.showToast(`Stock insuficiente. Disponible: ${producto.stock}`, 'warning');
+            return;
+        }
+
+        // Buscar si ya existe en el carrito
+        const existente = ventaState.carrito.find(item => item.codigo === producto.codigo);
+
+        if (existente) {
+            // Verificar que no exceda el stock
+            if (existente.cantidad + cantidad > producto.stock) {
+                window.app.showToast('No hay suficiente stock disponible', 'warning');
+                return;
+            }
+            existente.cantidad += cantidad;
+        } else {
+            // Agregar al inicio del array
+            ventaState.carrito.unshift({
+                codigo: producto.codigo,
+                nombre: producto.producto,
+                precio: producto.precio,
+                cantidad: cantidad,
+                stock: producto.stock,
+                costo: producto.costo || 0,
+                unidad: producto.unidad_paquete || 'UNIDADES'
+            });
+        }
+
+        actualizarCarrito();
+        guardarCarritoEnCache();
+        
+        // Hacer scroll al inicio del carrito
+        const carritoColumn = document.getElementById('carritoColumn');
+        if (carritoColumn) {
+            carritoColumn.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        const tipoProducto = producto.codigo.endsWith('001') ? 'UNIDADES' : 'PAQUETE';
+        window.app.showToast(`✓ ${cantidad} × ${producto.producto} (${tipoProducto})`, 'success', 2500);
+    }
+    
+    function cerrarModalSeleccionProducto() {
+        const modal = document.getElementById('modalSeleccionProducto');
+        modal.classList.remove('active');
+        
+        // Volver a enfocar búsqueda
+        setTimeout(() => {
+            document.getElementById('searchInput').focus();
+        }, 200);
+    }
+    
+    // Exportar funciones
+    window.mostrarModalSeleccionProducto = mostrarModalSeleccionProducto;
+    window.cerrarModalSeleccionProducto = cerrarModalSeleccionProducto;
 
     // ========= MODAL DE ACTUALIZACIÓN DE CLIENTE =========
     function mostrarModalActualizarCliente(cliente) {

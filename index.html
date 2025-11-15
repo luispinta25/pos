@@ -130,6 +130,73 @@
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="app.js"></script>
+    
+    <script>
+        // Animación de hover en navbar
+        document.addEventListener('DOMContentLoaded', function() {
+            const navMenu = document.querySelector('.nav-menu');
+            const navButtons = document.querySelectorAll('.nav-btn');
+            let hoverTimeout = null;
+            let leaveTimeout = null;
+            
+            navButtons.forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                    // Limpiar timeout de salida si existe
+                    if (leaveTimeout) {
+                        clearTimeout(leaveTimeout);
+                        leaveTimeout = null;
+                    }
+                    
+                    // Si este botón NO es el activo
+                    if (!this.classList.contains('active')) {
+                        // Pequeño delay para evitar parpadeo
+                        if (hoverTimeout) clearTimeout(hoverTimeout);
+                        hoverTimeout = setTimeout(() => {
+                            // Contraer el botón activo
+                            navButtons.forEach(btn => {
+                                if (btn.classList.contains('active')) {
+                                    btn.classList.add('nav-btn-contracted');
+                                }
+                            });
+                        }, 50);
+                    }
+                });
+                
+                button.addEventListener('mouseleave', function() {
+                    // Limpiar timeout de entrada si existe
+                    if (hoverTimeout) {
+                        clearTimeout(hoverTimeout);
+                        hoverTimeout = null;
+                    }
+                    
+                    // Delay antes de expandir para evitar parpadeo
+                    if (leaveTimeout) clearTimeout(leaveTimeout);
+                    leaveTimeout = setTimeout(() => {
+                        // Expandir de nuevo el botón activo
+                        navButtons.forEach(btn => {
+                            if (btn.classList.contains('active')) {
+                                btn.classList.remove('nav-btn-contracted');
+                            }
+                        });
+                    }, 100);
+                });
+            });
+            
+            // Si el mouse sale completamente del menú, restaurar inmediatamente
+            if (navMenu) {
+                navMenu.addEventListener('mouseleave', function() {
+                    if (hoverTimeout) clearTimeout(hoverTimeout);
+                    if (leaveTimeout) clearTimeout(leaveTimeout);
+                    
+                    navButtons.forEach(btn => {
+                        if (btn.classList.contains('active')) {
+                            btn.classList.remove('nav-btn-contracted');
+                        }
+                    });
+                });
+            }
+        });
+    </script>
 
     <style>
         .login-screen {
