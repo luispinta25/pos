@@ -295,6 +295,38 @@
 </div>
 
 
+<div class="modal-cantidad-overlay" id="modalIngresoDirecto">
+    <div class="modal-cantidad-box">
+        <div class="modal-cantidad-header">
+            <h3 id="modalIngresoDirectoTitulo"><i class="fas fa-barcode"></i> Escanee el Producto</h3>
+            <button class="modal-cantidad-close" onclick="cerrarModalIngresoDirecto()">&times;</button>
+        </div>
+        <div class="modal-cantidad-body">
+            <div class="cantidad-input-group">
+                <label for="modalIngresoCodigoInput">Código del Producto:</label>
+                <input 
+                    type="text" 
+                    id="modalIngresoCodigoInput" 
+                    class="modal-cantidad-input" 
+                    placeholder="Escanee o escriba el código"
+                    autofocus>
+            </div>
+            <div id="modalIngresoCantidadDisplay" style="margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 8px; text-align: center; font-size: 1.2em; font-weight: bold; color: #1976d2;">
+                Cantidad a agregar: <span id="modalIngresoCantidadTexto">1</span> unidad(es)
+            </div>
+            <div id="modalIngresoMensaje" style="margin-top: 10px; padding: 10px; border-radius: 4px; display: none;"></div>
+        </div>
+        <div class="modal-cantidad-footer">
+            <button class="btn btn-secondary" onclick="cerrarModalIngresoDirecto()">Cancelar</button>
+            <button class="btn btn-accent" onclick="confirmarIngresoDirecto()">
+                <i class="fas fa-plus"></i>
+                <span>Agregar al Carrito</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+
 <div class="modal" id="modalGarantia">
     <div class="modal-overlay"></div>
     <div class="modal-content">
@@ -2066,19 +2098,22 @@
                 const cleanup = () => {
                     okBtn.removeEventListener('click', handleConfirm);
                     cancelBtn.removeEventListener('click', handleCancel);
+                    document.removeEventListener('keydown', handleKeys);
                 };
                 
                 okBtn.addEventListener('click', handleConfirm);
                 cancelBtn.addEventListener('click', handleCancel);
                 
-                // ESC para cancelar
-                const handleEsc = (e) => {
+                // ESC para cancelar, Enter para confirmar
+                const handleKeys = (e) => {
                     if (e.key === 'Escape') {
                         handleCancel();
-                        document.removeEventListener('keydown', handleEsc);
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleConfirm();
                     }
                 };
-                document.addEventListener('keydown', handleEsc);
+                document.addEventListener('keydown', handleKeys);
             } else {
                 // Usar botones personalizados
                 titleEl.innerHTML = `<i class="fas fa-exclamation-circle"></i><span>${titulo}</span>`;
@@ -2087,7 +2122,7 @@
                 // Crear botones personalizados
                 buttonsContainer.innerHTML = '';
                 
-                botones.forEach(boton => {
+                botones.forEach((boton, index) => {
                     const btn = document.createElement('button');
                     // Asegurar que siempre tenga la clase base custom-confirm-btn
                     const clases = boton.clase || 'custom-confirm-btn-confirm';
@@ -2096,6 +2131,7 @@
                     btn.style.cssText = 'white-space: nowrap;'; // Evitar que el texto se rompa
                     btn.onclick = () => {
                         overlay.classList.remove('active');
+                        document.removeEventListener('keydown', handleKeys);
                         if (boton.callback) boton.callback();
                         resolve(true);
                     };
@@ -2105,15 +2141,25 @@
                 // Mostrar overlay
                 overlay.classList.add('active');
                 
-                // ESC para cerrar
-                const handleEsc = (e) => {
+                // ESC para cerrar, Enter para confirmar el primer botón (usualmente el principal)
+                const handleKeys = (e) => {
                     if (e.key === 'Escape') {
                         overlay.classList.remove('active');
-                        document.removeEventListener('keydown', handleEsc);
+                        document.removeEventListener('keydown', handleKeys);
                         resolve(false);
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        // Ejecutar el callback del primer botón que sea de confirmación
+                        const confirmButton = botones.find(b => 
+                            b.clase && (b.clase.includes('confirm') || b.clase.includes('primary'))
+                        ) || botones[0];
+                        overlay.classList.remove('active');
+                        document.removeEventListener('keydown', handleKeys);
+                        if (confirmButton.callback) confirmButton.callback();
+                        resolve(true);
                     }
                 };
-                document.addEventListener('keydown', handleEsc);
+                document.addEventListener('keydown', handleKeys);
             }
         });
     }
@@ -2201,7 +2247,8 @@
             ventaState.busquedaSeleccionado = 0;
         }
         
-        mostrarResultadosBusqueda(ventaState.busquedaResultados);
+        // Pasar skipAutoScroll=true para evitar conflicto con scroll manual
+        mostrarResultadosBusqueda(ventaState.busquedaResultados, true);
         
         // Hacer scroll al elemento seleccionado
         const items = document.querySelectorAll('.search-result-item');
@@ -2390,8 +2437,16 @@
         let currentSearchId = 0;
         
         searchInput.addEventListener('input', function(e) {
-            const valor = e.target.value;
+            let valor = e.target.value;
             clearTimeout(debounceTimer);
+            
+            // SUPRIMIR 0 INICIAL: Si son 5+ dígitos numéricos que empiezan con 0, quitarlo
+            if (/^0\d{4,}$/.test(valor.trim())) {
+                const codigoLimpio = valor.trim().replace(/^0+/, '') || '0';
+                e.target.value = codigoLimpio;
+                valor = codigoLimpio;
+                console.log(`🧮 Código limpiado: ${valor.trim()} → ${codigoLimpio}`);
+            }
             
             // Si está vacío, limpiar resultados inmediatamente
             if (!valor || valor.trim().length === 0) {
@@ -2433,6 +2488,33 @@
             const hayModalAbierto = (modalCantidad && modalCantidad.classList.contains('active')) ||
                                    (modalVenta && modalVenta.classList.contains('active')) ||
                                    (customConfirm && customConfirm.classList.contains('active'));
+            
+            // Si se presiona SOLO Alt (sin otra tecla), abrir modal de ingreso con cantidad pre-definida
+            if (e.key === 'Alt' && !hayModalAbierto) {
+                const valor = e.target.value.trim();
+                
+                // Si el campo tiene números, usar como cantidad
+                if (valor && /^\d+(\.\d+)?$/.test(valor)) {
+                    e.preventDefault();
+                    
+                    const cantidad = parseFloat(valor);
+                    
+                    if (cantidad > 0) {
+                        // Limpiar campo de búsqueda y resultados
+                        e.target.value = '';
+                        document.getElementById('searchResults').innerHTML = '';
+                        ventaState.busquedaResultados = [];
+                        ventaState.busquedaSeleccionado = -1;
+                        
+                        // Abrir modal con cantidad pre-definida
+                        mostrarModalIngresoDirecto('', cantidad);
+                        setTimeout(() => {
+                            document.getElementById('modalIngresoCodigoInput').focus();
+                        }, 150);
+                    }
+                }
+                return;
+            }
             
             // Si se presiona SOLO Shift (sin otra tecla), abrir modal de cantidad rápida
             if (e.key === 'Shift' && !hayModalAbierto) {
@@ -2483,42 +2565,15 @@
             }
             
             if (e.key === 'Enter' && !hayModalAbierto) {
-                e.preventDefault();
-                e.stopPropagation(); // Evitar propagación
-                
-                // Comportamiento normal de Enter (agregar 1 unidad)
-                // Cancelar cualquier búsqueda pendiente
-                clearTimeout(debounceTimer);
-                currentSearchId++; // Invalidar búsquedas anteriores
-                window.currentSearchId = currentSearchId; // Exponer globalmente
-                
                 const valor = e.target.value.trim();
-                
-                if (valor) {
-                    // Si hay resultados de búsqueda y uno está seleccionado, usar ese
-                    if (ventaState.busquedaResultados.length > 0 && ventaState.busquedaSeleccionado >= 0) {
-                        const productoSeleccionado = ventaState.busquedaResultados[ventaState.busquedaSeleccionado];
-                        if (productoSeleccionado) {
-                            await agregarProducto(productoSeleccionado.codigo);
-                            return;
-                        }
-                    }
-                    
-                    // Si no hay selección o es solo números, buscar por código
-                    if (!/\D/.test(valor)) {
-                        // Solo números - buscar por código
-                        e.target.value = '';
-                        document.getElementById('searchResults').innerHTML = '';
-                        await agregarProductoPorCodigo(valor);
-                        e.target.focus();
-                    } else {
-                        // Tiene letras - si hay un resultado seleccionado, agregarlo
-                        if (ventaState.busquedaResultados.length > 0 && ventaState.busquedaSeleccionado >= 0) {
-                            const productoSeleccionado = ventaState.busquedaResultados[ventaState.busquedaSeleccionado];
-                            if (productoSeleccionado) {
-                                await agregarProducto(productoSeleccionado.codigo);
-                            }
-                        }
+                // Si hay resultados de búsqueda y uno está seleccionado, usar ese
+                if (valor && ventaState.busquedaResultados.length > 0 && ventaState.busquedaSeleccionado >= 0) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const productoSeleccionado = ventaState.busquedaResultados[ventaState.busquedaSeleccionado];
+                    if (productoSeleccionado) {
+                        await agregarProducto(productoSeleccionado.codigo);
+                        return;
                     }
                 }
             }
@@ -2594,6 +2649,33 @@
                 }
             });
         });
+
+        // Modal de ingreso directo - Confirmar con Enter
+        const modalIngresoCodigoInput = document.getElementById('modalIngresoCodigoInput');
+        
+        if (modalIngresoCodigoInput) {
+            // Remover listeners previos si existen
+            const oldInput = modalIngresoCodigoInput.cloneNode(true);
+            modalIngresoCodigoInput.parentNode.replaceChild(oldInput, modalIngresoCodigoInput);
+            const newInput = document.getElementById('modalIngresoCodigoInput');
+            
+            newInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Enter confirma directamente
+                    confirmarIngresoDirecto();
+                }
+            });
+            
+            newInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    cerrarModalIngresoDirecto();
+                }
+            });
+        }
     }
 
     // =====================================================
@@ -2685,7 +2767,7 @@
         }
     }
 
-    function mostrarResultadosBusqueda(productos) {
+    function mostrarResultadosBusqueda(productos, skipAutoScroll = false) {
         const container = document.getElementById('searchResults');
         
         // Guardar resultados para navegación
@@ -2725,6 +2807,11 @@
                 </div>
             `;
         }).join('');
+        
+        // AUTO-SCROLL ARRIBA: Solo cuando aparecen nuevos resultados (no al navegar con flechas)
+        if (!skipAutoScroll) {
+            container.scrollTop = 0;
+        }
     }
 
     async function agregarProductoPorCodigo(codigo) {
@@ -3739,6 +3826,184 @@
     window.mostrarModalCantidadRapida = mostrarModalCantidadRapida;
     window.cerrarModalCantidad = cerrarModalCantidad;
     window.confirmarCantidadRapida = confirmarCantidadRapida;
+
+    // ========= MODAL DE INGRESO DIRECTO POR CÓDIGO =========
+    let cantidadPredefinida = 1; // Variable global para la cantidad
+    
+    function mostrarModalIngresoDirecto(codigoInicial = '', cantidad = 1) {
+        const modal = document.getElementById('modalIngresoDirecto');
+        const inputCodigo = document.getElementById('modalIngresoCodigoInput');
+        const mensaje = document.getElementById('modalIngresoMensaje');
+        const cantidadTexto = document.getElementById('modalIngresoCantidadTexto');
+        const titulo = document.getElementById('modalIngresoDirectoTitulo');
+        
+        // Guardar cantidad predefinida
+        cantidadPredefinida = cantidad;
+        
+        // Actualizar título y cantidad
+        titulo.innerHTML = `<i class="fas fa-barcode"></i> Escanee el Producto para Agregar ${cantidad} Unidad(es)`;
+        cantidadTexto.textContent = cantidad;
+        
+        // Limpiar y preparar input
+        inputCodigo.value = codigoInicial;
+        mensaje.style.display = 'none';
+        
+        // Mostrar modal
+        modal.classList.add('active');
+        
+        // Enfocar input de código
+        setTimeout(() => {
+            inputCodigo.focus();
+            if (codigoInicial) {
+                inputCodigo.select();
+            }
+        }, 100);
+    }
+
+    function cerrarModalIngresoDirecto() {
+        const modal = document.getElementById('modalIngresoDirecto');
+        modal.classList.remove('active');
+        
+        // Resetear cantidad predefinida
+        cantidadPredefinida = 1;
+        
+        // Limpiar inputs
+        document.getElementById('modalIngresoCodigoInput').value = '';
+        document.getElementById('modalIngresoMensaje').style.display = 'none';
+        
+        // Volver a enfocar búsqueda
+        setTimeout(() => {
+            document.getElementById('searchInput').focus();
+        }, 200);
+    }
+
+    async function confirmarIngresoDirecto() {
+        const inputCodigo = document.getElementById('modalIngresoCodigoInput');
+        const mensaje = document.getElementById('modalIngresoMensaje');
+        
+        let codigo = inputCodigo.value.trim();
+        const cantidad = cantidadPredefinida;
+        
+        // Validar código
+        if (!codigo) {
+            mostrarMensajeModal('⚠️ Ingresa o escanea un código de producto', 'warning');
+            inputCodigo.focus();
+            return;
+        }
+        
+        // Suprimir 0 inicial si tiene 5+ dígitos numéricos
+        if (/^0\d{4,}$/.test(codigo)) {
+            codigo = codigo.replace(/^0+/, '') || '0';
+            console.log(`🧮 Código limpiado en modal: ${inputCodigo.value} → ${codigo}`);
+        }
+        
+        try {
+            // Buscar producto por código EXACTO
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            
+            // Buscar primero en caché
+            let producto = null;
+            if (cargaInicialCompleta && window.inventarioCache.productos) {
+                producto = window.inventarioCache.productos.find(p => p.codigo === codigo);
+            }
+            
+            // Si no está en caché, buscar en BD
+            if (!producto) {
+                const { data, error } = await db
+                    .from('inventario')
+                    .select('*')
+                    .eq('codigo', codigo)
+                    .single();
+                
+                if (error || !data) {
+                    mostrarMensajeModal(`❌ Producto no encontrado: ${codigo}`, 'danger');
+                    inputCodigo.focus();
+                    inputCodigo.select();
+                    return;
+                }
+                
+                producto = data;
+            }
+            
+            // Verificar stock
+            if (producto.stock <= 0) {
+                mostrarMensajeModal('⚠️ Producto sin stock disponible', 'danger');
+                return;
+            }
+            
+            // Calcular stock disponible
+            const enCarrito = ventaState.carrito.find(item => item.codigo === producto.codigo);
+            const cantidadEnCarrito = enCarrito ? enCarrito.cantidad : 0;
+            const stockDisponible = producto.stock - cantidadEnCarrito;
+            
+            // Validar que no exceda stock
+            if (cantidad > stockDisponible) {
+                mostrarMensajeModal(`⚠️ Stock insuficiente. Disponible: ${stockDisponible}`, 'warning');
+                return;
+            }
+            
+            // Agregar al carrito
+            if (enCarrito) {
+                enCarrito.cantidad += cantidad;
+            } else {
+                ventaState.carrito.unshift({
+                    codigo: producto.codigo,
+                    nombre: producto.producto,
+                    precio: producto.precio,
+                    cantidad: cantidad,
+                    stock: producto.stock,
+                    costo: producto.costo || 0,
+                    unidad: producto.unidad_paquete || 'UNIDADES'
+                });
+            }
+            
+            // Actualizar vista
+            actualizarCarrito();
+            guardarCarritoEnCache();
+            
+            // Limpiar búsqueda
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').innerHTML = '';
+            ventaState.busquedaResultados = [];
+            ventaState.busquedaSeleccionado = -1;
+            
+            // Mostrar confirmación
+            window.app.showToast(`✓ ${cantidad} × ${producto.producto}`, 'success', 2000);
+            
+            // Cerrar modal
+            cerrarModalIngresoDirecto();
+            
+        } catch (error) {
+            console.error('Error al buscar producto:', error);
+            mostrarMensajeModal('❌ Error al buscar producto', 'danger');
+        }
+    }
+
+    function mostrarMensajeModal(texto, tipo) {
+        const mensaje = document.getElementById('modalIngresoMensaje');
+        mensaje.textContent = texto;
+        mensaje.style.display = 'block';
+        
+        // Colores según tipo
+        if (tipo === 'warning') {
+            mensaje.style.background = '#fff3cd';
+            mensaje.style.color = '#856404';
+            mensaje.style.border = '1px solid #ffc107';
+        } else if (tipo === 'danger') {
+            mensaje.style.background = '#f8d7da';
+            mensaje.style.color = '#721c24';
+            mensaje.style.border = '1px solid #dc3545';
+        } else {
+            mensaje.style.background = '#d1ecf1';
+            mensaje.style.color = '#0c5460';
+            mensaje.style.border = '1px solid #17a2b8';
+        }
+    }
+
+    // Exportar funciones al scope global
+    window.mostrarModalIngresoDirecto = mostrarModalIngresoDirecto;
+    window.cerrarModalIngresoDirecto = cerrarModalIngresoDirecto;
+    window.confirmarIngresoDirecto = confirmarIngresoDirecto;
 
     // ========= MODAL DE ACTUALIZACIÓN DE CLIENTE =========
     function mostrarModalActualizarCliente(cliente) {
