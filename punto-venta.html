@@ -26,7 +26,13 @@
                 </div>
 
                 
-                <div id="searchResults" class="search-results"></div>
+                <div id="searchResults" class="search-results">
+                    <div id="loadingCache" style="display: none; text-align: center; padding: 40px; color: #d4a017;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 10px;"></i>
+                        <p style="margin: 0; font-weight: 500;">Cargando inventario...</p>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #999;">Esto solo ocurre una vez</p>
+                    </div>
+                </div>
             </div>
 
             
@@ -1742,6 +1748,264 @@
     // Referencia local para facilitar el código (usar var para evitar redeclaración)
     var ventaState = window.ventaState;
 
+    // =====================================================
+    // SISTEMA DE CACHÉ DE INVENTARIO
+    // =====================================================
+    
+    if (!window.inventarioCache) {
+        window.inventarioCache = {
+            productos: [],
+            ultimaActualizacion: null,
+            cargando: false,
+            version: 0
+        };
+    }
+    
+    // Control de actualizaciones automáticas
+    let actualizacionTimer = null;
+    let ultimaBusqueda = Date.now();
+    let cargaInicialCompleta = false;
+
+    // Cargar inventario completo al inicializar
+    async function cargarInventarioCompleto() {
+        if (window.inventarioCache.cargando) return;
+        
+        window.inventarioCache.cargando = true;
+        
+        // Mostrar indicador de carga
+        const loadingCache = document.getElementById('loadingCache');
+        if (loadingCache) {
+            loadingCache.style.display = 'block';
+        }
+        
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            
+            if (!db) {
+                console.error('❌ Base de datos no disponible');
+                return false;
+            }
+
+            console.log('📦 Cargando inventario completo...');
+            const inicio = Date.now();
+            
+            const { data, error } = await db
+                .from('inventario')
+                .select('*')
+                .order('producto');
+
+            if (error) {
+                console.error('❌ Error cargando inventario:', error);
+                return false;
+            }
+
+            window.inventarioCache.productos = data || [];
+            window.inventarioCache.ultimaActualizacion = Date.now();
+            window.inventarioCache.version++;
+            
+            const tiempo = Date.now() - inicio;
+            const tamano = (JSON.stringify(data).length / 1024).toFixed(2);
+            console.log(`✅ ${data.length} productos cargados en ${tiempo}ms (~${tamano} KB)`);
+            
+            cargaInicialCompleta = true;
+            actualizarIndicadorCache();
+            
+            return true;
+
+        } catch (error) {
+            console.error('❌ Error cargando inventario:', error);
+            return false;
+        } finally {
+            window.inventarioCache.cargando = false;
+            
+            // Ocultar indicador de carga
+            const loadingCache = document.getElementById('loadingCache');
+            if (loadingCache) {
+                loadingCache.style.display = 'none';
+            }
+        }
+    }
+
+    // Actualizar caché silenciosamente en background
+    async function actualizarCacheSilencioso() {
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            
+            const { data, error } = await db
+                .from('inventario')
+                .select('*')
+                .order('producto');
+
+            if (!error && data) {
+                window.inventarioCache.productos = data;
+                window.inventarioCache.ultimaActualizacion = Date.now();
+                window.inventarioCache.version++;
+                console.log('🔄 Caché actualizado:', data.length, 'productos');
+                actualizarIndicadorCache();
+            }
+        } catch (error) {
+            console.error('⚠️ Error actualizando caché:', error);
+        }
+    }
+
+    // Iniciar actualizaciones periódicas
+    function iniciarActualizacionesPeriodicas() {
+        if (actualizacionTimer) return; // Ya está activo
+        
+        console.log('▶️ Iniciando actualizaciones automáticas (cada 60s)');
+        
+        // Actualizar badge cada 5 segundos para mostrar tiempo transcurrido
+        setInterval(() => {
+            if (cargaInicialCompleta) {
+                actualizarIndicadorCache();
+            }
+        }, 5000);
+        
+        actualizacionTimer = setInterval(async () => {
+            // Si hace más de 60 seg sin buscar → detener
+            const tiempoInactivo = Date.now() - ultimaBusqueda;
+            
+            if (tiempoInactivo > 60000) {
+                clearInterval(actualizacionTimer);
+                actualizacionTimer = null;
+                console.log('⏸️ Actualizaciones pausadas (60s de inactividad)');
+                return;
+            }
+            
+            // Actualizar caché en background
+            await actualizarCacheSilencioso();
+        }, 60000); // Cada 60 segundos
+    }
+
+    // Detener actualizaciones
+    function detenerActualizacionesPeriodicas() {
+        if (actualizacionTimer) {
+            clearInterval(actualizacionTimer);
+            actualizacionTimer = null;
+            console.log('⏹️ Actualizaciones detenidas');
+        }
+    }
+
+    // Actualizar indicador visual de última actualización
+    function actualizarIndicadorCache() {
+        const searchResults = document.getElementById('searchResults');
+        if (!searchResults) return;
+        
+        // Agregar badge de caché si no existe
+        let badge = document.getElementById('cache-badge');
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.id = 'cache-badge';
+            badge.style.cssText = `
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: rgba(212, 160, 23, 0.1);
+                border: 1px solid rgba(212, 160, 23, 0.3);
+                color: #d4a017;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 0.75em;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                z-index: 10;
+            `;
+            const searchCard = searchResults.closest('.card');
+            if (searchCard) {
+                searchCard.style.position = 'relative';
+                searchCard.appendChild(badge);
+            }
+        }
+        
+        if (window.inventarioCache.ultimaActualizacion) {
+            const ahora = Date.now();
+            const diff = Math.floor((ahora - window.inventarioCache.ultimaActualizacion) / 1000);
+            const tiempo = diff < 60 ? `${diff}s` : `${Math.floor(diff / 60)}m`;
+            badge.innerHTML = `<i class="fas fa-database"></i> ${window.inventarioCache.productos.length} productos (${tiempo})`;
+        }
+    }
+
+    // Buscar en caché local (instantáneo)
+    function buscarEnCache(query) {
+        if (!window.inventarioCache.productos || window.inventarioCache.productos.length === 0) {
+            return [];
+        }
+
+        const queryLower = query.toLowerCase().trim();
+        const palabras = queryLower.split(/\s+/).filter(p => p.length > 0);
+        
+        // Verificar si es búsqueda numérica de 4+ dígitos
+        const esNumerico = /^\d+$/.test(query.trim());
+        const longitudNumeros = query.trim().length;
+        
+        let resultados = [];
+        
+        if (esNumerico && longitudNumeros >= 4) {
+            // Búsqueda por código que empiece con los dígitos
+            resultados = window.inventarioCache.productos.filter(p => 
+                p.codigo.toLowerCase().startsWith(queryLower)
+            );
+        } else if (palabras.length === 1) {
+            // Una sola palabra: buscar en código O producto
+            const palabra = palabras[0];
+            resultados = window.inventarioCache.productos.filter(p => {
+                const producto = p.producto.toLowerCase();
+                const codigo = p.codigo.toLowerCase();
+                return producto.includes(palabra) || codigo.includes(palabra);
+            });
+        } else {
+            // Múltiples palabras: TODAS deben estar en el producto o código
+            resultados = window.inventarioCache.productos.filter(p => {
+                const producto = p.producto.toLowerCase();
+                const codigo = p.codigo.toLowerCase();
+                
+                // Verificar que TODAS las palabras estén presentes
+                return palabras.every(palabra => 
+                    producto.includes(palabra) || codigo.includes(palabra)
+                );
+            });
+        }
+        
+        // Ordenar resultados por relevancia
+        resultados.sort((a, b) => {
+            const codigoA = a.codigo.toLowerCase();
+            const codigoB = b.codigo.toLowerCase();
+            const nombreA = a.producto.toLowerCase();
+            const nombreB = b.producto.toLowerCase();
+            
+            // Prioridad 1: Coincidencia exacta de código
+            const exactoCodigoA = codigoA === queryLower;
+            const exactoCodigoB = codigoB === queryLower;
+            if (exactoCodigoA && !exactoCodigoB) return -1;
+            if (!exactoCodigoA && exactoCodigoB) return 1;
+            
+            // Prioridad 2: Código que empieza con el query
+            const empiezaCodigoA = codigoA.startsWith(queryLower);
+            const empiezaCodigoB = codigoB.startsWith(queryLower);
+            if (empiezaCodigoA && !empiezaCodigoB) return -1;
+            if (!empiezaCodigoA && empiezaCodigoB) return 1;
+            
+            // Prioridad 3: Coincidencia exacta de nombre
+            const exactoNombreA = nombreA === queryLower;
+            const exactoNombreB = nombreB === queryLower;
+            if (exactoNombreA && !exactoNombreB) return -1;
+            if (!exactoNombreA && exactoNombreB) return 1;
+            
+            // Prioridad 4: Nombre que empieza con el query
+            const empiezaNombreA = nombreA.startsWith(queryLower);
+            const empiezaNombreB = nombreB.startsWith(queryLower);
+            if (empiezaNombreA && !empiezaNombreB) return -1;
+            if (!empiezaNombreA && empiezaNombreB) return 1;
+            
+            // Por defecto: orden alfabético
+            return codigoA.localeCompare(codigoB);
+        });
+        
+        // Limitar a 50 resultados
+        return resultados.slice(0, 50);
+    }
+
     // Guardar carrito en localStorage
     function guardarCarritoEnCache() {
         try {
@@ -1974,12 +2238,20 @@
     // INICIALIZACIÓN
     // =====================================================
 
-    function initPuntoVenta() {
+    async function initPuntoVenta() {
         // Cargar carrito desde caché y actualizar vista
         actualizarCarrito();
         
         // Event listeners
         setupEventListeners();
+        
+        // Cargar inventario completo en background
+        console.log('🚀 Inicializando sistema de caché...');
+        cargarInventarioCompleto().then(exito => {
+            if (exito) {
+                console.log('✅ Sistema de caché listo');
+            }
+        });
         
         // Focus en búsqueda después de configurar listeners
         setTimeout(() => {
@@ -2104,7 +2376,16 @@
             return;
         }
         
-        // Input con debounce simple
+        // Al hacer focus, iniciar actualizaciones y cargar caché si es necesario
+        searchInput.addEventListener('focus', async function() {
+            if (!cargaInicialCompleta) {
+                console.log('🚀 Cargando inventario por primera vez...');
+                await cargarInventarioCompleto();
+            }
+            iniciarActualizacionesPeriodicas();
+        });
+        
+        // Input con debounce inteligente (solo para fallback a BD)
         let debounceTimer;
         let currentSearchId = 0;
         
@@ -2123,13 +2404,24 @@
             // Resetear selección cuando cambia el texto
             ventaState.busquedaSeleccionado = -1;
             
-            // Buscar después del debounce
-            debounceTimer = setTimeout(function() {
+            // Detectar si es búsqueda por código (4+ dígitos numéricos)
+            const esCodigoNumerico = /^\d{4,}$/.test(valor.trim());
+            
+            // Si hay caché disponible O es código numérico → búsqueda instantánea (sin debounce)
+            if (cargaInicialCompleta || esCodigoNumerico) {
                 currentSearchId++;
-                window.currentSearchId = currentSearchId; // Exponer globalmente
+                window.currentSearchId = currentSearchId;
                 const searchId = currentSearchId;
                 buscarProductos(valor, searchId);
-            }, 300);
+            } else {
+                // Si no hay caché y es búsqueda alfanumérica → usar debounce corto (100ms)
+                debounceTimer = setTimeout(function() {
+                    currentSearchId++;
+                    window.currentSearchId = currentSearchId;
+                    const searchId = currentSearchId;
+                    buscarProductos(valor, searchId);
+                }, 100);
+            }
         });
         
         searchInput.addEventListener('keydown', async function(e) {
@@ -2159,15 +2451,28 @@
                     // Si es solo números, buscar el producto por código
                     if (!/\D/.test(valor)) {
                         try {
-                            const db = window.app.db;
-                            const { data, error } = await db
-                                .from('inventario')
-                                .select('*')
-                                .eq('codigo', valor)
-                                .single();
+                            // Buscar primero en caché
+                            let producto = null;
+                            if (cargaInicialCompleta && window.inventarioCache.productos) {
+                                producto = window.inventarioCache.productos.find(p => p.codigo === valor);
+                            }
                             
-                            if (!error && data) {
-                                mostrarModalCantidadRapida(data);
+                            // Si no está en caché, buscar en BD
+                            if (!producto) {
+                                const db = window.app.db;
+                                const { data, error } = await db
+                                    .from('inventario')
+                                    .select('*')
+                                    .eq('codigo', valor)
+                                    .single();
+                                
+                                if (!error && data) {
+                                    producto = data;
+                                }
+                            }
+                            
+                            if (producto) {
+                                mostrarModalCantidadRapida(producto);
                                 return;
                             }
                         } catch (error) {
@@ -2302,7 +2607,30 @@
             return;
         }
 
+        // Actualizar timestamp de última búsqueda
+        ultimaBusqueda = Date.now();
+
         try {
+            // FASE 1: Buscar en caché (instantáneo)
+            if (cargaInicialCompleta && window.inventarioCache.productos.length > 0) {
+                const inicio = Date.now();
+                const resultados = buscarEnCache(query);
+                const tiempo = Date.now() - inicio;
+                
+                console.log(`⚡ Búsqueda en caché: ${resultados.length} resultados en ${tiempo}ms`);
+                
+                // Verificar si esta búsqueda sigue siendo válida
+                if (searchId && searchId !== window.currentSearchId) {
+                    return; // Búsqueda obsoleta, ignorar resultados
+                }
+                
+                mostrarResultadosBusqueda(resultados);
+                return;
+            }
+            
+            // FALLBACK: Si no hay caché, buscar en BD (primera vez o error)
+            console.log('🔍 Caché no disponible, buscando en BD...');
+            
             if (!window.app || !window.app.db) {
                 const dbDirect = typeof getDB === 'function' ? getDB() : (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
                 
@@ -2314,31 +2642,29 @@
 
             const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
 
+            // Búsqueda en BD con lógica mejorada
+            const palabras = query.trim().split(/\s+/).filter(p => p.length > 0);
+            let queryBuilder = db.from('inventario').select('*');
+            
             // Verificar si es búsqueda numérica de 4+ dígitos
             const esNumerico = /^\d+$/.test(query.trim());
             const longitudNumeros = query.trim().length;
             
-            let queryBuilder = db.from('inventario').select('*');
-            
-            // Si son 4 o más dígitos numéricos, buscar SOLO por código que EMPIECE con esos dígitos
             if (esNumerico && longitudNumeros >= 4) {
+                // Búsqueda por código
                 queryBuilder = queryBuilder.ilike('codigo', `${query.trim()}%`);
+            } else if (palabras.length === 1) {
+                // Una palabra: código O producto
+                const searchPattern = `%${palabras[0]}%`;
+                queryBuilder = queryBuilder.or(`codigo.ilike.${searchPattern},producto.ilike.${searchPattern}`);
             } else {
-                // Búsqueda normal: dividir en palabras
-                const palabras = query.trim().split(/\s+/).filter(p => p.length > 0);
-                
-                // Si es una sola palabra, buscar en código o producto
-                if (palabras.length === 1) {
-                    const searchPattern = `%${palabras[0]}%`;
-                    queryBuilder = queryBuilder.or(`codigo.ilike.${searchPattern},producto.ilike.${searchPattern}`);
-                } else {
-                    // Para múltiples palabras, buscar que todas estén en el producto
-                    const conditions = palabras.map(palabra => `producto.ilike.%${palabra}%`).join(',');
-                    queryBuilder = queryBuilder.or(conditions);
-                }
+                // Múltiples palabras: encadenar ilike para AND lógico
+                palabras.forEach(palabra => {
+                    queryBuilder = queryBuilder.ilike('producto', `%${palabra}%`);
+                });
             }
             
-            const { data, error } = await queryBuilder.limit(20);
+            const { data, error } = await queryBuilder.limit(50);
 
             if (error) {
                 throw error;
@@ -2346,66 +2672,13 @@
 
             // Verificar si esta búsqueda sigue siendo válida
             if (searchId && searchId !== window.currentSearchId) {
-                return; // Búsqueda obsoleta, ignorar resultados
+                return;
             }
 
-            // Si hay múltiples palabras (y NO es búsqueda numérica de 4+), filtrar localmente
-            let resultados = data;
-            if (!esNumerico || longitudNumeros < 4) {
-                const palabras = query.trim().split(/\s+/).filter(p => p.length > 0);
-                if (palabras.length > 1) {
-                    resultados = data.filter(producto => {
-                        const productoLower = producto.producto.toLowerCase();
-                        const codigoLower = producto.codigo.toLowerCase();
-                        
-                        // Verificar que todas las palabras estén en el producto o código
-                        return palabras.every(palabra => 
-                            productoLower.includes(palabra.toLowerCase()) || 
-                            codigoLower.includes(palabra.toLowerCase())
-                        );
-                    });
-                }
-            }
-            
-            // Ordenar resultados: coincidencia exacta primero
-            const queryLower = query.trim().toLowerCase();
-            resultados.sort((a, b) => {
-                const codigoA = a.codigo.toLowerCase();
-                const codigoB = b.codigo.toLowerCase();
-                const nombreA = a.producto.toLowerCase();
-                const nombreB = b.producto.toLowerCase();
-                
-                // Prioridad 1: Coincidencia exacta de código
-                const exactoCodigoA = codigoA === queryLower;
-                const exactoCodigoB = codigoB === queryLower;
-                if (exactoCodigoA && !exactoCodigoB) return -1;
-                if (!exactoCodigoA && exactoCodigoB) return 1;
-                
-                // Prioridad 2: Código que empieza con el query
-                const empiezaCodigoA = codigoA.startsWith(queryLower);
-                const empiezaCodigoB = codigoB.startsWith(queryLower);
-                if (empiezaCodigoA && !empiezaCodigoB) return -1;
-                if (!empiezaCodigoA && empiezaCodigoB) return 1;
-                
-                // Prioridad 3: Coincidencia exacta de nombre
-                const exactoNombreA = nombreA === queryLower;
-                const exactoNombreB = nombreB === queryLower;
-                if (exactoNombreA && !exactoNombreB) return -1;
-                if (!exactoNombreA && exactoNombreB) return 1;
-                
-                // Prioridad 4: Nombre que empieza con el query
-                const empiezaNombreA = nombreA.startsWith(queryLower);
-                const empiezaNombreB = nombreB.startsWith(queryLower);
-                if (empiezaNombreA && !empiezaNombreB) return -1;
-                if (!empiezaNombreA && empiezaNombreB) return 1;
-                
-                // Por defecto: orden alfabético por código
-                return codigoA.localeCompare(codigoB);
-            });
-
-            mostrarResultadosBusqueda(resultados);
+            mostrarResultadosBusqueda(data || []);
 
         } catch (error) {
+            console.error('❌ Error en búsqueda:', error);
             if (window.app && window.app.showToast) {
                 window.app.showToast('Error al buscar productos: ' + error.message, 'danger');
             }
@@ -2490,10 +2763,44 @@
     // GESTIÓN DEL CARRITO
     // =====================================================
 
-    function agregarAlCarrito(producto) {
+    async function agregarAlCarrito(producto) {
+        // Verificar stock real en BD antes de agregar (seguridad multi-caja)
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            
+            const { data: productoActual, error } = await db
+                .from('inventario')
+                .select('stock, precio')
+                .eq('codigo', producto.codigo)
+                .single();
+            
+            if (error || !productoActual) {
+                window.app.showToast('Error al verificar stock', 'danger');
+                return;
+            }
+            
+            // Actualizar stock y precio en el objeto producto
+            producto.stock = productoActual.stock;
+            producto.precio = productoActual.precio;
+            
+            // Actualizar en caché local también
+            if (window.inventarioCache.productos) {
+                const productoCache = window.inventarioCache.productos.find(p => p.codigo === producto.codigo);
+                if (productoCache) {
+                    productoCache.stock = productoActual.stock;
+                    productoCache.precio = productoActual.precio;
+                }
+            }
+            
+        } catch (error) {
+            console.error('Error verificando stock:', error);
+        }
+        
         // Verificar stock
         if (producto.stock <= 0) {
-            window.app.showToast('Producto sin stock disponible', 'danger');
+            window.app.showToast('⚠️ Producto sin stock disponible', 'danger');
+            // Actualizar caché completo en background
+            actualizarCacheSilencioso();
             return;
         }
 
@@ -2528,7 +2835,7 @@
             carritoColumn.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
-        window.app.showToast(`Producto agregado: ${producto.producto}`, 'success', 2000);
+        window.app.showToast(`✓ ${producto.producto}`, 'success', 2000);
     }
 
     function actualizarCantidad(codigo, cantidad) {
@@ -3110,34 +3417,69 @@
         // Mostrar modal
         document.getElementById('modalVenta').classList.add('active');
         
+        // SOLUCIÓN BUG: Forzar habilitación del botón antes de calcular
+        const btnConfirmar = document.getElementById('btnConfirmarVenta');
+        if (btnConfirmar) {
+            btnConfirmar.disabled = false;
+            btnConfirmar.style.opacity = '1';
+            btnConfirmar.style.cursor = 'pointer';
+        }
+        
         // Focus en el input de pago
         setTimeout(() => {
             const inputPagado = document.getElementById('pagadoCon');
             if (inputPagado) {
+                // Agregar listener de respaldo por si oninput falla
+                inputPagado.addEventListener('change', calcularVuelto);
+                inputPagado.addEventListener('keyup', calcularVuelto);
+                
                 inputPagado.focus();
                 inputPagado.select();
             }
+            
+            // Calcular vuelto después de que el modal esté listo
             calcularVuelto();
+            
+            // Validación de seguridad: recalcular después de 200ms
+            setTimeout(() => {
+                calcularVuelto();
+                console.log('✅ Modal de venta listo. Botón:', btnConfirmar ? (btnConfirmar.disabled ? 'DESHABILITADO' : 'HABILITADO') : 'NO ENCONTRADO');
+            }, 200);
         }, 100);
     }
 
     function calcularVuelto() {
-        const totalConIva = ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
-        const pagadoCon = parseFloat(document.getElementById('pagadoCon').value) || 0;
+        // Redondear a 2 decimales para evitar problemas de precisión de float
+        const totalConIva = Math.round(ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0) * 100) / 100;
+        const pagadoConRaw = parseFloat(document.getElementById('pagadoCon').value);
+        const pagadoCon = isNaN(pagadoConRaw) ? 0 : Math.round(pagadoConRaw * 100) / 100;
         const vuelto = Math.max(0, pagadoCon - totalConIva);
         
         document.getElementById('vueltoDisplay').textContent = window.app.formatCurrency(vuelto);
         
-        // Deshabilitar botón si no hay suficiente pago
+        // Deshabilitar botón si no hay suficiente pago (con tolerancia de 0.01 para decimales)
         const btnConfirmar = document.getElementById('btnConfirmarVenta');
-        if (pagadoCon < totalConIva) {
+        
+        if (!btnConfirmar) {
+            console.warn('⚠️ Botón confirmar venta no encontrado');
+            return;
+        }
+        
+        // Usar tolerancia de 1 centavo para evitar errores de precisión
+        const diferencia = totalConIva - pagadoCon;
+        
+        if (diferencia > 0.01) {
+            // Falta dinero
             btnConfirmar.disabled = true;
             btnConfirmar.style.opacity = '0.5';
             btnConfirmar.style.cursor = 'not-allowed';
+            btnConfirmar.title = `Faltan $${diferencia.toFixed(2)}`;
         } else {
+            // Pago suficiente
             btnConfirmar.disabled = false;
             btnConfirmar.style.opacity = '1';
             btnConfirmar.style.cursor = 'pointer';
+            btnConfirmar.title = 'Confirmar venta';
         }
     }
 
@@ -3159,6 +3501,33 @@
         if (ventaState.carrito.length === 0) {
             window.app.showToast('<i class="fas fa-exclamation-triangle"></i> El carrito está vacío. Agrega productos para continuar.', 'warning', 3000);
             return;
+        }
+        
+        // SOLUCIÓN BUG: Validación de seguridad del botón
+        const btnConfirmar = document.getElementById('btnConfirmarVenta');
+        if (btnConfirmar && btnConfirmar.disabled) {
+            // Si el botón está deshabilitado, recalcular vuelto
+            console.warn('⚠️ Botón deshabilitado detectado. Recalculando...');
+            calcularVuelto();
+            
+            // Si sigue deshabilitado después de recalcular, verificar pago
+            setTimeout(() => {
+                if (btnConfirmar.disabled) {
+                    const totalConIva = Math.round(ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0) * 100) / 100;
+                    const pagadoCon = Math.round((parseFloat(document.getElementById('pagadoCon').value) || 0) * 100) / 100;
+                    
+                    if (pagadoCon >= totalConIva - 0.01) {
+                        // Forzar habilitación si el pago es suficiente
+                        console.log('✅ Forzando habilitación del botón (pago suficiente)');
+                        btnConfirmar.disabled = false;
+                        btnConfirmar.style.opacity = '1';
+                        btnConfirmar.style.cursor = 'pointer';
+                    } else {
+                        window.app.showToast(`⚠️ El monto pagado ($${pagadoCon.toFixed(2)}) es menor al total ($${totalConIva.toFixed(2)})`, 'warning', 3000);
+                        return;
+                    }
+                }
+            }, 50);
         }
         
         const cliente = ventaState.clienteSeleccionado;
