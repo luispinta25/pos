@@ -260,6 +260,30 @@
 </div>
 
 
+<div class="modal-cantidad-overlay" id="modalExitoVenta">
+    <div class="modal-cantidad-box" style="max-width: 500px;">
+        <div class="modal-cantidad-header" style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white;">
+            <h3 style="display: flex; align-items: center; gap: 10px; margin: 0;">
+                <i class="fas fa-check-circle" style="font-size: 1.5em;"></i>
+                <span>¡Venta Registrada!</span>
+            </h3>
+        </div>
+        <div class="modal-cantidad-body" style="text-align: center; padding: 30px 20px;">
+            <div style="font-size: 3em; color: #4CAF50; margin-bottom: 15px;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 style="margin: 0 0 10px 0; color: #333; font-size: 1.3em;">Venta Exitosa</h3>
+            <p style="color: #666; font-size: 1.1em; margin: 0 0 20px 0;">
+                Código de venta: <strong id="modalExitoCodigoVenta" style="color: #4CAF50;">-</strong>
+            </p>
+            <p style="color: #999; font-size: 0.9em; margin: 0;">
+                <i class="fas fa-keyboard"></i> Presione <strong>Enter</strong> para continuar
+            </p>
+        </div>
+    </div>
+</div>
+
+
 <div class="modal-cantidad-overlay" id="modalCantidadOverlay">
     <div class="modal-cantidad-box">
         <div class="modal-cantidad-header">
@@ -4890,13 +4914,14 @@
 
     async function confirmarVenta() {
         try {
-            // Validar pago
-            const totalConIva = ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0);
-            const pagadoCon = parseFloat(document.getElementById('pagadoCon').value) || 0;
-            const vuelto = Math.max(0, pagadoCon - totalConIva);
+            // Validar pago con redondeo a 2 decimales para evitar problemas de precisión
+            const totalConIva = Math.round(ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0) * 100) / 100;
+            const pagadoCon = Math.round((parseFloat(document.getElementById('pagadoCon').value) || 0) * 100) / 100;
+            const vuelto = Math.max(0, Math.round((pagadoCon - totalConIva) * 100) / 100);
 
-            if (pagadoCon < totalConIva) {
-                window.app.showToast('El monto pagado debe ser igual o mayor al total', 'warning', 3000);
+            // Validación con tolerancia de 1 centavo para evitar errores de redondeo
+            if (pagadoCon < totalConIva - 0.01) {
+                window.app.showToast(`El monto pagado ($${pagadoCon.toFixed(2)}) debe ser igual o mayor al total ($${totalConIva.toFixed(2)})`, 'warning', 3000);
                 return;
             }
 
@@ -5062,30 +5087,38 @@
             if (tipoDocumento === 'FACTURA') {
                 window.app.showToast(`<i class="fas fa-check-circle"></i> Factura ${docNumber} generada exitosamente! Revisa la consola para ver el JSON`, 'success', 5000);
             } else {
-                window.app.showToast(`¡Venta ${ventaIdText} procesada exitosamente!`, 'success', 3000);
-                
-                // Abrir recibo en nueva pestaña
-                abrirRecibo({
-                    saleCode: ventaIdText,
-                    fecha: fechaActual,
-                    total: totalConIva,
-                    pagadoCon: pagadoCon,
-                    vuelto: vuelto,
-                    cliente: ventaState.clienteSeleccionado || {
-                        cedula: '9999999999999',
-                        razon_social: 'CONSUMIDOR FINAL',
-                        direccion: 'S/N',
-                        telefono: 'S/N',
-                        correo: 'S/N'
-                    },
-                    productos: ventaState.carrito.map(item => ({
-                        codigo: item.codigo,
-                        nombre: item.nombre,
-                        cantidad: item.cantidad,
-                        precio: item.precio,
-                        subtotal: item.cantidad * item.precio
-                    }))
-                });
+                // Si la venta es menor a $4, no imprimir recibo
+                if (totalConIva < 4) {
+                    mostrarModalExitoVenta(ventaIdText);
+                } else {
+                    // Abrir recibo en nueva pestaña
+                    abrirRecibo({
+                        saleCode: ventaIdText,
+                        fecha: fechaActual,
+                        total: totalConIva,
+                        pagadoCon: pagadoCon,
+                        vuelto: vuelto,
+                        cliente: ventaState.clienteSeleccionado || {
+                            cedula: '9999999999999',
+                            razon_social: 'CONSUMIDOR FINAL',
+                            direccion: 'S/N',
+                            telefono: 'S/N',
+                            correo: 'S/N'
+                        },
+                        productos: ventaState.carrito.map(item => ({
+                            codigo: item.codigo,
+                            nombre: item.nombre,
+                            cantidad: item.cantidad,
+                            precio: item.precio,
+                            subtotal: item.cantidad * item.precio
+                        }))
+                    });
+                    
+                    // Mostrar modal de éxito después de abrir recibo
+                    setTimeout(() => {
+                        mostrarModalExitoVenta(ventaIdText);
+                    }, 500);
+                }
             }
             
             // Limpiar carrito y caché (sin confirmación porque ya se procesó)
@@ -5184,6 +5217,56 @@
         
         window.app.showToast('<i class="fas fa-check-circle"></i> Garantía generada exitosamente', 'success', 3000);
     }
+
+    // =====================================================
+    // MODAL DE ÉXITO DE VENTA
+    // =====================================================
+    
+    function mostrarModalExitoVenta(codigoVenta) {
+        const modal = document.getElementById('modalExitoVenta');
+        const codigoElement = document.getElementById('modalExitoCodigoVenta');
+        
+        if (codigoElement) {
+            codigoElement.textContent = codigoVenta;
+        }
+        
+        // Mostrar modal
+        modal.classList.add('active');
+        
+        // Crear handler para Enter
+        const handleEnter = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                cerrarModalExitoVenta();
+                document.removeEventListener('keydown', handleEnter);
+            }
+        };
+        
+        // Agregar listener
+        document.addEventListener('keydown', handleEnter);
+        
+        // Auto-cerrar después de 3 segundos y enfocar búsqueda
+        setTimeout(() => {
+            if (modal.classList.contains('active')) {
+                cerrarModalExitoVenta();
+                document.removeEventListener('keydown', handleEnter);
+            }
+        }, 3000);
+    }
+    
+    function cerrarModalExitoVenta() {
+        const modal = document.getElementById('modalExitoVenta');
+        modal.classList.remove('active');
+        
+        // Enfocar búsqueda
+        setTimeout(() => {
+            document.getElementById('searchInput').focus();
+        }, 200);
+    }
+    
+    // Exportar funciones
+    window.mostrarModalExitoVenta = mostrarModalExitoVenta;
+    window.cerrarModalExitoVenta = cerrarModalExitoVenta;
 
     // =====================================================
     // EXPORTAR FUNCIONES GLOBALES
