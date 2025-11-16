@@ -89,10 +89,10 @@
                             class="form-input" 
                             placeholder="Buscar por cédula o nombre..."
                             maxlength="50"
-                            onkeypress="if(event.key === 'Enter') buscarClienteDirecto()">
+                            autocomplete="off">
                         
                         
-                        <div id="clienteSearchResults" class="search-results" style="max-height: 250px;"></div>
+                        <div id="clienteSearchResults" class="search-results" style="max-height: 250px; overflow-y: auto;"></div>
                         
                         <div style="display: flex; gap: 8px; margin-top: 10px;">
                             <button class="btn btn-secondary" onclick="cancelarBusqueda()" style="width: 100%;">
@@ -452,6 +452,14 @@
                 <small style="color: #666; display: block; margin-top: 5px;">
                     Debe ser un correo válido (no puede terminar en @cambiar.com)
                 </small>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="button" id="btnNoCorreoUpdate" class="btn-no-correo" onclick="establecerCorreoGenericoUpdate()" style="display: none;">
+                        <i class="fas fa-envelope"></i> No tiene correo
+                    </button>
+                    <button type="button" id="btnComprobarCorreoUpdate" class="btn-comprobar-correo" onclick="imprimirComprobacionCorreoUpdate()" style="display: none;">
+                        <i class="fas fa-print"></i> Comprobación de correo
+                    </button>
+                </div>
             </div>
 
             <p style="font-size: 0.85em; color: #666; margin-top: 10px;">
@@ -469,8 +477,133 @@
     </div>
 </div>
 
+
+<div class="modal-overlay" id="loadingConsultaAPI" style="display: none;">
+    <div style="text-align: center; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 400px; margin: auto;">
+        <div class="spinner-border" style="width: 4rem; height: 4rem; color: #d4a017; margin-bottom: 20px;" role="status">
+            <div style="width: 60px; height: 60px; border: 6px solid #f3f3f3; border-top: 6px solid #d4a017; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+        </div>
+        <h3 style="color: #333; margin-bottom: 10px; font-size: 1.3em;">
+            <i class="fas fa-search"></i> Consultando Identificación
+        </h3>
+        <p style="color: #666; margin: 0; font-size: 1em;">
+            Obteniendo datos desde webservices.ec...
+        </p>
+        <p style="color: #999; margin-top: 10px; font-size: 0.9em;">
+            Por favor espere un momento
+        </p>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalRegistroCliente">
+    <div class="modal-box" style="max-width: 550px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-plus"></i> Registrar Nuevo Cliente</h3>
+            <button class="modal-close" onclick="cerrarModalRegistroCliente()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="modalRegistroMensaje" style="background: #e3f2fd; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #2196f3;">
+                <i class="fas fa-info-circle"></i> Complete los datos del cliente para registrarlo en el sistema.
+            </p>
+            
+            <div class="form-group">
+                <label class="form-label">Cédula / RUC *</label>
+                <input type="text" id="nuevoClienteCedula" class="form-input" readonly style="background: #f8f9fa;">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Razón Social / Nombre *</label>
+                <input type="text" id="nuevoClienteNombre" class="form-input" required style="text-transform: uppercase;">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Dirección *</label>
+                <input type="text" id="nuevoClienteDireccion" class="form-input" required placeholder="Ingrese dirección completa" style="text-transform: uppercase;">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" id="nuevoClienteTelefono" class="form-input" placeholder="Opcional">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Correo Electrónico *</label>
+                <input type="email" id="nuevoClienteCorreo" class="form-input" required placeholder="ejemplo@correo.com">
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Debe ser un correo válido y real
+                </small>
+                
+                <!-- Botones de acción para correo -->
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    <button type="button" id="btnNoTieneCorreo" class="btn-no-correo" onclick="establecerCorreoGenerico()" style="display: flex;">
+                        <i class="fas fa-user-slash"></i>
+                        <span>No tiene correo</span>
+                    </button>
+                    <button type="button" id="btnComprobarCorreo" class="btn-comprobar-correo" onclick="imprimirComprobacionCorreo()" style="display: none;">
+                        <i class="fas fa-print"></i>
+                        <span>Comprobación de correo</span>
+                    </button>
+                </div>
+            </div>
+
+            <p style="font-size: 0.85em; color: #666; margin-top: 10px;">
+                * Campos obligatorios
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="cerrarModalRegistroCliente()">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn btn-accent" onclick="confirmarRegistroCliente()">
+                <i class="fas fa-save"></i> Guardar Cliente
+            </button>
+        </div>
+    </div>
+</div>
+
 <style>
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
     
+    /* Botones de acción para correo */
+    .btn-no-correo,
+    .btn-comprobar-correo {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex: 1;
+    }
+    
+    .btn-no-correo {
+        background: #ff9800;
+        color: white;
+    }
+    
+    .btn-no-correo:hover {
+        background: #f57c00;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+    }
+    
+    .btn-comprobar-correo {
+        background: #4caf50;
+        color: white;
+    }
+    
+    .btn-comprobar-correo:hover {
+        background: #388e3c;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    }
     
     .search-results {
         margin-top: 15px;
@@ -1849,11 +1982,163 @@
         };
     }
     
+    // Cache de clientes
+    if (!window.clientesCache) {
+        window.clientesCache = {
+            clientes: [],
+            ultimaActualizacion: null,
+            cargando: false,
+            version: 0
+        };
+    }
+    
+    // Tokens API para webservices
+    let API_TOKENS = {};
+    
     // Control de actualizaciones automáticas
     let actualizacionTimer = null;
     let ultimaBusqueda = Date.now();
     let cargaInicialCompleta = false;
+    let cargaClientesCompleta = false;
 
+    // Cargar tokens de API para webservices
+    async function cargarTokensAPI() {
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            
+            if (!db) {
+                console.error('❌ Base de datos no disponible para cargar tokens');
+                return false;
+            }
+            
+            console.log('🔑 Cargando tokens API...');
+            
+            const { data, error } = await db
+                .from('api')
+                .select('service_name, webservices_token')
+                .eq('is_active', true);
+            
+            if (error) {
+                console.error('❌ Error cargando tokens API:', error);
+                return false;
+            }
+            
+            // Mapear tokens por nombre de servicio
+            API_TOKENS = data.reduce((acc, item) => {
+                acc[item.service_name] = item.webservices_token;
+                return acc;
+            }, {});
+            
+            console.log('✅ Tokens API cargados:', Object.keys(API_TOKENS));
+            return true;
+            
+        } catch (error) {
+            console.error('❌ Error cargando tokens API:', error);
+            return false;
+        }
+    }
+    
+    // Cargar clientes completo en cache
+    async function cargarClientesCompleto() {
+        if (window.clientesCache.cargando) return;
+        
+        window.clientesCache.cargando = true;
+        
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            
+            if (!db) {
+                console.error('❌ Base de datos no disponible para cargar clientes');
+                return false;
+            }
+            
+            console.log('👥 Cargando clientes completos...');
+            const inicio = Date.now();
+            
+            const { data, error } = await db
+                .from('clientes')
+                .select('*')
+                .order('razon_social');
+            
+            if (error) {
+                console.error('❌ Error cargando clientes:', error);
+                return false;
+            }
+            
+            window.clientesCache.clientes = data || [];
+            window.clientesCache.ultimaActualizacion = Date.now();
+            window.clientesCache.version++;
+            
+            const tiempo = Date.now() - inicio;
+            console.log(`✅ ${data.length} clientes cargados en ${tiempo}ms`);
+            
+            cargaClientesCompleta = true;
+            return true;
+            
+        } catch (error) {
+            console.error('❌ Error cargando clientes:', error);
+            return false;
+        } finally {
+            window.clientesCache.cargando = false;
+        }
+    }
+    
+    // Consultar cédula en API externa
+    async function consultarCedula(cedula) {
+        try {
+            const url = `https://webservices.ec/api/cedula/${cedula}`;
+            const token = API_TOKENS['webservices_cedula'];
+            
+            if (!token) {
+                throw new Error('Token de cédula no configurado');
+            }
+            
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error consultando cédula:', error);
+            return null;
+        }
+    }
+    
+    // Consultar RUC en API externa
+    async function consultarRuc(ruc) {
+        try {
+            const url = `https://webservices.ec/api/ruc/${ruc}`;
+            const token = API_TOKENS['webservices_ruc'];
+            
+            if (!token) {
+                throw new Error('Token de RUC no configurado');
+            }
+            
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error consultando RUC:', error);
+            return null;
+        }
+    }
+    
     // Cargar inventario completo al inicializar
     async function cargarInventarioCompleto() {
         if (window.inventarioCache.cargando) return;
@@ -2348,11 +2633,19 @@
         // Event listeners
         setupEventListeners();
         
-        // Cargar inventario completo en background
+        // Cargar datos en background
         console.log('🚀 Inicializando sistema de caché...');
-        cargarInventarioCompleto().then(exito => {
-            if (exito) {
-                console.log('✅ Sistema de caché listo');
+        
+        // Cargar tokens API primero
+        cargarTokensAPI();
+        
+        // Cargar inventario y clientes en paralelo
+        Promise.all([
+            cargarInventarioCompleto(),
+            cargarClientesCompleto()
+        ]).then(([exitoInventario, exitoClientes]) => {
+            if (exitoInventario && exitoClientes) {
+                console.log('✅ Sistema de caché completo listo');
             }
         });
         
@@ -2377,14 +2670,21 @@
                 const modalVenta = document.getElementById('modalVenta');
                 const customConfirm = document.getElementById('custom-confirm-overlay');
                 const modalActualizarCliente = document.getElementById('modalActualizarCliente');
+                const modalRegistroCliente = document.getElementById('modalRegistroCliente');
                 
                 const hayModalAbierto = (modalCantidad && modalCantidad.classList.contains('active')) ||
                                        (modalVenta && modalVenta.classList.contains('active')) ||
                                        (customConfirm && customConfirm.classList.contains('active')) ||
-                                       (modalActualizarCliente && modalActualizarCliente.classList.contains('active'));
+                                       (modalActualizarCliente && modalActualizarCliente.classList.contains('active')) ||
+                                       (modalRegistroCliente && modalRegistroCliente.classList.contains('active'));
                 
                 // ESC cierra modales
                 if (e.key === 'Escape') {
+                    if (modalRegistroCliente && modalRegistroCliente.classList.contains('active')) {
+                        e.preventDefault();
+                        cerrarModalRegistroCliente();
+                        return;
+                    }
                     if (modalActualizarCliente && modalActualizarCliente.classList.contains('active')) {
                         e.preventDefault();
                         cerrarModalActualizarCliente();
@@ -2411,11 +2711,24 @@
                         window.app.showToast('<i class="fas fa-exclamation-triangle"></i> El carrito está vacío. Agrega productos para continuar.', 'warning', 3000);
                     }
                 }
-                // F3 - Activar búsqueda de cliente
+                // F3 - Toggle búsqueda de cliente (activar/desactivar)
                 if (e.key === 'F3') {
                     e.preventDefault();
                     e.stopPropagation();
-                    activarBusquedaCliente();
+                    toggleBusquedaCliente();
+                }
+                
+                // Tab - Siempre enfoca búsqueda de productos
+                if (e.key === 'Tab') {
+                    const clienteBusquedaBox = document.getElementById('clienteBusquedaBox');
+                    const searchInput = document.getElementById('searchInput');
+                    
+                    // Si no hay ningún modal abierto y Tab está disponible
+                    if (!hayModalAbierto && searchInput) {
+                        e.preventDefault();
+                        searchInput.focus();
+                        searchInput.select();
+                    }
                 }
                 // F10 - Limpiar Venta
                 if (e.key === 'F10') {
@@ -2706,6 +3019,40 @@
             });
         });
 
+        // Event listener para mostrar/ocultar botones de correo en modal actualizar
+        const updateClienteCorreoInput = document.getElementById('updateClienteCorreo');
+        if (updateClienteCorreoInput) {
+            updateClienteCorreoInput.addEventListener('input', function() {
+                const btnNoCorreo = document.getElementById('btnNoCorreoUpdate');
+                const btnComprobarCorreo = document.getElementById('btnComprobarCorreoUpdate');
+                
+                if (this.value.trim()) {
+                    if (btnNoCorreo) btnNoCorreo.style.display = 'none';
+                    if (btnComprobarCorreo) btnComprobarCorreo.style.display = 'inline-flex';
+                } else {
+                    if (btnNoCorreo) btnNoCorreo.style.display = 'inline-flex';
+                    if (btnComprobarCorreo) btnComprobarCorreo.style.display = 'none';
+                }
+            });
+        }
+
+        // Event listener para mostrar/ocultar botones de correo en modal registro
+        const nuevoClienteCorreoInput = document.getElementById('nuevoClienteCorreo');
+        if (nuevoClienteCorreoInput) {
+            nuevoClienteCorreoInput.addEventListener('input', function() {
+                const btnNoCorreo = document.getElementById('btnNoCorreo');
+                const btnComprobarCorreo = document.getElementById('btnComprobarCorreo');
+                
+                if (this.value.trim()) {
+                    if (btnNoCorreo) btnNoCorreo.style.display = 'none';
+                    if (btnComprobarCorreo) btnComprobarCorreo.style.display = 'inline-flex';
+                } else {
+                    if (btnNoCorreo) btnNoCorreo.style.display = 'inline-flex';
+                    if (btnComprobarCorreo) btnComprobarCorreo.style.display = 'none';
+                }
+            });
+        }
+
         // Modal de ingreso directo - Confirmar con Enter
         const modalIngresoCodigoInput = document.getElementById('modalIngresoCodigoInput');
         
@@ -2902,16 +3249,27 @@
         ventaState.busquedaSeleccionado = -1;
         
         try {
-            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            let productoExacto = null;
+            let productoUnidades = null;
             
-            // Buscar ambos productos en paralelo
-            const [respuestaExacto, respuestaUnidades] = await Promise.all([
-                db.from('inventario').select('*').eq('codigo', codigo).maybeSingle(),
-                db.from('inventario').select('*').eq('codigo', codigoConUnidades).maybeSingle()
-            ]);
+            // OPTIMIZACIÓN: Buscar primero en caché (instantáneo)
+            if (cargaInicialCompleta && window.inventarioCache.productos) {
+                productoExacto = window.inventarioCache.productos.find(p => p.codigo === codigo);
+                productoUnidades = window.inventarioCache.productos.find(p => p.codigo === codigoConUnidades);
+            }
             
-            const productoExacto = respuestaExacto.data;
-            const productoUnidades = respuestaUnidades.data;
+            // Si no están en caché o caché no está listo, buscar en BD
+            if (!productoExacto && !productoUnidades) {
+                const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+                
+                const [respuestaExacto, respuestaUnidades] = await Promise.all([
+                    db.from('inventario').select('*').eq('codigo', codigo).maybeSingle(),
+                    db.from('inventario').select('*').eq('codigo', codigoConUnidades).maybeSingle()
+                ]);
+                
+                productoExacto = respuestaExacto.data;
+                productoUnidades = respuestaUnidades.data;
+            }
             
             // Si existen ambos productos, mostrar modal de selección
             if (productoExacto && productoUnidades) {
@@ -2921,9 +3279,9 @@
             
             // Si solo existe uno, agregarlo directamente
             if (productoExacto) {
-                await agregarProductoPorCodigo(codigo);
+                await agregarAlCarrito(productoExacto);
             } else if (productoUnidades) {
-                await agregarProductoPorCodigo(codigoConUnidades);
+                await agregarAlCarrito(productoUnidades);
             } else {
                 window.app.showToast(`Producto no encontrado: ${codigo}`, 'warning');
             }
@@ -2941,42 +3299,36 @@
     // =====================================================
 
     async function agregarAlCarrito(producto) {
-        // Verificar stock real en BD antes de agregar (seguridad multi-caja)
-        try {
-            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
-            
-            const { data: productoActual, error } = await db
-                .from('inventario')
-                .select('stock, precio')
-                .eq('codigo', producto.codigo)
-                .single();
-            
-            if (error || !productoActual) {
-                window.app.showToast('Error al verificar stock', 'danger');
-                return;
+        // OPTIMIZACIÓN: Usar caché si está disponible, verificar BD solo en background
+        let stockActual = producto.stock;
+        let precioActual = producto.precio;
+        
+        // Si el caché está disponible, usarlo inmediatamente
+        if (cargaInicialCompleta && window.inventarioCache.productos) {
+            const productoCache = window.inventarioCache.productos.find(p => p.codigo === producto.codigo);
+            if (productoCache) {
+                stockActual = productoCache.stock;
+                precioActual = productoCache.precio;
             }
-            
-            // Actualizar stock y precio en el objeto producto
-            producto.stock = productoActual.stock;
-            producto.precio = productoActual.precio;
-            
-            // Actualizar en caché local también
-            if (window.inventarioCache.productos) {
-                const productoCache = window.inventarioCache.productos.find(p => p.codigo === producto.codigo);
-                if (productoCache) {
-                    productoCache.stock = productoActual.stock;
-                    productoCache.precio = productoActual.precio;
-                }
-            }
-            
-        } catch (error) {
-            console.error('Error verificando stock:', error);
         }
         
-        // Verificar stock
-        if (producto.stock <= 0) {
+        // Verificar stock en BD en background (sin bloquear la UI)
+        // Solo para mantener caché sincronizado
+        if (cargaInicialCompleta) {
+            verificarStockEnBackground(producto.codigo).then(stockData => {
+                if (stockData && window.inventarioCache.productos) {
+                    const productoCache = window.inventarioCache.productos.find(p => p.codigo === producto.codigo);
+                    if (productoCache) {
+                        productoCache.stock = stockData.stock;
+                        productoCache.precio = stockData.precio;
+                    }
+                }
+            }).catch(err => console.warn('Error actualizando stock en background:', err));
+        }
+        
+        // Verificar stock disponible
+        if (stockActual <= 0) {
             window.app.showToast('⚠️ Producto sin stock disponible', 'danger');
-            // Actualizar caché completo en background
             actualizarCacheSilencioso();
             return;
         }
@@ -2986,24 +3338,31 @@
 
         if (existente) {
             // Verificar que no exceda el stock
-            if (existente.cantidad >= producto.stock) {
+            if (existente.cantidad >= stockActual) {
                 window.app.showToast('No hay suficiente stock disponible', 'warning');
                 return;
             }
             existente.cantidad++;
+            // Actualizar solo la fila existente (más rápido que re-renderizar todo)
+            actualizarFilaCarrito(producto.codigo);
         } else {
             // Agregar al inicio del array (más antiguo arriba)
             ventaState.carrito.unshift({
                 codigo: producto.codigo,
                 nombre: producto.producto,
-                precio: producto.precio,
+                precio: precioActual,
                 cantidad: 1,
-                stock: producto.stock,
-                unidad: producto.unidad_paquete
+                stock: stockActual,
+                costo: producto.costo || 0,
+                unidad: producto.unidad_paquete || 'UNIDADES'
             });
+            // Agregar solo la nueva fila (más rápido que re-renderizar todo)
+            agregarFilaCarrito(producto, precioActual, stockActual);
         }
 
-        actualizarCarrito();
+        // Actualizar totales (rápido, solo números)
+        calcularTotales();
+        actualizarContadorItems();
         guardarCarritoEnCache();
         
         // Hacer scroll al inicio del carrito para ver el producto recién agregado
@@ -3013,6 +3372,25 @@
         }
         
         window.app.showToast(`✓ ${producto.producto}`, 'success', 2000);
+    }
+    
+    // Función auxiliar para verificar stock en background sin bloquear
+    async function verificarStockEnBackground(codigo) {
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            const { data, error } = await db
+                .from('inventario')
+                .select('stock, precio')
+                .eq('codigo', codigo)
+                .single();
+            
+            if (!error && data) {
+                return data;
+            }
+        } catch (error) {
+            console.warn('Error verificando stock en background:', error);
+        }
+        return null;
     }
 
     function actualizarCantidad(codigo, cantidad) {
@@ -3093,77 +3471,131 @@
             `;
         } else {
             tbody.innerHTML = ventaState.carrito.map((item, index) => {
-                const subtotal = item.cantidad * item.precio;
-                const stockRestante = item.stock - item.cantidad;
-                const isSelected = ventaState.modoEdicion && index === ventaState.indiceSeleccionado;
-                const precioId = `precio-${item.codigo}`;
-                const cantidadId = `cantidad-${item.codigo}`;
-                
-                return `
-                    <tr class="${isSelected ? 'carrito-item-selected' : ''}">
-                        <td>
-                            <div style="display: flex; justify-content: space-between; align-items: start;">
-                                <div>
-                                    <strong>${item.nombre}</strong><br>
-                                    <small style="color: #666;">${item.codigo}</small><br>
-                                    <small style="color: ${stockRestante < 10 ? '#dc3545' : '#28a745'};">
-                                        Stock restante: ${stockRestante} ${item.unidad}
-                                    </small>
-                                </div>
-                                ${item.zona ? `<span class="badge-zona">ZONA: ${item.zona}</span>` : ''}
-                            </div>
-                        </td>
-                        <td style="text-align: center;">
-                            ${ventaState.modoEdicion ? 
-                                `<input type="number" 
-                                    id="${cantidadId}" 
-                                    class="cantidad-editable-input" 
-                                    value="${item.cantidad}" 
-                                    step="0.001" 
-                                    min="0.001"
-                                    max="${item.stock}"
-                                    onchange="actualizarCantidad('${item.codigo}', this.value)"
-                                    onkeydown="manejarTeclasCantidad(event, '${item.codigo}', ${item.cantidad})"
-                                    onclick="this.select()">` 
-                                : 
-                                `<strong>${item.cantidad}</strong>`
-                            }
-                        </td>
-                        <td>
-                            ${ventaState.modoEdicion ? 
-                                `<input type="number" 
-                                    id="${precioId}" 
-                                    class="precio-editable" 
-                                    value="${item.precio}" 
-                                    step="0.01" 
-                                    min="0.01"
-                                    onchange="actualizarPrecio('${item.codigo}', this.value)"
-                                    onclick="this.select()">` 
-                                : 
-                                window.app.formatCurrency(item.precio)
-                            }
-                        </td>
-                        <td><strong>${window.app.formatCurrency(subtotal)}</strong></td>
-                        <td>
-                            <div class="action-buttons">
-                                ${item.nombre.toLowerCase().includes('ducha') ? 
-                                    `<button class="btn-warranty-item" onclick="abrirModalGarantia('${item.codigo}')" title="Generar Garantía">
-                                        <i class="fas fa-shield-alt"></i>
-                                    </button>` 
-                                    : ''
-                                }
-                                <button class="btn-remove-item" onclick="eliminarDelCarrito('${item.codigo}')" title="Eliminar">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                return generarFilaCarrito(item, index);
             }).join('');
         }
 
         calcularTotales();
         actualizarContadorItems();
+    }
+    
+    // Función auxiliar para generar HTML de una fila
+    function generarFilaCarrito(item, index) {
+        const subtotal = item.cantidad * item.precio;
+        const stockRestante = item.stock - item.cantidad;
+        const isSelected = ventaState.modoEdicion && index === ventaState.indiceSeleccionado;
+        const precioId = `precio-${item.codigo}`;
+        const cantidadId = `cantidad-${item.codigo}`;
+        
+        return `
+            <tr class="${isSelected ? 'carrito-item-selected' : ''}" data-codigo="${item.codigo}">
+                <td>
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <strong>${item.nombre}</strong><br>
+                            <small style="color: #666;">${item.codigo}</small><br>
+                            <small style="color: ${stockRestante < 10 ? '#dc3545' : '#28a745'};">
+                                Stock restante: ${stockRestante} ${item.unidad}
+                            </small>
+                        </div>
+                        ${item.zona ? `<span class="badge-zona">ZONA: ${item.zona}</span>` : ''}
+                    </div>
+                </td>
+                <td style="text-align: center;">
+                    ${ventaState.modoEdicion ? 
+                        `<input type="number" 
+                            id="${cantidadId}" 
+                            class="cantidad-editable-input" 
+                            value="${item.cantidad}" 
+                            step="0.001" 
+                            min="0.001"
+                            max="${item.stock}"
+                            onchange="actualizarCantidad('${item.codigo}', this.value)"
+                            onkeydown="manejarTeclasCantidad(event, '${item.codigo}', ${item.cantidad})"
+                            onclick="this.select()">` 
+                        : 
+                        `<strong>${item.cantidad}</strong>`
+                    }
+                </td>
+                <td>
+                    ${ventaState.modoEdicion ? 
+                        `<input type="number" 
+                            id="${precioId}" 
+                            class="precio-editable" 
+                            value="${item.precio}" 
+                            step="0.01" 
+                            min="0.01"
+                            onchange="actualizarPrecio('${item.codigo}', this.value)"
+                            onclick="this.select()">` 
+                        : 
+                        window.app.formatCurrency(item.precio)
+                    }
+                </td>
+                <td><strong>${window.app.formatCurrency(subtotal)}</strong></td>
+                <td>
+                    <div class="action-buttons">
+                        ${item.nombre.toLowerCase().includes('ducha') ? 
+                            `<button class="btn-warranty-item" onclick="abrirModalGarantia('${item.codigo}')" title="Generar Garantía">
+                                <i class="fas fa-shield-alt"></i>
+                            </button>` 
+                            : ''
+                        }
+                        <button class="btn-remove-item" onclick="eliminarDelCarrito('${item.codigo}')" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+    
+    // OPTIMIZACIÓN: Agregar solo una nueva fila al carrito (sin re-renderizar todo)
+    function agregarFilaCarrito(producto, precio, stock) {
+        const tbody = document.getElementById('carritoBody');
+        
+        // Si estaba vacío, limpiar mensaje
+        if (ventaState.carrito.length === 1) {
+            tbody.innerHTML = '';
+        }
+        
+        const item = {
+            codigo: producto.codigo,
+            nombre: producto.producto,
+            precio: precio,
+            cantidad: 1,
+            stock: stock,
+            unidad: producto.unidad_paquete || 'UNIDADES',
+            zona: producto.zona
+        };
+        
+        // Insertar al inicio (prepend)
+        tbody.insertAdjacentHTML('afterbegin', generarFilaCarrito(item, 0));
+        
+        // Hacer scroll al inicio
+        const carritoColumn = document.getElementById('carritoColumn');
+        if (carritoColumn) {
+            carritoColumn.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+    
+    // OPTIMIZACIÓN: Actualizar solo una fila existente
+    function actualizarFilaCarrito(codigo) {
+        const tbody = document.getElementById('carritoBody');
+        const fila = tbody.querySelector(`tr[data-codigo="${codigo}"]`);
+        
+        if (!fila) {
+            // Si no encuentra la fila, re-renderizar todo (fallback)
+            actualizarCarrito();
+            return;
+        }
+        
+        const item = ventaState.carrito.find(i => i.codigo === codigo);
+        if (!item) return;
+        
+        const index = ventaState.carrito.indexOf(item);
+        
+        // Reemplazar la fila
+        fila.outerHTML = generarFilaCarrito(item, index);
     }
 
     function actualizarContadorItems() {
@@ -3243,38 +3675,145 @@
         }
 
         try {
-            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
-            
             // Determinar si es búsqueda por cédula (solo números) o por nombre
             const esNumerico = /^\d+$/.test(query);
             
-            let queryBuilder = db.from('clientes').select('*');
+            let resultados = [];
             
-            if (esNumerico) {
-                // Buscar por cédula que EMPIECE con el query
-                queryBuilder = queryBuilder.ilike('cedula', `${query}%`);
+            // Buscar en cache si está cargado
+            if (cargaClientesCompleta && window.clientesCache.clientes.length > 0) {
+                if (esNumerico) {
+                    // Buscar por cédula que EMPIECE con el query
+                    resultados = window.clientesCache.clientes.filter(c => 
+                        c.cedula.startsWith(query)
+                    );
+                } else {
+                    // Buscar por razón social que CONTENGA el query (case insensitive)
+                    const queryLower = query.toLowerCase();
+                    resultados = window.clientesCache.clientes.filter(c => 
+                        c.razon_social.toLowerCase().includes(queryLower)
+                    );
+                }
+                
+                resultados = resultados.slice(0, 10); // Limitar a 10 resultados
             } else {
-                // Buscar por razón social que CONTENGA el query
-                queryBuilder = queryBuilder.ilike('razon_social', `%${query}%`);
-            }
-            
-            const { data, error } = await queryBuilder.limit(10);
+                // Fallback a búsqueda en DB si cache no está listo
+                const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+                
+                let queryBuilder = db.from('clientes').select('*');
+                
+                if (esNumerico) {
+                    queryBuilder = queryBuilder.ilike('cedula', `${query}%`);
+                } else {
+                    queryBuilder = queryBuilder.ilike('razon_social', `%${query}%`);
+                }
+                
+                const { data, error } = await queryBuilder.limit(10);
 
-            if (error) {
-                console.error('Error buscando clientes:', error);
-                return;
+                if (error) {
+                    console.error('Error buscando clientes:', error);
+                    return;
+                }
+                
+                resultados = data || [];
             }
 
             // Guardar resultados
-            ventaState.clientesBusqueda = data || [];
-            ventaState.clienteSeleccionadoIndex = data && data.length > 0 ? 0 : -1;
+            ventaState.clientesBusqueda = resultados;
+            ventaState.clienteSeleccionadoIndex = resultados.length > 0 ? 0 : -1;
             
             mostrarResultadosClientes();
 
         } catch (error) {
+            console.error('Error buscando clientes:', error);
         }
     }
 
+    // Consultar e iniciar registro de cliente
+    async function consultarYRegistrarCliente(numero) {
+        // Mostrar overlay de carga con animación
+        const loadingOverlay = document.getElementById('loadingConsultaAPI');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'flex';
+        }
+        
+        try {
+            const isCedula = numero.length === 10;
+            
+            // Consultar API externa
+            const response = isCedula ? 
+                await consultarCedula(numero) : 
+                await consultarRuc(numero);
+            
+            // Ocultar loading
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
+            }
+            
+            // Si la API falla o no devuelve datos, activar ingreso manual
+            if (!response || !response.data) {
+                console.warn('⚠️ API no respondió correctamente, activando ingreso manual');
+                window.app.showToast('⚠️ Servicio de consulta no disponible. Ingrese los datos manualmente.', 'warning', 4000);
+                
+                // Mostrar modal con campos vacíos para ingreso manual
+                const datosClienteManual = {
+                    cedula: numero,
+                    razon_social: '',
+                    direccion: '',
+                    telefono: '',
+                    correo: '',
+                    ingresoManual: true, // Flag para saber que es ingreso manual
+                    tieneRuc: !isCedula
+                };
+                
+                mostrarModalRegistroCliente(datosClienteManual);
+                return;
+            }
+            
+            // Extraer datos según tipo
+            const datosCliente = {
+                cedula: numero,
+                razon_social: isCedula ? 
+                    response.data.response.nombreCompleto : 
+                    response.data.main[0].razonSocial,
+                direccion: !isCedula ? 
+                    (response.data.addit.find(est => est.tipoEstablecimiento === 'MAT')?.direccionCompleta || '') : 
+                    '',
+                telefono: '',
+                correo: '',
+                ingresoManual: false,
+                tieneRuc: !isCedula // Flag para saber si es RUC
+            };
+            
+            // Mostrar modal de registro con datos pre-llenados
+            mostrarModalRegistroCliente(datosCliente);
+            
+        } catch (error) {
+            console.error('❌ Error en consulta:', error);
+            
+            // Ocultar loading
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
+            }
+            
+            // Fallback: Activar ingreso manual en caso de error
+            window.app.showToast('⚠️ Servicio de consulta no disponible. Ingrese los datos manualmente.', 'warning', 4000);
+            
+            const isCedula = numero.length === 10;
+            const datosClienteManual = {
+                cedula: numero,
+                razon_social: '',
+                direccion: '',
+                telefono: '',
+                correo: '',
+                ingresoManual: true, // Flag para indicar ingreso manual
+                tieneRuc: !isCedula
+            };
+            
+            mostrarModalRegistroCliente(datosClienteManual);
+        }
+    }
+    
     function mostrarResultadosClientes() {
         const container = document.getElementById('clienteSearchResults');
         const clientes = ventaState.clientesBusqueda || [];
@@ -3287,7 +3826,7 @@
         container.innerHTML = clientes.map((cliente, index) => {
             const isSelected = index === ventaState.clienteSeleccionadoIndex;
             return `
-                <div class="search-result-item ${isSelected ? 'search-result-selected' : ''}" 
+                <div class="search-result-item ${isSelected ? 'selected' : ''}" 
                      onclick="seleccionarCliente('${cliente.cedula}')"
                      style="cursor: pointer;">
                     <strong>${cliente.razon_social}</strong>
@@ -3299,6 +3838,8 @@
                 </div>
             `;
         }).join('');
+
+        actualizarSeleccionVisualCliente();
     }
 
     async function seleccionarCliente(cedula) {
@@ -3350,6 +3891,28 @@
         }
     }
 
+    // Función para toggle de búsqueda de cliente (F3)
+    function toggleBusquedaCliente() {
+        const clienteBox = document.getElementById('clienteSeleccionadoBox');
+        const busquedaBox = document.getElementById('clienteBusquedaBox');
+        const searchInput = document.getElementById('searchInput');
+        
+        // Si la búsqueda de cliente está activa, cancelarla
+        if (busquedaBox.style.display === 'block') {
+            cancelarBusqueda();
+            // Enfocar en búsqueda de productos
+            setTimeout(() => {
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            }, 100);
+        } else {
+            // Si no está activa, activarla
+            activarBusquedaCliente();
+        }
+    }
+    
     // Función para activar búsqueda de cliente (F3)
     function activarBusquedaCliente() {
         // Mostrar el campo de búsqueda de cliente
@@ -3362,9 +3925,7 @@
             if (inputCliente) {
                 inputCliente.focus();
                 inputCliente.select();
-                
-                // Agregar listener para iniciar búsqueda automática al escribir
-                inputCliente.addEventListener('input', buscarCliente);
+                asegurarEventosBusquedaCliente();
             }
         }, 50);
         
@@ -3388,8 +3949,13 @@
             }
         }
 
-        // Si no hay resultados, mostrar mensaje
-        window.app.showToast('No se encontraron clientes', 'warning');
+        // Si no hay resultados y es cédula/RUC válido, consultar API
+        const esNumerico = /^\d+$/.test(query);
+        if (esNumerico && (query.length === 10 || query.length === 13)) {
+            await consultarYRegistrarCliente(query);
+        } else {
+            window.app.showToast('No se encontraron clientes', 'warning');
+        }
     }
 
     function mostrarClienteSeleccionado() {
@@ -3423,6 +3989,78 @@
         clienteBox.classList.remove('consumidor-final');
     }
 
+    function asegurarEventosBusquedaCliente() {
+        if (window._clienteBusquedaListenerAdded) {
+            return;
+        }
+
+        const clienteInput = document.getElementById('clienteCedula');
+        if (!clienteInput) {
+            return;
+        }
+
+        let debounceTimer;
+
+        clienteInput.addEventListener('input', function(e) {
+            const valor = e.target.value;
+            clearTimeout(debounceTimer);
+
+            ventaState.clienteSeleccionadoIndex = 0;
+
+            if (!valor || valor.trim().length === 0) {
+                document.getElementById('clienteSearchResults').innerHTML = '';
+                ventaState.clientesBusqueda = [];
+                ventaState.clienteSeleccionadoIndex = -1;
+                return;
+            }
+
+            const resultsContainer = document.getElementById('clienteSearchResults');
+            if (resultsContainer) {
+                resultsContainer.scrollTop = 0;
+            }
+
+            debounceTimer = setTimeout(() => {
+                buscarCliente();
+            }, 300);
+        });
+
+        clienteInput.addEventListener('keydown', function(e) {
+            const resultsContainer = document.getElementById('clienteSearchResults');
+            const resultItems = resultsContainer?.querySelectorAll('.search-result-item') || [];
+
+            if (resultItems.length === 0) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    buscarClienteDirecto();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelarBusqueda();
+                }
+                return;
+            }
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                e.stopPropagation();
+                navegarClientes(1);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                e.stopPropagation();
+                navegarClientes(-1);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                buscarClienteDirecto();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                cancelarBusqueda();
+            }
+        });
+
+        window._clienteBusquedaListenerAdded = true;
+    }
+
     function cambiarCliente() {
         // Limpiar input de búsqueda
         document.getElementById('clienteCedula').value = '';
@@ -3436,38 +4074,79 @@
         
         // Enfocar en el input
         setTimeout(() => {
-            document.getElementById('clienteCedula').focus();
+            const input = document.getElementById('clienteCedula');
+            if (input) {
+                input.focus();
+                input.select();
+                asegurarEventosBusquedaCliente();
+            }
         }, 100);
         
         // Agregar listener para click fuera del formulario
         setTimeout(() => {
             document.addEventListener('click', handleClickOutsideClienteSearch);
         }, 200);
+    }
+
+    // Navegar resultados de búsqueda de clientes con flechas (arriba/abajo)
+    function navegarClientes(direccion) {
+        if (!ventaState.clientesBusqueda || ventaState.clientesBusqueda.length === 0) return;
+
+        ventaState.clienteSeleccionadoIndex += direccion;
+
+        // Limitar índice con wrap-around
+        if (ventaState.clienteSeleccionadoIndex < 0) {
+            ventaState.clienteSeleccionadoIndex = ventaState.clientesBusqueda.length - 1;
+        } else if (ventaState.clienteSeleccionadoIndex >= ventaState.clientesBusqueda.length) {
+            ventaState.clienteSeleccionadoIndex = 0;
+        }
+
+        actualizarSeleccionVisualCliente();
+        scrollToSelectedCliente();
+    }
+    
+    function actualizarSeleccionVisualCliente() {
+        const resultsContainer = document.getElementById('clienteSearchResults');
+        if (!resultsContainer) return;
         
-        // Configurar búsqueda dinámica si no está configurada
-        if (!window._clienteBusquedaListenerAdded) {
-            const clienteInput = document.getElementById('clienteCedula');
-            let debounceTimer;
-            
-            clienteInput.addEventListener('input', function(e) {
-                const valor = e.target.value;
-                clearTimeout(debounceTimer);
-                
-                // Si está vacío, limpiar resultados
-                if (!valor || valor.trim().length === 0) {
-                    document.getElementById('clienteSearchResults').innerHTML = '';
-                    ventaState.clientesBusqueda = [];
-                    ventaState.clienteSeleccionadoIndex = -1;
-                    return;
-                }
-                
-                // Buscar después del debounce
-                debounceTimer = setTimeout(() => {
-                    buscarCliente();
-                }, 300);
-            });
-            
-            window._clienteBusquedaListenerAdded = true;
+        const resultItems = resultsContainer.querySelectorAll('.search-result-item');
+        if (resultItems.length === 0) return;
+        
+        resultItems.forEach((item, index) => {
+            if (index === ventaState.clienteSeleccionadoIndex) {
+                item.classList.add('selected');
+                item.style.backgroundColor = '#e8f4f8';
+                item.style.borderLeft = '3px solid #2196F3';
+            } else {
+                item.classList.remove('selected');
+                item.style.backgroundColor = '';
+                item.style.borderLeft = '';
+            }
+        });
+    }
+    
+    function scrollToSelectedCliente() {
+        const resultsContainer = document.getElementById('clienteSearchResults');
+        if (!resultsContainer) return;
+        
+        const selectedItem = resultsContainer.querySelector('.search-result-item.selected');
+        if (!selectedItem) return;
+        
+        const containerRect = resultsContainer.getBoundingClientRect();
+        const itemRect = selectedItem.getBoundingClientRect();
+        
+        const itemTop = itemRect.top - containerRect.top + resultsContainer.scrollTop;
+        const itemBottom = itemTop + itemRect.height;
+        const visibleTop = resultsContainer.scrollTop;
+        const visibleBottom = visibleTop + containerRect.height;
+        
+        // Si el item está fuera de la vista, hacer scroll
+        if (itemBottom > visibleBottom) {
+            // Item está abajo, scroll hacia abajo
+            resultsContainer.scrollTop = itemBottom - containerRect.height;
+        } else if (itemTop < visibleTop) {
+            // Item está arriba, scroll hacia arriba
+            resultsContainer.scrollTop = itemTop;
         }
     }
 
@@ -4367,6 +5046,19 @@
         const esCorreoGenerico = cliente.correo && cliente.correo.toLowerCase().includes('@cambiar.com');
         document.getElementById('updateClienteCorreo').value = esCorreoGenerico ? '' : (cliente.correo || '');
         
+        // Inicializar visibilidad de botones de correo
+        const btnNoCorreo = document.getElementById('btnNoCorreoUpdate');
+        const btnComprobarCorreo = document.getElementById('btnComprobarCorreoUpdate');
+        const tieneCorreo = document.getElementById('updateClienteCorreo').value.trim();
+        
+        if (tieneCorreo) {
+            if (btnNoCorreo) btnNoCorreo.style.display = 'none';
+            if (btnComprobarCorreo) btnComprobarCorreo.style.display = 'inline-flex';
+        } else {
+            if (btnNoCorreo) btnNoCorreo.style.display = 'inline-flex';
+            if (btnComprobarCorreo) btnComprobarCorreo.style.display = 'none';
+        }
+        
         // Mostrar modal
         const modal = document.getElementById('modalActualizarCliente');
         modal.classList.add('active');
@@ -4503,6 +5195,301 @@
     window.confirmarActualizacionCliente = confirmarActualizacionCliente;
 
     // =====================================================
+    // MODAL REGISTRO NUEVO CLIENTE
+    // =====================================================
+    
+    function mostrarModalRegistroCliente(datosCliente) {
+        // Rellenar formulario con datos pre-llenados de la API (o vacíos si es manual)
+        document.getElementById('nuevoClienteCedula').value = datosCliente.cedula || '';
+        document.getElementById('nuevoClienteNombre').value = datosCliente.razon_social || '';
+        document.getElementById('nuevoClienteDireccion').value = datosCliente.direccion || '';
+        document.getElementById('nuevoClienteTelefono').value = datosCliente.telefono || '';
+        document.getElementById('nuevoClienteCorreo').value = datosCliente.correo || '';
+        
+        // Configurar listener para el campo de correo
+        const correoInput = document.getElementById('nuevoClienteCorreo');
+        const btnNoTieneCorreo = document.getElementById('btnNoTieneCorreo');
+        const btnComprobarCorreo = document.getElementById('btnComprobarCorreo');
+        
+        // Función para actualizar visibilidad de botones
+        const actualizarBotonesCorreo = () => {
+            const correoValue = correoInput.value.trim();
+            if (correoValue) {
+                btnNoTieneCorreo.style.display = 'none';
+                btnComprobarCorreo.style.display = 'flex';
+            } else {
+                btnNoTieneCorreo.style.display = 'flex';
+                btnComprobarCorreo.style.display = 'none';
+            }
+        };
+        
+        // Actualizar al abrir modal
+        actualizarBotonesCorreo();
+        
+        // Actualizar al escribir
+        if (!correoInput.dataset.listenerConfigured) {
+            correoInput.addEventListener('input', actualizarBotonesCorreo);
+            correoInput.dataset.listenerConfigured = 'true';
+        }
+        
+        // Actualizar mensaje según el modo (automático o manual)
+        const mensajeElement = document.getElementById('modalRegistroMensaje');
+        if (datosCliente.ingresoManual) {
+            mensajeElement.style.background = '#fff3cd';
+            mensajeElement.style.borderLeftColor = '#ffc107';
+            mensajeElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Servicio de consulta no disponible. Ingrese los datos manualmente.';
+        } else {
+            mensajeElement.style.background = '#e3f2fd';
+            mensajeElement.style.borderLeftColor = '#2196f3';
+            mensajeElement.innerHTML = '<i class="fas fa-info-circle"></i> Complete los datos del cliente para registrarlo en el sistema.';
+        }
+        
+        // Mostrar modal
+        const modal = document.getElementById('modalRegistroCliente');
+        modal.classList.add('active');
+        
+        // Configurar Enter key para confirmar registro
+        const inputs = [
+            document.getElementById('nuevoClienteNombre'),
+            document.getElementById('nuevoClienteDireccion'),
+            document.getElementById('nuevoClienteTelefono'),
+            document.getElementById('nuevoClienteCorreo')
+        ];
+        
+        inputs.forEach(input => {
+            if (input && !input.dataset.enterConfigured) {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        confirmarRegistroCliente();
+                    }
+                });
+                input.dataset.enterConfigured = 'true';
+            }
+        });
+        
+        // Enfoque inteligente según origen de datos
+        setTimeout(() => {
+            const nombreInput = document.getElementById('nuevoClienteNombre');
+            const direccionInput = document.getElementById('nuevoClienteDireccion');
+            const telefonoInput = document.getElementById('nuevoClienteTelefono');
+            
+            // Si es ingreso manual (API falló), enfocar en nombre/razón social
+            if (datosCliente.ingresoManual) {
+                nombreInput.focus();
+                nombreInput.select();
+            }
+            // Si es RUC y tiene dirección pre-llenada (API exitosa), enfocar en teléfono
+            else if (datosCliente.tieneRuc && datosCliente.direccion) {
+                telefonoInput.focus();
+            }
+            // Si es cédula (sin dirección), enfocar en dirección
+            else if (!direccionInput.value) {
+                direccionInput.focus();
+            }
+            // Si dirección ya está llena pero no es RUC, enfocar en correo
+            else {
+                document.getElementById('nuevoClienteCorreo').focus();
+            }
+        }, 300);
+    }
+    
+    function cerrarModalRegistroCliente() {
+        const modal = document.getElementById('modalRegistroCliente');
+        modal.classList.remove('active');
+        
+        // Limpiar formulario
+        document.getElementById('nuevoClienteCedula').value = '';
+        document.getElementById('nuevoClienteNombre').value = '';
+        document.getElementById('nuevoClienteDireccion').value = '';
+        document.getElementById('nuevoClienteTelefono').value = '';
+        document.getElementById('nuevoClienteCorreo').value = '';
+        
+        // Volver a mostrar búsqueda de cliente
+        document.getElementById('clienteBusquedaBox').style.display = 'block';
+        
+        // Enfocar en búsqueda
+        setTimeout(() => {
+            document.getElementById('clienteCedula').focus();
+        }, 100);
+    }
+    
+    async function confirmarRegistroCliente() {
+        // Obtener valores del formulario
+        const cedula = document.getElementById('nuevoClienteCedula').value.trim();
+        const razonSocial = document.getElementById('nuevoClienteNombre').value.trim();
+        const direccion = document.getElementById('nuevoClienteDireccion').value.trim();
+        const telefono = document.getElementById('nuevoClienteTelefono').value.trim();
+        const correo = document.getElementById('nuevoClienteCorreo').value.trim();
+        
+        // Validación de campos requeridos
+        if (!cedula || !razonSocial || !direccion || !correo) {
+            window.app.showToast('<i class="fas fa-exclamation-triangle"></i> Complete todos los campos obligatorios', 'warning', 3000);
+            return;
+        }
+        
+        // Validar formato de correo
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(correo)) {
+            window.app.showToast('<i class="fas fa-exclamation-triangle"></i> Por favor ingrese un correo electrónico válido', 'warning', 3000);
+            document.getElementById('nuevoClienteCorreo').focus();
+            return;
+        }
+        
+        try {
+            window.app.showToast('Guardando cliente...', 'info', 1500);
+            
+            // Obtener referencia a la base de datos
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            
+            // Insertar en Supabase
+            const { data, error } = await db
+                .from('clientes')
+                .insert([{
+                    cedula: cedula.padStart(10, '0'),
+                    razon_social: razonSocial,
+                    direccion: direccion,
+                    telefono: telefono || null,
+                    correo: correo
+                }])
+                .select()
+                .single();
+            
+            if (error) {
+                if (error.code === '23505') { // Duplicate key
+                    throw new Error('Este cliente ya está registrado');
+                }
+                throw error;
+            }
+            
+            // Seleccionar el nuevo cliente automáticamente
+            ventaState.clienteSeleccionado = data;
+            
+            // Cerrar modal
+            const modal = document.getElementById('modalRegistroCliente');
+            modal.classList.remove('active');
+            
+            // Limpiar formulario
+            document.getElementById('nuevoClienteCedula').value = '';
+            document.getElementById('nuevoClienteNombre').value = '';
+            document.getElementById('nuevoClienteDireccion').value = '';
+            document.getElementById('nuevoClienteTelefono').value = '';
+            document.getElementById('nuevoClienteCorreo').value = '';
+            
+            // Actualizar visualización
+            mostrarClienteSeleccionado();
+            document.getElementById('clienteSeleccionadoBox').style.display = 'block';
+            document.getElementById('clienteBusquedaBox').style.display = 'none';
+            
+            // Recargar cache de clientes en background
+            cargarClientesCompleto();
+            
+            // Mostrar confirmación
+            window.app.showToast(`✓ Cliente ${razonSocial} registrado exitosamente`, 'success', 3000);
+            
+            // Enfocar en búsqueda de productos
+            setTimeout(() => {
+                document.getElementById('searchInput').focus();
+            }, 500);
+            
+        } catch (error) {
+            console.error('Error al guardar cliente:', error);
+            window.app.showToast(`✗ Error: ${error.message}`, 'danger', 4000);
+        }
+    }
+    
+    // Establecer correo genérico para clientes sin correo
+    function establecerCorreoGenerico() {
+        const correoInput = document.getElementById('nuevoClienteCorreo');
+        correoInput.value = 'nishvenatalia99@gmail.com';
+        
+        // Trigger input event para actualizar botones
+        correoInput.dispatchEvent(new Event('input'));
+        
+        // Mostrar toast informativo
+        window.app.showToast('📧 Correo genérico establecido', 'info', 2000);
+        
+        // Enfocar en el siguiente campo disponible
+        const nombreInput = document.getElementById('nuevoClienteNombre');
+        const direccionInput = document.getElementById('nuevoClienteDireccion');
+        
+        if (!nombreInput.value) {
+            nombreInput.focus();
+        } else if (!direccionInput.value) {
+            direccionInput.focus();
+        }
+    }
+    
+    // Imprimir comprobación de correo (ticket térmico 80mm)
+    function imprimirComprobacionCorreo() {
+        const correo = document.getElementById('nuevoClienteCorreo').value.trim();
+        const nombre = document.getElementById('nuevoClienteNombre').value.trim();
+        const cedula = document.getElementById('nuevoClienteCedula').value.trim();
+        
+        if (!correo) {
+            window.app.showToast('⚠️ Debe ingresar un correo primero', 'warning', 2000);
+            return;
+        }
+        
+        // Construir URL con parámetros
+        const params = new URLSearchParams({
+            correo: correo
+        });
+        
+        const url = `comprobarcorreo.html?${params.toString()}`;
+        
+        // Abrir en nueva pestaña
+        const ventanaImpresion = window.open(url, '_blank');
+        
+        if (!ventanaImpresion) {
+            window.app.showToast('❌ Error: Habilita las ventanas emergentes', 'danger', 3000);
+            return;
+        }
+        
+        // Mostrar toast
+        window.app.showToast('🖨️ Imprimiendo comprobación de correo...', 'info', 2000);
+    }
+    
+    // Funciones para modal de actualizar cliente
+    function establecerCorreoGenericoUpdate() {
+        const correoInput = document.getElementById('updateClienteCorreo');
+        if (correoInput) {
+            correoInput.value = 'nishvenatalia99@gmail.com';
+            correoInput.dispatchEvent(new Event('input'));
+            window.app.showToast('✅ Correo genérico establecido', 'success', 2000);
+        }
+    }
+
+    function imprimirComprobacionCorreoUpdate() {
+        const correo = document.getElementById('updateClienteCorreo').value.trim();
+        
+        if (!correo) {
+            window.app.showToast('⚠️ Debe ingresar un correo primero', 'warning', 2000);
+            return;
+        }
+        
+        const params = new URLSearchParams({ correo: correo });
+        const url = `comprobarcorreo.html?${params.toString()}`;
+        const ventanaImpresion = window.open(url, '_blank');
+        
+        if (!ventanaImpresion) {
+            window.app.showToast('❌ Error: Habilita las ventanas emergentes', 'danger', 3000);
+            return;
+        }
+        
+        window.app.showToast('🖨️ Imprimiendo comprobación de correo...', 'info', 2000);
+    }
+
+    // Exportar funciones del modal de registro
+    window.mostrarModalRegistroCliente = mostrarModalRegistroCliente;
+    window.cerrarModalRegistroCliente = cerrarModalRegistroCliente;
+    window.confirmarRegistroCliente = confirmarRegistroCliente;
+    window.establecerCorreoGenerico = establecerCorreoGenerico;
+    window.imprimirComprobacionCorreo = imprimirComprobacionCorreo;
+    window.establecerCorreoGenericoUpdate = establecerCorreoGenericoUpdate;
+    window.imprimirComprobacionCorreoUpdate = imprimirComprobacionCorreoUpdate;
+
+    // =====================================================
     // GENERAR RECIBO
     // =====================================================
     
@@ -4537,8 +5524,8 @@
                 hour12: false 
             }).replace(/[/]/g, '/').replace(',', '');
             
-            // Construir URL del recibo
-            const url = "https://pos.manasakilla.com/RECIBO.html" +
+            // Construir URL del recibo LOCAL
+            const url = "recibo.html" +
                 "?fecha=" + encodeURIComponent(formattedDate) +
                 "&venta=" + encodeURIComponent(ventaData.saleCode) +
                 "&subtotal=" + encodeURIComponent(ventaData.total.toFixed(2)) +
@@ -4561,6 +5548,101 @@
         } catch (error) {
             console.error('Error al abrir recibo:', error);
             window.app.showToast('<i class="fas fa-exclamation-triangle"></i> Error al generar recibo', 'warning', 3000);
+        }
+    }
+
+    // =====================================================
+    // GENERAR FACTURA ELECTRÓNICA (VISTA TÉRMICA)
+    // =====================================================
+
+    function abrirFactura({ venta, configServicios, configSRI, docNumber, claveAcceso, usuarioEmail }) {
+        try {
+            if (!venta || !Array.isArray(venta.productos) || venta.productos.length === 0) {
+                console.warn('⚠️ No se encontraron productos para mostrar en la factura electrónica', venta);
+                return;
+            }
+
+            const productos = venta.productos;
+
+            const parseNumber = (valor, fallback = 0) => {
+                const numero = Number(valor);
+                return Number.isFinite(numero) ? numero : fallback;
+            };
+
+            const cantidades = productos.map(prod => parseNumber(prod.cantidad, 0).toFixed(2));
+            const descripciones = productos.map(prod => (prod.nombre || '').replace(/,/g, '.'));
+            const preciosUnitarios = productos.map(prod => parseNumber(prod.precio, 0).toFixed(2));
+            const totalesProducto = productos.map(prod => (parseNumber(prod.cantidad, 0) * parseNumber(prod.precio, 0)).toFixed(2));
+
+            const subtotalCalculado = productos.reduce((acum, prod) => acum + (parseNumber(prod.cantidad, 0) * parseNumber(prod.precio, 0)), 0);
+            const subtotalValor = parseNumber(venta.subtotal, subtotalCalculado).toFixed(2);
+            const descuentoValor = parseNumber(venta.descuento, 0).toFixed(2);
+            const totalValor = parseNumber(venta.total, subtotalCalculado).toFixed(2);
+
+            const fechaReferencia = venta.fecha ? new Date(venta.fecha) : new Date();
+            const fechaFactura = fechaReferencia.toLocaleString('es-EC', {
+                timeZone: 'America/Guayaquil',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            const ambienteTexto = configSRI && Number(configSRI.ambiente) === 1 ? 'PRUEBAS' : 'PRODUCCIÓN';
+            const emisionTexto = configSRI && Number(configSRI.tipo_emision) === 1 ? 'NORMAL' : 'CONTINGENCIA';
+
+            const cliente = venta.cliente || {
+                razon_social: 'CONSUMIDOR FINAL',
+                cedula: '9999999999999',
+                direccion: 'S/N',
+                telefono: 'S/N',
+                correo: 'consumidor@final.com'
+            };
+
+            const params = new URLSearchParams();
+            params.set('company_name', configServicios?.empresa_nombre_comercial || configServicios?.empresa_razon_social || '');
+            params.set('company_owner', configServicios?.empresa_razon_social || '');
+            params.set('company_ruc', configServicios?.empresa_ruc || '');
+            params.set('company_address', configServicios?.empresa_dir_establecimiento || '');
+            params.set('company_phone', configServicios?.empresa_telefono || '');
+            params.set('logo_url', configServicios?.url_logo_factura || '');
+
+            params.set('invoice_number', docNumber || '');
+            params.set('invoice_date', fechaFactura);
+            params.set('environment', ambienteTexto);
+            params.set('emission', emisionTexto);
+            params.set('auth_number', claveAcceso || '');
+
+            params.set('customer_name', cliente.razon_social || 'CONSUMIDOR FINAL');
+            params.set('customer_id', cliente.cedula || '9999999999999');
+            params.set('customer_address', cliente.direccion || 'S/N');
+            params.set('customer_phone', cliente.telefono || 'S/N');
+            params.set('customer_email', cliente.correo || 'consumidor@final.com');
+
+            params.set('attendant', usuarioEmail || '---');
+
+            params.set('subtotal', subtotalValor);
+            params.set('discount', descuentoValor);
+            params.set('total', totalValor);
+
+            params.set('quantities', cantidades.join(','));
+            params.set('descriptions', descripciones.join(','));
+            params.set('unit_prices', preciosUnitarios.join(','));
+            params.set('total_prices', totalesProducto.join(','));
+
+            const facturaUrl = `factura.html?${params.toString()}`;
+            const facturaWindow = window.open(facturaUrl, '_blank');
+
+            if (!facturaWindow) {
+                window.app.showToast('⚠️ Habilita las ventanas emergentes para visualizar la factura electrónica', 'warning', 4000);
+            } else {
+                console.debug('Factura electrónica abierta:', facturaUrl);
+            }
+
+        } catch (error) {
+            console.error('❌ Error al abrir factura electrónica:', error);
+            window.app.showToast('No se pudo abrir la vista de factura electrónica', 'danger', 4000);
         }
     }
 
@@ -4801,8 +5883,8 @@
             // Construir JSON
             const jsonFactura = {
                 // WhatsApp config
-                instance_id: configServicios.whatsapp_instance_id || "",
-                access_token: configServicios.whatsapp_access_token || "",
+                instance_id: configServicios.instance_id || configServicios.whatsapp_instance_id || "",
+                access_token: configServicios.acces_token || configServicios.whatsapp_access_token || "",
                 
                 // Archivos
                 archivo: `FACTURA-${estab}-${ptoEmi}-${secuencial}.xml`,
@@ -4875,8 +5957,8 @@
                 
                 // Campos adicionales
                 campoAdicional: 'campoAdicional nombre="Correo de cliente"',
-                codigoArtesano: configServicios.empresa_codigo_artesano || "",
-                artesanoRide: configServicios.empresa_codigo_artesano ? configServicios.empresa_codigo_artesano : "-",
+                codigoArtesano: (cliente.correo || "consumidor@final.com"),
+                artesanoRide: (cliente.correo || "consumidor@final.com"),
                 
                 // Firma electrónica (.p12)
                 clave_12: configServicios.firma_clave_p12 || "",
@@ -4912,6 +5994,180 @@
         }
     }
 
+    async function enviarFacturaAlServicioFirma({ url, payload, maxIntentos = 3, timeoutMs = 30000 }) {
+        if (!url) {
+            throw new Error('No se configuró la URL del servicio de firma.');
+        }
+
+        const intentosTotales = Math.max(1, Number(maxIntentos) || 1);
+        const timeout = Math.max(5000, Number(timeoutMs) || 30000);
+        const cuerpo = JSON.stringify(payload);
+        let ultimoError = null;
+
+        for (let intento = 1; intento <= intentosTotales; intento++) {
+            let controller;
+            let timeoutHandle;
+
+            try {
+                controller = new AbortController();
+                timeoutHandle = setTimeout(() => controller.abort(), timeout);
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: cuerpo,
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutHandle);
+
+                const raw = await response.text();
+                let data = null;
+
+                if (raw) {
+                    try {
+                        data = JSON.parse(raw);
+                    } catch (parseError) {
+                        console.warn('⚠️ Respuesta del servicio de firma no es JSON válido:', parseError);
+                    }
+                }
+
+                const statusValue = data?.status ?? data?.Status ?? data?.estado ?? null;
+                const statusString = statusValue !== null && statusValue !== undefined
+                    ? String(statusValue).trim().toLowerCase()
+                    : null;
+
+                const autorizado = response.ok && (
+                    statusString === '0' ||
+                    statusString === 'ok' ||
+                    statusString === 'autorizado' ||
+                    statusString === 'success'
+                );
+
+                const requiereReintento = !autorizado && response.ok && intento < intentosTotales && (
+                    statusString === '1' ||
+                    statusString === 'pendiente' ||
+                    statusString === 'pending'
+                );
+
+                if (requiereReintento) {
+                    await new Promise(resolve => setTimeout(resolve, intento * 1000));
+                    continue;
+                }
+
+                return {
+                    success: autorizado,
+                    statusCode: response.status,
+                    data,
+                    raw,
+                    intento,
+                    statusString,
+                    message: data?.message || data?.detalle || data?.error || raw
+                };
+            } catch (error) {
+                if (timeoutHandle) {
+                    clearTimeout(timeoutHandle);
+                }
+
+                ultimoError = error;
+
+                if (intento === intentosTotales) {
+                    return {
+                        success: false,
+                        intento,
+                        error,
+                        message: error.name === 'AbortError' ? 'Tiempo de espera agotado' : error.message
+                    };
+                }
+
+                await new Promise(resolve => setTimeout(resolve, intento * 1000));
+            }
+        }
+
+        return {
+            success: false,
+            intento: intentosTotales,
+            error: ultimoError,
+            message: ultimoError ? ultimoError.message : 'Error desconocido al contactar servicio de firma'
+        };
+    }
+
+    async function procesarEnvioFacturaElectronica({ db, ventaId, ventaCodigo, docNumber, payload, configServicios }) {
+        const urlFirma = configServicios?.firma_url || configServicios?.firmaUrl;
+
+        if (!urlFirma) {
+            console.warn('⚠️ No se configuró firma_url en config_servicios. La factura queda pendiente.');
+            window.app?.showToast?.('Factura generada, pero el servicio de firma no está configurado. La autorización queda pendiente.', 'warning', 7000);
+            return { success: false, skipped: true, message: 'URL del servicio de firma no configurada' };
+        }
+
+        const maxIntentos = Number(configServicios.firma_max_intentos) || 3;
+        const timeoutMs = (Number(configServicios.firma_timeout_segundos) || 30) * 1000;
+
+        window.app?.showToast?.('⌛ Enviando factura al servicio de firma...', 'info', 3500);
+
+        const resultado = await enviarFacturaAlServicioFirma({
+            url: urlFirma,
+            payload,
+            maxIntentos,
+            timeoutMs
+        });
+
+        window.lastFacturaFirmaResult = resultado;
+        if (window.lastFacturaPayload) {
+            window.lastFacturaPayload.result = resultado;
+        }
+
+        const supabase = db;
+
+        if (!supabase || typeof supabase.from !== 'function') {
+            console.error('❌ Cliente de base de datos no disponible para actualizar estado de la venta.');
+        }
+
+        if (resultado.success) {
+            if (supabase && typeof supabase.from === 'function') {
+                const { error: updateError } = await supabase
+                    .from('ventas')
+                    .update({ estado: 'AUTORIZADO' })
+                    .eq('id', ventaId);
+
+                if (updateError) {
+                    console.error('❌ Error actualizando estado de venta a AUTORIZADO:', updateError);
+                }
+            }
+
+            window.app?.showToast?.(`<i class="fas fa-check-circle"></i> Factura ${docNumber} autorizada por el SRI`, 'success', 6000);
+        } else {
+            const detalle = resultado.message || resultado.data?.message || resultado.data?.detalle || 'Sin detalle de error.';
+
+            if (resultado.statusCode && resultado.statusCode >= 200 && resultado.statusCode < 300) {
+                if (supabase && typeof supabase.from === 'function') {
+                    const { error: updateError } = await supabase
+                        .from('ventas')
+                        .update({ estado: 'RECHAZADO' })
+                        .eq('id', ventaId);
+
+                    if (updateError) {
+                        console.error('❌ Error actualizando estado de venta a RECHAZADO:', updateError);
+                    }
+                }
+
+                window.app?.showToast?.(`❌ Factura ${docNumber} rechazada por el SRI. ${detalle}`, 'danger', 7000);
+            } else {
+                console.warn('⚠️ Factura quedó pendiente de autorización SRI:', resultado);
+                window.app?.showToast?.(`⚠️ Factura ${docNumber} pendiente de autorización. ${detalle}`, 'warning', 7000);
+            }
+        }
+
+        console.groupCollapsed('%c🚀 Servicio de firma SRI', 'color:#b5179e;font-weight:bold;');
+        console.log('Venta ID:', ventaCodigo);
+        console.log('Documento:', docNumber);
+        console.log('Resultado de firma:', resultado);
+        console.groupEnd();
+
+        return resultado;
+    }
+
     async function confirmarVenta() {
         try {
             // Validar pago con redondeo a 2 decimales para evitar problemas de precisión
@@ -4944,6 +6200,9 @@
             let docNumber = null;
             let claveAcceso = null;
             let jsonFactura = null;
+            let datosFacturaVenta = null;
+            let configSRIData = null;
+            let configServiciosData = null;
             
             // Si es FACTURA, generar datos de facturación electrónica
             if (tipoDocumento === 'FACTURA') {
@@ -4955,14 +6214,14 @@
                     throw new Error('No se pudo obtener configuración de facturación: ' + configResult.message);
                 }
                 
-                const configSRI = configResult.configSRI;
-                const configServicios = configResult.configServicios;
+                configSRIData = configResult.configSRI;
+                configServiciosData = configResult.configServicios;
                 
                 // Incrementar número de comprobante (NOTA: En producción se debe usar bloqueo para evitar duplicados)
-                const nuevoComprobante = configSRI.comprobante_actual + 1;
+                const nuevoComprobante = configSRIData.comprobante_actual + 1;
                 
                 // Generar número de documento (formato: 001-001-000000015)
-                docNumber = `${padWithZeroes(configSRI.establecimiento, 3)}-${padWithZeroes(configSRI.punto_emision, 3)}-${padWithZeroes(nuevoComprobante, 9)}`;
+                docNumber = `${padWithZeroes(configSRIData.establecimiento, 3)}-${padWithZeroes(configSRIData.punto_emision, 3)}-${padWithZeroes(nuevoComprobante, 9)}`;
                 
                 // Generar clave de acceso
                 const now = new Date();
@@ -4973,7 +6232,7 @@
                 }).split('/').join(''); // ddMMyyyy
                 
                 const claveResult = generarClaveAcceso(fechaFormateada, {
-                    ...configSRI,
+                    ...configSRIData,
                     comprobante_actual: nuevoComprobante
                 });
                 
@@ -4985,7 +6244,7 @@
                 
                 
                 // Generar JSON completo de facturación
-                const datosVenta = {
+                datosFacturaVenta = {
                     cliente: ventaState.clienteSeleccionado || {
                         cedula: '9999999999999',
                         razon_social: 'CONSUMIDOR FINAL',
@@ -4999,23 +6258,41 @@
                         cantidad: item.cantidad,
                         precio: item.precio
                     })),
-                    total: totalConIva
+                    total: totalConIva,
+                    subtotal: totalConIva,
+                    descuento: 0,
+                    fecha: fechaActual
                 };
                 
-                const jsonResult = generarJsonFacturacion(datosVenta, configSRI, configServicios, claveAcceso, docNumber);
+                const jsonResult = generarJsonFacturacion(datosFacturaVenta, configSRIData, configServiciosData, claveAcceso, docNumber);
                 
                 if (!jsonResult.success) {
                     throw new Error('Error generando JSON de facturación: ' + jsonResult.message);
                 }
                 
                 jsonFactura = jsonResult.json;
+                window.lastFacturaPayload = {
+                    url: configServiciosData.firma_url || null,
+                    json: jsonFactura,
+                    docNumber,
+                    claveAcceso
+                };
+
+                console.groupCollapsed('%c🧾 Facturación electrónica', 'color:#0b7285;font-weight:bold;');
+                console.log('Endpoint firma:', configServiciosData.firma_url || 'No configurado');
+                console.log('Intentos máximos:', configServiciosData.firma_max_intentos ?? 'N/D');
+                console.log('Timeout (segundos):', configServiciosData.firma_timeout_segundos ?? 'N/D');
+                console.log('Documento:', docNumber);
+                console.log('Clave de acceso:', claveAcceso);
+                console.log('Payload JSON:', jsonFactura);
+                console.groupEnd();
                 
                 
                 // Actualizar número de comprobante en la BD
                 const { error: updateConfigError } = await db
                     .from('facelectronicaconfig')
                     .update({ comprobante_actual: nuevoComprobante })
-                    .eq('id', configSRI.id);
+                    .eq('id', configSRIData.id);
                 
                 if (updateConfigError) {
                     console.warn('⚠️ Advertencia: No se pudo actualizar número de comprobante:', updateConfigError);
@@ -5085,7 +6362,41 @@
             cerrarModalVenta();
             
             if (tipoDocumento === 'FACTURA') {
+                if (datosFacturaVenta && configSRIData && configServiciosData && docNumber && claveAcceso) {
+                    abrirFactura({
+                        venta: datosFacturaVenta,
+                        configServicios: configServiciosData,
+                        configSRI: configSRIData,
+                        docNumber,
+                        claveAcceso,
+                        usuarioEmail: userEmail
+                    });
+                } else {
+                    console.warn('⚠️ Datos incompletos para abrir factura electrónica', {
+                        datosFacturaVenta,
+                        configSRIData,
+                        configServiciosData,
+                        docNumber,
+                        claveAcceso
+                    });
+                }
                 window.app.showToast(`<i class="fas fa-check-circle"></i> Factura ${docNumber} generada exitosamente! Revisa la consola para ver el JSON`, 'success', 5000);
+
+                if (jsonFactura && configServiciosData) {
+                    const firmaPromise = procesarEnvioFacturaElectronica({
+                        db,
+                        ventaId: ventaInsertada.id,
+                        ventaCodigo: ventaIdText,
+                        docNumber,
+                        payload: jsonFactura,
+                        configServicios: configServiciosData
+                    });
+                    window.lastFacturaFirmaPromise = firmaPromise;
+                    firmaPromise.catch(error => {
+                        console.error('❌ Error inesperado al procesar envío de factura al servicio de firma:', error);
+                        window.app?.showToast?.('No se pudo completar el envío al SRI. Revisa la consola para más detalles.', 'danger', 7000);
+                    });
+                }
             } else {
                 // Si la venta es menor a $4, no imprimir recibo
                 if (totalConIva < 4) {
@@ -5131,6 +6442,9 @@
             
             // Limpiar búsqueda de cliente
             document.getElementById('clienteCedula').value = '';
+            
+            // Recargar cache de clientes en background (por si se agregó un cliente nuevo)
+            cargarClientesCompleto();
             
             // Focus en búsqueda de productos
             document.getElementById('searchInput').focus();
@@ -5291,6 +6605,7 @@
     window.limpiarVenta = limpiarVenta;
     window.procesarVenta = procesarVenta;
     window.buscarCliente = buscarCliente;
+    window.toggleBusquedaCliente = toggleBusquedaCliente;
     window.activarBusquedaCliente = activarBusquedaCliente;
     window.buscarClienteDirecto = buscarClienteDirecto;
     window.seleccionarCliente = seleccionarCliente;

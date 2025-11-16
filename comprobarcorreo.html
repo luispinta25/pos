@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=80mm, initial-scale=1.0">
+    <title>Comprobación de Correo</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 80mm;
+            background-color: white;
+            text-align: center;
+        }
+
+        #thermal-ticket {
+            margin: 0 auto;
+            width: 76mm;
+            padding: 5mm 2mm;
+        }
+
+        .verification-title {
+            font-size: 5mm;
+            font-weight: bold;
+            margin: 10mm 0 8mm 0;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .verification-subtitle {
+            font-size: 3.5mm;
+            margin: 5mm 0 8mm 0;
+            text-align: center;
+        }
+
+        .email-box {
+            border: 2px solid #000;
+            padding: 5mm;
+            margin: 0;
+            text-align: center;
+            background-color: white;
+            border-radius: 2mm;
+        }
+
+        .email-value {
+            font-size: 4mm;
+            font-weight: bold;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body onafterprint="window.close()">
+    <div id="thermal-ticket">
+        <div class="verification-title">
+            Verifica tu correo<br>por favor
+        </div>
+        
+        <div class="verification-subtitle">
+            Se enviará tu factura a:
+        </div>
+        
+        <div class="email-box">
+            <div class="email-value" id="email-display"></div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            // Obtener parámetros de la URL
+            const params = new URLSearchParams(window.location.search);
+            const correo = params.get('correo') || '';
+            
+            // Mostrar correo
+            document.getElementById('email-display').textContent = correo;
+            
+            // Esperar un momento para renderizar y luego imprimir
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        };
+    </script>
+</body>
+</html>

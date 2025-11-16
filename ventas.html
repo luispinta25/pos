@@ -152,6 +152,76 @@
     </div>
 </div>
 
+<!-- Modal para Selección de Cliente (Convertir a Factura) -->
+<div id="modalSeleccionCliente" class="modal">
+    <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="fas fa-user-plus"></i> Seleccionar Cliente para Factura</h2>
+            <button class="modal-close" onclick="cerrarModalSeleccionCliente()">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+            <!-- Información del Recibo -->
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div>
+                        <label style="font-size: 0.85em; color: #666;">Recibo:</label>
+                        <div id="recibo-id" style="font-weight: 600;"></div>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85em; color: #666;">Total:</label>
+                        <div id="recibo-total" style="font-weight: 600; color: #28a745;"></div>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85em; color: #666;">Fecha original:</label>
+                        <div id="recibo-fecha" style="font-weight: 600;"></div>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85em; color: #666;">Fecha facturación:</label>
+                        <div id="factura-fecha" style="font-weight: 600; color: #d4a017;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Búsqueda de Cliente -->
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Búsqueda de Cliente</label>
+                <input 
+                    type="text" 
+                    id="cliente-search-input" 
+                    class="form-input" 
+                    placeholder="Buscar por cédula, RUC o nombre..."
+                    autocomplete="off">
+            </div>
+
+            <!-- Resultados de Búsqueda -->
+            <div id="cliente-results-container" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: #f8f9fa; position: sticky; top: 0;">
+                        <tr>
+                            <th style="padding: 12px; text-align: left; font-size: 0.85em; font-weight: 600;">Cédula/RUC</th>
+                            <th style="padding: 12px; text-align: left; font-size: 0.85em; font-weight: 600;">Nombre/Razón Social</th>
+                            <th style="padding: 12px; text-align: left; font-size: 0.85em; font-weight: 600;">Correo</th>
+                            <th style="padding: 12px; text-align: center; font-size: 0.85em; font-weight: 600;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cliente-results-tbody">
+                        <tr>
+                            <td colspan="4" style="padding: 40px; text-align: center; color: #999;">
+                                Busque un cliente por cédula, RUC o nombre
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Botones -->
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="cerrarModalSeleccionCliente()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     
     
@@ -846,12 +916,49 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap;">
+                ${generarBotonesAccion(venta)}
                 <button class="btn btn-secondary" onclick="cerrarModalDetalle()">Cerrar</button>
             </div>
         `;
         
+        // Guardar venta actual en variable global para uso de botones
+        window.ventaActual = { venta, detalles, productosMap };
+        
         document.getElementById('modalDetalleVenta').classList.add('active');
+    }
+
+    function generarBotonesAccion(venta) {
+        const tipo = venta.tipo;
+        const estado = venta.estado;
+        let botones = '';
+
+        if (tipo === 'FACTURA') {
+            if (estado === 'AUTORIZADO' || estado === 'COMPLETADO') {
+                botones = `
+                    <button class="btn btn-primary" onclick="reimprimirFacturaElectronica()">
+                        <i class="fas fa-print"></i> Reimprimir Factura
+                    </button>
+                `;
+            } else if (estado === 'PENDIENTE' || estado === 'FALLIDO' || estado === 'RECHAZADO') {
+                botones = `
+                    <button class="btn btn-accent" onclick="reenviarAlSRI()">
+                        <i class="fas fa-sync-alt"></i> Reenviar al SRI
+                    </button>
+                `;
+            }
+        } else if (tipo === 'RECIBO') {
+            botones = `
+                <button class="btn btn-primary" onclick="reimprimirRecibo()">
+                    <i class="fas fa-print"></i> Reimprimir Recibo
+                </button>
+                <button class="btn btn-accent" onclick="iniciarConversionAFactura()">
+                    <i class="fas fa-file-invoice"></i> Convertir a Factura
+                </button>
+            `;
+        }
+
+        return botones;
     }
 
     function mostrarModalLoading() {
@@ -923,6 +1030,943 @@
     }
 
     // =====================================================
+    // REIMPRESIÓN DE DOCUMENTOS
+    // =====================================================
+
+    function reimprimirRecibo() {
+        const { venta, detalles, productosMap } = window.ventaActual;
+        
+        try {
+            const cantidades = [];
+            const servicios = [];
+            const p_units = [];
+            const p_total = [];
+            
+            detalles.forEach(detalle => {
+                cantidades.push(detalle.cantidad);
+                const nombreProducto = (productosMap[detalle.producto_id] || detalle.producto_id).replace(/,/g, ".");
+                servicios.push(encodeURIComponent(nombreProducto));
+                p_units.push(detalle.precio.toFixed(2));
+                p_total.push(detalle.subtotal.toFixed(2));
+            });
+            
+            const fecha = new Date(venta.fecha_hora_venta);
+            const formattedDate = fecha.toLocaleString('es-EC', { 
+                timeZone: 'America/Guayaquil', 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit', 
+                hour12: false 
+            }).replace(/[/]/g, '/').replace(',', '');
+            
+            const url = "recibo.html" +
+                "?fecha=" + encodeURIComponent(formattedDate) +
+                "&venta=" + encodeURIComponent(venta.id_venta) +
+                "&subtotal=" + encodeURIComponent(venta.total.toFixed(2)) +
+                "&descuento=0" +
+                "&vendedor=" + encodeURIComponent(venta.usuario_email || 'SISTEMA') +
+                "&nombre_cliente=" + encodeURIComponent(venta.cliente_id === '9999999999999' ? 'CONSUMIDOR FINAL' : venta.cliente_id) +
+                "&cedula_cliente=" + encodeURIComponent(venta.cliente_id) +
+                "&direccion_cliente=S/N" +
+                "&telefono_cliente=S/N" +
+                "&cantidades=" + cantidades.join(',') +
+                "&servicios=" + servicios.join(',') +
+                "&p_units=" + p_units.join(',') +
+                "&total=" + encodeURIComponent(venta.total.toFixed(2)) +
+                "&p_total=" + p_total.join(',') +
+                "&tipo_documento=RECIBO";
+            
+            window.open(url, '_blank');
+            window.app?.showToast?.('🖨️ Imprimiendo recibo...', 'success', 2000);
+            
+        } catch (error) {
+            console.error('Error al reimprimir recibo:', error);
+            window.app?.showToast?.('Error al generar el recibo', 'error', 3000);
+        }
+    }
+
+    async function reimprimirFacturaElectronica() {
+        const { venta, detalles, productosMap } = window.ventaActual;
+        
+        try {
+            // Obtener configuraciones
+            const db = window.app.db;
+            
+            const { data: configSRI } = await db.from('facelectronicaconfig').select('*').single();
+            const { data: configServicios } = await db.from('config_servicios').select('*').single();
+            const { data: clienteData } = await db.from('clientes').select('*').eq('cedula', venta.cliente_id).single();
+            
+            if (!configSRI || !configServicios) {
+                window.app?.showToast?.('Error: Configuración de facturación no disponible', 'error', 3000);
+                return;
+            }
+            
+            // Preparar productos
+            const productos = detalles.map(detalle => ({
+                codigo: detalle.producto_id,
+                cantidad: detalle.cantidad,
+                nombre: productosMap[detalle.producto_id] || detalle.producto_id,
+                precio: detalle.precio,
+                subtotal: detalle.subtotal
+            }));
+            
+            // Construir arrays para los parámetros
+            const cantidades = productos.map(prod => prod.cantidad.toFixed(2));
+            const descripciones = productos.map(prod => prod.nombre.replace(/,/g, '.'));
+            const preciosUnitarios = productos.map(prod => prod.precio.toFixed(2));
+            const totalesProducto = productos.map(prod => prod.subtotal.toFixed(2));
+            
+            // Fecha de la factura
+            const fechaFactura = new Date(venta.fecha_factura || venta.fecha_hora_venta).toLocaleString('es-EC', {
+                timeZone: 'America/Guayaquil',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Ambiente y emisión
+            const ambienteTexto = Number(configSRI.ambiente) === 1 ? 'PRUEBAS' : 'PRODUCCIÓN';
+            const emisionTexto = Number(configSRI.tipo_emision) === 1 ? 'NORMAL' : 'CONTINGENCIA';
+            
+            // Cliente
+            const cliente = clienteData || {
+                razon_social: venta.cliente_id === '9999999999999' ? 'CONSUMIDOR FINAL' : venta.cliente_id,
+                cedula: venta.cliente_id,
+                direccion: 'S/N',
+                telefono: 'S/N',
+                correo: 'consumidor@final.com'
+            };
+            
+            // Construir URL con parámetros
+            const params = new URLSearchParams();
+            params.set('company_name', configServicios.empresa_nombre_comercial || configServicios.empresa_razon_social || '');
+            params.set('company_owner', configServicios.empresa_razon_social || '');
+            params.set('company_ruc', configServicios.empresa_ruc || '');
+            params.set('company_address', configServicios.empresa_dir_establecimiento || '');
+            params.set('company_phone', configServicios.empresa_telefono || '');
+            params.set('logo_url', configServicios.url_logo_factura || '');
+            
+            params.set('invoice_number', venta.doc || '');
+            params.set('invoice_date', fechaFactura);
+            params.set('environment', ambienteTexto);
+            params.set('emission', emisionTexto);
+            params.set('auth_number', venta.clave_acceso || '');
+            
+            params.set('customer_name', cliente.razon_social || 'CONSUMIDOR FINAL');
+            params.set('customer_id', cliente.cedula || '9999999999999');
+            params.set('customer_address', cliente.direccion || 'S/N');
+            params.set('customer_phone', cliente.telefono || 'S/N');
+            params.set('customer_email', cliente.correo || 'consumidor@final.com');
+            
+            params.set('attendant', venta.usuario_email || '---');
+            
+            params.set('subtotal', venta.total.toFixed(2));
+            params.set('discount', '0.00');
+            params.set('total', venta.total.toFixed(2));
+            
+            params.set('quantities', cantidades.join(','));
+            params.set('descriptions', descripciones.join(','));
+            params.set('unit_prices', preciosUnitarios.join(','));
+            params.set('total_prices', totalesProducto.join(','));
+            
+            // Abrir factura en nueva pestaña
+            const facturaUrl = `factura.html?${params.toString()}`;
+            window.open(facturaUrl, '_blank');
+            
+            window.app?.showToast?.('🖨️ Imprimiendo factura electrónica...', 'success', 2000);
+            
+        } catch (error) {
+            console.error('Error al reimprimir factura:', error);
+            window.app?.showToast?.('Error al generar la factura', 'error', 3000);
+        }
+    }
+
+    // =====================================================
+    // CONVERTIR RECIBO A FACTURA
+    // =====================================================
+
+    let clientesBusqueda = [];
+    let debounceTimer = null;
+
+    function iniciarConversionAFactura() {
+        const { venta } = window.ventaActual;
+        
+        // Mostrar información del recibo
+        document.getElementById('recibo-id').textContent = venta.id_venta;
+        document.getElementById('recibo-total').textContent = window.app.formatCurrency(venta.total);
+        document.getElementById('recibo-fecha').textContent = new Date(venta.fecha_hora_venta).toLocaleString('es-EC');
+        document.getElementById('factura-fecha').textContent = new Date().toLocaleString('es-EC');
+        
+        // Limpiar búsqueda
+        document.getElementById('cliente-search-input').value = '';
+        document.getElementById('cliente-results-tbody').innerHTML = `
+            <tr>
+                <td colspan="4" style="padding: 40px; text-align: center; color: #999;">
+                    Busque un cliente por cédula, RUC o nombre
+                </td>
+            </tr>
+        `;
+        
+        // Configurar evento de búsqueda
+        const searchInput = document.getElementById('cliente-search-input');
+        searchInput.oninput = (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => buscarClientes(e.target.value), 300);
+        };
+        
+        // Mostrar modal
+        document.getElementById('modalSeleccionCliente').classList.add('active');
+    }
+
+    function cerrarModalSeleccionCliente() {
+        document.getElementById('modalSeleccionCliente').classList.remove('active');
+    }
+
+    async function buscarClientes(query) {
+        if (!query || query.trim().length < 2) {
+            document.getElementById('cliente-results-tbody').innerHTML = `
+                <tr>
+                    <td colspan="4" style="padding: 40px; text-align: center; color: #999;">
+                        Busque un cliente por cédula, RUC o nombre
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        try {
+            const db = window.app.db;
+            const searchTerm = `%${query}%`;
+            
+            const { data, error } = await db
+                .from('clientes')
+                .select('*')
+                .or(`cedula.ilike.${searchTerm},razon_social.ilike.${searchTerm}`)
+                .limit(20);
+            
+            if (error) throw error;
+            
+            clientesBusqueda = data || [];
+            mostrarResultadosClientes(clientesBusqueda);
+            
+        } catch (error) {
+            console.error('Error buscando clientes:', error);
+            window.app?.showToast?.('Error al buscar clientes', 'error', 2000);
+        }
+    }
+
+    function mostrarResultadosClientes(clientes) {
+        const tbody = document.getElementById('cliente-results-tbody');
+        
+        if (!clientes || clientes.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="padding: 40px; text-align: center; color: #999;">
+                        No se encontraron clientes
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = clientes.map(cliente => `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px;">${cliente.cedula}</td>
+                <td style="padding: 12px;">${cliente.razon_social}</td>
+                <td style="padding: 12px; font-size: 0.9em; color: #666;">${cliente.correo || 'N/A'}</td>
+                <td style="padding: 12px; text-align: center;">
+                    <button 
+                        class="btn btn-accent" 
+                        style="padding: 6px 12px; font-size: 0.85em;"
+                        onclick='seleccionarClienteParaFactura(${JSON.stringify(cliente).replace(/'/g, "&apos;")})'>
+                        Seleccionar
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function seleccionarClienteParaFactura(cliente) {
+        if (!cliente || !cliente.cedula) {
+            window.app?.showToast?.('Cliente inválido', 'error', 2000);
+            return;
+        }
+        
+        // Confirmar conversión
+        if (!confirm(`¿Convertir recibo a factura para:\n\n${cliente.razon_social}\nCI/RUC: ${cliente.cedula}?`)) {
+            return;
+        }
+        
+        try {
+            window.app?.showToast?.('⌛ Convirtiendo recibo a factura...', 'info', 3000);
+            
+            const { venta, detalles, productosMap } = window.ventaActual;
+            const db = window.app.db;
+            
+            // 1. Obtener configuraciones
+            const { data: configSRI } = await db.from('facelectronicaconfig').select('*').single();
+            const { data: configServicios } = await db.from('config_servicios').select('*').single();
+            
+            if (!configSRI || !configServicios) {
+                throw new Error('Configuración de facturación no disponible');
+            }
+            
+            // 2. Incrementar número de comprobante
+            const nuevoNumero = parseInt(configSRI.comprobante_actual) + 1;
+            const { error: updateError } = await db
+                .from('facelectronicaconfig')
+                .update({ comprobante_actual: nuevoNumero })
+                .eq('id', configSRI.id);
+            
+            if (updateError) throw updateError;
+            
+            // 3. Generar número de documento y clave de acceso
+            const docNumber = `${String(configSRI.establecimiento).padStart(3, '0')}-${String(configSRI.punto_emision).padStart(3, '0')}-${String(nuevoNumero).padStart(9, '0')}`;
+            
+            const fechaActual = new Date();
+            const fechaFormateada = `${String(fechaActual.getDate()).padStart(2, '0')}${String(fechaActual.getMonth() + 1).padStart(2, '0')}${fechaActual.getFullYear()}`;
+            
+            // IMPORTANTE: Usar configSRI.ruc (de facelectronicaconfig) NO empresa_ruc
+            const claveAcceso = generarClaveAcceso(fechaFormateada, {
+                ruc: configSRI.ruc,  // De tabla facelectronicaconfig
+                ambiente: configSRI.ambiente,
+                establecimiento: configSRI.establecimiento,
+                punto_emision: configSRI.punto_emision,
+                comprobante_actual: nuevoNumero,
+                codigo_numerico: configSRI.codigo_numerico,
+                tipo_emision: configSRI.tipo_emision
+            });
+            
+            if (!claveAcceso.success) {
+                throw new Error('Error generando clave de acceso: ' + claveAcceso.error);
+            }
+            
+            // 4. Actualizar venta en BD
+            const { error: ventaUpdateError } = await db
+                .from('ventas')
+                .update({
+                    tipo: 'FACTURA',
+                    cliente_id: cliente.cedula,
+                    doc: docNumber,
+                    clave_acceso: claveAcceso.claveAcceso,
+                    estado: 'PENDIENTE',
+                    fecha_factura: fechaActual.toISOString()
+                })
+                .eq('id', venta.id);
+            
+            if (ventaUpdateError) throw ventaUpdateError;
+            
+            // 5. Preparar y enviar al SRI
+            const productos = detalles.map(detalle => ({
+                codigo: detalle.producto_id,
+                cantidad: detalle.cantidad,
+                nombre: productosMap[detalle.producto_id] || detalle.producto_id,
+                precio: detalle.precio,
+                subtotal: detalle.subtotal
+            }));
+            
+            const jsonResult = generarJsonFacturacion(
+                {
+                    productos,
+                    total: venta.total,
+                    cliente,
+                    saleCode: venta.id_venta,
+                    fecha: fechaActual.toISOString()
+                },
+                configSRI,
+                configServicios,
+                claveAcceso.claveAcceso,
+                docNumber
+            );
+            
+            if (!jsonResult.success) {
+                throw new Error('Error generando JSON de facturación: ' + jsonResult.message);
+            }
+            
+            const jsonPayload = jsonResult.json;
+            
+            // 6. Enviar al servicio de firma
+            const urlFirma = configServicios.firma_url;
+            if (urlFirma) {
+                console.groupCollapsed('%c🔄 CONVERSIÓN RECIBO → FACTURA', 'color:#9C27B0;font-weight:bold;font-size:14px;');
+                console.log('📄 Recibo original:', venta.id_venta);
+                console.log('🆕 Número de Factura:', docNumber);
+                console.log('🔑 Clave Acceso:', claveAcceso.claveAcceso);
+                console.log('👤 Cliente:', cliente.razon_social);
+                console.log('📧 Correo:', cliente.correo);
+                console.log('💰 Total:', venta.total);
+                console.log('📦 Productos:', productos.length);
+                console.log('🌐 URL Firma:', urlFirma);
+                console.group('📋 JSON Generado');
+                console.log('- Correo:', jsonPayload.correo);
+                console.log('- Archivo:', jsonPayload.archivo);
+                console.log('- Clave Acceso:', jsonPayload.claveAcceso);
+                console.log('- Nombre P12:', jsonPayload.nombrep12);
+                console.log('- Clave P12:', jsonPayload.clave_12 ? '***' : 'NO CONFIGURADA');
+                console.log('📋 JSON completo:', JSON.stringify(jsonPayload, null, 2));
+                console.groupEnd();
+                console.groupEnd();
+                
+                const resultado = await enviarFacturaAlServicioFirma({
+                    url: urlFirma,
+                    payload: jsonPayload,
+                    maxIntentos: 3,
+                    timeoutMs: 30000
+                });
+                
+                // LOGGING DETALLADO DE LA RESPUESTA
+                console.groupCollapsed('%c📥 RESPUESTA DEL SRI (Conversión)', 'color:#4CAF50;font-weight:bold;font-size:14px;');
+                console.log('✅ Success:', resultado.success);
+                console.log('📊 Status Code:', resultado.statusCode);
+                console.log('📄 Data completa:', resultado.data);
+                console.log('💬 Mensaje:', resultado.data?.message || resultado.message);
+                console.log('📝 Detalles:', resultado.data?.detalle || resultado.data?.details);
+                console.log('🔍 Objeto completo resultado:', JSON.stringify(resultado, null, 2));
+                
+                if (resultado.data) {
+                    console.group('🔎 Análisis de data');
+                    console.log('- Status:', resultado.data.status);
+                    console.log('- Message:', resultado.data.message);
+                    console.log('- Detalle:', resultado.data.detalle);
+                    console.log('- ClaveAcceso:', resultado.data.claveAcceso);
+                    console.log('- NumeroAutorizacion:', resultado.data.numeroAutorizacion);
+                    console.log('- FechaAutorizacion:', resultado.data.fechaAutorizacion);
+                    console.log('- Estado:', resultado.data.estado);
+                    console.groupEnd();
+                }
+                
+                if (resultado.error) {
+                    console.error('❌ Error:', resultado.error);
+                }
+                
+                console.groupEnd();
+                
+                if (resultado.success) {
+                    await db.from('ventas').update({ estado: 'AUTORIZADO' }).eq('id', venta.id);
+                    window.app?.showToast?.('✅ Factura convertida y autorizada por el SRI', 'success', 4000);
+                } else {
+                    console.warn('%c⚠️ FACTURA CONVERTIDA PERO PENDIENTE', 'color:#FF9800;font-weight:bold;font-size:14px;');
+                    console.warn('Motivo:', resultado.data?.message || resultado.message);
+                    console.warn('Respuesta completa:', resultado);
+                    window.app?.showToast?.('⚠️ Factura convertida pero pendiente de autorización SRI', 'warning', 4000);
+                }
+            }
+            
+            // 7. Cerrar modales y recargar
+            cerrarModalSeleccionCliente();
+            cerrarModalDetalle();
+            cargarVentas();
+            
+        } catch (error) {
+            console.error('Error convirtiendo recibo:', error);
+            window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
+        }
+    }
+
+    // =====================================================
+    // REENVIAR AL SRI
+    // =====================================================
+
+    async function reenviarAlSRI() {
+        const { venta, detalles, productosMap } = window.ventaActual;
+        
+        if (!venta.doc || !venta.clave_acceso) {
+            window.app?.showToast?.('No hay datos suficientes para reenviar', 'error', 3000);
+            return;
+        }
+        
+        if (!confirm(`¿Reenviar factura ${venta.doc} al SRI?`)) {
+            return;
+        }
+        
+        try {
+            window.app?.showToast?.('⌛ Reenviando factura al SRI...', 'info', 3000);
+            
+            const db = window.app.db;
+            
+            // Obtener configuraciones
+            const { data: configSRI } = await db.from('facelectronicaconfig').select('*').single();
+            const { data: configServicios } = await db.from('config_servicios').select('*').single();
+            const { data: clienteData } = await db.from('clientes').select('*').eq('cedula', venta.cliente_id).single();
+            
+            if (!configSRI || !configServicios) {
+                throw new Error('Configuración no disponible');
+            }
+            
+            // Preparar productos
+            const productos = detalles.map(detalle => ({
+                codigo: detalle.producto_id,
+                cantidad: detalle.cantidad,
+                nombre: productosMap[detalle.producto_id] || detalle.producto_id,
+                precio: detalle.precio,
+                subtotal: detalle.subtotal
+            }));
+            
+            // Generar JSON
+            const jsonResult = generarJsonFacturacion(
+                {
+                    productos,
+                    total: venta.total,
+                    cliente: clienteData || { 
+                        cedula: venta.cliente_id, 
+                        razon_social: venta.cliente_id, 
+                        correo: 'consumidor@final.com',
+                        telefono: '',
+                        direccion: ''
+                    },
+                    saleCode: venta.id_venta,
+                    fecha: venta.fecha_hora_venta
+                },
+                configSRI,
+                configServicios,
+                venta.clave_acceso,
+                venta.doc
+            );
+            
+            if (!jsonResult.success) {
+                throw new Error('Error generando JSON: ' + jsonResult.message);
+            }
+            
+            const jsonPayload = jsonResult.json;
+            
+            // Enviar al SRI
+            const urlFirma = configServicios.firma_url;
+            if (!urlFirma) {
+                throw new Error('URL del servicio de firma no configurada');
+            }
+            
+            console.groupCollapsed('%c🚀 REENVÍO AL SRI', 'color:#2196F3;font-weight:bold;font-size:14px;');
+            console.log('📄 Factura:', venta.doc);
+            console.log('🔑 Clave Acceso:', venta.clave_acceso);
+            console.log('👤 Cliente:', clienteData?.razon_social || venta.cliente_id);
+            console.log('💰 Total:', venta.total);
+            console.log('📦 Productos:', productos.length);
+            console.log('🌐 URL:', urlFirma);
+            console.group('📋 JSON Generado');
+            console.log('- Correo:', jsonPayload.correo);
+            console.log('- Archivo:', jsonPayload.archivo);
+            console.log('- Clave Acceso:', jsonPayload.claveAcceso);
+            console.log('- Nombre P12:', jsonPayload.nombrep12);
+            console.log('- Clave P12:', jsonPayload.clave_12 ? '***' : 'NO CONFIGURADA');
+            console.log('📋 JSON completo:', JSON.stringify(jsonPayload, null, 2));
+            console.groupEnd();
+            console.groupEnd();
+            
+            const resultado = await enviarFacturaAlServicioFirma({
+                url: urlFirma,
+                payload: jsonPayload,
+                maxIntentos: 3,
+                timeoutMs: 30000
+            });
+            
+            // LOGGING DETALLADO DE LA RESPUESTA
+            console.groupCollapsed('%c📥 RESPUESTA DEL SRI', 'color:#4CAF50;font-weight:bold;font-size:14px;');
+            console.log('✅ Success:', resultado.success);
+            console.log('📊 Status Code:', resultado.statusCode);
+            console.log('📄 Data completa:', resultado.data);
+            console.log('💬 Mensaje:', resultado.data?.message || resultado.message);
+            console.log('📝 Detalles:', resultado.data?.detalle || resultado.data?.details);
+            console.log('🔍 Objeto completo resultado:', JSON.stringify(resultado, null, 2));
+            
+            if (resultado.data) {
+                console.group('🔎 Análisis de data');
+                console.log('- Status:', resultado.data.status);
+                console.log('- Message:', resultado.data.message);
+                console.log('- Detalle:', resultado.data.detalle);
+                console.log('- ClaveAcceso:', resultado.data.claveAcceso);
+                console.log('- NumeroAutorizacion:', resultado.data.numeroAutorizacion);
+                console.log('- FechaAutorizacion:', resultado.data.fechaAutorizacion);
+                console.log('- Estado:', resultado.data.estado);
+                console.groupEnd();
+            }
+            
+            if (resultado.error) {
+                console.error('❌ Error:', resultado.error);
+            }
+            
+            console.groupEnd();
+            
+            if (resultado.success) {
+                await db.from('ventas').update({ estado: 'AUTORIZADO' }).eq('id', venta.id);
+                window.app?.showToast?.('✅ Factura autorizada por el SRI', 'success', 4000);
+                cerrarModalDetalle();
+                cargarVentas();
+            } else {
+                const mensaje = resultado.data?.message || resultado.message || 'Error desconocido';
+                window.app?.showToast?.(`❌ Error SRI: ${mensaje}`, 'error', 5000);
+                
+                // Log adicional para debugging
+                console.error('%c❌ FACTURA RECHAZADA O FALLIDA', 'color:#f44336;font-weight:bold;font-size:14px;');
+                console.error('Motivo:', mensaje);
+                console.error('Respuesta completa:', resultado);
+            }
+            
+        } catch (error) {
+            console.error('Error reenviando al SRI:', error);
+            window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
+        }
+    }
+
+    // =====================================================
+    // FUNCIONES AUXILIARES (Copadas de punto-venta.html)
+    // =====================================================
+
+    function padWithZeroes(num, length) {
+        const str = String(num);
+        if (str.length >= length) return str;
+        return '0'.repeat(length - str.length) + str;
+    }
+
+    function calcularDigitoVerificador(cadena) {
+        try {
+            if (!cadena || cadena.length !== 48) {
+                return { success: false, error: 'Cadena inválida' };
+            }
+            
+            const factores = [2, 3, 4, 5, 6, 7];
+            let suma = 0;
+            
+            for (let i = 0; i < cadena.length; i++) {
+                const digito = parseInt(cadena[i]);
+                const factor = factores[i % 6];
+                suma += digito * factor;
+            }
+            
+            let digitoVerificador = 11 - (suma % 11);
+            if (digitoVerificador === 10) digitoVerificador = 1;
+            if (digitoVerificador === 11) digitoVerificador = 0;
+            
+            return {
+                success: true,
+                claveAcceso: cadena + digitoVerificador
+            };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    function generarClaveAcceso(fecha, config) {
+        try {
+            console.group('🔑 Generando Clave de Acceso');
+            console.log('📅 Fecha:', fecha);
+            console.log('📋 Config recibida:', config);
+            
+            if (!fecha || fecha.length !== 8) {
+                console.error('❌ Fecha inválida:', fecha, 'longitud:', fecha?.length);
+                console.groupEnd();
+                return { success: false, error: 'Fecha inválida (debe tener 8 dígitos: ddMMyyyy)' };
+            }
+            
+            const tipoComprobante = "01";
+            const ruc = padWithZeroes(config.ruc, 13);
+            const ambiente = padWithZeroes(config.ambiente, 1);
+            const establecimiento = padWithZeroes(config.establecimiento, 3);
+            const puntoEmision = padWithZeroes(config.punto_emision, 3);
+            const comprobante = padWithZeroes(config.comprobante_actual, 9);
+            const codigoNumerico = padWithZeroes(config.codigo_numerico, 8);
+            const tipoEmision = padWithZeroes(config.tipo_emision, 1);
+            
+            console.log('📊 Componentes de la clave:');
+            console.log('  - Fecha:', fecha, '(8)');
+            console.log('  - Tipo Comprobante:', tipoComprobante, '(2)');
+            console.log('  - RUC:', ruc, '(13)');
+            console.log('  - Ambiente:', ambiente, '(1)');
+            console.log('  - Establecimiento:', establecimiento, '(3)');
+            console.log('  - Punto Emisión:', puntoEmision, '(3)');
+            console.log('  - Comprobante:', comprobante, '(9)');
+            console.log('  - Código Numérico:', codigoNumerico, '(8)');
+            console.log('  - Tipo Emisión:', tipoEmision, '(1)');
+            
+            const claveAcceso48 = fecha + tipoComprobante + ruc + ambiente + establecimiento + puntoEmision + comprobante + codigoNumerico + tipoEmision;
+            
+            console.log('🔢 Clave 48 dígitos:', claveAcceso48);
+            console.log('📏 Longitud:', claveAcceso48.length);
+            
+            const resultado = calcularDigitoVerificador(claveAcceso48);
+            
+            if (resultado.success) {
+                console.log('✅ Clave completa (49):', resultado.claveAcceso);
+            } else {
+                console.error('❌ Error calculando dígito verificador:', resultado.error);
+            }
+            
+            console.groupEnd();
+            return resultado;
+        } catch (error) {
+            console.error('❌ Error en generarClaveAcceso:', error);
+            console.groupEnd();
+            return { success: false, error: error.message };
+        }
+    }
+
+    function getTipoIdentificacion(identificacion) {
+        if (!identificacion) return "07"; // Consumidor final
+        const id = String(identificacion).trim();
+        if (id === "9999999999999") return "07"; // Consumidor final
+        if (id.length === 10) return "05"; // Cédula
+        if (id.length === 13) return "04"; // RUC
+        return "06"; // Pasaporte u otro
+    }
+
+    function formatIdentificacion(identificacion) {
+        if (!identificacion) return "9999999999999";
+        let id = String(identificacion).trim();
+        
+        // Si es consumidor final
+        if (id === "9999999999999") return id;
+        
+        // Si es cédula (10 dígitos)
+        if (id.length <= 10) {
+            return padWithZeroes(id, 10);
+        }
+        
+        // Si es RUC (13 dígitos)
+        return id;
+    }
+
+    function formatearTelefonoEcuador(telefono) {
+        if (!telefono) return "S/N";
+        let tel = String(telefono).replace(/\D/g, ''); // Solo dígitos
+        if (tel.length === 0) return "S/N";
+        if (tel.length === 9) tel = '0' + tel; // Agregar 0 al inicio
+        return tel;
+    }
+
+    function generarJsonFacturacion(ventaData, configSRI, configServicios, claveAcceso, docNumber) {
+        try {
+            // Calcular totales
+            let subtotal = 0;
+            const productos = ventaData.productos.map(prod => {
+                const subtotalProducto = prod.cantidad * prod.precio;
+                subtotal += subtotalProducto;
+                return {
+                    codigoPrincipal: prod.codigo || 'PROD',
+                    codigoAuxiliar: prod.codigo || 'PROD',
+                    descripcion: prod.nombre.replace(/,/g, '.'), // Sin comas
+                    cantidad: prod.cantidad.toFixed(2),
+                    precioUnitario: prod.precio.toFixed(2),
+                    subtotalSinIVA: subtotalProducto.toFixed(2),
+                    codigoPorcentaje: "0",
+                    tarifa: "0",
+                    iva: "0.00",
+                    descuento: "0.00"
+                };
+            });
+
+            // Extraer partes del documento
+            const docParts = docNumber.split('-');
+            const estab = docParts[0];
+            const ptoEmi = docParts[1];
+            const secuencial = docParts[2];
+
+            // Fecha de emisión
+            const now = new Date(ventaData.fecha || Date.now());
+            const fechaEmision = now.toLocaleDateString('es-EC', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+
+            // Datos del cliente
+            const cliente = ventaData.cliente;
+            const identificacionComprador = formatIdentificacion(cliente.cedula);
+            const tipoIdentificacionComprador = getTipoIdentificacion(identificacionComprador);
+            const telefonoCliente = formatearTelefonoEcuador(cliente.telefono);
+
+            // Construir JSON
+            const jsonFactura = {
+                // WhatsApp config
+                instance_id: configServicios.whatsapp_instance_id || "",
+                access_token: configServicios.whatsapp_access_token || "",
+                
+                // Archivos
+                archivo: `FACTURA-${estab}-${ptoEmi}-${secuencial}.xml`,
+                facturaPDF: `FACTURA-${estab}-${ptoEmi}-${secuencial}.pdf`,
+                
+                // Correo del cliente
+                correo: cliente.correo || "consumidor@final.com",
+                
+                // Configuración SRI
+                ambiente: String(configSRI.ambiente),
+                razonSocial: configServicios.empresa_razon_social,
+                nombreComercial: configServicios.empresa_nombre_comercial,
+                ruc: configServicios.empresa_ruc,
+                claveAcceso: claveAcceso,
+                estab: estab,
+                ptoEmi: ptoEmi,
+                secuencial: secuencial,
+                
+                // Direcciones
+                dirMatriz: configServicios.empresa_dir_matriz,
+                dirEstablecimiento: configServicios.empresa_dir_establecimiento,
+                
+                // Contribuyente
+                contribuyenteRimpe: configServicios.empresa_contribuyente_rimpe || "",
+                contribuyenteRIDE: configServicios.empresa_contribuyente_ride || "",
+                obligadoContabilidad: configServicios.empresa_obligado_contabilidad,
+                
+                // Fecha
+                fechaEmision: fechaEmision,
+                
+                // Cliente
+                tipoIdentificacionComprador: tipoIdentificacionComprador,
+                razonSocialComprador: cliente.razon_social,
+                identificacionComprador: identificacionComprador,
+                direccionComprador: cliente.direccion || "S/N",
+                telefonoCliente: telefonoCliente,
+                telefonoContribuyente: configServicios.empresa_telefono,
+                
+                // Documento
+                factura: docNumber,
+                formaPago: configServicios.factura_forma_pago_defecto || "01",
+                formaPagoRIDE: configServicios.factura_forma_pago_ride || "01 SIN UTILIZACIÓN DEL SISTEMA FINANCIERO",
+                
+                // Totales
+                codigoPorcentajeTotales: "0",
+                baseImponibleTotales: subtotal.toFixed(2),
+                valorTotales: "0.00",
+                totalSinImpuestos: subtotal.toFixed(2),
+                importeTotal: subtotal.toFixed(2),
+                totalDescuento: "0.00",
+                valor: "0.00",
+                
+                // Productos (arrays concatenados)
+                codigoPrincipal: productos.map(p => p.codigoPrincipal).join(' , '),
+                codigoAuxiliar: productos.map(p => p.codigoAuxiliar).join(' , '),
+                descripcion: productos.map(p => p.descripcion).join(' , '),
+                cantidad: productos.map(p => p.cantidad).join(' , '),
+                precioUnitario: productos.map(p => p.precioUnitario).join('|'),
+                subtotalSinIVA: productos.map(p => p.subtotalSinIVA).join('|'),
+                codigoPorcentaje: productos.map(p => p.codigoPorcentaje).join(','),
+                tarifa: productos.map(p => p.tarifa).join(','),
+                iva: productos.map(p => p.iva).join('|'),
+                descuento: productos.map(p => p.descuento).join('|'),
+                
+                // Subtotales IVA
+                subtotal12: "0.00",
+                subtotal0: subtotal.toFixed(2),
+                subtotalNoObjeto: "0.00",
+                subtotalExento: "0.00",
+                
+                // Campos adicionales
+                campoAdicional: 'campoAdicional nombre="Correo de cliente"',
+                codigoArtesano: configServicios.empresa_codigo_artesano || "",
+                artesanoRide: configServicios.empresa_codigo_artesano ? configServicios.empresa_codigo_artesano : "-",
+                
+                // Firma electrónica (.p12)
+                clave_12: configServicios.firma_clave_p12 || "",
+                
+                // URLs y logos
+                urlLogo: configServicios.url_logo_factura || "",
+                urlLogoPieCorreo: configServicios.url_logo_pie_correo || "",
+                
+                // SMTP
+                correoRemitente: configServicios.smtp_correo_remitente || "",
+                clavecorreoRemitente: configServicios.smtp_clave_remitente || "",
+                hostcorreoRemitente: configServicios.smtp_host || "smtp.gmail.com",
+                puertocorreoRemitente: String(configServicios.smtp_puerto || "587"),
+                
+                // Nombre del archivo .p12
+                nombrep12: configServicios.firma_nombre_p12 || "",
+                
+                // Ambiente SRI
+                ambientesri: configSRI.ambiente === 1 ? "https://celcer.sri.gob.ec" : "https://cel.sri.gob.ec"
+            };
+
+            return {
+                success: true,
+                json: jsonFactura
+            };
+
+        } catch (error) {
+            console.error('❌ Error generando JSON de facturación:', error);
+            return {
+                success: false,
+                message: error.message
+            };
+        }
+    }
+
+    async function enviarFacturaAlServicioFirma({ url, payload, maxIntentos, timeoutMs }) {
+        console.log(`📡 Iniciando envío al servicio de firma (máx. ${maxIntentos} intentos, timeout: ${timeoutMs}ms)`);
+        
+        for (let intento = 1; intento <= maxIntentos; intento++) {
+            console.log(`\n🔄 Intento ${intento}/${maxIntentos}...`);
+            
+            try {
+                const controller = new AbortController();
+                const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
+                
+                const tiempoInicio = Date.now();
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutHandle);
+                
+                const tiempoTranscurrido = Date.now() - tiempoInicio;
+                console.log(`⏱️ Tiempo de respuesta: ${tiempoTranscurrido}ms`);
+                console.log(`📊 Status HTTP: ${response.status} ${response.statusText}`);
+                
+                const text = await response.text();
+                console.log(`📄 Respuesta raw (${text.length} caracteres):`, text.substring(0, 500));
+                
+                let data = null;
+                
+                try {
+                    data = JSON.parse(text);
+                    console.log('✅ JSON parseado exitosamente:', data);
+                } catch (e) {
+                    console.warn('⚠️ No se pudo parsear como JSON:', e.message);
+                    data = { message: text };
+                }
+                
+                if (response.ok) {
+                    console.log(`✅ Intento ${intento} EXITOSO`);
+                    return { success: true, statusCode: response.status, data, intento };
+                } else {
+                    console.warn(`⚠️ Intento ${intento} falló con status ${response.status}`);
+                    
+                    if (intento < maxIntentos) {
+                        const esperaMs = 2000 * intento;
+                        console.log(`⏳ Esperando ${esperaMs}ms antes del siguiente intento...`);
+                        await new Promise(resolve => setTimeout(resolve, esperaMs));
+                        continue;
+                    }
+                    
+                    console.error(`❌ Todos los intentos fallaron`);
+                    return { success: false, statusCode: response.status, data, intento };
+                }
+            } catch (error) {
+                console.error(`❌ Error en intento ${intento}:`, error.message);
+                
+                if (error.name === 'AbortError') {
+                    console.error(`⏱️ Timeout después de ${timeoutMs}ms`);
+                }
+                
+                if (intento < maxIntentos) {
+                    const esperaMs = 3000 * intento;
+                    console.log(`⏳ Esperando ${esperaMs}ms antes del siguiente intento...`);
+                    await new Promise(resolve => setTimeout(resolve, esperaMs));
+                    continue;
+                }
+                
+                console.error(`❌ Todos los intentos agotados`);
+                return { success: false, error: error.message, intento };
+            }
+        }
+    }
+
+    // =====================================================
     // EXPORTAR FUNCIONES GLOBALES
     // =====================================================
     
@@ -932,6 +1976,12 @@
     window.aplicarFiltroFecha = aplicarFiltroFecha;
     window.resetearFiltros = resetearFiltros;
     window.mostrarModalLoading = mostrarModalLoading;
+    window.reimprimirRecibo = reimprimirRecibo;
+    window.reimprimirFacturaElectronica = reimprimirFacturaElectronica;
+    window.iniciarConversionAFactura = iniciarConversionAFactura;
+    window.cerrarModalSeleccionCliente = cerrarModalSeleccionCliente;
+    window.seleccionarClienteParaFactura = seleccionarClienteParaFactura;
+    window.reenviarAlSRI = reenviarAlSRI;
 
     })(); // Fin del IIFE
 

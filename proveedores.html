@@ -26,6 +26,10 @@
                             <i class="fas fa-box-open"></i>
                             <span>Ingresar Factura</span>
                         </button>
+                        <button class="mode-tab" data-mode="comparador" onclick="cambiarModoProveedor('comparador')">
+                            <i class="fas fa-balance-scale"></i>
+                            <span>Comparador</span>
+                        </button>
                     </div>
                 </div>
                 
@@ -103,6 +107,11 @@
     
     <div id="vistaProductos" class="vista-modo vista-fullpage hidden">
         <div id="ingresoFacturaContainer"></div>
+    </div>
+
+    <!-- Vista: Comparador de Precios -->
+    <div id="vistaComparador" class="vista-modo vista-fullpage hidden">
+        <div id="comparadorContainer"></div>
     </div>
 </div>
 
@@ -1435,9 +1444,11 @@ async function cambiarModoProveedor(modo) {
     if (modo === 'facturas') {
         document.getElementById('vistaFacturas').classList.remove('hidden');
         document.getElementById('vistaProductos').classList.add('hidden');
-    } else {
+        document.getElementById('vistaComparador').classList.add('hidden');
+    } else if (modo === 'productos') {
         document.getElementById('vistaFacturas').classList.add('hidden');
         document.getElementById('vistaProductos').classList.remove('hidden');
+        document.getElementById('vistaComparador').classList.add('hidden');
         
         // Cargar módulo de ingreso de facturas
         await cargarModuloIngresoFactura();
@@ -1455,6 +1466,13 @@ async function cambiarModoProveedor(modo) {
                 }
             }, 500);
         }
+    } else if (modo === 'comparador') {
+        document.getElementById('vistaFacturas').classList.add('hidden');
+        document.getElementById('vistaProductos').classList.add('hidden');
+        document.getElementById('vistaComparador').classList.remove('hidden');
+        
+        // Cargar módulo de comparador
+        await cargarModuloComparador();
     }
 }
 
@@ -1486,6 +1504,70 @@ async function cargarModuloIngresoFactura() {
             
         } catch (error) {
             container.innerHTML = '<div class="empty-state"><p>Error al cargar el módulo</p></div>';
+        }
+    }
+}
+
+// Función global para volver desde el comparador
+window.volverAProveedores = function() {
+    cambiarModoProveedor('facturas');
+};
+
+async function cargarModuloComparador() {
+    const container = document.getElementById('comparadorContainer');
+    
+    if (container.innerHTML.trim() === '') {
+        
+        try {
+            // Cargar el HTML del módulo
+            const response = await fetch('comparador.html');
+            if (!response.ok) throw new Error('No se pudo cargar comparador.html');
+            
+            const html = await response.text();
+            container.innerHTML = html;
+            
+            console.log('✅ Módulo comparador HTML insertado');
+            
+            // Extraer y ejecutar los scripts manualmente
+            const scripts = container.querySelectorAll('script');
+            console.log(`🔧 Encontrados ${scripts.length} scripts en el módulo`);
+            
+            scripts.forEach((oldScript, index) => {
+                const newScript = document.createElement('script');
+                if (oldScript.src) {
+                    newScript.src = oldScript.src;
+                } else {
+                    newScript.textContent = oldScript.textContent;
+                }
+                document.body.appendChild(newScript);
+                oldScript.remove();
+                console.log(`✅ Script ${index + 1} ejecutado`);
+            });
+            
+            // Esperar a que los scripts se ejecuten
+            setTimeout(() => {
+                if (typeof window.initComparador === 'function') {
+                    console.log('🔧 Llamando initComparador manualmente...');
+                    window.initComparador();
+                } else {
+                    console.error('❌ window.initComparador no está definida');
+                }
+            }, 300);
+            
+        } catch (error) {
+            console.error('Error cargando módulo comparador:', error);
+            container.innerHTML = `
+                <div style="padding: 40px; text-align: center;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #f44336;"></i>
+                    <h3 style="margin-top: 20px;">Error al cargar el módulo</h3>
+                    <p style="color: #666;">${error.message}</p>
+                </div>
+            `;
+        }
+    } else {
+        // Si ya está cargado, solo reinicializar
+        if (typeof window.initComparador === 'function') {
+            await window.initComparador();
         }
     }
 }
