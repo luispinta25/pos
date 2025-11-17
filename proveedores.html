@@ -1442,13 +1442,21 @@ async function cambiarModoProveedor(modo) {
     
     // Mostrar/ocultar vistas
     if (modo === 'facturas') {
-        document.getElementById('vistaFacturas').classList.remove('hidden');
-        document.getElementById('vistaProductos').classList.add('hidden');
-        document.getElementById('vistaComparador').classList.add('hidden');
+        const vistaFacturas = document.getElementById('vistaFacturas');
+        const vistaProductos = document.getElementById('vistaProductos');
+        const vistaComparador = document.getElementById('vistaComparador');
+        
+        if (vistaFacturas) vistaFacturas.classList.remove('hidden');
+        if (vistaProductos) vistaProductos.classList.add('hidden');
+        if (vistaComparador) vistaComparador.classList.add('hidden');
     } else if (modo === 'productos') {
-        document.getElementById('vistaFacturas').classList.add('hidden');
-        document.getElementById('vistaProductos').classList.remove('hidden');
-        document.getElementById('vistaComparador').classList.add('hidden');
+        const vistaFacturas = document.getElementById('vistaFacturas');
+        const vistaProductos = document.getElementById('vistaProductos');
+        const vistaComparador = document.getElementById('vistaComparador');
+        
+        if (vistaFacturas) vistaFacturas.classList.add('hidden');
+        if (vistaProductos) vistaProductos.classList.remove('hidden');
+        if (vistaComparador) vistaComparador.classList.add('hidden');
         
         // Cargar módulo de ingreso de facturas
         await cargarModuloIngresoFactura();
@@ -1467,9 +1475,13 @@ async function cambiarModoProveedor(modo) {
             }, 500);
         }
     } else if (modo === 'comparador') {
-        document.getElementById('vistaFacturas').classList.add('hidden');
-        document.getElementById('vistaProductos').classList.add('hidden');
-        document.getElementById('vistaComparador').classList.remove('hidden');
+        const vistaFacturas = document.getElementById('vistaFacturas');
+        const vistaProductos = document.getElementById('vistaProductos');
+        const vistaComparador = document.getElementById('vistaComparador');
+        
+        if (vistaFacturas) vistaFacturas.classList.add('hidden');
+        if (vistaProductos) vistaProductos.classList.add('hidden');
+        if (vistaComparador) vistaComparador.classList.remove('hidden');
         
         // Cargar módulo de comparador
         await cargarModuloComparador();
@@ -1478,6 +1490,7 @@ async function cambiarModoProveedor(modo) {
 
 async function cargarModuloIngresoFactura() {
     const container = document.getElementById('ingresoFacturaContainer');
+    if (!container) return; // Vista cambiada
     
     if (container.innerHTML.trim() === '') {
         
@@ -1515,6 +1528,7 @@ window.volverAProveedores = function() {
 
 async function cargarModuloComparador() {
     const container = document.getElementById('comparadorContainer');
+    if (!container) return; // Vista cambiada
     
     if (container.innerHTML.trim() === '') {
         
@@ -1652,6 +1666,8 @@ async function cargarProveedoresData() {
         
         // Llenar selector
         const selector = document.getElementById('proveedorSelector');
+        if (!selector) return; // Vista cambiada
+        
         selector.innerHTML = '<option value="todos">Todos los proveedores</option>';
         
         data.forEach(proveedor => {
@@ -1671,6 +1687,11 @@ async function cargarFacturasData() {
     try {
         // Mostrar loading en el grid
         const grid = document.getElementById('facturasGrid');
+        if (!grid) {
+            logProveedor('⚠️ Grid de facturas no encontrado (vista no montada)');
+            return;
+        }
+        
         grid.innerHTML = `
             <div class="loading-state">
                 <div class="spinner"></div>
@@ -1697,12 +1718,15 @@ async function cargarFacturasData() {
         
     } catch (error) {
         mostrarNotificacionProveedor('Error al cargar facturas', 'error');
-        document.getElementById('facturasGrid').innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Error al cargar las facturas</p>
-            </div>
-        `;
+        const grid = document.getElementById('facturasGrid');
+        if (grid) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Error al cargar las facturas</p>
+                </div>
+            `;
+        }
     }
 }
 
@@ -1721,17 +1745,20 @@ async function cargarNotasData() {
         
         proveedoresData.notas = data || [];
         
-        // Actualizar contador
-        const pendientes = data.filter(n => n.estado === 'Pendiente');
+        // Actualizar contador solo si el elemento existe
         const badge = document.getElementById('badgeNotas');
-        if (pendientes.length > 0) {
-            badge.textContent = pendientes.length;
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
+        if (badge) {
+            const pendientes = data.filter(n => n.estado === 'Pendiente');
+            if (pendientes.length > 0) {
+                badge.textContent = pendientes.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
         }
         
     } catch (error) {
+        logError('Error cargando notas:', error);
     }
 }
 
@@ -1774,6 +1801,11 @@ function filtrarFacturasProveedores() {
 
 function mostrarFacturasProveedores(facturas) {
     const grid = document.getElementById('facturasGrid');
+    
+    if (!grid) {
+        logProveedor('⚠️ Grid de facturas no encontrado (vista no montada)');
+        return;
+    }
     
     if (!facturas || facturas.length === 0) {
         grid.innerHTML = `
@@ -1858,9 +1890,13 @@ function actualizarResumenProveedores(facturas) {
         }
     });
     
-    document.getElementById('totalFacturas').textContent = formatCurrency(totalFacturas);
-    document.getElementById('totalPendiente').textContent = formatCurrency(totalPendiente);
-    document.getElementById('totalVencido').textContent = formatCurrency(totalVencido);
+    const elemTotalFacturas = document.getElementById('totalFacturas');
+    const elemTotalPendiente = document.getElementById('totalPendiente');
+    const elemTotalVencido = document.getElementById('totalVencido');
+    
+    if (elemTotalFacturas) elemTotalFacturas.textContent = formatCurrency(totalFacturas);
+    if (elemTotalPendiente) elemTotalPendiente.textContent = formatCurrency(totalPendiente);
+    if (elemTotalVencido) elemTotalVencido.textContent = formatCurrency(totalVencido);
 }
 
 // =====================================================
@@ -1871,46 +1907,73 @@ async function abrirDetalleFactura(factura) {
     logProveedor('🔵 Abriendo detalle de factura:', factura);
     proveedoresData.facturaActual = factura;
     
-    // Llenar detalles
-    document.getElementById('modalFacturaTitulo').textContent = `Factura ${factura.numero_factura}`;
-    document.getElementById('detNumeroFactura').textContent = factura.numero_factura;
-    document.getElementById('detProveedor').textContent = factura.proveedor_empresa;
-    document.getElementById('detFechaEmision').textContent = formatDate(factura.fecha_emision);
-    document.getElementById('detFechaVencimiento').textContent = formatDate(factura.fecha_vencimiento);
-    document.getElementById('detTotalFactura').textContent = formatCurrency(factura.total_factura);
-    document.getElementById('detSaldoPendiente').textContent = formatCurrency(factura.saldo_pendiente);
-    
+    // Verificar elementos antes de manipular
+    const modalTitulo = document.getElementById('modalFacturaTitulo');
+    const detNumero = document.getElementById('detNumeroFactura');
+    const detProveedor = document.getElementById('detProveedor');
+    const detFechaEmision = document.getElementById('detFechaEmision');
+    const detFechaVencimiento = document.getElementById('detFechaVencimiento');
+    const detTotalFactura = document.getElementById('detTotalFactura');
+    const detSaldoPendiente = document.getElementById('detSaldoPendiente');
     const estadoBadge = document.getElementById('detEstado');
-    estadoBadge.textContent = factura.estado;
-    estadoBadge.className = 'badge';
-    if (factura.estado === 'Pendiente') estadoBadge.classList.add('badge-pendiente');
-    else if (factura.estado === 'Abonada') estadoBadge.classList.add('badge-abonada');
-    else if (factura.estado === 'Pagada') estadoBadge.classList.add('badge-pagada');
+    const detDiasVencimiento = document.getElementById('detDiasVencimiento');
+    const detNotas = document.getElementById('detNotas');
+    const pagoFacturaId = document.getElementById('pagoFacturaId');
+    const pagoSaldoAnterior = document.getElementById('pagoSaldoAnterior');
+    const pagoMonto = document.getElementById('pagoMonto');
+    const formPago = document.getElementById('formPago');
+    const modalFactura = document.getElementById('modalFactura');
+    
+    // Si el modal no existe, el usuario cambió de vista
+    if (!modalFactura) {
+        logProveedor('⚠️ Modal no encontrado, vista cambiada');
+        return;
+    }
+    
+    // Llenar detalles
+    if (modalTitulo) modalTitulo.textContent = `Factura ${factura.numero_factura}`;
+    if (detNumero) detNumero.textContent = factura.numero_factura;
+    if (detProveedor) detProveedor.textContent = factura.proveedor_empresa;
+    if (detFechaEmision) detFechaEmision.textContent = formatDate(factura.fecha_emision);
+    if (detFechaVencimiento) detFechaVencimiento.textContent = formatDate(factura.fecha_vencimiento);
+    if (detTotalFactura) detTotalFactura.textContent = formatCurrency(factura.total_factura);
+    if (detSaldoPendiente) detSaldoPendiente.textContent = formatCurrency(factura.saldo_pendiente);
+    
+    if (estadoBadge) {
+        estadoBadge.textContent = factura.estado;
+        estadoBadge.className = 'badge';
+        if (factura.estado === 'Pendiente') estadoBadge.classList.add('badge-pendiente');
+        else if (factura.estado === 'Abonada') estadoBadge.classList.add('badge-abonada');
+        else if (factura.estado === 'Pagada') estadoBadge.classList.add('badge-pagada');
+    }
     
     const diasTexto = factura.esta_vencida ? 
         `Vencida hace ${Math.abs(factura.dias_vencimiento)} días` : 
         `${factura.dias_vencimiento} días`;
-    document.getElementById('detDiasVencimiento').textContent = diasTexto;
+    if (detDiasVencimiento) detDiasVencimiento.textContent = diasTexto;
     
-    document.getElementById('detNotas').textContent = factura.notas || 'Sin notas';
+    if (detNotas) detNotas.textContent = factura.notas || 'Sin notas';
     
     // Cargar historial
     await cargarHistorialPagosProveedor(factura.id);
     
     // Preparar formulario de pago
-    document.getElementById('pagoFacturaId').value = factura.id;
-    document.getElementById('pagoSaldoAnterior').value = factura.saldo_pendiente;
-    document.getElementById('pagoMonto').max = factura.saldo_pendiente;
-    document.getElementById('pagoMonto').placeholder = factura.saldo_pendiente.toFixed(2);
-    document.getElementById('formPago').reset();
+    if (pagoFacturaId) pagoFacturaId.value = factura.id;
+    if (pagoSaldoAnterior) pagoSaldoAnterior.value = factura.saldo_pendiente;
+    if (pagoMonto) {
+        pagoMonto.max = factura.saldo_pendiente;
+        pagoMonto.placeholder = factura.saldo_pendiente.toFixed(2);
+    }
+    if (formPago) formPago.reset();
     
     // Mostrar modal y tab de detalles
     cambiarTabProveedor('detalles');
-    document.getElementById('modalFactura').classList.add('show');
+    modalFactura.classList.add('show');
 }
 
 function cerrarModalFactura() {
-    document.getElementById('modalFactura').classList.remove('show');
+    const modal = document.getElementById('modalFactura');
+    if (modal) modal.classList.remove('show');
     proveedoresData.facturaActual = null;
 }
 
@@ -1925,7 +1988,8 @@ function cambiarTabProveedor(tabName) {
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    document.getElementById(`tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('active');
+    const tabContent = document.getElementById(`tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
+    if (tabContent) tabContent.classList.add('active');
 }
 
 async function cargarHistorialPagosProveedor(facturaId) {
@@ -1941,6 +2005,9 @@ async function cargarHistorialPagosProveedor(facturaId) {
         
         const tbody = document.getElementById('historialPagosBody');
         const noHistorial = document.getElementById('noHistorial');
+        
+        // Si los elementos no existen, el usuario cambió de vista
+        if (!tbody || !noHistorial) return;
         
         if (!data || data.length === 0) {
             tbody.innerHTML = '';
@@ -1968,11 +2035,15 @@ async function cargarHistorialPagosProveedor(facturaId) {
 // =====================================================
 
 function actualizarTipoPagoProveedor() {
-    const saldoAnterior = parseFloat(document.getElementById('pagoSaldoAnterior').value);
+    const pagoSaldoAnterior = document.getElementById('pagoSaldoAnterior');
     const montoPagoInput = document.getElementById('pagoMonto');
-    const tipoPago = document.getElementById('pagoTipo').value;
+    const tipoPago = document.getElementById('pagoTipo');
     
-    if (tipoPago === 'Total') {
+    if (!pagoSaldoAnterior || !montoPagoInput || !tipoPago) return;
+    
+    const saldoAnterior = parseFloat(pagoSaldoAnterior.value);
+    
+    if (tipoPago.value === 'Total') {
         montoPagoInput.value = saldoAnterior.toFixed(2);
         montoPagoInput.readOnly = true;
     } else {
@@ -1984,9 +2055,13 @@ function actualizarTipoPagoProveedor() {
 }
 
 function validarMontoPagoProveedor() {
-    const saldoAnterior = parseFloat(document.getElementById('pagoSaldoAnterior').value);
+    const pagoSaldoAnterior = document.getElementById('pagoSaldoAnterior');
     const montoPagoInput = document.getElementById('pagoMonto');
     const tipoPagoSelect = document.getElementById('pagoTipo');
+    
+    if (!pagoSaldoAnterior || !montoPagoInput || !tipoPagoSelect) return;
+    
+    const saldoAnterior = parseFloat(pagoSaldoAnterior.value);
     
     let valor = montoPagoInput.value.replace(',', '.');
     const monto = parseFloat(valor);
@@ -2007,10 +2082,22 @@ async function registrarPagoProveedor(e) {
     e.preventDefault();
     logProveedor('🔵 Iniciando registro de pago');
     
-    const saldoAnterior = parseFloat(document.getElementById('pagoSaldoAnterior').value);
+    const pagoSaldoAnterior = document.getElementById('pagoSaldoAnterior');
     const montoPagoInput = document.getElementById('pagoMonto');
-    const tipoPago = document.getElementById('pagoTipo').value;
-    const metodoPago = document.getElementById('pagoMetodo').value;
+    const tipoPagoElem = document.getElementById('pagoTipo');
+    const metodoPagoElem = document.getElementById('pagoMetodo');
+    const pagoFacturaIdElem = document.getElementById('pagoFacturaId');
+    const pagoReferenciaElem = document.getElementById('pagoReferencia');
+    const pagoNotasElem = document.getElementById('pagoNotas');
+    
+    if (!pagoSaldoAnterior || !montoPagoInput || !tipoPagoElem || !metodoPagoElem) {
+        logProveedor('⚠️ Elementos del formulario no encontrados, vista cambiada');
+        return;
+    }
+    
+    const saldoAnterior = parseFloat(pagoSaldoAnterior.value);
+    const tipoPago = tipoPagoElem.value;
+    const metodoPago = metodoPagoElem.value;
     
     let montoPago = tipoPago === 'Total' ? saldoAnterior : parseFloat(montoPagoInput.value);
     
@@ -2037,13 +2124,13 @@ async function registrarPagoProveedor(e) {
     const saldoNuevo = saldoAnterior - montoPago;
     
     const datosInsert = {
-        factura_id: document.getElementById('pagoFacturaId').value,
+        factura_id: pagoFacturaIdElem ? pagoFacturaIdElem.value : null,
         monto_pago: montoPago,
         metodo_pago: metodoPago,
         tipo_pago: tipoPago,
-        referencia_pago: document.getElementById('pagoReferencia').value,
+        referencia_pago: pagoReferenciaElem ? pagoReferenciaElem.value : '',
         saldo_nuevo: saldoNuevo,
-        notas: document.getElementById('pagoNotas').value || null
+        notas: pagoNotasElem ? pagoNotasElem.value || null : null
     };
     
     logProveedor('📤 Datos a enviar a Supabase:', datosInsert);
@@ -2136,6 +2223,8 @@ async function registrarPagoProveedor(e) {
 
 function showProgressOverlay(conTransferencia = false) {
     const overlay = document.getElementById('progressOverlay');
+    if (!overlay) return;
+    
     const step3 = document.querySelector('[data-step="3"]');
     
     // Mostrar/ocultar paso de transferencia según sea necesario
@@ -2157,7 +2246,7 @@ function showProgressOverlay(conTransferencia = false) {
 
 function hideProgressOverlay() {
     const overlay = document.getElementById('progressOverlay');
-    overlay.classList.remove('show');
+    if (overlay) overlay.classList.remove('show');
 }
 
 function updateProgressBar(percentage) {

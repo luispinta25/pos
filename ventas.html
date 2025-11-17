@@ -1650,46 +1650,52 @@
                 timeoutMs: 30000
             });
             
-            // LOGGING DETALLADO DE LA RESPUESTA
-            console.groupCollapsed('%c📥 RESPUESTA DEL SRI', 'color:#4CAF50;font-weight:bold;font-size:14px;');
-            console.log('✅ Success:', resultado.success);
-            console.log('📊 Status Code:', resultado.statusCode);
-            console.log('📄 Data completa:', resultado.data);
-            console.log('💬 Mensaje:', resultado.data?.message || resultado.message);
-            console.log('📝 Detalles:', resultado.data?.detalle || resultado.data?.details);
-            console.log('🔍 Objeto completo resultado:', JSON.stringify(resultado, null, 2));
+            // Validar si es exitoso (verificar tanto success como el detalle del SRI)
+            const detalleString = resultado.data?.detalle || resultado.data?.data?.detalle || '';
+            const detalleUpper = detalleString.toUpperCase();
             
-            if (resultado.data) {
-                console.group('🔎 Análisis de data');
-                console.log('- Status:', resultado.data.status);
-                console.log('- Message:', resultado.data.message);
-                console.log('- Detalle:', resultado.data.detalle);
-                console.log('- ClaveAcceso:', resultado.data.claveAcceso);
-                console.log('- NumeroAutorizacion:', resultado.data.numeroAutorizacion);
-                console.log('- FechaAutorizacion:', resultado.data.fechaAutorizacion);
-                console.log('- Estado:', resultado.data.estado);
-                console.groupEnd();
-            }
+            const esExitoso = resultado.success && 
+                             resultado.data && 
+                             (resultado.data.status === 'success' || 
+                              detalleUpper === 'AUTORIZADO' ||
+                              detalleUpper.includes('CLAVE ACCESO REGISTRADA'));
             
-            if (resultado.error) {
-                console.error('❌ Error:', resultado.error);
-            }
-            
-            console.groupEnd();
-            
-            if (resultado.success) {
-                await db.from('ventas').update({ estado: 'AUTORIZADO' }).eq('id', venta.id);
+            if (esExitoso) {
+                // Primero verificar que el registro existe
+                const { data: checkData, error: checkError } = await db
+                    .from('ventas')
+                    .select('id, estado, usuario_email')
+                    .eq('id', venta.id)
+                    .single();
+                
+                if (checkError) {
+                    console.error('Error accediendo al registro:', checkError);
+                    window.app?.showToast?.('⚠️ Error: No se puede actualizar el registro. Verifica permisos.', 'error', 4000);
+                    return;
+                }
+                
+                // Actualizar estado en la base de datos
+                const { error: updateError } = await db
+                    .from('ventas')
+                    .update({ 
+                        estado: 'AUTORIZADO',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', venta.id);
+                
+                if (updateError) {
+                    console.error('Error actualizando estado:', updateError);
+                    window.app?.showToast?.('⚠️ Factura autorizada pero no se actualizó el estado local', 'warning', 4000);
+                }
+                
                 window.app?.showToast?.('✅ Factura autorizada por el SRI', 'success', 4000);
                 cerrarModalDetalle();
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
                 cargarVentas();
             } else {
                 const mensaje = resultado.data?.message || resultado.message || 'Error desconocido';
                 window.app?.showToast?.(`❌ Error SRI: ${mensaje}`, 'error', 5000);
-                
-                // Log adicional para debugging
-                console.error('%c❌ FACTURA RECHAZADA O FALLIDA', 'color:#f44336;font-weight:bold;font-size:14px;');
-                console.error('Motivo:', mensaje);
-                console.error('Respuesta completa:', resultado);
             }
             
         } catch (error) {
