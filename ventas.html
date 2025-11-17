@@ -717,23 +717,29 @@
             
             const db = window.app.db;
             
-            // Construir filtro de fecha
-            const fechaInicio = new Date(ventasState.filtroFecha);
-            fechaInicio.setHours(0, 0, 0, 0);
-            
-            const fechaFin = new Date(ventasState.filtroFecha);
-            fechaFin.setHours(23, 59, 59, 999);
-            
+            // Construir query base
             let query = db
                 .from('ventas')
-                .select('*')
-                .gte('fecha_hora_venta', fechaInicio.toISOString())
-                .lte('fecha_hora_venta', fechaFin.toISOString())
-                .order('fecha_hora_venta', { ascending: false });
+                .select('*');
             
-            // Aplicar filtro por código si existe
+            // Si hay filtro por código, buscar en todo el histórico
             if (ventasState.filtroCodigo) {
-                query = query.ilike('id_venta', `%${ventasState.filtroCodigo}%`);
+                query = query
+                    .ilike('id_venta', `%${ventasState.filtroCodigo}%`)
+                    .order('fecha_hora_venta', { ascending: false })
+                    .limit(100); // Limitar a 100 resultados para evitar sobrecarga
+            } else {
+                // Si no hay filtro de código, aplicar filtro de fecha
+                const fechaInicio = new Date(ventasState.filtroFecha);
+                fechaInicio.setHours(0, 0, 0, 0);
+                
+                const fechaFin = new Date(ventasState.filtroFecha);
+                fechaFin.setHours(23, 59, 59, 999);
+                
+                query = query
+                    .gte('fecha_hora_venta', fechaInicio.toISOString())
+                    .lte('fecha_hora_venta', fechaFin.toISOString())
+                    .order('fecha_hora_venta', { ascending: false });
             }
             
             const { data, error } = await query;
