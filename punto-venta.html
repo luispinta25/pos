@@ -16,7 +16,7 @@
                 
                 <div class="form-group">
                     <label class="form-label">Código o Nombre</label>
-                    <input 
+                    <input
                         type="text" 
                         id="searchInput" 
                         class="form-input" 
@@ -121,10 +121,20 @@
                     <h3 style="margin: 0; font-size: 1.2em;">
                         <i class="fas fa-shopping-cart"></i> Carrito de Compra
                     </h3>
-                    <div class="items-counter" id="itemsCounter">
-                        <i class="fas fa-box"></i>
-                        <span id="itemsCount">0</span>
-                        <span class="items-label">items</span>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="items-counter" id="itemsCounter">
+                            <i class="fas fa-box"></i>
+                            <span id="itemsCount">0</span>
+                            <span class="items-label">items</span>
+                        </div>
+                        <button class="ganancia-toggle-btn" id="gananciaToggleBtn" onclick="toggleGananciaPanel()" title="Mostrar ganancia total">
+                            <i class="fas fa-dollar-sign"></i>
+                            <span>G</span>
+                        </button>
+                        <div class="ganancia-total-inline" id="gananciaTotalInline">
+                            <span class="ganancia-total-label">Ganancia:</span>
+                            <span id="gananciaTotalValue" class="ganancia-total-value">$0.00</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -237,6 +247,104 @@
         </div>
     </div>
 </div>
+
+
+            <div id="modalCreditoVenta" class="modal-venta-overlay">
+                <div class="modal-venta-container credit-modal">
+                    <div class="modal-venta-header">
+                        <h2><i class="fas fa-wallet"></i> Registrar crédito</h2>
+                        <button class="modal-venta-close" onclick="cerrarModalCreditoVenta()">&times;</button>
+                    </div>
+                    <div class="modal-venta-content credit-layout">
+                        <div class="modal-venta-col credit-col">
+                            <div class="venta-section">
+                                <h3><i class="fas fa-user-check"></i> Cliente</h3>
+                                <div class="cliente-info-card" id="modalCreditoCliente"></div>
+                            </div>
+                            <div class="venta-section">
+                                <h3><i class="fas fa-calculator"></i> Resumen del crédito</h3>
+                                <div class="info-box resumen-credito-box">
+                                    <div class="info-item">
+                                        <span class="info-label">Total de la venta</span>
+                                        <span class="info-value" id="creditoTotalResumen">$0.00</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Abono inicial</span>
+                                        <span class="info-value" id="creditoAbonoResumen">$0.00</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Saldo a financiar</span>
+                                        <span class="info-value" id="creditoSaldoResumen">$0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="venta-section" id="modalCreditoAvisoWrapper" style="display: none;">
+                                <div class="modal-warning" id="modalCreditoAviso">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <p id="modalCreditoAvisoTexto"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-venta-col credit-col">
+                            <div class="venta-section">
+                                <div class="total-grande">
+                                    <span>Total de la venta</span>
+                                    <strong id="creditoTotalDisplay">$0.00</strong>
+                                </div>
+                            </div>
+                            <div class="venta-section">
+                                <label for="creditoAbonoInput" style="font-weight: 600; display: block; margin-bottom: 6px;">Abono inicial</label>
+                                <input
+                                    type="number"
+                                    id="creditoAbonoInput"
+                                    class="input-pago"
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="0.00">
+                                <small class="form-hint" style="margin-top: 6px; display: block;">Si el cliente paga algo ahora regístralo aquí, se guardará como pago inmediato.</small>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 12px; background: rgba(0,0,0,0.03); border-radius: 8px;">
+                                    <span style="font-weight: 600; color: var(--text-secondary);">Saldo por cobrar</span>
+                                    <strong id="creditoSaldoDisplay">$0.00</strong>
+                                </div>
+                                <div id="creditoAbonoWarning" style="display: none; margin-top: 10px; font-size: 0.9em; color: var(--color-danger);"></div>
+                            </div>
+                        </div>
+                        <div class="modal-venta-col credit-col">
+                            <div class="venta-section">
+                                <label for="creditoVencimientoInput" style="font-weight: 600; display: block; margin-bottom: 6px;">Fecha de vencimiento</label>
+                                <input type="date" id="creditoVencimientoInput" class="input-pago">
+                            </div>
+                            <div class="venta-section">
+                                <label for="creditoMotivoInput" style="font-weight: 600; display: block; margin-bottom: 6px;">Motivo</label>
+                                <input type="text" id="creditoMotivoInput" class="input-pago" placeholder="Ej: Venta de materiales">
+                            </div>
+                            <div class="venta-section">
+                                <label for="creditoMetodoSelect" style="font-weight: 600; display: block; margin-bottom: 6px;">Método del abono</label>
+                                <select id="creditoMetodoSelect" class="input-pago">
+                                    <option value="EFECTIVO">Efectivo</option>
+                                    <option value="TRANSFERENCIA">Transferencia</option>
+                                    <option value="CHEQUE">Cheque</option>
+                                    <option value="TARJETA">Tarjeta</option>
+                                    <option value="DEPOSITO">Depósito</option>
+                                    <option value="OTRO">Otro</option>
+                                </select>
+                            </div>
+                            <div class="venta-section">
+                                <label for="creditoNotasInput" style="font-weight: 600; display: block; margin-bottom: 6px;">Notas internas</label>
+                                <textarea id="creditoNotasInput" class="input-pago" rows="3" placeholder="Observaciones para el equipo (opcional)"></textarea>
+                            </div>
+                            <div class="modal-venta-actions credit-actions">
+                                <button class="btn-modal-cancelar" onclick="cerrarModalCreditoVenta()">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                                <button class="btn-modal-confirmar" id="btnConfirmarCreditoVenta" onclick="confirmarCreditoVenta()">
+                                    <i class="fas fa-hand-holding-usd"></i> Guardar crédito
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 
 <div class="custom-confirm-overlay" id="customConfirmOverlay">
@@ -1037,6 +1145,204 @@
         text-transform: lowercase;
     }
 
+    /* Botón de Ganancia */
+    .ganancia-toggle-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: 2px solid #1e7e34;
+        color: white;
+        padding: 8px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 700;
+        font-size: 1em;
+        box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    }
+
+    .ganancia-toggle-btn:hover {
+        background: linear-gradient(135deg, #218838 0%, #1a9e7b 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+    }
+
+    .ganancia-toggle-btn.active {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border-color: #bd2130;
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+    }
+
+    .ganancia-toggle-btn.active:hover {
+        background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    }
+
+    .ganancia-toggle-btn i {
+        font-size: 0.9em;
+    }
+
+    /* Total de Ganancia Inline */
+    .ganancia-total-inline {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 2px solid #1e7e34;
+        animation: expandIn 0.3s ease;
+    }
+
+    .ganancia-total-inline.active {
+        display: flex;
+    }
+
+    @keyframes expandIn {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .ganancia-total-label {
+        color: white;
+        font-weight: 600;
+        font-size: 0.9em;
+    }
+
+    .ganancia-total-value {
+        color: white;
+        font-weight: 800;
+        font-size: 1.2em;
+    }
+
+    /* Ganancia en filas del carrito */
+    .ganancia-fila {
+        font-size: 0.75em;
+        color: #28a745;
+        font-weight: 600;
+        margin-top: 2px;
+    }
+
+    .ganancia-fila.negativo {
+        color: #dc3545;
+    }
+
+    .ganancia-fila.loading {
+        color: #999;
+        font-style: italic;
+    }
+
+    /* Panel de Ganancia */
+    .ganancia-panel {
+        display: none;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 2px solid #28a745;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        animation: slideDown 0.3s ease;
+    }
+
+    .ganancia-panel.active {
+        display: block;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .ganancia-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #28a745;
+    }
+
+    .ganancia-header h4 {
+        margin: 0;
+        color: #28a745;
+        font-size: 1.1em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .ganancia-content {
+        max-height: 250px;
+        overflow-y: auto;
+        margin-bottom: 12px;
+    }
+
+    .ganancia-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 10px;
+        background: white;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        border-left: 3px solid #28a745;
+    }
+
+    .ganancia-item-info {
+        flex: 1;
+    }
+
+    .ganancia-item-nombre {
+        font-weight: 600;
+        color: #333;
+        font-size: 0.95em;
+        margin-bottom: 3px;
+    }
+
+    .ganancia-item-detalle {
+        font-size: 0.8em;
+        color: #666;
+    }
+
+    .ganancia-item-valor {
+        font-weight: 700;
+        font-size: 1em;
+        color: #28a745;
+        white-space: nowrap;
+        margin-left: 10px;
+    }
+
+    .ganancia-item-valor.negativo {
+        color: #dc3545;
+    }
+
+    .ganancia-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 1.1em;
+    }
+
+    .ganancia-total-value {
+        font-size: 1.3em;
+    }
+
     
     .edit-mode-badge {
         position: absolute;
@@ -1558,6 +1864,78 @@
         gap: 20px;
     }
 
+    .modal-venta-container.credit-modal {
+        max-width: 1100px;
+    }
+
+    .modal-venta-content.credit-layout {
+        grid-template-columns: 1.05fr 0.95fr 0.95fr;
+        gap: 18px;
+        padding: 24px 28px;
+    }
+
+    .modal-venta-content.credit-layout .modal-venta-col {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .modal-venta-content.credit-layout .venta-section {
+        gap: 8px;
+    }
+
+    .modal-venta-content.credit-layout .info-box {
+        padding: 16px;
+    }
+
+    .modal-venta-content.credit-layout .total-grande {
+        padding: 18px;
+    }
+
+    .modal-venta-content.credit-layout .input-pago {
+        padding: 14px;
+        font-size: 1.15em;
+    }
+
+    .modal-venta-content.credit-layout .input-pago[type="date"],
+    .modal-venta-content.credit-layout select.input-pago,
+    .modal-venta-content.credit-layout textarea.input-pago {
+        font-size: 1em;
+        text-align: left;
+    }
+
+    .modal-venta-actions.credit-actions {
+        margin-top: auto;
+        display: flex;
+        gap: 12px;
+    }
+
+    .modal-venta-actions.credit-actions .btn-modal-cancelar,
+    .modal-venta-actions.credit-actions .btn-modal-confirmar {
+        flex: 1;
+        justify-content: center;
+    }
+
+    @media (max-width: 1100px) {
+        .modal-venta-content.credit-layout {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .modal-venta-content.credit-layout .modal-venta-col:last-child {
+            grid-column: span 2;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .modal-venta-content.credit-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .modal-venta-content.credit-layout .modal-venta-col:last-child {
+            grid-column: auto;
+        }
+    }
+
     .venta-section {
         display: flex;
         flex-direction: column;
@@ -1940,6 +2318,12 @@
             carrito: [],
             clienteSeleccionado: null,
             tipoComprobante: 'RECIBO',
+            // Datos temporales para venta a crédito
+            credito: {
+                total: 0,
+                abono: 0,
+                saldo: 0
+            },
             // Modo edición
             modoEdicion: false,
             indiceSeleccionado: -1, // -1 = búsqueda, >= 0 = carrito
@@ -1968,6 +2352,9 @@
     
     // Referencia local para facilitar el código (usar var para evitar redeclaración)
     var ventaState = window.ventaState;
+    if (!ventaState.credito) {
+        ventaState.credito = { total: 0, abono: 0, saldo: 0 };
+    }
 
     // =====================================================
     // SISTEMA DE CACHÉ DE INVENTARIO
@@ -2668,12 +3055,14 @@
                 // Verificar si hay algún modal abierto
                 const modalCantidad = document.getElementById('modalCantidadOverlay');
                 const modalVenta = document.getElementById('modalVenta');
+                const modalCredito = document.getElementById('modalCreditoVenta');
                 const customConfirm = document.getElementById('custom-confirm-overlay');
                 const modalActualizarCliente = document.getElementById('modalActualizarCliente');
                 const modalRegistroCliente = document.getElementById('modalRegistroCliente');
                 
                 const hayModalAbierto = (modalCantidad && modalCantidad.classList.contains('active')) ||
                                        (modalVenta && modalVenta.classList.contains('active')) ||
+                                       (modalCredito && modalCredito.classList.contains('active')) ||
                                        (customConfirm && customConfirm.classList.contains('active')) ||
                                        (modalActualizarCliente && modalActualizarCliente.classList.contains('active')) ||
                                        (modalRegistroCliente && modalRegistroCliente.classList.contains('active'));
@@ -2710,6 +3099,11 @@
                     } else {
                         window.app.showToast('<i class="fas fa-exclamation-triangle"></i> El carrito está vacío. Agrega productos para continuar.', 'warning', 3000);
                     }
+                }
+                // F9 - Enviar a cuentas por cobrar
+                if (e.key === 'F9') {
+                    e.preventDefault();
+                    procesarVentaCredito();
                 }
                 // F3 - Toggle búsqueda de cliente (activar/desactivar)
                 if (e.key === 'F3') {
@@ -2785,6 +3179,9 @@
             window._puntoVentaKeydownListenerAdded = true;
         }
         
+        // Listeners adicionales (modal crédito + búsqueda)
+        setupCreditoVentaListeners();
+
         // Búsqueda de productos (con debounce)
         const searchInput = document.getElementById('searchInput');
         
@@ -3295,6 +3692,577 @@
     }
 
     // =====================================================
+    // VENTA A CRÉDITO (F9)
+    // =====================================================
+
+    function setupCreditoVentaListeners() {
+        const modal = document.getElementById('modalCreditoVenta');
+        if (!modal) {
+            return;
+        }
+
+        if (modal.dataset.listeners === 'ready') {
+            return;
+        }
+
+        const abonoInput = document.getElementById('creditoAbonoInput');
+        const vencimientoInput = document.getElementById('creditoVencimientoInput');
+
+        if (abonoInput) {
+            const handleAbonoChange = () => actualizarResumenCredito();
+            abonoInput.addEventListener('input', handleAbonoChange);
+            abonoInput.addEventListener('change', handleAbonoChange);
+            abonoInput.addEventListener('blur', handleAbonoChange);
+        }
+
+        if (vencimientoInput) {
+            const asegurarMinimo = () => {
+                const hoy = obtenerFechaISOHoy();
+                vencimientoInput.min = hoy;
+                if (vencimientoInput.value && vencimientoInput.value < hoy) {
+                    vencimientoInput.value = hoy;
+                }
+            };
+            asegurarMinimo();
+            vencimientoInput.addEventListener('focus', asegurarMinimo);
+            vencimientoInput.addEventListener('click', asegurarMinimo);
+        }
+
+        modal.dataset.listeners = 'ready';
+    }
+
+    function obtenerFechaISOHoy(offsetDias = 0) {
+        const fecha = new Date();
+        fecha.setHours(0, 0, 0, 0);
+        if (offsetDias) {
+            fecha.setDate(fecha.getDate() + offsetDias);
+        }
+        return fecha.toISOString().split('T')[0];
+    }
+
+    function normalizarMontoCredito(valor) {
+        const numero = Number(valor) || 0;
+        return Math.round(numero * 100) / 100;
+    }
+
+    function mostrarAvisoCredito(mensaje, tipo = 'info') {
+        const wrapper = document.getElementById('modalCreditoAvisoWrapper');
+        const aviso = document.getElementById('modalCreditoAviso');
+        const texto = document.getElementById('modalCreditoAvisoTexto');
+
+        if (!wrapper || !aviso || !texto) {
+            return;
+        }
+
+        if (!mensaje) {
+            wrapper.style.display = 'none';
+            texto.textContent = '';
+            aviso.style.color = '';
+            aviso.style.borderColor = '';
+            return;
+        }
+
+        wrapper.style.display = 'block';
+        texto.textContent = mensaje;
+
+        const colores = {
+            danger: 'var(--color-danger)',
+            warning: '#d4a017',
+            success: 'var(--color-success)',
+            info: 'var(--text-secondary)'
+        };
+
+        const color = colores[tipo] || colores.info;
+        aviso.style.color = color;
+        aviso.style.borderColor = color;
+    }
+
+    function limpiarAvisoCredito() {
+        mostrarAvisoCredito('');
+    }
+
+    function obtenerTotalVentaActual() {
+        return normalizarMontoCredito(
+            ventaState.carrito.reduce((acc, item) => acc + (item.cantidad * item.precio), 0)
+        );
+    }
+
+    function actualizarResumenCredito() {
+        const total = obtenerTotalVentaActual();
+        const abonoInput = document.getElementById('creditoAbonoInput');
+        const totalDisplay = document.getElementById('creditoTotalDisplay');
+        const totalResumen = document.getElementById('creditoTotalResumen');
+        const abonoResumen = document.getElementById('creditoAbonoResumen');
+        const saldoResumen = document.getElementById('creditoSaldoResumen');
+        const saldoDisplay = document.getElementById('creditoSaldoDisplay');
+        const warning = document.getElementById('creditoAbonoWarning');
+        const confirmarBtn = document.getElementById('btnConfirmarCreditoVenta');
+
+        const abono = normalizarMontoCredito(abonoInput && abonoInput.value ? abonoInput.value : 0);
+        const saldo = Math.max(total - abono, 0);
+
+        if (totalDisplay) totalDisplay.textContent = window.app.formatCurrency(total);
+        if (totalResumen) totalResumen.textContent = window.app.formatCurrency(total);
+        if (abonoResumen) abonoResumen.textContent = window.app.formatCurrency(abono);
+        if (saldoResumen) saldoResumen.textContent = window.app.formatCurrency(saldo);
+        if (saldoDisplay) saldoDisplay.textContent = window.app.formatCurrency(saldo);
+
+        if (!ventaState.credito) {
+            ventaState.credito = { total: 0, abono: 0, saldo: 0 };
+        }
+        ventaState.credito.total = total;
+        ventaState.credito.abono = abono;
+        ventaState.credito.saldo = saldo;
+
+        let avisoMostrado = false;
+
+        if (warning) {
+            if (abono > total) {
+                warning.textContent = 'El abono no puede ser mayor que el total de la venta.';
+                warning.style.display = 'block';
+                mostrarAvisoCredito('Corrige el abono para continuar.', 'danger');
+                avisoMostrado = true;
+                if (confirmarBtn) confirmarBtn.disabled = true;
+            } else {
+                warning.textContent = '';
+                warning.style.display = 'none';
+                if (confirmarBtn) confirmarBtn.disabled = false;
+            }
+        }
+
+        if (!avisoMostrado) {
+            if (saldo === total) {
+                mostrarAvisoCredito('El cliente no realiza abono inicial. Se registrará la deuda por el total.', 'warning');
+            } else if (saldo === 0) {
+                mostrarAvisoCredito('El abono cubre el 100% de la venta. Considera procesarla como pago inmediato.', 'info');
+            } else {
+                mostrarAvisoCredito('Se creará una cuenta por cobrar con el saldo pendiente.', 'info');
+            }
+        }
+    }
+
+    async function procesarVentaCredito() {
+        if (ventaState.carrito.length === 0) {
+            window.app.showToast('El carrito está vacío', 'warning');
+            return;
+        }
+
+        const cliente = ventaState.clienteSeleccionado;
+        if (!cliente || cliente.cedula === '9999999999999') {
+            window.app.showToast('Selecciona un cliente antes de registrar crédito', 'warning', 3500);
+            // Auto-activar búsqueda de cliente (como F3)
+            activarBusquedaCliente();
+            return;
+        }
+
+        await abrirModalCreditoVenta();
+    }
+
+    async function abrirModalCreditoVenta() {
+        setupCreditoVentaListeners();
+
+        const modal = document.getElementById('modalCreditoVenta');
+        const abonoInput = document.getElementById('creditoAbonoInput');
+        const vencimientoInput = document.getElementById('creditoVencimientoInput');
+        const motivoInput = document.getElementById('creditoMotivoInput');
+        const notasInput = document.getElementById('creditoNotasInput');
+        const metodoSelect = document.getElementById('creditoMetodoSelect');
+        const clienteCard = document.getElementById('modalCreditoCliente');
+        const totalDisplay = document.getElementById('creditoTotalDisplay');
+        const totalResumen = document.getElementById('creditoTotalResumen');
+        const abonoResumen = document.getElementById('creditoAbonoResumen');
+        const saldoResumen = document.getElementById('creditoSaldoResumen');
+        const saldoDisplay = document.getElementById('creditoSaldoDisplay');
+
+        if (!modal || !abonoInput || !vencimientoInput || !motivoInput || !notasInput || !metodoSelect || !clienteCard) {
+            console.warn('Faltan elementos para inicializar el modal de crédito.');
+            return;
+        }
+
+        const total = obtenerTotalVentaActual();
+        ventaState.credito = { total, abono: 0, saldo: total };
+
+        abonoInput.value = '';
+        motivoInput.value = 'Venta a crédito';
+        notasInput.value = '';
+        metodoSelect.value = 'EFECTIVO';
+        vencimientoInput.value = obtenerFechaISOHoy(30);
+        vencimientoInput.min = obtenerFechaISOHoy();
+
+        if (totalDisplay) totalDisplay.textContent = window.app.formatCurrency(total);
+        if (totalResumen) totalResumen.textContent = window.app.formatCurrency(total);
+        if (abonoResumen) abonoResumen.textContent = window.app.formatCurrency(0);
+        if (saldoResumen) saldoResumen.textContent = window.app.formatCurrency(total);
+        if (saldoDisplay) saldoDisplay.textContent = window.app.formatCurrency(total);
+
+        const cliente = ventaState.clienteSeleccionado;
+        clienteCard.innerHTML = `
+            <div class="cliente-nombre">${cliente.razon_social}</div>
+            <div class="cliente-detalle">
+                <i class="fas fa-id-card"></i>
+                <span>${cliente.cedula}</span>
+            </div>
+            <div class="cliente-detalle">
+                <i class="fas fa-envelope"></i>
+                <span>${cliente.correo || 'Sin correo'}</span>
+            </div>
+            <div class="cliente-detalle">
+                <i class="fas fa-phone"></i>
+                <span>${cliente.telefono || 'Sin teléfono'}</span>
+            </div>
+        `;
+
+        limpiarAvisoCredito();
+        mostrarAvisoCredito('Confirma para enviar esta venta al módulo de Cuentas por Cobrar.', 'info');
+
+        modal.classList.add('active');
+
+        setTimeout(() => {
+            abonoInput.focus();
+            abonoInput.select();
+        }, 120);
+    }
+
+    function cerrarModalCreditoVenta() {
+        const modal = document.getElementById('modalCreditoVenta');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+        limpiarAvisoCredito();
+    }
+
+    function generarCodigoCuenta(tipo = 'VENTA') {
+        const prefijo = tipo === 'VENTA' ? 'V' : tipo === 'EFECTIVO' ? 'E' : 'O';
+        return `${prefijo}${Date.now()}`;
+    }
+
+    function obtenerUsuarioActual() {
+        if (window.auth && typeof window.auth.getUserEmail === 'function') {
+            const email = window.auth.getUserEmail();
+            const nombres = window.auth.getUserNombres ? window.auth.getUserNombres() : '';
+            const apellidos = window.auth.getUserApellidos ? window.auth.getUserApellidos() : '';
+            const nombreCompleto = `${nombres || ''} ${apellidos || ''}`.trim();
+            return {
+                email,
+                nombre: nombreCompleto || email || 'Usuario'
+            };
+        }
+        return { email: null, nombre: 'Usuario' };
+    }
+
+    async function ensureDeudorParaCliente(db, cliente) {
+        if (!cliente || !cliente.cedula) {
+            throw new Error('Cliente inválido para crear cuenta por cobrar.');
+        }
+
+        const documento = cliente.cedula.trim();
+        const { data: deudorExistente, error: errorDeudor } = await db
+            .from('deudores')
+            .select('*')
+            .eq('cedula_ruc', documento)
+            .maybeSingle();
+
+        if (errorDeudor) {
+            throw errorDeudor;
+        }
+
+        if (deudorExistente) {
+            return deudorExistente;
+        }
+
+        const limite = cliente.limite_credito != null ? Number(cliente.limite_credito) : 0;
+        const creditoDisponible = cliente.credito_disponible != null ? Number(cliente.credito_disponible) : limite;
+
+        const payload = {
+            cedula_ruc: documento,
+            nombre: cliente.razon_social,
+            direccion: cliente.direccion || null,
+            telefono: cliente.telefono || null,
+            email: cliente.correo || null,
+            limite_credito: normalizarMontoCredito(limite),
+            credito_disponible: normalizarMontoCredito(creditoDisponible),
+            notas: 'Creado automáticamente desde Punto de Venta'
+        };
+
+        const { data: nuevoDeudor, error: errorInsert } = await db
+            .from('deudores')
+            .insert([payload])
+            .select()
+            .single();
+
+        if (errorInsert) {
+            throw errorInsert;
+        }
+
+        return nuevoDeudor;
+    }
+
+    function abrirTicketCredito({ cuenta, deudor, abonoInicial = 0, usuario, notas, productos = [], ventaId = null }) {
+        if (!cuenta) {
+            return;
+        }
+
+        const params = new URLSearchParams();
+        params.set('codigo', cuenta.codigo || '');
+        params.set('tipo', cuenta.tipo || '');
+        params.set('motivo', cuenta.motivo || '');
+        params.set('monto', normalizarMontoCredito(cuenta.monto).toFixed(2));
+        params.set('saldo', normalizarMontoCredito(cuenta.saldo_pendiente).toFixed(2));
+        params.set('abono_inicial', normalizarMontoCredito(abonoInicial).toFixed(2));
+        params.set('fecha', cuenta.fecha_otorgada || '');
+        params.set('vencimiento', cuenta.fecha_vencimiento || '');
+        params.set('estado', cuenta.estado || '');
+        params.set('aprobado_por', usuario?.nombre || usuario?.email || '');
+        params.set('deudor_nombre', deudor?.nombre || '');
+        params.set('deudor_documento', deudor?.cedula_ruc || '');
+        params.set('deudor_direccion', deudor?.direccion || '');
+        params.set('deudor_telefono', deudor?.telefono || '');
+        params.set('deudor_email', deudor?.email || '');
+        params.set('notas', notas || '');
+        params.set('venta_id', ventaId || '');
+
+        if (productos && productos.length) {
+            const items = productos.map(item => {
+                const cantidadRaw = item.cantidad != null ? parseFloat(item.cantidad) : 1;
+                const cantidadValida = Number.isFinite(cantidadRaw) ? cantidadRaw : 1;
+                const cantidadLabel = Number.isInteger(cantidadValida)
+                    ? cantidadValida
+                    : cantidadValida.toFixed(3).replace(/\.0+$|0+$/g, '').replace(/\.$/, '');
+                const precio = normalizarMontoCredito(item.precio || 0);
+                return `${cantidadLabel}x ${item.nombre || item.codigo || ''} — ${window.app.formatCurrency(precio)}`;
+            }).join('|');
+            params.set('items', items);
+        }
+
+        const url = `ticket_cxc_deuda.html?${params.toString()}`;
+        window.open(url, '_blank');
+    }
+
+    async function confirmarCreditoVenta() {
+        const cliente = ventaState.clienteSeleccionado;
+
+        if (ventaState.carrito.length === 0) {
+            window.app.showToast('El carrito está vacío', 'warning');
+            return;
+        }
+
+        if (!cliente || cliente.cedula === '9999999999999') {
+            window.app.showToast('Selecciona un cliente válido antes de confirmar crédito', 'warning', 3500);
+            return;
+        }
+
+        const total = obtenerTotalVentaActual();
+        if (total <= 0) {
+            window.app.showToast('El total debe ser mayor a 0 para generar crédito', 'warning');
+            return;
+        }
+
+        const abonoInput = document.getElementById('creditoAbonoInput');
+        const vencimientoInput = document.getElementById('creditoVencimientoInput');
+        const motivoInput = document.getElementById('creditoMotivoInput');
+        const metodoSelect = document.getElementById('creditoMetodoSelect');
+        const notasInput = document.getElementById('creditoNotasInput');
+        const confirmarBtn = document.getElementById('btnConfirmarCreditoVenta');
+
+        const abono = normalizarMontoCredito(abonoInput && abonoInput.value ? abonoInput.value : 0);
+        if (abono > total) {
+            window.app.showToast('El abono no puede exceder el total de la venta', 'danger');
+            if (abonoInput) {
+                abonoInput.focus();
+            }
+            return;
+        }
+
+        const saldo = Math.max(total - abono, 0);
+        const vencimiento = vencimientoInput && vencimientoInput.value ? vencimientoInput.value : '';
+
+        if (!vencimiento) {
+            window.app.showToast('Selecciona una fecha de vencimiento válida', 'warning');
+            if (vencimientoInput) {
+                vencimientoInput.focus();
+            }
+            return;
+        }
+
+        const hoy = obtenerFechaISOHoy();
+        if (vencimiento < hoy) {
+            window.app.showToast('La fecha de vencimiento no puede ser anterior a hoy', 'warning');
+            if (vencimientoInput) {
+                vencimientoInput.focus();
+            }
+            return;
+        }
+
+        const motivo = motivoInput && motivoInput.value.trim() ? motivoInput.value.trim() : 'Venta a crédito';
+        const metodo = metodoSelect ? metodoSelect.value : 'EFECTIVO';
+        const notas = notasInput && notasInput.value.trim() ? notasInput.value.trim() : '';
+
+        const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : (typeof getDB === 'function' ? getDB() : supabaseClient));
+        if (!db || typeof db.from !== 'function') {
+            window.app.showToast('No se pudo acceder a la base de datos', 'danger');
+            return;
+        }
+
+        const usuario = obtenerUsuarioActual();
+        const botonTextoOriginal = confirmarBtn ? confirmarBtn.innerHTML : '';
+        try {
+            if (confirmarBtn) {
+                confirmarBtn.disabled = true;
+                confirmarBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            }
+
+            const deudor = await ensureDeudorParaCliente(db, cliente);
+
+            const ventaIdText = `S${Date.now()}`;
+            const fechaActualISO = new Date().toISOString();
+
+            const ventaPayload = {
+                id_venta: ventaIdText,
+                fecha_hora_venta: fechaActualISO,
+                cliente_id: cliente.cedula,
+                total: normalizarMontoCredito(total),
+                pagado_con: normalizarMontoCredito(abono),
+                vuelto: 0,
+                tipo: 'RECIBO',
+                estado: 'COMPLETADO',
+                usuario_email: usuario.email || null,
+                doc: null,
+                clave_acceso: null,
+                fecha_factura: null
+            };
+
+            const { data: ventaInsertada, error: ventaError } = await db
+                .from('ventas')
+                .insert([ventaPayload])
+                .select()
+                .single();
+
+            if (ventaError) {
+                throw new Error(ventaError.message || 'No se pudo registrar la venta.');
+            }
+
+            const detallesPayload = ventaState.carrito.map((item, index) => ({
+                id_detalle: `${ventaIdText}_${index + 1}`,
+                venta_id: ventaInsertada.id,
+                id_venta: ventaIdText,
+                producto_id: item.codigo,
+                cantidad: parseFloat(item.cantidad),
+                precio: normalizarMontoCredito(item.precio),
+                estado: 'ACTIVO'
+            }));
+
+            const { error: detalleError } = await db
+                .from('ventas_detalle')
+                .insert(detallesPayload);
+
+            if (detalleError) {
+                await db.from('ventas').delete().eq('id', ventaInsertada.id);
+                throw new Error(detalleError.message || 'No se pudieron registrar los productos de la venta.');
+            }
+
+            const codigoCuenta = generarCodigoCuenta('VENTA');
+            const estadoCuenta = saldo <= 0 ? 'PAGADO' : (saldo < total ? 'PARCIAL' : 'PENDIENTE');
+            const vencimientoISO = new Date(`${vencimiento}T23:59:59`).toISOString();
+
+            const cuentaPayload = {
+                codigo: codigoCuenta,
+                tipo: 'VENTA',
+                motivo,
+                monto: normalizarMontoCredito(total),
+                saldo_pendiente: normalizarMontoCredito(total),
+                venta_id: ventaInsertada.id,
+                deudor_id: deudor.id,
+                estado: estadoCuenta,
+                fecha_otorgada: fechaActualISO,
+                fecha_vencimiento: vencimientoISO,
+                aprobado_por: usuario.nombre || usuario.email || 'Usuario',
+                otros_detalles: notas || 'Generado automáticamente desde Punto de Venta'
+            };
+
+            const { data: cuentaInsertada, error: cuentaError } = await db
+                .from('cuentas_por_cobrar')
+                .insert([cuentaPayload])
+                .select()
+                .single();
+
+            if (cuentaError) {
+                await db.from('ventas_detalle').delete().eq('venta_id', ventaInsertada.id);
+                await db.from('ventas').delete().eq('id', ventaInsertada.id);
+                throw new Error(cuentaError.message || 'No se pudo registrar la cuenta por cobrar.');
+            }
+
+            if (abono > 0) {
+                const pagoPayload = {
+                    cuenta_id: cuentaInsertada.id,
+                    monto_pago: normalizarMontoCredito(abono),
+                    forma_pago: metodo,
+                    numero_referencia: null,
+                    notas: notas ? `Pago inicial: ${notas}` : 'Pago inicial registrado desde Punto de Venta',
+                    recibido_por: usuario.nombre || usuario.email || 'Usuario'
+                };
+
+                const { error: pagoError } = await db
+                    .from('pagos_cuentas_por_cobrar')
+                    .insert([pagoPayload]);
+
+                if (pagoError) {
+                    console.error('Error registrando pago inicial:', pagoError);
+                    window.app.showToast('Crédito creado, pero el pago inicial no se guardó. Regístralo manualmente.', 'warning', 6000);
+                }
+            }
+
+            cerrarModalCreditoVenta();
+            window.app.showToast('Venta registrada como crédito exitosamente', 'success', 4000);
+
+            abrirTicketCredito({
+                cuenta: {
+                    ...cuentaInsertada,
+                    monto: total,
+                    saldo_pendiente: saldo,
+                    estado: estadoCuenta,
+                    fecha_otorgada: fechaActualISO,
+                    fecha_vencimiento: vencimientoISO
+                },
+                deudor,
+                abonoInicial: abono,
+                usuario,
+                notas,
+                productos: ventaState.carrito,
+                ventaId: ventaIdText
+            });
+
+            ventaState.carrito = [];
+            ventaState.clienteSeleccionado = null;
+            ventaState.tipoComprobante = 'RECIBO';
+            ventaState.credito = { total: 0, abono: 0, saldo: 0 };
+
+            limpiarCarritoCache();
+            actualizarCarrito();
+            mostrarClienteSeleccionado();
+            const clienteCedulaInput = document.getElementById('clienteCedula');
+            if (clienteCedulaInput) {
+                clienteCedulaInput.value = '';
+            }
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        } catch (error) {
+            console.error('Error al confirmar crédito:', error);
+            window.app.showToast('No se pudo registrar el crédito: ' + (error.message || error), 'danger', 6000);
+        } finally {
+            if (confirmarBtn) {
+                confirmarBtn.disabled = false;
+                confirmarBtn.innerHTML = botonTextoOriginal || '<i class="fas fa-hand-holding-usd"></i> Guardar crédito';
+            }
+        }
+    }
+
+    window.procesarVentaCredito = procesarVentaCredito;
+    window.cerrarModalCreditoVenta = cerrarModalCreditoVenta;
+    window.confirmarCreditoVenta = confirmarCreditoVenta;
+
+    // =====================================================
     // GESTIÓN DEL CARRITO
     // =====================================================
 
@@ -3473,6 +4441,12 @@
             tbody.innerHTML = ventaState.carrito.map((item, index) => {
                 return generarFilaCarrito(item, index);
             }).join('');
+            
+            // Cargar ganancias solo si el botón está activo
+            const btn = document.getElementById('gananciaToggleBtn');
+            if (btn && btn.classList.contains('active')) {
+                cargarGananciasCarrito();
+            }
         }
 
         calcularTotales();
@@ -3486,6 +4460,34 @@
         const isSelected = ventaState.modoEdicion && index === ventaState.indiceSeleccionado;
         const precioId = `precio-${item.codigo}`;
         const cantidadId = `cantidad-${item.codigo}`;
+        const gananciaId = `ganancia-${item.codigo}`;
+        
+        // Calcular ganancia si ya está disponible en el cache y el botón está activo
+        const btn = document.getElementById('gananciaToggleBtn');
+        const mostrarGanancia = btn && btn.classList.contains('active');
+        
+        let gananciaHTML = '';
+        let gananciaSubtotalHTML = '';
+        
+        if (mostrarGanancia) {
+            if (item.precio_proveedor !== undefined) {
+                const precioConImpuesto = item.precio_proveedor * 1.15;
+                const gananciaPorUnidad = item.precio - precioConImpuesto;
+                const gananciaTotal = gananciaPorUnidad * item.cantidad;
+                const esNegativo = gananciaPorUnidad < 0;
+                
+                gananciaHTML = `<div class="ganancia-fila ${esNegativo ? 'negativo' : ''}" id="${gananciaId}-precio">
+                    G: ${esNegativo ? '-' : '+'}$${Math.abs(gananciaPorUnidad).toFixed(2)}
+                </div>`;
+                
+                gananciaSubtotalHTML = `<div class="ganancia-fila ${esNegativo ? 'negativo' : ''}" id="${gananciaId}-subtotal">
+                    G: ${esNegativo ? '-' : '+'}$${Math.abs(gananciaTotal).toFixed(2)}
+                </div>`;
+            } else {
+                gananciaHTML = `<div class="ganancia-fila loading" id="${gananciaId}-precio">Calculando...</div>`;
+                gananciaSubtotalHTML = `<div class="ganancia-fila loading" id="${gananciaId}-subtotal">Calculando...</div>`;
+            }
+        }
         
         return `
             <tr class="${isSelected ? 'carrito-item-selected' : ''}" data-codigo="${item.codigo}">
@@ -3528,10 +4530,16 @@
                             onchange="actualizarPrecio('${item.codigo}', this.value)"
                             onclick="this.select()">` 
                         : 
-                        window.app.formatCurrency(item.precio)
+                        `<div>
+                            ${window.app.formatCurrency(item.precio)}
+                            ${gananciaHTML}
+                        </div>`
                     }
                 </td>
-                <td><strong>${window.app.formatCurrency(subtotal)}</strong></td>
+                <td>
+                    <strong>${window.app.formatCurrency(subtotal)}</strong>
+                    ${gananciaSubtotalHTML}
+                </td>
                 <td>
                     <div class="action-buttons">
                         ${item.nombre.toLowerCase().includes('ducha') ? 
@@ -3604,6 +4612,12 @@
             const totalItems = ventaState.carrito.length;
             itemsCount.textContent = totalItems;
         }
+        
+        // Actualizar total de ganancia si está activo
+        const totalInline = document.getElementById('gananciaTotalInline');
+        if (totalInline && totalInline.classList.contains('active')) {
+            actualizarGananciaTotal();
+        }
     }
 
     function calcularTotales() {
@@ -3614,6 +4628,113 @@
         if (window.app && window.app.updateNavbarCounter) {
             window.app.updateNavbarCounter('punto-venta', total);
         }
+    }
+    
+    // ===== FUNCIONES DE GANANCIA =====
+    
+    window.toggleGananciaPanel = function() {
+        const totalInline = document.getElementById('gananciaTotalInline');
+        const btn = document.getElementById('gananciaToggleBtn');
+        
+        if (totalInline.classList.contains('active')) {
+            totalInline.classList.remove('active');
+            btn.classList.remove('active');
+            // Ocultar ganancias en las filas
+            actualizarCarrito();
+        } else {
+            totalInline.classList.add('active');
+            btn.classList.add('active');
+            // Mostrar ganancias en las filas
+            actualizarCarrito();
+            actualizarGananciaTotal();
+        }
+    }
+    
+    function cargarGananciasCarrito() {
+        if (ventaState.carrito.length === 0) return;
+        
+        // Verificar que el caché de inventario esté disponible
+        if (!window.inventarioCache || !window.inventarioCache.productos) {
+            console.warn('Caché de inventario no disponible para cargar ganancias');
+            return;
+        }
+        
+        let totalGanancia = 0;
+        
+        for (const item of ventaState.carrito) {
+            try {
+                // Obtener precio_proveedor del caché de inventario
+                let precioProveedor = item.precio_proveedor;
+                
+                if (precioProveedor === undefined) {
+                    // Buscar en el caché de inventario
+                    const productoCache = window.inventarioCache.productos.find(p => p.codigo === item.codigo);
+                    
+                    if (productoCache && productoCache.precio_proveedor !== undefined) {
+                        precioProveedor = productoCache.precio_proveedor;
+                        // Guardar en el item del carrito para futuros cálculos
+                        item.precio_proveedor = precioProveedor;
+                    }
+                }
+                
+                if (precioProveedor !== undefined) {
+                    // Fórmula: precioVenta - (precio_proveedor * 1.15)
+                    const precioConImpuesto = precioProveedor * 1.15;
+                    const gananciaPorUnidad = item.precio - precioConImpuesto;
+                    const gananciaTotal = gananciaPorUnidad * item.cantidad;
+                    
+                    totalGanancia += gananciaTotal;
+                    
+                    const esNegativo = gananciaPorUnidad < 0;
+                    
+                    // Actualizar ganancia en precio
+                    const gananciaIdPrecio = document.getElementById(`ganancia-${item.codigo}-precio`);
+                    if (gananciaIdPrecio) {
+                        gananciaIdPrecio.className = `ganancia-fila ${esNegativo ? 'negativo' : ''}`;
+                        gananciaIdPrecio.textContent = `G: ${esNegativo ? '-' : '+'}$${Math.abs(gananciaPorUnidad).toFixed(2)}`;
+                    }
+                    
+                    // Actualizar ganancia en subtotal
+                    const gananciaIdSubtotal = document.getElementById(`ganancia-${item.codigo}-subtotal`);
+                    if (gananciaIdSubtotal) {
+                        gananciaIdSubtotal.className = `ganancia-fila ${esNegativo ? 'negativo' : ''}`;
+                        gananciaIdSubtotal.textContent = `G: ${esNegativo ? '-' : '+'}$${Math.abs(gananciaTotal).toFixed(2)}`;
+                    }
+                }
+            } catch (err) {
+                console.error(`Error procesando item ${item.codigo}:`, err);
+            }
+        }
+        
+        // Actualizar total si está visible
+        const totalInline = document.getElementById('gananciaTotalInline');
+        if (totalInline && totalInline.classList.contains('active')) {
+            const esNegativo = totalGanancia < 0;
+            document.getElementById('gananciaTotalValue').textContent = 
+                `${esNegativo ? '-' : ''}$${Math.abs(totalGanancia).toFixed(2)}`;
+        }
+    }
+    
+    async function actualizarGananciaTotal() {
+        if (ventaState.carrito.length === 0) {
+            document.getElementById('gananciaTotalValue').textContent = '$0.00';
+            return;
+        }
+        
+        let totalGanancia = 0;
+        
+        for (const item of ventaState.carrito) {
+            if (item.precio_proveedor !== undefined) {
+                const precioConImpuesto = item.precio_proveedor * 1.15;
+                const gananciaPorUnidad = item.precio - precioConImpuesto;
+                const gananciaTotal = gananciaPorUnidad * item.cantidad;
+                totalGanancia += gananciaTotal;
+            }
+        }
+        
+        const esNegativo = totalGanancia < 0;
+        document.getElementById('gananciaTotalValue').textContent = 
+            `${esNegativo ? '-' : ''}$${Math.abs(totalGanancia).toFixed(2)}`;
     }
 
     async function limpiarVenta() {

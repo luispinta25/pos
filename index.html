@@ -87,21 +87,25 @@
                 </div>
                 
                 <div class="nav-menu">
-                    <a href="#" class="nav-btn active" data-module="punto-venta">
+                    <a href="#" class="nav-btn active" data-module="punto-venta" data-tooltip="Punto de venta" aria-label="Punto de venta">
                         <i class="fas fa-shopping-cart"></i>
-                        <span class="nav-btn-text">VENDER</span>
+                        <span class="nav-btn-text" aria-hidden="true">Punto de venta</span>
                     </a>
-                    <a href="#" class="nav-btn" data-module="ventas">
+                    <a href="#" class="nav-btn" data-module="ventas" data-tooltip="Historial de ventas" aria-label="Historial de ventas">
                         <i class="fas fa-history"></i>
-                        <span class="nav-btn-text">VENTAS</span>
+                        <span class="nav-btn-text" aria-hidden="true">Historial de ventas</span>
                     </a>
-                    <a href="#" class="nav-btn" data-module="gastos">
+                    <a href="#" class="nav-btn" data-module="gastos" data-tooltip="Registro de gastos" aria-label="Registro de gastos">
                         <i class="fas fa-receipt"></i>
-                        <span class="nav-btn-text">GASTOS</span>
+                        <span class="nav-btn-text" aria-hidden="true">Registro de gastos</span>
                     </a>
-                    <a href="#" class="nav-btn" data-module="proveedores">
+                    <a href="#" class="nav-btn" data-module="proveedores" data-tooltip="Gestión de proveedores" aria-label="Gestión de proveedores">
                         <i class="fas fa-truck"></i>
-                        <span class="nav-btn-text">PROVEEDORES</span>
+                        <span class="nav-btn-text" aria-hidden="true">Gestión de proveedores</span>
+                    </a>
+                    <a href="#" class="nav-btn" data-module="cxc" data-tooltip="Cuentas por cobrar" aria-label="Cuentas por cobrar">
+                        <i class="fas fa-wallet"></i>
+                        <span class="nav-btn-text" aria-hidden="true">Cuentas por cobrar</span>
                     </a>
                 </div>
 
@@ -132,69 +136,13 @@
     <script src="app.js"></script>
     
     <script>
-        // Animación de hover en navbar
         document.addEventListener('DOMContentLoaded', function() {
-            const navMenu = document.querySelector('.nav-menu');
             const navButtons = document.querySelectorAll('.nav-btn');
-            let hoverTimeout = null;
-            let leaveTimeout = null;
-            
+
             navButtons.forEach(button => {
-                button.addEventListener('mouseenter', function() {
-                    // Limpiar timeout de salida si existe
-                    if (leaveTimeout) {
-                        clearTimeout(leaveTimeout);
-                        leaveTimeout = null;
-                    }
-                    
-                    // Si este botón NO es el activo
-                    if (!this.classList.contains('active')) {
-                        // Pequeño delay para evitar parpadeo
-                        if (hoverTimeout) clearTimeout(hoverTimeout);
-                        hoverTimeout = setTimeout(() => {
-                            // Contraer el botón activo
-                            navButtons.forEach(btn => {
-                                if (btn.classList.contains('active')) {
-                                    btn.classList.add('nav-btn-contracted');
-                                }
-                            });
-                        }, 50);
-                    }
-                });
-                
-                button.addEventListener('mouseleave', function() {
-                    // Limpiar timeout de entrada si existe
-                    if (hoverTimeout) {
-                        clearTimeout(hoverTimeout);
-                        hoverTimeout = null;
-                    }
-                    
-                    // Delay antes de expandir para evitar parpadeo
-                    if (leaveTimeout) clearTimeout(leaveTimeout);
-                    leaveTimeout = setTimeout(() => {
-                        // Expandir de nuevo el botón activo
-                        navButtons.forEach(btn => {
-                            if (btn.classList.contains('active')) {
-                                btn.classList.remove('nav-btn-contracted');
-                            }
-                        });
-                    }, 100);
-                });
+                button.addEventListener('focus', () => button.classList.add('nav-btn-focused'));
+                button.addEventListener('blur', () => button.classList.remove('nav-btn-focused'));
             });
-            
-            // Si el mouse sale completamente del menú, restaurar inmediatamente
-            if (navMenu) {
-                navMenu.addEventListener('mouseleave', function() {
-                    if (hoverTimeout) clearTimeout(hoverTimeout);
-                    if (leaveTimeout) clearTimeout(leaveTimeout);
-                    
-                    navButtons.forEach(btn => {
-                        if (btn.classList.contains('active')) {
-                            btn.classList.remove('nav-btn-contracted');
-                        }
-                    });
-                });
-            }
         });
     </script>
 

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=80mm, initial-scale=1.0">
+    <title>Ticket Cuenta por Cobrar</title>
+    <style>
+        @page {
+            size: 80mm auto;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #111;
+            background: #fff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .ticket {
+            max-width: 80mm;
+            margin: 0 auto;
+            padding: 10px 8px 16px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed #999;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .logo {
+            width: 25%;
+        }
+
+        .logo img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .store-info {
+            width: 75%;
+            text-align: right;
+        }
+
+        .brand {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+        }
+
+        .tagline {
+            font-size: 10px;
+            margin-top: 2px;
+        }
+
+        .section {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed #ddd;
+        }
+
+        .section:first-of-type {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .section-title {
+            text-transform: uppercase;
+            font-weight: 700;
+            font-size: 11px;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            gap: 6px;
+        }
+
+        .row span:last-child {
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .items-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .items-list li {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .items-list li span:last-child {
+            font-weight: 600;
+        }
+
+        .notes {
+            border: 1px dashed #ccc;
+            padding: 6px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 10px;
+            border-top: 1px dashed #999;
+            padding-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ticket">
+        <div class="header">
+            <div class="logo">
+                <img src="https://lh3.googleusercontent.com/d/1-_IsocnUhx_k6EGsNSpaJUNnQ2Nn4cFj=w2048?name=ISO%20DELGADO.png" alt="Logo Ferretería" />
+            </div>
+            <div class="store-info">
+                <div class="brand">FERRESOLUCIONES</div>
+                <div class="tagline">RUC: 1727849695001</div>
+                <div class="tagline">CEL: 0962248046</div>
+                <div class="tagline">Cuentas por Cobrar</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Cuenta</div>
+            <div class="row"><span>Código</span><span id="cuentaCodigo">---</span></div>
+            <div class="row"><span>Motivo</span><span id="cuentaMotivo">---</span></div>
+            <div class="row"><span>Tipo</span><span id="cuentaTipo">---</span></div>
+            <div class="row"><span>Estado</span><span id="cuentaEstado">---</span></div>
+            <div class="row"><span>Fecha</span><span id="cuentaFecha">---</span></div>
+            <div class="row"><span>Vencimiento</span><span id="cuentaVencimiento">---</span></div>
+            <div class="row"><span>Aprobado por</span><span id="cuentaAprobado">---</span></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Montos</div>
+            <div class="row"><span>Monto total</span><span id="cuentaMonto">$ 0,00</span></div>
+            <div class="row" id="abonoInicialRow" style="display:none;"><span>Abono inicial</span><span id="cuentaAbono">$ 0,00</span></div>
+            <div class="row"><span>Saldo pendiente</span><span id="cuentaSaldo">$ 0,00</span></div>
+        </div>
+
+        <div class="section" id="pagosHistorialSection" style="display:none;">
+            <div class="section-title">Historial de pagos</div>
+            <ul class="items-list" id="pagosHistorial"></ul>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Deudor</div>
+            <div class="row"><span>Nombre</span><span id="deudorNombre">---</span></div>
+            <div class="row"><span>Documento</span><span id="deudorDocumento">---</span></div>
+            <div class="row"><span>Teléfono</span><span id="deudorTelefono">---</span></div>
+            <div class="row"><span>Correo</span><span id="deudorCorreo">---</span></div>
+            <div class="row" style="flex-direction: column; align-items: flex-start;">
+                <span>Dirección</span>
+                <span id="deudorDireccion" style="font-weight: 600; width: 100%; margin-top: 2px;">---</span>
+            </div>
+        </div>
+
+        <div class="section" id="notasSection" style="display:none;">
+            <div class="section-title">Notas</div>
+            <div class="notes" id="cuentaNotas"></div>
+        </div>
+
+        <div class="section" id="productosSection" style="display:none;">
+            <div class="section-title">Detalle de productos</div>
+            <table style="width:100%; font-size:10px; border-collapse:collapse; margin-top:6px;" id="productosTabla">
+                <thead>
+                    <tr style="border-bottom:1px solid #ddd;">
+                        <th style="text-align:left; padding:3px 0;">Cant</th>
+                        <th style="text-align:left; padding:3px 0;">Descripción</th>
+                        <th style="text-align:right; padding:3px 0;">P.Unit</th>
+                        <th style="text-align:right; padding:3px 0;">Total</th>
+                    </tr>
+                </thead>
+                <tbody id="productosLista"></tbody>
+                <tfoot>
+                    <tr style="border-top:2px solid #333;">
+                        <td colspan="3" style="padding:5px 0; font-weight:700; text-align:right;">TOTAL:</td>
+                        <td style="padding:5px 0; font-weight:700; text-align:right;">$ <span id="productosTotal">0,00</span></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="footer">
+            Ticket generado desde módulo CxC<br>
+            Gracias por su confianza
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            const params = new URLSearchParams(window.location.search);
+            const $ = id => document.getElementById(id);
+            const get = key => params.get(key) || '';
+
+            const formatCurrency = value => {
+                const number = Number(value);
+                if (!Number.isFinite(number)) return '0,00';
+                return number.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+
+            const formatDate = value => {
+                if (!value) return '---';
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) return value;
+                return date.toLocaleDateString('es-EC');
+            };
+
+            const formatDateTime = value => {
+                if (!value) return '---';
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) return value;
+                return date.toLocaleString('es-EC');
+            };
+
+            const setCurrency = (id, value) => {
+                $(id).textContent = '$ ' + formatCurrency(value);
+            };
+
+            // Datos de la cuenta
+            $('cuentaCodigo').textContent = get('codigo') || '---';
+            $('cuentaMotivo').textContent = get('motivo') || '---';
+            $('cuentaTipo').textContent = get('tipo') || '---';
+            $('cuentaEstado').textContent = get('estado') || '---';
+            $('cuentaFecha').textContent = formatDateTime(get('fecha'));
+            $('cuentaVencimiento').textContent = formatDate(get('vencimiento'));
+            $('cuentaAprobado').textContent = get('aprobado_por') || '---';
+
+            setCurrency('cuentaMonto', get('monto'));
+            setCurrency('cuentaSaldo', get('saldo'));
+            
+            const abonoInicial = get('abono_inicial');
+            if (abonoInicial && parseFloat(abonoInicial) > 0) {
+                setCurrency('cuentaAbono', abonoInicial);
+                document.getElementById('abonoInicialRow').style.display = 'flex';
+            }
+
+            // Datos del deudor
+            $('deudorNombre').textContent = get('deudor_nombre') || '---';
+            $('deudorDocumento').textContent = get('deudor_documento') || '---';
+            $('deudorTelefono').textContent = get('deudor_telefono') || '---';
+            $('deudorCorreo').textContent = get('deudor_email') || '---';
+            $('deudorDireccion').textContent = get('deudor_direccion') || '---';
+
+            // Productos asociados
+            const itemsParam = get('items');
+            if (itemsParam) {
+                const tbody = $('productosLista');
+                let totalProductos = 0;
+                itemsParam.split('|').forEach(item => {
+                    if (!item) return;
+                    const parts = item.split(' — ');
+                    const leftPart = parts[0] ? parts[0].trim() : '';
+                    const precioUnitario = parts[1] ? parts[1].trim() : '';
+                    
+                    const cantMatch = leftPart.match(/^([\d.,]+)x\s+(.+)$/);
+                    const cantidad = cantMatch ? cantMatch[1] : '1';
+                    const descripcion = cantMatch ? cantMatch[2] : leftPart;
+                    
+                    const cantidadNum = parseFloat(cantidad.replace(',', '.'));
+                    const precioUnitarioNum = parseFloat(precioUnitario.replace(/[^\d.,]/g, '').replace(',', '.'));
+                    
+                    let subtotal = '';
+                    let subtotalNum = 0;
+                    if (Number.isFinite(cantidadNum) && Number.isFinite(precioUnitarioNum)) {
+                        subtotalNum = cantidadNum * precioUnitarioNum;
+                        subtotal = formatCurrency(subtotalNum);
+                        totalProductos += subtotalNum;
+                    }
+                    
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px dashed #eee';
+                    tr.innerHTML = `
+                        <td style="padding:3px 0;">${cantidad}</td>
+                        <td style="padding:3px 0;">${descripcion}</td>
+                        <td style="padding:3px 0; text-align:right;">${precioUnitario}</td>
+                        <td style="padding:3px 0; text-align:right; font-weight:600;">$ ${subtotal}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                if (tbody.children.length) {
+                    $('productosTotal').textContent = formatCurrency(totalProductos);
+                    document.getElementById('productosSection').style.display = 'block';
+                }
+            }
+
+            // Notas
+            const notas = get('notas');
+            if (notas) {
+                $('cuentaNotas').textContent = notas;
+                document.getElementById('notasSection').style.display = 'block';
+            }
+
+            // Historial de pagos
+            const pagosParam = get('pagos');
+            if (pagosParam) {
+                const lista = $('pagosHistorial');
+                pagosParam.split('|').forEach(item => {
+                    if (!item) return;
+                    const parts = item.split('~');
+                    const fecha = parts[0] || '';
+                    const monto = parts[1] || '';
+                    const metodo = parts[2] || '';
+                    let detalleTexto = `${fecha} - ${metodo}`;
+                    if (detalleTexto.length > 28) {
+                        detalleTexto = detalleTexto.substring(0, 28) + '...';
+                    }
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span><strong>${monto}</strong> ${detalleTexto}</span>`;
+                    lista.appendChild(li);
+                });
+                if (lista.children.length) {
+                    document.getElementById('pagosHistorialSection').style.display = 'block';
+                }
+            }
+
+            setTimeout(() => window.print(), 300);
+            window.onafterprint = () => window.close();
+        })();
+    </script>
+</body>
+</html>

@@ -836,6 +836,14 @@
                 </div>
 
                 <div class="info-row">
+                    <span class="info-label">Proveedor Actual</span>
+                    <div class="info-value" id="currentProvider">
+                        <i class="fas fa-truck" style="color: #d4a017; margin-right: 8px;"></i>
+                        <span id="currentProviderName">-</span>
+                    </div>
+                </div>
+
+                <div class="info-row">
                     <span class="info-label">Precio de Costo Actual</span>
                     <div class="price-highlight" id="currentPrice">$0.00</div>
                 </div>
@@ -892,6 +900,7 @@
     // VARIABLES GLOBALES
     // =====================================================
     let productos = [];
+    let proveedores = {}; // Mapa: id (UUID) -> empresa
     let productoActual = null;
     let mostrarConIVA = true;
 
@@ -954,6 +963,27 @@
     // =====================================================
     // CARGA DE DATOS
     // =====================================================
+    async function cargarProveedores() {
+        try {
+            const db = window.app.db;
+            const { data, error } = await db
+                .from('proveedores')
+                .select('id, codigo, empresa');
+            
+            if (error) throw error;
+            
+            // Crear mapa id (UUID) -> empresa
+            proveedores = {};
+            data.forEach(p => {
+                proveedores[p.id] = p.empresa;
+            });
+            
+            console.log(`✅ ${data.length} proveedores cargados (mapa por UUID)`);
+        } catch (error) {
+            console.error('Error cargando proveedores:', error);
+        }
+    }
+
     async function cargarProductos() {
         try {
             // Intentar cargar desde caché primero
@@ -963,9 +993,11 @@
                 productos = cachedData.map(item => ({
                     codigo: item.codigo,
                     nombre: item.producto,
-                    precio: parseFloat(item.precio_proveedor) || 0
+                    precio: parseFloat(item.precio_proveedor) || 0,
+                    proveedor_id: item.proveedor_id || ''
                 }));
                 console.log(`✅ ${productos.length} productos cargados desde caché para comparación`);
+                await cargarProveedores();
                 return;
             }
 
@@ -974,7 +1006,7 @@
             
             const { data, error } = await db
                 .from('inventario')
-                .select('codigo, producto, precio_proveedor')
+                .select('codigo, producto, precio_proveedor, proveedor_id')
                 .order('producto', { ascending: true });
 
             if (error) throw error;
@@ -982,8 +1014,11 @@
             productos = data.map(item => ({
                 codigo: item.codigo,
                 nombre: item.producto,
-                precio: parseFloat(item.precio_proveedor) || 0
+                precio: parseFloat(item.precio_proveedor) || 0,
+                proveedor_id: item.proveedor_id || ''
             }));
+
+            await cargarProveedores();
 
             console.log(`✅ ${productos.length} productos cargados desde Supabase`);
         } catch (error) {
@@ -1104,12 +1139,18 @@
 
         container.innerHTML = resultados.map(producto => {
             const precioMostrar = mostrarConIVA ? producto.precio * 1.15 : producto.precio;
+            const nombreProveedor = proveedores[producto.proveedor_id] || 'Sin proveedor';
             return `
             <div class="result-item" onclick="window.comparadorSeleccionarProducto('${producto.codigo}')">
                 <div class="result-info">
                     <h4>${producto.nombre}</h4>
                     <div class="result-code">Código: ${producto.codigo}</div>
-                    <div class="result-provider">Precio ${mostrarConIVA ? 'con IVA' : 'sin IVA'}: ${formatearMoneda(precioMostrar)}</div>
+                    <div class="result-provider" style="color: #666; font-size: 0.9rem; margin-top: 5px;">
+                        <i class="fas fa-truck" style="color: #d4a017;"></i> ${nombreProveedor}
+                    </div>
+                    <div class="result-provider" style="margin-top: 5px;">
+                        <strong>Precio ${mostrarConIVA ? 'con IVA' : 'sin IVA'}:</strong> ${formatearMoneda(precioMostrar)}
+                    </div>
                 </div>
                 <button class="result-select-btn">
                     <i class="fas fa-arrow-right"></i>
@@ -1128,9 +1169,11 @@
     function seleccionarProducto(producto) {
         productoActual = producto;
         const precioConIVA = mostrarConIVA ? (producto.precio * 1.15) : producto.precio;
+        const nombreProveedor = proveedores[producto.proveedor_id] || 'Sin proveedor';
 
         document.getElementById('currentCode').textContent = producto.codigo;
         document.getElementById('currentName').textContent = producto.nombre;
+        document.getElementById('currentProviderName').textContent = nombreProveedor;
         document.getElementById('currentPrice').textContent = formatearMoneda(precioConIVA);
 
         // Ocultar resultados y mostrar comparación

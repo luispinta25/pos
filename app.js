@@ -57,6 +57,16 @@ function updateNavbarCounter(moduleName, value = null) {
                 totalAmount.textContent = '-';
             }
             break;
+        case 'cxc':
+            totalLabel.textContent = 'Deudas activas:';
+            if (typeof value === 'number') {
+                totalAmount.textContent = formatCurrency(value);
+            } else if (value !== null && value !== undefined) {
+                totalAmount.textContent = String(value);
+            } else {
+                totalAmount.textContent = '$0.00';
+            }
+            break;
         
         default:
             totalLabel.textContent = 'Total:';

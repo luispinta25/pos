@@ -234,13 +234,31 @@
 
     .venta-card {
         background: white;
-        border: 2px solid #e0e0e0;
+        border: 1px solid #e0e0e0;
         border-radius: 12px;
         padding: 16px;
         cursor: pointer;
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
+        border-left-width: 4px;
+    }
+
+    /* Bordes según tipo y estado */
+    .venta-card.recibo {
+        border-left-color: #4fc3f7; /* Azul celeste */
+    }
+
+    .venta-card.factura-pendiente {
+        border-left-color: #ff9800; /* Naranja */
+    }
+
+    .venta-card.factura-rechazado {
+        border-left-color: #f44336; /* Rojo */
+    }
+
+    .venta-card.factura-autorizado {
+        border-left-color: #4caf50; /* Verde */
     }
 
     .venta-card::before {
@@ -256,9 +274,9 @@
     }
 
     .venta-card:hover {
-        border-color: #d4a017;
         transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(212, 160, 23, 0.2);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        border-left-width: 6px;
     }
 
     .venta-card:hover::before {
@@ -291,13 +309,44 @@
     }
 
     .venta-tipo.recibo {
-        background: #e3f2fd;
-        color: #1976d2;
+        background: #e1f5fe;
+        color: #0277bd;
+        border: 1px solid #4fc3f7;
     }
 
     .venta-tipo.factura {
-        background: #f3e5f5;
-        color: #7b1fa2;
+        background: #fff3e0;
+        color: #e65100;
+        border: 1px solid #ff9800;
+    }
+
+    /* Estados específicos para badges */
+    .estado-badge {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.7em;
+        font-weight: 600;
+        text-transform: uppercase;
+        display: inline-block;
+        margin-left: 8px;
+    }
+
+    .estado-badge.pendiente {
+        background: #fff3e0;
+        color: #e65100;
+        border: 1px solid #ff9800;
+    }
+
+    .estado-badge.rechazado {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #f44336;
+    }
+
+    .estado-badge.autorizado {
+        background: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #4caf50;
     }
 
     .venta-card-body {
@@ -738,11 +787,40 @@
                 minute: '2-digit' 
             });
             
+            // Determinar clase de card según tipo y estado
+            let cardClass = 'venta-card';
+            if (venta.tipo === 'RECIBO') {
+                cardClass += ' recibo';
+            } else if (venta.tipo === 'FACTURA') {
+                const estado = venta.estado.toUpperCase();
+                if (estado === 'PENDIENTE') {
+                    cardClass += ' factura-pendiente';
+                } else if (estado === 'RECHAZADO') {
+                    cardClass += ' factura-rechazado';
+                } else if (estado === 'AUTORIZADO') {
+                    cardClass += ' factura-autorizado';
+                }
+            }
+            
+            // Determinar badge de estado para facturas
+            let estadoBadge = '';
+            if (venta.tipo === 'FACTURA') {
+                const estado = venta.estado.toUpperCase();
+                let badgeClass = 'estado-badge';
+                if (estado === 'PENDIENTE') badgeClass += ' pendiente';
+                else if (estado === 'RECHAZADO') badgeClass += ' rechazado';
+                else if (estado === 'AUTORIZADO') badgeClass += ' autorizado';
+                estadoBadge = `<span class="${badgeClass}">${venta.estado}</span>`;
+            }
+            
             return `
-                <div class="venta-card" onclick="verDetalleVenta('${venta.id}')">
+                <div class="${cardClass}" onclick="verDetalleVenta('${venta.id}')">
                     <div class="venta-card-header">
                         <div class="venta-id">${venta.id_venta}</div>
-                        <div class="venta-tipo ${venta.tipo.toLowerCase()}">${venta.tipo}</div>
+                        <div>
+                            <span class="venta-tipo ${venta.tipo.toLowerCase()}">${venta.tipo}</span>
+                            ${estadoBadge}
+                        </div>
                     </div>
                     <div class="venta-card-body">
                         <div class="venta-info-row">
