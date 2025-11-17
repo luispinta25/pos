@@ -2790,6 +2790,8 @@ function mostrarNotificacionProveedor(mensaje, tipo = 'info') {
     // Usar el sistema de alertas personalizado si está disponible
     if (typeof proveedoresAlert === 'function') {
         proveedoresAlert(mensaje, tipo);
+    } else if (window.showCustomAlert) {
+        window.showCustomAlert(mensaje, tipo);
     } else if (window.showNotification) {
         window.showNotification(mensaje, tipo);
     } else {

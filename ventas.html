@@ -1376,12 +1376,13 @@
         }
         
         // Confirmar conversión
-        if (!confirm(`¿Convertir recibo a factura para:\n\n${cliente.razon_social}\nCI/RUC: ${cliente.cedula}?`)) {
+        const confirmed = await window.showCustomConfirm(`¿Convertir recibo a factura para:<br><br><strong>${cliente.razon_social}</strong><br>CI/RUC: ${cliente.cedula}?`);
+        if (!confirmed) {
             return;
         }
         
         try {
-            window.app?.showToast?.('⌛ Convirtiendo recibo a factura...', 'info', 3000);
+            window.app?.showToast?.('<i class="fas fa-spinner fa-spin"></i> Convirtiendo recibo a factura...', 'info', 3000);
             
             const { venta, detalles, productosMap } = window.ventaActual;
             const db = window.app.db;
@@ -1558,12 +1559,19 @@
             return;
         }
         
-        if (!confirm(`¿Reenviar factura ${venta.doc} al SRI?`)) {
+        // Cerrar el modal de detalles antes de mostrar la confirmación
+        cerrarModalDetalle();
+        
+        // Pequeño delay para asegurar que el modal se cierre completamente
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const confirmed = await window.showCustomConfirm(`¿Reenviar factura <strong>${venta.doc}</strong> al SRI?`);
+        if (!confirmed) {
             return;
         }
         
         try {
-            window.app?.showToast?.('⌛ Reenviando factura al SRI...', 'info', 3000);
+            window.app?.showToast?.('<i class="fas fa-sync-alt fa-spin"></i> Reenviando factura al SRI...', 'info', 3000);
             
             const db = window.app.db;
             

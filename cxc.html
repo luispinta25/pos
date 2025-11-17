@@ -1231,6 +1231,8 @@
         const db = getDB();
         const documento = payload.cedula_ruc.trim();
 
+        console.log('🔍 Buscando deudor existente con documento:', documento);
+
         const { data: deudorExistente, error: errorDeudor } = await db
             .from('deudores')
             .select('*')
@@ -1238,34 +1240,53 @@
             .maybeSingle();
 
         if (errorDeudor) {
-            console.error('Error verificando deudor:', errorDeudor);
+            console.error('❌ Error verificando deudor:', errorDeudor);
         }
 
         if (deudorExistente) {
+            console.log('✅ Deudor encontrado:', deudorExistente);
+            console.log('💰 Crédito disponible actual:', deudorExistente.credito_disponible);
             return deudorExistente;
         }
 
+        console.log('⚠️ Deudor no existe, creando nuevo...');
+        console.log('📄 Datos del payload:', payload);
+
+        // Si no hay límite de crédito, usar 1000 por defecto
+        const limiteCredito = payload.limite_credito != null && Number(payload.limite_credito) > 0 
+            ? Number(payload.limite_credito) 
+            : 1000;
+        const creditoDisponible = limiteCredito;
+
+        console.log('💳 Límite de crédito a usar:', limiteCredito);
+        console.log('💰 Crédito disponible inicial:', creditoDisponible);
+
+        const deudorPayload = {
+            cedula_ruc: payload.cedula_ruc,
+            nombre: payload.nombre,
+            direccion: payload.direccion || null,
+            telefono: payload.telefono || null,
+            email: payload.email || null,
+            limite_credito: limiteCredito,
+            credito_disponible: creditoDisponible,
+            notas: payload.notas || null
+        };
+
+        console.log('📝 Payload para crear deudor:', deudorPayload);
+
         const { data: nuevoDeudor, error: errorInsert } = await db
             .from('deudores')
-            .insert([
-                {
-                    cedula_ruc: payload.cedula_ruc,
-                    nombre: payload.nombre,
-                    direccion: payload.direccion || null,
-                    telefono: payload.telefono || null,
-                    email: payload.email || null,
-                    limite_credito: payload.limite_credito || 0,
-                    credito_disponible: payload.limite_credito || 0,
-                    notas: payload.notas || null
-                }
-            ])
+            .insert([deudorPayload])
             .select()
             .single();
 
         if (errorInsert) {
+            console.error('❌ Error creando deudor:', errorInsert);
             throw errorInsert;
         }
 
+        console.log('✅ Deudor creado exitosamente:', nuevoDeudor);
+        
         await fetchDeudores();
         return nuevoDeudor;
     }
@@ -1442,12 +1463,12 @@
                         detalles.map(async (d) => {
                             const { data: inv } = await db
                                 .from('inventario')
-                                .select('nombre')
+                                .select('producto')
                                 .eq('codigo', d.producto_id)
                                 .maybeSingle();
                             return {
                                 cantidad: d.cantidad,
-                                nombre: inv?.nombre || d.producto_id || 'Producto',
+                                nombre: inv?.producto || d.producto_id || 'Producto',
                                 precio: d.precio
                             };
                         })

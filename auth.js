@@ -164,7 +164,7 @@ async function logout() {
         showLogin();
 
     } catch (error) {
-        alert('Error al cerrar sesión: ' + error.message);
+        await window.showCustomAlert('Error al cerrar sesión: ' + error.message, 'error');
     }
 }
 
@@ -301,8 +301,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Botón de logout
-    document.getElementById('logoutBtn')?.addEventListener('click', () => {
-        if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+        const confirmed = await window.showCustomConfirm('¿Estás seguro de que deseas cerrar sesión?');
+        if (confirmed) {
             logout();
         }
     });

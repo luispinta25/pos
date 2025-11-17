@@ -127,6 +127,31 @@
         <div id="moduleContainer" class="module-container">
         </div>
 
+        
+        <div class="custom-modal-overlay" id="customModalOverlay">
+            <div class="custom-modal">
+                <div class="custom-modal-header">
+                    <div class="custom-modal-icon" id="customModalIcon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="custom-modal-title" id="customModalTitle">Título</div>
+                    <button class="custom-modal-close" id="customModalClose">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="custom-modal-body">
+                    <div class="custom-modal-message" id="customModalMessage">Mensaje</div>
+                    <div class="custom-modal-input-container" id="customModalInputContainer" style="display: none;">
+                        <input type="text" class="custom-modal-input" id="customModalInput" placeholder="Ingrese valor...">
+                    </div>
+                </div>
+                <div class="custom-modal-footer">
+                    <button class="btn btn-secondary custom-modal-btn" id="customModalCancel">Cancelar</button>
+                    <button class="btn btn-primary custom-modal-btn" id="customModalConfirm">Aceptar</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     
@@ -237,6 +262,163 @@
 
         .app-screen {
             min-height: 100vh;
+        }
+
+        /* =====================================================
+           MODALES PERSONALIZADOS GLOBALES
+           ===================================================== */
+
+        .custom-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .custom-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .custom-modal {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .custom-modal-overlay.active .custom-modal {
+            transform: scale(1);
+        }
+
+        .custom-modal-header {
+            display: flex;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid #eee;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #ffffff;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .custom-modal-icon {
+            font-size: 24px;
+            margin-right: 15px;
+            color: #d4a017;
+        }
+
+        .custom-modal-title {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .custom-modal-close {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .custom-modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+
+        .custom-modal-body {
+            padding: 25px;
+        }
+
+        .custom-modal-message {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #333333;
+            margin-bottom: 15px;
+        }
+
+        .custom-modal-input-container {
+            margin-top: 15px;
+        }
+
+        .custom-modal-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 15px;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+        }
+
+        .custom-modal-input:focus {
+            outline: none;
+            border-color: #d4a017;
+            box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.1);
+        }
+
+        .custom-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 20px 25px;
+            border-top: 1px solid #eee;
+            background: #f8f9fa;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .custom-modal-btn {
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            min-width: 80px;
+        }
+
+        .custom-modal-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Tipos de modal */
+        .custom-modal-info .custom-modal-icon {
+            color: #17a2b8;
+        }
+
+        .custom-modal-success .custom-modal-icon {
+            color: #28a745;
+        }
+
+        .custom-modal-warning .custom-modal-icon {
+            color: #ffc107;
+        }
+
+        .custom-modal-error .custom-modal-icon {
+            color: #dc3545;
+        }
+
+        .custom-modal-confirm .custom-modal-icon {
+            color: #ffc107;
+        }
+
+        .custom-modal-prompt .custom-modal-icon {
+            color: #17a2b8;
         }
 
     </style>
