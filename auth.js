@@ -231,6 +231,11 @@ function showAuthMessage(message, type = 'error') {
 
 document.addEventListener('DOMContentLoaded', () => {
     
+    // No ejecutar si estamos en un módulo personalizado (como Contabilidad)
+    if (window.CONTABILIDAD_MODULE) {
+        return;
+    }
+    
     // Inicializar autenticación
     initAuth();
 

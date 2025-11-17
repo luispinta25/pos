@@ -381,11 +381,20 @@
                 <i class="fas fa-check-circle"></i>
             </div>
             <h3 style="margin: 0 0 10px 0; color: #333; font-size: 1.3em;">Venta Exitosa</h3>
-            <p style="color: #666; font-size: 1.1em; margin: 0 0 20px 0;">
+            <p style="color: #666; font-size: 1.1em; margin: 0 0 10px 0;">
                 Código de venta: <strong id="modalExitoCodigoVenta" style="color: #4CAF50;">-</strong>
             </p>
-            <p style="color: #999; font-size: 0.9em; margin: 0;">
-                <i class="fas fa-keyboard"></i> Presione <strong>Enter</strong> para continuar
+            <p id="modalExitoTipoDoc" style="color: #888; font-size: 0.9em; margin: 0 0 20px 0;"></p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button id="btnReimprimirComprobante" class="btn btn-secondary" onclick="reimprimirUltimoComprobante()" style="padding: 12px 20px;">
+                    <i class="fas fa-print"></i> Reimprimir Comprobante
+                </button>
+                <button id="btnAceptarVenta" class="btn btn-primary" onclick="cerrarModalExitoVenta()" style="padding: 12px 30px;">
+                    <i class="fas fa-check"></i> Aceptar
+                </button>
+            </div>
+            <p style="color: #999; font-size: 0.85em; margin: 15px 0 0 0;">
+                <i class="fas fa-keyboard"></i> Presione <strong>Enter</strong> para aceptar
             </p>
         </div>
     </div>
@@ -7561,37 +7570,52 @@
                         window.app?.showToast?.('No se pudo completar el envío al SRI. Revisa la consola para más detalles.', 'danger', 7000);
                     });
                 }
+                
+                // Mostrar modal con datos para reimpresión
+                mostrarModalExitoVenta(ventaIdText, {
+                    tipo: 'FACTURA',
+                    facturaData: datosFacturaVenta
+                });
             } else {
-                // Si la venta es menor a $4, no imprimir recibo
+                // Preparar datos del recibo para todas las ventas
+                const reciboData = {
+                    saleCode: ventaIdText,
+                    fecha: fechaActual,
+                    total: totalConIva,
+                    pagadoCon: pagadoCon,
+                    vuelto: vuelto,
+                    cliente: ventaState.clienteSeleccionado || {
+                        cedula: '9999999999999',
+                        razon_social: 'CONSUMIDOR FINAL',
+                        direccion: 'S/N',
+                        telefono: 'S/N',
+                        correo: 'S/N'
+                    },
+                    productos: ventaState.carrito.map(item => ({
+                        codigo: item.codigo,
+                        nombre: item.nombre,
+                        cantidad: item.cantidad,
+                        precio: item.precio,
+                        subtotal: item.cantidad * item.precio
+                    }))
+                };
+                
+                // Si la venta es menor a $4, no imprimir automáticamente pero guardar datos
                 if (totalConIva < 4) {
-                    mostrarModalExitoVenta(ventaIdText);
+                    mostrarModalExitoVenta(ventaIdText, {
+                        tipo: 'RECIBO',
+                        reciboData: reciboData
+                    });
                 } else {
                     // Abrir recibo en nueva pestaña
-                    abrirRecibo({
-                        saleCode: ventaIdText,
-                        fecha: fechaActual,
-                        total: totalConIva,
-                        pagadoCon: pagadoCon,
-                        vuelto: vuelto,
-                        cliente: ventaState.clienteSeleccionado || {
-                            cedula: '9999999999999',
-                            razon_social: 'CONSUMIDOR FINAL',
-                            direccion: 'S/N',
-                            telefono: 'S/N',
-                            correo: 'S/N'
-                        },
-                        productos: ventaState.carrito.map(item => ({
-                            codigo: item.codigo,
-                            nombre: item.nombre,
-                            cantidad: item.cantidad,
-                            precio: item.precio,
-                            subtotal: item.cantidad * item.precio
-                        }))
-                    });
+                    abrirRecibo(reciboData);
                     
                     // Mostrar modal de éxito después de abrir recibo
                     setTimeout(() => {
-                        mostrarModalExitoVenta(ventaIdText);
+                        mostrarModalExitoVenta(ventaIdText, {
+                            tipo: 'RECIBO',
+                            reciboData: reciboData
+                        });
                     }, 500);
                 }
             }
@@ -7700,51 +7724,99 @@
     // MODAL DE ÉXITO DE VENTA
     // =====================================================
     
-    function mostrarModalExitoVenta(codigoVenta) {
+    function mostrarModalExitoVenta(codigoVenta, datosVenta = null) {
         const modal = document.getElementById('modalExitoVenta');
         const codigoElement = document.getElementById('modalExitoCodigoVenta');
+        const tipoDocElement = document.getElementById('modalExitoTipoDoc');
         
         if (codigoElement) {
             codigoElement.textContent = codigoVenta;
         }
         
+        // Guardar datos de la última venta para reimpresión
+        if (datosVenta) {
+            window.ultimaVentaRegistrada = datosVenta;
+            if (tipoDocElement) {
+                const tipo = datosVenta.tipo === 'FACTURA' ? 'Factura Electrónica' : 'Recibo';
+                tipoDocElement.textContent = `Tipo: ${tipo}`;
+            }
+        }
+        
         // Mostrar modal
         modal.classList.add('active');
         
-        // Crear handler para Enter
-        const handleEnter = (e) => {
-            if (e.key === 'Enter') {
+        // Remover listener anterior si existe
+        if (window.modalExitoEnterHandler) {
+            document.removeEventListener('keydown', window.modalExitoEnterHandler);
+        }
+        
+        // Crear handler para Enter (solo acepta, no cierra automático)
+        window.modalExitoEnterHandler = (e) => {
+            if (e.key === 'Enter' && modal.classList.contains('active')) {
                 e.preventDefault();
+                e.stopPropagation();
                 cerrarModalExitoVenta();
-                document.removeEventListener('keydown', handleEnter);
             }
         };
         
         // Agregar listener
-        document.addEventListener('keydown', handleEnter);
+        document.addEventListener('keydown', window.modalExitoEnterHandler);
         
-        // Auto-cerrar después de 3 segundos y enfocar búsqueda
+        // Enfocar el botón de Aceptar para que Enter funcione
         setTimeout(() => {
-            if (modal.classList.contains('active')) {
-                cerrarModalExitoVenta();
-                document.removeEventListener('keydown', handleEnter);
-            }
-        }, 3000);
+            const btnAceptar = document.getElementById('btnAceptarVenta');
+            if (btnAceptar) btnAceptar.focus();
+        }, 100);
     }
     
     function cerrarModalExitoVenta() {
         const modal = document.getElementById('modalExitoVenta');
         modal.classList.remove('active');
         
+        // Remover listener de Enter
+        if (window.modalExitoEnterHandler) {
+            document.removeEventListener('keydown', window.modalExitoEnterHandler);
+            window.modalExitoEnterHandler = null;
+        }
+        
         // Enfocar búsqueda
         setTimeout(() => {
-            document.getElementById('searchInput').focus();
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.focus();
         }, 200);
+    }
+    
+    function reimprimirUltimoComprobante() {
+        if (!window.ultimaVentaRegistrada) {
+            window.app?.showToast?.('No hay datos de venta para reimprimir', 'warning', 3000);
+            return;
+        }
+        
+        const datos = window.ultimaVentaRegistrada;
+        
+        if (datos.tipo === 'FACTURA') {
+            if (!datos.facturaData) {
+                window.app?.showToast?.('No hay datos de factura disponibles', 'error', 3000);
+                return;
+            }
+            // Reimprimir factura electrónica
+            abrirFacturaElectronica(datos.facturaData);
+            window.app?.showToast?.('Reabriendo factura...', 'info', 2000);
+        } else {
+            if (!datos.reciboData) {
+                window.app?.showToast?.('No hay datos de recibo disponibles', 'error', 3000);
+                return;
+            }
+            // Reimprimir recibo
+            abrirRecibo(datos.reciboData);
+            window.app?.showToast?.('Reabriendo recibo...', 'info', 2000);
+        }
     }
     
     // Exportar funciones
     window.mostrarModalExitoVenta = mostrarModalExitoVenta;
     window.cerrarModalExitoVenta = cerrarModalExitoVenta;
+    window.reimprimirUltimoComprobante = reimprimirUltimoComprobante;
 
     // =====================================================
     // EXPORTAR FUNCIONES GLOBALES
