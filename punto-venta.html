@@ -249,6 +249,43 @@
 </div>
 
 
+<div id="modalCajaInicial" class="modal-caja-overlay">
+    <div class="modal-caja-container">
+        <div class="modal-caja-header">
+            <h2><i class="fas fa-door-open"></i> Registro de Caja Inicial</h2>
+        </div>
+        <div class="modal-caja-body">
+            <p class="modal-caja-description">
+                Ingresa el efectivo encontrado en la caja física antes de iniciar las ventas del día.
+                Este paso es obligatorio para habilitar el punto de venta.
+            </p>
+            <div class="modal-caja-form">
+                <div id="cajaInicialEsperadoWrapper" class="modal-caja-expected" style="display: none;">
+                    <div class="modal-caja-expected-text">
+                        <span id="cajaInicialEsperadoLabel">Valor esperado (caja anterior)</span>
+                        <small id="cajaInicialEsperadoFecha"></small>
+                    </div>
+                    <strong id="cajaInicialEsperadoValor">$0.00</strong>
+                </div>
+                <label for="cajaInicialMontoInput">Efectivo contado*</label>
+                <input type="number" id="cajaInicialMontoInput" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="modal-caja-form">
+                <label for="cajaInicialNotasInput">Observaciones (opcional)</label>
+                <textarea id="cajaInicialNotasInput" rows="2" placeholder="Ej. Base entregada por turno anterior"></textarea>
+            </div>
+            <div id="modalCajaInicialError" class="modal-caja-error" style="display: none;"></div>
+            <div id="modalCajaInicialInfo" class="modal-caja-info" style="display: none;"></div>
+        </div>
+        <div class="modal-caja-footer">
+            <button id="btnGuardarCajaInicial" class="btn-guardar-caja">
+                <i class="fas fa-save"></i> Guardar caja inicial
+            </button>
+        </div>
+    </div>
+</div>
+
+
             <div id="modalCreditoVenta" class="modal-venta-overlay">
                 <div class="modal-venta-container credit-modal">
                     <div class="modal-venta-header">
@@ -1811,6 +1848,176 @@
         animation: fadeIn 0.2s ease-out;
     }
 
+    .modal-caja-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.85);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        backdrop-filter: blur(6px);
+    }
+
+    .modal-caja-overlay.active {
+        display: flex;
+    }
+
+    .modal-caja-container {
+        width: 100%;
+        max-width: 480px;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 25px 70px rgba(15, 23, 42, 0.35);
+        overflow: hidden;
+        animation: modalBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-caja-header {
+        padding: 22px 26px;
+        background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .modal-caja-header h2 {
+        margin: 0;
+        font-size: 1.35em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .modal-caja-body {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .modal-caja-description {
+        margin: 0;
+        color: #475569;
+        font-size: 0.95em;
+        line-height: 1.5;
+    }
+
+    .modal-caja-form {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-caja-form label {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 0.95em;
+    }
+
+    .modal-caja-expected {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #1f2937;
+        font-size: 0.92em;
+    }
+
+    .modal-caja-expected-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .modal-caja-expected-text span {
+        font-weight: 600;
+    }
+
+    .modal-caja-expected-text small {
+        font-size: 0.75em;
+        color: #64748b;
+    }
+
+    .modal-caja-expected strong {
+        font-size: 1em;
+        color: #0f172a;
+    }
+
+    #cajaInicialMontoInput,
+    #cajaInicialNotasInput {
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        font-size: 1em;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    #cajaInicialMontoInput:focus,
+    #cajaInicialNotasInput:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .modal-caja-error {
+        border-radius: 8px;
+        background: #fee2e2;
+        border: 1px solid #f87171;
+        color: #b91c1c;
+        padding: 10px 12px;
+        font-size: 0.92em;
+    }
+
+    .modal-caja-info {
+        border-radius: 8px;
+        background: #ecfdf5;
+        border: 1px solid #34d399;
+        color: #047857;
+        padding: 10px 12px;
+        font-size: 0.92em;
+    }
+
+    .modal-caja-footer {
+        padding: 18px 24px 24px;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .btn-guardar-caja {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
+        padding: 12px 22px;
+        border-radius: 10px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    .btn-guardar-caja:hover {
+        background: #1d4ed8;
+    }
+
+    .btn-guardar-caja:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
     .modal-venta-container {
         background: white;
         border-radius: 16px;
@@ -2326,6 +2533,10 @@
         window.ventaState = {
             carrito: [],
             clienteSeleccionado: null,
+            cajaInicial: null,
+            cajaInicialFecha: null,
+            cajaInicialVerificada: false,
+            cajaInicialEsperada: null,
             tipoComprobante: 'RECIBO',
             // Datos temporales para venta a crédito
             credito: {
@@ -2364,6 +2575,18 @@
     if (!ventaState.credito) {
         ventaState.credito = { total: 0, abono: 0, saldo: 0 };
     }
+    if (typeof ventaState.cajaInicial === 'undefined') {
+        ventaState.cajaInicial = null;
+    }
+    if (typeof ventaState.cajaInicialFecha === 'undefined') {
+        ventaState.cajaInicialFecha = null;
+    }
+    if (typeof ventaState.cajaInicialVerificada === 'undefined') {
+        ventaState.cajaInicialVerificada = false;
+    }
+    if (typeof ventaState.cajaInicialEsperada === 'undefined') {
+        ventaState.cajaInicialEsperada = null;
+    }
 
     // =====================================================
     // SISTEMA DE CACHÉ DE INVENTARIO
@@ -2391,6 +2614,335 @@
     // Tokens API para webservices
     let API_TOKENS = {};
     
+    // =====================================================
+    // CAJA INICIAL
+    // =====================================================
+
+    const cajaInicialUI = {
+        overlay: document.getElementById('modalCajaInicial'),
+        montoInput: document.getElementById('cajaInicialMontoInput'),
+        notasInput: document.getElementById('cajaInicialNotasInput'),
+        errorBox: document.getElementById('modalCajaInicialError'),
+        infoBox: document.getElementById('modalCajaInicialInfo'),
+        submitBtn: document.getElementById('btnGuardarCajaInicial'),
+        esperadoWrapper: document.getElementById('cajaInicialEsperadoWrapper'),
+        esperadoLabel: document.getElementById('cajaInicialEsperadoLabel'),
+        esperadoValor: document.getElementById('cajaInicialEsperadoValor'),
+        esperadoFecha: document.getElementById('cajaInicialEsperadoFecha')
+    };
+
+    function setupCajaInicialModal() {
+        const { submitBtn, montoInput, notasInput } = cajaInicialUI;
+        if (!submitBtn || submitBtn.dataset.listeners === 'ready') {
+            return;
+        }
+
+        submitBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            guardarCajaInicial();
+        });
+
+        if (montoInput) {
+            montoInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    guardarCajaInicial();
+                }
+            });
+        }
+
+        if (notasInput) {
+            notasInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' && event.ctrlKey) {
+                    event.preventDefault();
+                    guardarCajaInicial();
+                }
+            });
+        }
+
+        submitBtn.dataset.listeners = 'ready';
+    }
+
+    function limpiarMensajesCajaInicial() {
+        if (cajaInicialUI.errorBox) {
+            cajaInicialUI.errorBox.textContent = '';
+            cajaInicialUI.errorBox.style.display = 'none';
+        }
+        if (cajaInicialUI.infoBox) {
+            cajaInicialUI.infoBox.textContent = '';
+            cajaInicialUI.infoBox.style.display = 'none';
+        }
+    }
+
+    function mostrarErrorCajaInicial(mensaje) {
+        if (!cajaInicialUI.errorBox) return;
+        cajaInicialUI.errorBox.textContent = mensaje;
+        cajaInicialUI.errorBox.style.display = 'block';
+    }
+
+    function mostrarInfoCajaInicial(mensaje) {
+        if (!cajaInicialUI.infoBox) return;
+        cajaInicialUI.infoBox.textContent = mensaje;
+        cajaInicialUI.infoBox.style.display = mensaje ? 'block' : 'none';
+    }
+
+    function actualizarValorEsperadoCajaInicial({ monto, fecha } = {}) {
+        const { esperadoWrapper, esperadoLabel, esperadoValor, esperadoFecha } = cajaInicialUI;
+        if (!esperadoWrapper || !esperadoLabel || !esperadoValor) {
+            return;
+        }
+
+        if (typeof monto !== 'number' || Number.isNaN(monto)) {
+            esperadoWrapper.style.display = 'none';
+            esperadoLabel.textContent = 'Valor esperado (caja anterior)';
+            esperadoValor.textContent = '';
+            if (esperadoFecha) {
+                esperadoFecha.textContent = '';
+            }
+            return;
+        }
+
+        const montoNormalizado = Math.round(Number(monto) * 100) / 100;
+        const formato = (window.app && typeof window.app.formatCurrency === 'function')
+            ? window.app.formatCurrency(montoNormalizado)
+            : `$${montoNormalizado.toFixed(2)}`;
+
+        esperadoWrapper.style.display = 'flex';
+        esperadoLabel.textContent = 'Valor esperado (caja anterior)';
+        esperadoValor.textContent = formato;
+        if (esperadoFecha) {
+            const fechaTexto = formatearFechaCortaLocal(fecha);
+            esperadoFecha.textContent = fechaTexto ? `Del ${fechaTexto}` : '';
+        }
+    }
+
+    function setCajaInicialLoading(isLoading) {
+        const { submitBtn } = cajaInicialUI;
+        if (!submitBtn) return;
+
+        submitBtn.disabled = isLoading;
+        submitBtn.innerHTML = isLoading
+            ? '<i class="fas fa-spinner fa-spin"></i> Guardando...'
+            : '<i class="fas fa-save"></i> Guardar caja inicial';
+    }
+
+    function mostrarModalCajaInicial({ focusMonto = false } = {}) {
+        const { overlay, montoInput } = cajaInicialUI;
+        if (!overlay) return;
+
+        overlay.classList.add('active');
+
+        if (focusMonto && montoInput) {
+            setTimeout(() => {
+                montoInput.focus();
+                montoInput.select();
+            }, 50);
+        }
+    }
+
+    async function obtenerCajaFisicaAnterior(supabase, fechaISO) {
+        if (!supabase || !fechaISO) {
+            return null;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('caja_diaria')
+                .select('fecha, caja_fisica_contada')
+                .lt('fecha', fechaISO)
+                .order('fecha', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (error && error.code !== 'PGRST116') {
+                throw error;
+            }
+
+            if (!data) {
+                return null;
+            }
+
+            const monto = Number(data.caja_fisica_contada);
+            return {
+                fecha: data.fecha,
+                monto: Number.isFinite(monto) ? Math.round(monto * 100) / 100 : 0
+            };
+        } catch (error) {
+            console.error('Error al obtener caja física anterior:', error);
+            return null;
+        }
+    }
+
+    function ocultarModalCajaInicial() {
+        if (!cajaInicialUI.overlay) return;
+        cajaInicialUI.overlay.classList.remove('active');
+        limpiarMensajesCajaInicial();
+        if (cajaInicialUI.montoInput) {
+            cajaInicialUI.montoInput.value = '';
+        }
+        if (cajaInicialUI.notasInput) {
+            cajaInicialUI.notasInput.value = '';
+        }
+        actualizarValorEsperadoCajaInicial();
+        if (ventaState) {
+            ventaState.cajaInicialEsperada = null;
+        }
+        setCajaInicialLoading(false);
+    }
+
+    async function verificarCajaInicialDelDia(options = {}) {
+        const { forceConsulta = false } = options;
+        const fechaISO = obtenerFechaISOHoy();
+
+        if (!forceConsulta && ventaState.cajaInicial && ventaState.cajaInicial.fecha === fechaISO) {
+            ventaState.cajaInicialVerificada = true;
+            return ventaState.cajaInicial;
+        }
+
+        try {
+            limpiarMensajesCajaInicial();
+
+            const supabase = typeof getSupabaseClient === 'function' ? getSupabaseClient() : (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+            if (!supabase) {
+                throw new Error('No se pudo inicializar la conexión con la base de datos.');
+            }
+
+            const { data, error } = await supabase
+                .from('caja_inicial')
+                .select('*')
+                .eq('fecha', fechaISO)
+                .maybeSingle();
+
+            if (error && error.code !== 'PGRST116') {
+                throw error;
+            }
+
+            if (data) {
+                ventaState.cajaInicial = data;
+                ventaState.cajaInicialFecha = data.fecha;
+                ventaState.cajaInicialVerificada = true;
+                ocultarModalCajaInicial();
+                return data;
+            }
+
+            ventaState.cajaInicial = null;
+            ventaState.cajaInicialFecha = fechaISO;
+            ventaState.cajaInicialVerificada = true;
+
+            mostrarModalCajaInicial({ focusMonto: false });
+
+            const anterior = await obtenerCajaFisicaAnterior(supabase, fechaISO);
+            const montoEsperado = anterior ? Number(anterior.monto || anterior.caja_fisica_contada || 0) : null;
+
+            if (anterior && Number.isFinite(montoEsperado)) {
+                const montoNormalizado = Math.round(montoEsperado * 100) / 100;
+                ventaState.cajaInicialEsperada = {
+                    fecha: anterior.fecha,
+                    monto: montoNormalizado
+                };
+                actualizarValorEsperadoCajaInicial({ monto: montoNormalizado, fecha: anterior.fecha });
+                const fechaTexto = formatearFechaCortaLocal(anterior.fecha);
+                const mensaje = fechaTexto
+                    ? `Valor esperado calculado con el cierre del ${fechaTexto}. Ajusta solo si hubo movimientos fuera del sistema.`
+                    : 'Valor esperado calculado con la última caja cerrada. Ajusta si hubo movimientos fuera del sistema.';
+                mostrarInfoCajaInicial(mensaje);
+                if (cajaInicialUI.montoInput) {
+                    cajaInicialUI.montoInput.value = montoNormalizado.toFixed(2);
+                }
+            } else {
+                ventaState.cajaInicialEsperada = null;
+                actualizarValorEsperadoCajaInicial();
+                mostrarInfoCajaInicial('Registra el efectivo contado antes de iniciar la jornada.');
+                if (cajaInicialUI.montoInput) {
+                    cajaInicialUI.montoInput.value = '';
+                }
+            }
+
+            if (cajaInicialUI.montoInput) {
+                setTimeout(() => {
+                    cajaInicialUI.montoInput.focus();
+                    if (anterior && Number.isFinite(montoEsperado)) {
+                        cajaInicialUI.montoInput.select();
+                    }
+                }, 60);
+            }
+
+            setCajaInicialLoading(false);
+            return null;
+        } catch (error) {
+            console.error('Error al verificar caja inicial:', error);
+            ventaState.cajaInicialVerificada = false;
+            mostrarModalCajaInicial({ focusMonto: true });
+            mostrarErrorCajaInicial('No se pudo verificar la caja inicial. Revisa tu conexión e intenta nuevamente.');
+            actualizarValorEsperadoCajaInicial();
+            ventaState.cajaInicialEsperada = null;
+            setCajaInicialLoading(false);
+            return null;
+        }
+    }
+
+    async function guardarCajaInicial() {
+        const fechaISO = obtenerFechaISOHoy();
+        const { montoInput, notasInput } = cajaInicialUI;
+
+        if (!montoInput) {
+            return;
+        }
+
+        const monto = parseFloat(montoInput.value);
+        if (Number.isNaN(monto) || monto < 0) {
+            mostrarErrorCajaInicial('Ingresa un monto válido mayor o igual a 0.');
+            montoInput.focus();
+            return;
+        }
+
+        limpiarMensajesCajaInicial();
+        setCajaInicialLoading(true);
+
+        try {
+            const supabase = typeof getSupabaseClient === 'function' ? getSupabaseClient() : (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+            if (!supabase) {
+                throw new Error('No se pudo inicializar la conexión con la base de datos.');
+            }
+
+            const usuario = window.auth?.getCurrentUser?.();
+            const email = window.auth?.getUserEmail?.() || usuario?.email || null;
+            const nombres = window.auth?.getUserNombres?.() || '';
+            const apellidos = window.auth?.getUserApellidos?.() || '';
+            const nombreCompleto = `${nombres} ${apellidos}`.trim() || email;
+
+            const montoNormalizado = Math.round(monto * 100) / 100;
+
+            const payload = {
+                fecha: fechaISO,
+                monto_inicial: montoNormalizado,
+                observaciones: notasInput && notasInput.value ? notasInput.value.trim() || null : null,
+                registrado_por: usuario?.id || null,
+                registrado_por_email: email,
+                registrado_por_nombre: nombreCompleto || null
+            };
+
+            const { data, error } = await supabase
+                .from('caja_inicial')
+                .upsert(payload, { onConflict: 'fecha' })
+                .select()
+                .maybeSingle();
+
+            if (error) throw error;
+
+            ventaState.cajaInicial = data;
+            ventaState.cajaInicialFecha = data?.fecha || fechaISO;
+            ventaState.cajaInicialVerificada = true;
+
+            ocultarModalCajaInicial();
+            window.app.showToast('<i class="fas fa-door-open"></i> Caja inicial registrada correctamente.', 'success', 3000);
+        } catch (error) {
+            console.error('Error al guardar caja inicial:', error);
+            mostrarErrorCajaInicial(error.message || 'No se pudo guardar la caja inicial.');
+            setCajaInicialLoading(false);
+        }
+    }
+
     // Control de actualizaciones automáticas
     let actualizacionTimer = null;
     let ultimaBusqueda = Date.now();
@@ -3012,6 +3564,9 @@
     // =====================================================
 
     async function initPuntoVenta() {
+        setupCajaInicialModal();
+        await verificarCajaInicialDelDia({ forceConsulta: true });
+
         // Cargar carrito desde caché y actualizar vista
         actualizarCarrito();
         
@@ -3056,16 +3611,22 @@
                 const customConfirm = document.getElementById('custom-confirm-overlay');
                 const modalActualizarCliente = document.getElementById('modalActualizarCliente');
                 const modalRegistroCliente = document.getElementById('modalRegistroCliente');
+                const modalCajaInicial = document.getElementById('modalCajaInicial');
                 
                 const hayModalAbierto = (modalCantidad && modalCantidad.classList.contains('active')) ||
                                        (modalVenta && modalVenta.classList.contains('active')) ||
                                        (modalCredito && modalCredito.classList.contains('active')) ||
                                        (customConfirm && customConfirm.classList.contains('active')) ||
                                        (modalActualizarCliente && modalActualizarCliente.classList.contains('active')) ||
-                                       (modalRegistroCliente && modalRegistroCliente.classList.contains('active'));
+                                       (modalRegistroCliente && modalRegistroCliente.classList.contains('active')) ||
+                                       (modalCajaInicial && modalCajaInicial.classList.contains('active'));
                 
                 // ESC cierra modales
                 if (e.key === 'Escape') {
+                    if (modalCajaInicial && modalCajaInicial.classList.contains('active')) {
+                        e.preventDefault();
+                        return;
+                    }
                     if (modalRegistroCliente && modalRegistroCliente.classList.contains('active')) {
                         e.preventDefault();
                         cerrarModalRegistroCliente();
@@ -3734,6 +4295,27 @@
             fecha.setDate(fecha.getDate() + offsetDias);
         }
         return fecha.toISOString().split('T')[0];
+    }
+
+    function formatearFechaCortaLocal(fechaISO) {
+        if (!fechaISO || typeof fechaISO !== 'string') {
+            return '';
+        }
+        const partes = fechaISO.split('-');
+        if (partes.length !== 3) {
+            return '';
+        }
+        const year = Number(partes[0]);
+        const month = Number(partes[1]) - 1;
+        const day = Number(partes[2]);
+        if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+            return '';
+        }
+        const fecha = new Date(year, month, day);
+        if (Number.isNaN(fecha.getTime())) {
+            return '';
+        }
+        return fecha.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
     function normalizarMontoCredito(valor) {
@@ -5519,11 +6101,21 @@
         document.querySelector(`[data-tipo="${tipo}"]`).classList.add('active');
     }
 
-    function procesarVentaConValidacion() {
+    async function procesarVentaConValidacion() {
         // Validar que el carrito no esté vacío
         if (ventaState.carrito.length === 0) {
             window.app.showToast('<i class="fas fa-exclamation-triangle"></i> El carrito está vacío. Agrega productos para continuar.', 'warning', 3000);
             return;
+        }
+
+        const hoyISO = obtenerFechaISOHoy();
+        if (!ventaState.cajaInicial || ventaState.cajaInicial.fecha !== hoyISO) {
+            await verificarCajaInicialDelDia({ forceConsulta: true });
+            if (!ventaState.cajaInicial || ventaState.cajaInicial.fecha !== hoyISO) {
+                window.app.showToast('<i class="fas fa-door-closed"></i> Debes registrar la caja inicial antes de confirmar una venta.', 'warning', 3500);
+                mostrarModalCajaInicial({ focusMonto: true });
+                return;
+            }
         }
         
         // SOLUCIÓN BUG: Validación de seguridad del botón
