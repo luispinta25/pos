@@ -90,6 +90,10 @@
                     <i class="fas fa-bell"></i>
                     Notificar Visita
                 </button>
+                <button class="btn btn-warning" onclick="mostrarModalFacturaEmergencia()">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Factura Emergencia
+                </button>
             </div>
         </div>
 
@@ -1376,6 +1380,79 @@
         }
     }
 </style>
+
+
+<div id="modalFacturaEmergencia" class="modal">
+    <div class="modal-overlay" onclick="cerrarModalFacturaEmergencia()"></div>
+    <div class="modal-content modal-lg">
+        <div class="modal-header" style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);">
+            <h3>
+                <i class="fas fa-file-invoice-dollar"></i>
+                Nueva Factura de Emergencia
+            </h3>
+            <button class="modal-close" onclick="cerrarModalFacturaEmergencia()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="modal-body">
+            <div class="alert alert-info" style="margin-bottom: 20px; background-color: #e3f2fd; color: #0c5460; padding: 10px; border-radius: 8px; border: 1px solid #bee5eb;">
+                <i class="fas fa-info-circle"></i>
+                Esta opción permite registrar facturas sin productos detallados (gastos, servicios, facturas antiguas, etc).
+            </div>
+
+            <form id="formFacturaEmergencia" class="form-grid">
+                <div class="form-group">
+                    <label class="form-label required">Proveedor</label>
+                    <select id="emergenciaProveedor" class="form-select" required onchange="actualizarDeudaProveedorEmergencia()">
+                        <option value="">Seleccionar proveedor...</option>
+                    </select>
+                    <div id="emergenciaDeudaInfo" class="text-info" style="font-size: 0.9em; margin-top: 5px; display: none;">
+                        <i class="fas fa-info-circle"></i> Deuda actual: <span id="emergenciaDeudaMonto" style="font-weight: bold;">$0.00</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Número de Factura</label>
+                    <input type="text" id="emergenciaNumero" class="form-input" placeholder="001-001-000000000" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Fecha de Emisión</label>
+                    <input type="date" id="emergenciaFechaEmision" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Fecha de Vencimiento</label>
+                    <input type="date" id="emergenciaFechaVencimiento" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Total Factura</label>
+                    <div class="input-group">
+                        <span class="input-prefix">$</span>
+                        <input type="number" id="emergenciaTotal" class="form-input" step="0.01" min="0.01" placeholder="0.00" required>
+                    </div>
+                </div>
+                
+                <div class="form-group form-full">
+                    <label class="form-label">Notas / Observaciones</label>
+                    <textarea id="emergenciaNotas" class="form-textarea" rows="3" placeholder="Detalles adicionales sobre esta factura..."></textarea>
+                </div>
+                
+                <div class="form-actions form-full">
+                    <button type="button" class="btn btn-secondary" onclick="cerrarModalFacturaEmergencia()">
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-accent" onclick="guardarFacturaEmergencia(event)" style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); border: none;">
+                        <i class="fas fa-save"></i>
+                        Guardar Factura
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script>
 // MÓDULO PROVEEDORES - Gestión de Facturas
@@ -3044,6 +3121,154 @@ function cerrarAlertaModal() {
 }
 
 // =====================================================
+// MODAL FACTURA EMERGENCIA
+// =====================================================
+
+function mostrarModalFacturaEmergencia() {
+    const modal = document.getElementById('modalFacturaEmergencia');
+    const form = document.getElementById('formFacturaEmergencia');
+    const selectProveedor = document.getElementById('emergenciaProveedor');
+    
+    // Resetear formulario
+    form.reset();
+    
+    // Llenar selector de proveedores
+    selectProveedor.innerHTML = '<option value="">Seleccionar proveedor...</option>';
+    
+    // Usar los proveedores ya cargados en memoria
+    if (proveedoresData.proveedores && proveedoresData.proveedores.length > 0) {
+        proveedoresData.proveedores.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.id;
+            option.textContent = p.empresa;
+            selectProveedor.appendChild(option);
+        });
+    } else {
+        // Si no hay proveedores cargados, intentar cargarlos
+        cargarProveedoresData().then(() => {
+            proveedoresData.proveedores.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.empresa;
+                selectProveedor.appendChild(option);
+            });
+        });
+    }
+    
+    // Establecer fecha de hoy por defecto
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('emergenciaFechaEmision').value = today;
+    document.getElementById('emergenciaFechaVencimiento').value = today;
+    
+    modal.classList.add('show');
+}
+
+function actualizarDeudaProveedorEmergencia() {
+    const proveedorId = document.getElementById('emergenciaProveedor')?.value;
+    const infoDiv = document.getElementById('emergenciaDeudaInfo');
+    const montoSpan = document.getElementById('emergenciaDeudaMonto');
+    
+    if (!infoDiv || !montoSpan) return;
+    
+    if (!proveedorId) {
+        infoDiv.style.display = 'none';
+        return;
+    }
+    
+    // Calcular deuda
+    const facturasProveedor = proveedoresData.facturas.filter(f => f.proveedor_id === proveedorId);
+    const deudaTotal = facturasProveedor.reduce((sum, f) => sum + (parseFloat(f.saldo_pendiente) || 0), 0);
+    
+    montoSpan.textContent = formatCurrency(deudaTotal);
+    infoDiv.style.display = 'block';
+    
+    // Cambiar color si hay deuda
+    if (deudaTotal > 0) {
+        infoDiv.className = 'text-warning'; 
+        infoDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> Deuda actual: <span id="emergenciaDeudaMonto" style="font-weight: bold;">${formatCurrency(deudaTotal)}</span>`;
+    } else {
+        infoDiv.className = 'text-success';
+        infoDiv.innerHTML = `<i class="fas fa-check-circle"></i> Sin deuda pendiente <span id="emergenciaDeudaMonto" style="display:none">0</span>`;
+    }
+}
+
+function cerrarModalFacturaEmergencia() {
+    document.getElementById('modalFacturaEmergencia').classList.remove('show');
+}
+
+async function guardarFacturaEmergencia(e) {
+    e.preventDefault();
+    
+    const proveedorId = document.getElementById('emergenciaProveedor').value;
+    const numeroFactura = document.getElementById('emergenciaNumero').value.trim();
+    const fechaEmision = document.getElementById('emergenciaFechaEmision').value;
+    const fechaVencimiento = document.getElementById('emergenciaFechaVencimiento').value;
+    const totalFactura = parseFloat(document.getElementById('emergenciaTotal').value);
+    const notas = document.getElementById('emergenciaNotas').value.trim();
+    
+    if (!proveedorId || !numeroFactura || !fechaEmision || !fechaVencimiento || isNaN(totalFactura)) {
+        mostrarNotificacionProveedor('Por favor complete todos los campos obligatorios', 'warning');
+        return;
+    }
+    
+    if (totalFactura <= 0) {
+        mostrarNotificacionProveedor('El total debe ser mayor a 0', 'warning');
+        return;
+    }
+    
+    try {
+        showAppLoader();
+        const client = getSupabaseClient();
+        
+        // Verificar duplicados
+        const { data: existing } = await client
+            .from('facturas_proveedores')
+            .select('id')
+            .eq('proveedor_id', proveedorId)
+            .eq('numero_factura', numeroFactura)
+            .single();
+            
+        if (existing) {
+            hideAppLoader();
+            mostrarNotificacionProveedor('Ya existe una factura con este número para este proveedor', 'error');
+            return;
+        }
+        
+        const nuevaFactura = {
+            proveedor_id: proveedorId,
+            numero_factura: numeroFactura,
+            fecha_emision: fechaEmision,
+            fecha_vencimiento: fechaVencimiento,
+            total_factura: totalFactura,
+            saldo_pendiente: totalFactura, // Inicialmente igual al total
+            notas: notas || 'Factura de emergencia (sin detalles de productos)',
+            usuario_registro: 'Sistema' // O el usuario actual si está disponible
+        };
+        
+        const { error } = await client
+            .from('facturas_proveedores')
+            .insert(nuevaFactura);
+            
+        if (error) throw error;
+        
+        hideAppLoader();
+        cerrarModalFacturaEmergencia();
+        mostrarNotificacionProveedor('Factura guardada correctamente', 'success');
+        
+        // Recargar lista
+        recargarFacturas();
+        
+    } catch (error) {
+        hideAppLoader();
+        console.error('Error al guardar factura de emergencia:', error);
+        mostrarNotificacionProveedor('Error al guardar la factura: ' + error.message, 'error');
+    }
+}
+
+// Event listener para el formulario eliminado ya que usamos onclick directo para evitar problemas con la carga dinámica
+
+
+// =====================================================
 // EXPONER FUNCIONES GLOBALES
 // =====================================================
 
@@ -3057,6 +3282,10 @@ window.cerrarModalNotas = cerrarModalNotas;
 window.recargarFacturas = recargarFacturas;
 window.proveedoresAlert = proveedoresAlert;
 window.cerrarAlertaModal = cerrarAlertaModal;
+window.mostrarModalFacturaEmergencia = mostrarModalFacturaEmergencia;
+window.cerrarModalFacturaEmergencia = cerrarModalFacturaEmergencia;
+window.guardarFacturaEmergencia = guardarFacturaEmergencia;
+window.actualizarDeudaProveedorEmergencia = actualizarDeudaProveedorEmergencia;
 
 logProveedor('✅ Módulo de proveedores cargado - Funciones globales exportadas');
 
