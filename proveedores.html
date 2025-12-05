@@ -2528,7 +2528,7 @@ async function enviarNotificacionWhatsAppProveedor(transferencia, client) {
         
         const mensaje = `${emoji} *Pago a Proveedor Registrado*\n\n*DETALLES DEL PAGO*\n\n📅 *Fecha:* ${fechaFormateada}\n🕐 *Hora:* ${horaFormateada}\n\n❌ *Tipo:* ${tipoMovimiento}\n💵 *Monto:* $${montoFormateado}\n\n📝 *Motivo:*\n${transferencia.motivo}\n\n👤 *Registrado por:*\n${transferencia.subido_por_nombre || transferencia.subido_por || 'N/A'}\n\n📸 *Comprobante adjunto*\n\n_Sistema de Gestión Ferrisoluciones_\n_Powered by Ferrisoluciones Tech_`;
         
-        const url = `https://api.manasakilla.com/message/sendMedia/${ferredatos.instance}`;
+        const url = `https://api.ferrisoluciones.com/message/sendMedia/${ferredatos.instance}`;
         
         // Extraer base64 del data URL
         let mediaToSend = transferencia.foto_url || '';
@@ -2860,7 +2860,7 @@ async function enviarWhatsAppProveedor(mensaje) {
         }
 
         
-        const url = `https://api.manasakilla.com/message/sendText/${ferredatos.instance}`;
+        const url = `https://api.ferrisoluciones.com/message/sendText/${ferredatos.instance}`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -3290,6 +3290,7 @@ window.actualizarDeudaProveedorEmergencia = actualizarDeudaProveedorEmergencia;
 logProveedor('✅ Módulo de proveedores cargado - Funciones globales exportadas');
 
 </script>
+
 
 
 
