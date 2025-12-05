@@ -99,12 +99,18 @@
                 </div>
             </div>
 
+            <!-- Botón Dashboard -->
+            <button class="btn btn-primary" onclick="mostrarDashboard()" style="width: 100%; margin-top: 20px; padding: 15px; font-size: 1.1em;">
+                <i class="fas fa-chart-pie"></i>
+                <span>Ver Dashboard Experto</span>
+            </button>
+
         </div>
 
         
         <div style="overflow-y: auto; padding-right: 10px; height: 100%; scrollbar-width: thin;">
             
-            <div class="card">
+            <div class="card" id="ventasListView">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3 style="font-size: 1.3em;">
                         <i class="fas fa-receipt"></i> Ventas del Día
@@ -131,6 +137,73 @@
                     <p>No hay ventas registradas para esta fecha</p>
                 </div>
 
+            </div>
+
+            <!-- Dashboard View -->
+            <div id="dashboardView" class="card hidden" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 1.3em; display: flex; align-items: center; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="ocultarDashboard()" style="padding: 5px 10px;">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <span><i class="fas fa-chart-pie"></i> Dashboard Experto</span>
+                    </h3>
+                    
+                    <div class="btn-group" style="display: flex; gap: 5px;">
+                        <button class="btn btn-sm btn-outline" onclick="filtrarDashboard('7d')">7 Días</button>
+                        <button class="btn btn-sm btn-outline" onclick="filtrarDashboard('30d')">30 Días</button>
+                        <button class="btn btn-sm btn-outline" onclick="filtrarDashboard('90d')">90 Días</button>
+                        <!-- <button class="btn btn-sm btn-outline" onclick="filtrarDashboard('custom')">Personalizado</button> -->
+                    </div>
+                </div>
+                
+                <div id="dashboardDateRange" style="text-align: right; color: #666; font-size: 0.9em; margin-top: -15px; margin-bottom: 15px; font-weight: 600;"></div>
+
+                <!-- Stats Cards -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div class="stat-card" onclick="mostrarTopProductos('mas-vendidos-cant')" style="background: #e3f2fd; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s;">
+                        <div style="font-size: 0.8em; color: #1565c0; margin-bottom: 5px;">Producto Más Vendido (Cant)</div>
+                        <div id="dashProdMasVendidoCant" style="font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+                        <div id="dashProdMasVendidoCantVal" style="font-size: 0.9em; color: #666;">0 un.</div>
+                    </div>
+                    <div class="stat-card" onclick="mostrarTopProductos('mas-vendidos-total')" style="background: #e8f5e9; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s;">
+                        <div style="font-size: 0.8em; color: #2e7d32; margin-bottom: 5px;">Producto Más Vendido ($)</div>
+                        <div id="dashProdMasVendidoTotal" style="font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+                        <div id="dashProdMasVendidoTotalVal" style="font-size: 0.9em; color: #666;">$0.00</div>
+                    </div>
+                    <div class="stat-card" onclick="mostrarTopProductos('mayor-ganancia')" style="background: #fff3e0; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s;">
+                        <div style="font-size: 0.8em; color: #ef6c00; margin-bottom: 5px;">Mayor Ganancia</div>
+                        <div id="dashProdMayorGanancia" style="font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+                        <div id="dashProdMayorGananciaVal" style="font-size: 0.9em; color: #666;">$0.00</div>
+                    </div>
+                    <div class="stat-card" onclick="mostrarTopProductos('menos-vendidos')" style="background: #ffebee; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s;">
+                        <div style="font-size: 0.8em; color: #c62828; margin-bottom: 5px;">Menos Vendido</div>
+                        <div id="dashProdMenosVendido" style="font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+                        <div id="dashProdMenosVendidoVal" style="font-size: 0.9em; color: #666;">0 un.</div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div style="margin-bottom: 30px;">
+                    <h4 style="margin-bottom: 10px; color: #666;">Ventas por Hora (Promedio 8:00 AM - 8:00 PM)</h4>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="chartHoras"></canvas>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="margin-bottom: 10px; color: #666;">Promedio de Ventas por Día de la Semana</h4>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="chartDias"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="dashboardLoading" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
+                <div class="spinner-large" style="width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #2196F3; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="margin-top: 15px; color: #666; font-weight: 600;">Analizando datos...</p>
             </div>
 
         </div>
@@ -217,6 +290,35 @@
             <!-- Botones -->
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="cerrarModalSeleccionCliente()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Top Productos -->
+<div id="modalTopProductos" class="modal">
+    <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalTopTitle">Top 10 Productos</h2>
+            <button class="modal-close" onclick="cerrarModalTop()">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 20px; overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="background: #f8f9fa; border-bottom: 2px solid #eee;">
+                    <tr>
+                        <th style="padding: 12px; text-align: left; color: #666;">#</th>
+                        <th style="padding: 12px; text-align: left; color: #666;">Producto</th>
+                        <th style="padding: 12px; text-align: right; color: #666;">Cantidad</th>
+                        <th style="padding: 12px; text-align: right; color: #666;">Total Ventas</th>
+                        <th style="padding: 12px; text-align: right; color: #666;">Ganancia</th>
+                    </tr>
+                </thead>
+                <tbody id="modalTopBody">
+                    <!-- Rows will be inserted here -->
+                </tbody>
+            </table>
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn btn-secondary" onclick="cerrarModalTop()">Cerrar</button>
             </div>
         </div>
     </div>
@@ -2065,6 +2167,443 @@
     }
 
     // =====================================================
+    // DASHBOARD EXPERTO
+    // =====================================================
+
+    let chartHoras = null;
+    let chartDias = null;
+    let dashboardDataCache = null; // Cache for modal usage
+
+    async function mostrarDashboard() {
+        document.getElementById('ventasListView').classList.add('hidden');
+        document.getElementById('ventasListView').style.display = 'none';
+        document.getElementById('dashboardView').classList.remove('hidden');
+        document.getElementById('dashboardView').style.display = 'block';
+        
+        await loadChartJs();
+        filtrarDashboard('7d'); // Default filter
+    }
+
+    function ocultarDashboard() {
+        document.getElementById('dashboardView').classList.add('hidden');
+        document.getElementById('dashboardView').style.display = 'none';
+        document.getElementById('ventasListView').classList.remove('hidden');
+        document.getElementById('ventasListView').style.display = 'block';
+    }
+
+    async function filtrarDashboard(periodo) {
+        // Update active button state
+        const buttons = document.querySelectorAll('#dashboardView .btn-group button');
+        buttons.forEach(btn => btn.classList.remove('active', 'btn-primary'));
+        // Find the button that was clicked (this is a bit hacky without passing the element)
+        // For now, just load data
+        
+        // Logic: End date is yesterday. Start date is yesterday - X days.
+        let hoy = new Date();
+        let ayer = new Date(hoy);
+        ayer.setDate(hoy.getDate() - 1);
+        ayer.setHours(23, 59, 59, 999); // End of yesterday
+
+        let fechaFin = ayer;
+        let fechaInicio = new Date(ayer);
+        fechaInicio.setHours(0, 0, 0, 0); // Start of the day
+        
+        if (periodo === '7d') {
+            fechaInicio.setDate(fechaFin.getDate() - 6); // 7 days inclusive
+        } else if (periodo === '30d') {
+            fechaInicio.setDate(fechaFin.getDate() - 29);
+        } else if (periodo === '90d') {
+            fechaInicio.setDate(fechaFin.getDate() - 89);
+        } else if (periodo === 'custom') {
+            // TODO: Implement custom date picker
+            return;
+        }
+        
+        await cargarDatosDashboard(fechaInicio, fechaFin);
+    }
+
+    async function cargarDatosDashboard(fechaInicio, fechaFin) {
+        try {
+            // Show loading overlay
+            const loadingOverlay = document.getElementById('dashboardLoading');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('hidden');
+                loadingOverlay.style.display = 'flex';
+            }
+            
+            const db = window.app.db;
+            
+            // Fetch sales
+            const { data: ventas, error } = await db
+                .from('ventas')
+                .select('*')
+                .gte('fecha_hora_venta', fechaInicio.toISOString())
+                .lte('fecha_hora_venta', fechaFin.toISOString());
+                
+            if (error) throw error;
+            
+            // Fetch details for product stats
+            const ventaIds = ventas.map(v => v.id);
+            
+            // Fetch in chunks to avoid URL length limits
+            let detalles = [];
+            if (ventaIds.length > 0) {
+                const chunkSize = 40; // Lote seguro para evitar errores de URL
+                for (let i = 0; i < ventaIds.length; i += chunkSize) {
+                    const chunk = ventaIds.slice(i, i + chunkSize);
+                    const { data: det, error: detError } = await db
+                        .from('ventas_detalle')
+                        .select('producto_id, cantidad, subtotal, ganancia')
+                        .in('venta_id', chunk);
+                    
+                    if (detError) {
+                        console.error('Error fetching chunk details:', detError);
+                        continue;
+                    }
+                    if (det) detalles = detalles.concat(det);
+                }
+            }
+            
+            // Fetch product names in chunks
+            const productoIds = [...new Set(detalles.map(d => d.producto_id))];
+            let productosMap = {};
+            
+            if (productoIds.length > 0) {
+                const chunkSize = 40;
+                for (let i = 0; i < productoIds.length; i += chunkSize) {
+                    const chunk = productoIds.slice(i, i + chunkSize);
+                    const { data: prods, error: prodError } = await db
+                        .from('inventario')
+                        .select('codigo, producto')
+                        .in('codigo', chunk);
+                    
+                    if (!prodError && prods) {
+                        prods.forEach(p => productosMap[p.codigo] = p.producto);
+                    }
+                }
+            }
+
+            // Calculate days difference for averages
+            const daysDiff = Math.max(1, Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)));
+            
+            // Update date range text
+            const options = { day: 'numeric', month: 'short', year: 'numeric' };
+            const rangeText = `Del ${fechaInicio.toLocaleDateString('es-EC', options)} al ${fechaFin.toLocaleDateString('es-EC', options)}`;
+            const rangeEl = document.getElementById('dashboardDateRange');
+            if (rangeEl) rangeEl.textContent = rangeText;
+
+            // Process data
+            procesarDatosDashboard(ventas, detalles, productosMap, daysDiff, fechaInicio, fechaFin);
+            
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+            window.app.showToast('Error cargando dashboard', 'error', 3000);
+        } finally {
+            // Hide loading overlay
+            const loadingOverlay = document.getElementById('dashboardLoading');
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+                loadingOverlay.style.display = 'none';
+            }
+        }
+    }
+
+    function procesarDatosDashboard(ventas, detalles, productosMap, numDays, fechaInicio, fechaFin) {
+        // 1. Product Stats
+        const prodStats = {};
+        
+        detalles.forEach(d => {
+            if (!prodStats[d.producto_id]) {
+                prodStats[d.producto_id] = {
+                    id: d.producto_id,
+                    nombre: productosMap[d.producto_id] || d.producto_id,
+                    cantidad: 0,
+                    total: 0,
+                    ganancia: 0
+                };
+            }
+            prodStats[d.producto_id].cantidad += parseFloat(d.cantidad);
+            prodStats[d.producto_id].total += parseFloat(d.subtotal);
+            prodStats[d.producto_id].ganancia += parseFloat(d.ganancia || 0);
+        });
+        
+        // Store for modal usage
+        dashboardDataCache = {
+            prodStats: Object.values(prodStats)
+        };
+        
+        const sortedByCant = Object.values(prodStats).sort((a, b) => b.cantidad - a.cantidad);
+        const sortedByTotal = Object.values(prodStats).sort((a, b) => b.total - a.total);
+        const sortedByGanancia = Object.values(prodStats).sort((a, b) => b.ganancia - a.ganancia);
+        
+        // Update UI Stats
+        if (sortedByCant.length > 0) {
+            document.getElementById('dashProdMasVendidoCant').textContent = sortedByCant[0].nombre;
+            document.getElementById('dashProdMasVendidoCantVal').textContent = `${sortedByCant[0].cantidad.toFixed(2)} un.`;
+            
+            document.getElementById('dashProdMasVendidoTotal').textContent = sortedByTotal[0].nombre;
+            document.getElementById('dashProdMasVendidoTotalVal').textContent = window.app.formatCurrency(sortedByTotal[0].total);
+            
+            document.getElementById('dashProdMayorGanancia').textContent = sortedByGanancia[0].nombre;
+            document.getElementById('dashProdMayorGananciaVal').textContent = window.app.formatCurrency(sortedByGanancia[0].ganancia);
+            
+            const leastSold = sortedByCant[sortedByCant.length - 1];
+            document.getElementById('dashProdMenosVendido').textContent = leastSold.nombre;
+            document.getElementById('dashProdMenosVendidoVal').textContent = `${leastSold.cantidad.toFixed(2)} un.`;
+        } else {
+             document.getElementById('dashProdMasVendidoCant').textContent = '-';
+             document.getElementById('dashProdMasVendidoCantVal').textContent = '0 un.';
+             document.getElementById('dashProdMasVendidoTotal').textContent = '-';
+             document.getElementById('dashProdMasVendidoTotalVal').textContent = '$0.00';
+             document.getElementById('dashProdMayorGanancia').textContent = '-';
+             document.getElementById('dashProdMayorGananciaVal').textContent = '$0.00';
+             document.getElementById('dashProdMenosVendido').textContent = '-';
+             document.getElementById('dashProdMenosVendidoVal').textContent = '0 un.';
+        }
+
+        // 2. Hourly Chart Data (Average 8:00 AM - 8:00 PM)
+        const hours = [];
+        for (let i = 8; i <= 20; i++) hours.push(i); // 8 to 20 (8pm)
+        
+        const hourlyData = new Array(hours.length).fill(0);
+        
+        ventas.forEach(v => {
+            const date = new Date(v.fecha_hora_venta);
+            const hour = date.getHours();
+            const minute = date.getMinutes();
+            const timeInMins = hour * 60 + minute;
+            
+            // Filter 8:00 AM to 8:00 PM
+            // 8:00 = 8 * 60 = 480 mins
+            // 20:00 = 20 * 60 = 1200 mins
+            if (timeInMins >= 480 && timeInMins <= 1200) {
+                const index = hour - 8;
+                if (index >= 0 && index < hourlyData.length) {
+                    hourlyData[index] += parseFloat(v.total);
+                }
+            }
+        });
+        
+        // Calculate average per day
+        const hourlyAverages = hourlyData.map(total => total / numDays);
+        
+        // 3. Daily Chart Data (Average per Day of Week)
+        // Initialize counters for each day of week (0=Sun, 1=Mon, ..., 6=Sat)
+        const dayOfWeekTotals = [0, 0, 0, 0, 0, 0, 0];
+        const dayOfWeekCounts = [0, 0, 0, 0, 0, 0, 0];
+        const dayOfWeekDetails = [[], [], [], [], [], [], []]; // 0=Sun, 1=Mon...
+        
+        // Count how many of each day exist in the range
+        let currentDate = new Date(fechaInicio);
+        const endDate = new Date(fechaFin);
+        
+        while (currentDate <= endDate) {
+            dayOfWeekCounts[currentDate.getDay()]++;
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        // Group sales by date first to get daily totals
+        const salesByDate = {};
+        ventas.forEach(v => {
+            const dateObj = new Date(v.fecha_hora_venta);
+            // Use local date string to group by day
+            const dateKey = dateObj.toLocaleDateString('es-EC'); 
+            
+            if (!salesByDate[dateKey]) {
+                salesByDate[dateKey] = {
+                    dateObj: dateObj,
+                    total: 0,
+                    dayIndex: dateObj.getDay()
+                };
+            }
+            salesByDate[dateKey].total += parseFloat(v.total);
+        });
+
+        // Populate totals and details
+        Object.values(salesByDate).forEach(item => {
+            dayOfWeekTotals[item.dayIndex] += item.total;
+            dayOfWeekDetails[item.dayIndex].push({
+                date: item.dateObj.toLocaleDateString('es-EC', { day: 'numeric', month: 'short' }),
+                total: item.total
+            });
+        });
+        
+        // Calculate averages
+        const dayOfWeekAverages = dayOfWeekTotals.map((total, index) => {
+            const count = dayOfWeekCounts[index];
+            return count > 0 ? total / count : 0;
+        });
+        
+        // Reorder to start from Monday (1) to Sunday (0)
+        const orderedLabels = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        const orderedData = [
+            dayOfWeekAverages[1], // Mon
+            dayOfWeekAverages[2], // Tue
+            dayOfWeekAverages[3], // Wed
+            dayOfWeekAverages[4], // Thu
+            dayOfWeekAverages[5], // Fri
+            dayOfWeekAverages[6], // Sat
+            dayOfWeekAverages[0]  // Sun
+        ];
+
+        const orderedDetails = [
+            dayOfWeekDetails[1],
+            dayOfWeekDetails[2],
+            dayOfWeekDetails[3],
+            dayOfWeekDetails[4],
+            dayOfWeekDetails[5],
+            dayOfWeekDetails[6],
+            dayOfWeekDetails[0]
+        ];
+
+        renderCharts(hours.map(h => `${h}:00`), hourlyAverages, orderedLabels, orderedData, orderedDetails);
+    }
+
+    function renderCharts(hourlyLabels, hourlyData, dailyLabels, dailyData, dailyDetails) {
+        const ctxHoras = document.getElementById('chartHoras').getContext('2d');
+        const ctxDias = document.getElementById('chartDias').getContext('2d');
+        
+        if (chartHoras) chartHoras.destroy();
+        if (chartDias) chartDias.destroy();
+        
+        chartHoras = new Chart(ctxHoras, {
+            type: 'line',
+            data: {
+                labels: hourlyLabels,
+                datasets: [{
+                    label: 'Promedio Ventas por Hora ($)',
+                    data: hourlyData,
+                    borderColor: '#4fc3f7',
+                    backgroundColor: 'rgba(79, 195, 247, 0.2)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                }
+            }
+        });
+        
+        chartDias = new Chart(ctxDias, {
+            type: 'bar', // Changed to bar for better visualization of daily averages
+            data: {
+                labels: dailyLabels,
+                datasets: [{
+                    label: 'Promedio Ventas por Día ($)',
+                    data: dailyData,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 206, 86, 0.5)',
+                        'rgba(75, 192, 192, 0.5)',
+                        'rgba(153, 102, 255, 0.5)',
+                        'rgba(255, 159, 64, 0.5)',
+                        'rgba(201, 203, 207, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgb(255, 99, 132)',
+                        'rgb(54, 162, 235)',
+                        'rgb(255, 206, 86)',
+                        'rgb(75, 192, 192)',
+                        'rgb(153, 102, 255)',
+                        'rgb(255, 159, 64)',
+                        'rgb(201, 203, 207)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            afterBody: function(context) {
+                                if (!dailyDetails) return [];
+                                const index = context[0].dataIndex;
+                                const details = dailyDetails[index];
+                                if (!details || details.length === 0) return [];
+                                return details.map(d => `${d.date}: $${d.total.toFixed(2)}`);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // =====================================================
+    // MODAL TOP PRODUCTOS
+    // =====================================================
+
+    function mostrarTopProductos(tipo) {
+        if (!dashboardDataCache || !dashboardDataCache.prodStats) return;
+        
+        const stats = [...dashboardDataCache.prodStats];
+        let sortedStats = [];
+        let title = '';
+        
+        switch(tipo) {
+            case 'mas-vendidos-cant':
+                sortedStats = stats.sort((a, b) => b.cantidad - a.cantidad);
+                title = 'Top 10 Productos Más Vendidos (Cantidad)';
+                break;
+            case 'mas-vendidos-total':
+                sortedStats = stats.sort((a, b) => b.total - a.total);
+                title = 'Top 10 Productos Más Vendidos (Total $)';
+                break;
+            case 'mayor-ganancia':
+                sortedStats = stats.sort((a, b) => b.ganancia - a.ganancia);
+                title = 'Top 10 Productos con Mayor Ganancia';
+                break;
+            case 'menos-vendidos':
+                sortedStats = stats.sort((a, b) => a.cantidad - b.cantidad);
+                title = 'Top 10 Productos Menos Vendidos';
+                break;
+        }
+        
+        const top10 = sortedStats.slice(0, 10);
+        
+        document.getElementById('modalTopTitle').textContent = title;
+        const tbody = document.getElementById('modalTopBody');
+        tbody.innerHTML = top10.map((item, index) => `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px; font-weight: bold; color: #666;">${index + 1}</td>
+                <td style="padding: 12px; font-weight: 600;">${item.nombre}</td>
+                <td style="padding: 12px; text-align: right;">${item.cantidad.toFixed(2)}</td>
+                <td style="padding: 12px; text-align: right; color: #28a745;">${window.app.formatCurrency(item.total)}</td>
+                <td style="padding: 12px; text-align: right; color: #d4a017;">${window.app.formatCurrency(item.ganancia)}</td>
+            </tr>
+        `).join('');
+        
+        document.getElementById('modalTopProductos').classList.add('active');
+    }
+
+    function cerrarModalTop() {
+        document.getElementById('modalTopProductos').classList.remove('active');
+    }
+
+    function loadChartJs() {
+        return new Promise((resolve, reject) => {
+            if (window.Chart) return resolve();
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    // =====================================================
     // EXPORTAR FUNCIONES GLOBALES
     // =====================================================
     
@@ -2080,6 +2619,11 @@
     window.cerrarModalSeleccionCliente = cerrarModalSeleccionCliente;
     window.seleccionarClienteParaFactura = seleccionarClienteParaFactura;
     window.reenviarAlSRI = reenviarAlSRI;
+    window.mostrarDashboard = mostrarDashboard;
+    window.ocultarDashboard = ocultarDashboard;
+    window.filtrarDashboard = filtrarDashboard;
+    window.mostrarTopProductos = mostrarTopProductos;
+    window.cerrarModalTop = cerrarModalTop;
 
     })(); // Fin del IIFE
 
