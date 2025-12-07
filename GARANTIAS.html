@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=80mm, initial-scale=1.0">
+    <title>GARANTÍA DE DUCHAS</title>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 0;
+        padding: 0;
+        font-size: 14pt;
+        line-height: 1.2;
+        width: 80mm;
+        background-color: white;
+      }
+
+      .container {
+        margin: 0 auto;
+        width: 76mm;
+        padding: 2mm;
+      }
+
+      .header {
+        border-bottom: 1px solid #000;
+        padding-bottom: 2mm;
+        margin-bottom: 2mm;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .logo-container {
+        width: 25%;
+        text-align: left;
+      }
+      
+      .company-info {
+        width: 75%;
+        text-align: right;
+      }
+
+      .header-title {
+        font-weight: bold;
+        font-size: 10pt;
+        margin: 0;
+        padding: 0;
+      }
+
+      .header-info {
+        margin: 0;
+        padding: 0;
+        font-size: 8pt;
+      }
+
+      .title-box {
+        text-align: center;
+        padding: 2mm 0;
+        margin: 2mm 0;
+        border-bottom: 1px solid #000;
+      }
+
+      .title-box h1 {
+        margin: 0;
+        font-size: 12pt;
+      }
+
+      .info-box {
+        padding: 2mm;
+        border: 1px solid #000;
+        border-radius: 2mm;
+        margin: 2mm 0;
+      }
+
+      .info-item {
+        margin: 2px 0;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .info-label {
+        font-weight: bold;
+      }
+
+      .info-value {
+        text-align: right;
+      }
+
+      .modelo-ducha {
+        font-size: 14pt;
+        font-weight: bold;
+        text-align: center;
+        margin: 10px 0;
+      }
+
+      .conditions {
+        text-align: left;
+        font-size: 7pt;
+        padding: 2mm;
+        border: 1px solid #000;
+        border-radius: 2mm;
+        margin: 2mm 0;
+      }
+
+      .condition-item {
+        margin: 1mm 0;
+      }
+
+      .warning {
+        text-align: center;
+        font-weight: bold;
+        margin: 2mm 0;
+        font-size: 8pt;
+        padding: 1mm;
+        border: 1px solid #000;
+      }
+
+      .signature-area {
+        text-align: center;
+        margin: 15px 0;
+      }
+
+      .signature-line {
+        width: 80%;
+        margin: 40px auto 5px;
+        border-top: 1px solid #000;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 3mm;
+        border-top: 1px solid #000;
+        padding-top: 2mm;
+      }
+
+      .barcode {
+        text-align: center;
+        margin: 3mm 0;
+      }
+      .barcode img {
+        max-height: 2cm; /* Altura máxima del código de barras */
+        width: auto;
+      }
+      
+      .footer2 {
+        background-color: black;
+        color: white;
+        text-align: center;
+        padding: 5px;
+        border-radius: 10px;
+        margin-top: 10px;
+        font-size: 10px;
+      }
+    </style>
+  </head>
+  <body onload="window.print()" onfocus="window.close()">
+    <script>
+      // Obtener los parámetros de la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      // Obtener los valores de los parámetros
+      var venta = urlParams.has('venta') ? urlParams.get('venta') : "---";
+      var nombre_cliente = urlParams.has('nombre_cliente') ? urlParams.get('nombre_cliente') : "---";
+      var cedula_cliente = urlParams.has('cedula_cliente') ? urlParams.get('cedula_cliente') : "---";
+      var direccion_cliente = urlParams.has('direccion_cliente') ? urlParams.get('direccion_cliente') : "---";
+      var telefono_cliente = urlParams.has('telefono_cliente') ? urlParams.get('telefono_cliente') : "---";
+      var vendedor = urlParams.has('vendedor') ? urlParams.get('vendedor') : "---";
+      var fecha = urlParams.has('fecha') ? urlParams.get('fecha') : "dd/mm/aaaa hh:mm:ss";
+      var total = urlParams.has('total') ? urlParams.get('total') : "0.00";
+      var subtotal = urlParams.has('subtotal') ? urlParams.get('subtotal') : "0.00";
+      var descuento = urlParams.has('descuento') ? urlParams.get('descuento') : "0.00";
+      var codigo_ducha = urlParams.has('codigo_ducha') ? urlParams.get('codigo_ducha') : "---";
+    </script>
+
+    <div class="container">
+      <!-- Encabezado -->
+      <div class="header">
+        <div class="logo-container">
+          <img id="company-logo" alt="Logo" style="max-width:28mm; max-height:15mm;">
+        </div>
+        <div class="company-info">
+          <p class="header-title">FERRESOLUCIONES</p>
+          <p class="header-info">RUC: 1727849695001</p>
+          <p class="header-info">LUIS CORDERO 132 Y JOSÉ MEJÍA</p>
+          <p class="header-info">CEL: 0962248046</p>
+        </div>
+      </div>
+
+      <!-- Título del documento -->
+      <div class="title-box">
+        <h1>GARANTÍA DE DUCHAS</h1>
+      </div>
+
+      <!-- Información de la garantía -->
+      <div class="info-box">
+        <div class="info-item">
+          <span class="info-label">CÓDIGO DE GARANTÍA:</span>
+          <span class="info-value" id="venta_id"></span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">FECHA Y HORA:</span>
+          <span class="info-value" id="fechaR"></span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">TIEMPO DE GARANTÍA:</span>
+          <span class="info-value" id="cedula_id"></span>
+        </div>
+      </div>
+
+      <!-- Nombre del cliente (destacado) -->
+      <div class="modelo-ducha" id="nombre_id"></div>
+
+      <!-- Condiciones de garantía -->
+      <div class="conditions">
+        <div class="condition-item">• LEER EL INSTRUCTIVO INCLUIDO</div>
+        <div class="condition-item">• AL PRIMER USO DEJAR CORRER AGUA FRÍA POR 10 SEGUNDOS ANTES DE ENCENDER EL BREAKER O CONECTAR LA ELECTRICIDAD.</div>
+        <div class="condition-item">• NO DESPEGAR NINGUN SELLO DE SEGURIDAD</div>
+        <div class="condition-item">• CONSERVAR LA FUNDA Y LOS PAPELES INCLUIDOS EN EL PRODUCTO</div>
+        <div class="condition-item">• NO RETIRAR EL TAPÓN REDUCTOR (SI NO HAY SUFICIENTE PRESIÓN DE AGUA ABRIRLO UN POCO, PERO NUNCA RETIRARLO)</div>
+        <div class="condition-item">• SI SE DAÑA LA DUCHA, NO LA DESARME, NI INTENTE VER QUE SUCEDIÓ, SIMPLEMENTE RETIRELA Y HAGA EFECTIVA LA GARANTÍA</div>
+        <div class="condition-item">• NO SE CUBREN DAÑOS POR DERRETEMIENTO DE ALGUNA PIEZA YA QUE ES CLARO QUE LA INSTALACIÓN ELÉCTRICA ESTÁ MAL</div>
+        <div class="condition-item">• LA GARANTÍA SE APLICARÁ DE FORMA INMEDIATA SALVO QUE NO HAYA STOCK, ENTONCES SE DEBERÁ ESPERAR</div>
+        <div class="condition-item">• LA GARANTÍA NO CUBRE DEVOLUCIÓN DE DINERO EN EFECTIVO, TRANSFERENCIA O ALGUN OTRO MÉTODO ÚNICAMENTE UN PRODUCTO NUEVO COMO REEMPLAZO</div>
+        <div class="condition-item">• ESTE DOCUMENTO ES EL ÚNICO QUE PUEDE EFECTUAR LA GARANTÍA</div>
+      </div>
+
+      <!-- Advertencia -->
+      <div class="warning">
+        NOTA: EN CASO DE FALTAR A ALGUNA DE ESTAS CONDICIONES LA GARANTÍA NO PODRÁ HACERSE EFECTIVA
+      </div>
+
+      <!-- Área de sello -->
+      <div class="signature-area">
+        <p><b>SELLO:</b></p>
+        <div style="height: 3cm; border: 1px dashed #ccc; margin: 10px 20px; border-radius: 5px;"></div>
+      </div>
+
+      <!-- Pie de página -->
+      <div class="footer">
+        <p><b>ATENDIDO POR: <span id="vendedor_id"></span></b></p>
+        <!-- Código de barras -->
+        <div class="barcode">
+          <img id="barcode" alt="Código de Barras">
+        </div>
+      </div>
+    <div class="footer2">
+      ¡GRACIAS POR SU PREFERENCIA!
+    </div>
+
+    <script>
+      // Logo URL
+      const logoUrl = urlParams.get('logo_url') || 'https://lh3.googleusercontent.com/d/1-_IsocnUhx_k6EGsNSpaJUNnQ2Nn4cFj=w2048?name=ISO%20DELGADO.png';
+      document.getElementById("company-logo").src = logoUrl;
+      
+      document.getElementById("venta_id").textContent = venta;
+      document.getElementById("nombre_id").textContent = nombre_cliente;
+      document.getElementById("cedula_id").textContent = cedula_cliente;
+      document.getElementById("vendedor_id").textContent = vendedor;
+      document.getElementById("fechaR").textContent = fecha;
+
+      var barcodeUrl = `https://barcode.tec-it.com/barcode.ashx?data=${venta}&code=Code128&imagetype=Png`;
+      document.getElementById("barcode").src = barcodeUrl;
+    </script>
+  </body>
+</html>
