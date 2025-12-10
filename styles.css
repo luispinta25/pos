@@ -1437,3 +1437,91 @@ body.loaded {
     transform: scale(1.2);
 }
 
+
+/* =====================================================
+   Botón Flotante y Modal de Simulación
+   ===================================================== */
+
+.btn-float-transfer {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    color: var(--color-primary);
+    border: none;
+    box-shadow: 0 4px 15px rgba(212, 160, 23, 0.4);
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-float-transfer:hover {
+    transform: scale(1.1);
+    background: var(--color-accent-light);
+}
+
+.payment-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.payment-option input {
+    display: none;
+}
+
+.payment-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    background: var(--bg-primary);
+    border: 2px solid transparent;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+}
+
+.payment-card i {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.payment-option input:checked + .payment-card {
+    border-color: var(--color-accent);
+    background: rgba(212, 160, 23, 0.1);
+    color: var(--color-accent);
+}
+
+.summary-box {
+    background: var(--bg-primary);
+    padding: 15px;
+    border-radius: var(--border-radius-sm);
+    margin-top: 15px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.summary-row:last-child {
+    margin-bottom: 0;
+}
+
+.amount {
+    font-family: 'Courier New', monospace;
+}
