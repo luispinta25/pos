@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,9 +11,10 @@
     <meta name="theme-color" content="#1a1a1a">
     <link rel="icon" href="https://i.ibb.co/8gLPXfjh/FERRISOLUCIONES-1.png">
 </head>
+
 <body>
 
-    
+
     <div id="loginScreen" class="login-screen">
         <div class="login-container">
             <div class="login-card">
@@ -22,11 +24,12 @@
                     <p class="login-subtitle">Sistema de Gestión Ferretería</p>
                 </div>
 
-                
+
                 <form id="loginForm" class="auth-form">
                     <div class="form-group">
                         <label for="loginEmail" class="form-label">Correo Electrónico</label>
-                        <input type="email" id="loginEmail" class="form-input" placeholder="correo@ejemplo.com" required>
+                        <input type="email" id="loginEmail" class="form-input" placeholder="correo@ejemplo.com"
+                            required>
                     </div>
                     <div class="form-group">
                         <label for="loginPassword" class="form-label">Contraseña</label>
@@ -40,7 +43,7 @@
                     </div>
                 </form>
 
-                
+
                 <form id="registerForm" class="auth-form hidden">
                     <div class="form-group">
                         <label for="registerNombres" class="form-label">Nombres</label>
@@ -52,15 +55,18 @@
                     </div>
                     <div class="form-group">
                         <label for="registerEmail" class="form-label">Correo Electrónico</label>
-                        <input type="email" id="registerEmail" class="form-input" placeholder="correo@ejemplo.com" required>
+                        <input type="email" id="registerEmail" class="form-input" placeholder="correo@ejemplo.com"
+                            required>
                     </div>
                     <div class="form-group">
                         <label for="registerPassword" class="form-label">Contraseña</label>
-                        <input type="password" id="registerPassword" class="form-input" placeholder="Mínimo 6 caracteres" required>
+                        <input type="password" id="registerPassword" class="form-input"
+                            placeholder="Mínimo 6 caracteres" required>
                     </div>
                     <div class="form-group">
                         <label for="registerPasswordConfirm" class="form-label">Confirmar Contraseña</label>
-                        <input type="password" id="registerPasswordConfirm" class="form-input" placeholder="Confirma tu contraseña" required>
+                        <input type="password" id="registerPasswordConfirm" class="form-input"
+                            placeholder="Confirma tu contraseña" required>
                     </div>
                     <button type="submit" class="btn btn-accent btn-block">
                         <span>Crear Cuenta</span>
@@ -75,37 +81,47 @@
         </div>
     </div>
 
-    
+
     <div id="appScreen" class="app-screen hidden">
-        
-        
+
+
         <nav class="navbar">
             <div class="nav-container">
                 <div class="nav-brand">
                     <img src="https://i.ibb.co/8gLPXfjh/FERRISOLUCIONES-1.png" alt="Logo" class="nav-logo">
                     <span class="nav-title">Ferrisoluciones</span>
                 </div>
-                
+
                 <div class="nav-menu">
-                    <a href="#" class="nav-btn active" data-module="punto-venta" data-tooltip="Punto de venta" aria-label="Punto de venta">
+                    <a href="#" class="nav-btn active" data-module="punto-venta" data-tooltip="Punto de venta"
+                        aria-label="Punto de venta">
                         <i class="fas fa-shopping-cart"></i>
                         <span class="nav-btn-text" aria-hidden="true">Punto de venta</span>
                     </a>
-                    <a href="#" class="nav-btn" data-module="ventas" data-tooltip="Historial de ventas" aria-label="Historial de ventas">
+                    <a href="#" class="nav-btn" data-module="ventas" data-tooltip="Historial de ventas"
+                        aria-label="Historial de ventas">
                         <i class="fas fa-history"></i>
                         <span class="nav-btn-text" aria-hidden="true">Historial de ventas</span>
                     </a>
-                    <a href="#" class="nav-btn" data-module="gastos" data-tooltip="Registro de gastos" aria-label="Registro de gastos">
+                    <a href="#" class="nav-btn" data-module="gastos" data-tooltip="Registro de gastos"
+                        aria-label="Registro de gastos">
                         <i class="fas fa-receipt"></i>
                         <span class="nav-btn-text" aria-hidden="true">Registro de gastos</span>
                     </a>
-                    <a href="#" class="nav-btn" data-module="proveedores" data-tooltip="Gestión de proveedores" aria-label="Gestión de proveedores">
+                    <a href="#" class="nav-btn" data-module="proveedores" data-tooltip="Gestión de proveedores"
+                        aria-label="Gestión de proveedores">
                         <i class="fas fa-truck"></i>
                         <span class="nav-btn-text" aria-hidden="true">Gestión de proveedores</span>
                     </a>
-                    <a href="#" class="nav-btn" data-module="cxc" data-tooltip="Cuentas por cobrar" aria-label="Cuentas por cobrar">
+                    <a href="#" class="nav-btn" data-module="cxc" data-tooltip="Cuentas por cobrar"
+                        aria-label="Cuentas por cobrar">
                         <i class="fas fa-wallet"></i>
                         <span class="nav-btn-text" aria-hidden="true">Cuentas por cobrar</span>
+                    </a>
+                    <a href="#" class="nav-btn" data-module="pedidos" data-tooltip="Pedidos a proveedores"
+                        aria-label="Pedidos a proveedores">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span class="nav-btn-text" aria-hidden="true">Pedidos a proveedores</span>
                     </a>
                 </div>
 
@@ -123,11 +139,11 @@
             </div>
         </nav>
 
-        
+
         <div id="moduleContainer" class="module-container">
         </div>
 
-        
+
         <div class="custom-modal-overlay" id="customModalOverlay">
             <div class="custom-modal">
                 <div class="custom-modal-header">
@@ -142,7 +158,8 @@
                 <div class="custom-modal-body">
                     <div class="custom-modal-message" id="customModalMessage">Mensaje</div>
                     <div class="custom-modal-input-container" id="customModalInputContainer" style="display: none;">
-                        <input type="text" class="custom-modal-input" id="customModalInput" placeholder="Ingrese valor...">
+                        <input type="text" class="custom-modal-input" id="customModalInput"
+                            placeholder="Ingrese valor...">
                     </div>
                 </div>
                 <div class="custom-modal-footer">
@@ -154,14 +171,16 @@
 
     </div>
 
-    
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="app.js"></script>
-    
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const navButtons = document.querySelectorAll('.nav-btn');
 
             navButtons.forEach(button => {
@@ -420,11 +439,8 @@
         .custom-modal-prompt .custom-modal-icon {
             color: #17a2b8;
         }
-
     </style>
 
 </body>
+
 </html>
-
-
-
