@@ -3953,6 +3953,13 @@
                     e.preventDefault();
                     procesarVentaCredito();
                 }
+                // Suprimir (Delete) - Eliminar el último producto agregado al carrito
+                if (e.key === 'Delete') {
+                    if (ventaState.carrito.length > 0) {
+                        e.preventDefault();
+                        eliminarDelCarrito(ventaState.carrito[0].codigo);
+                    }
+                }
                 // F3 - Toggle búsqueda de cliente (activar/desactivar)
                 if (e.key === 'F3') {
                     e.preventDefault();
