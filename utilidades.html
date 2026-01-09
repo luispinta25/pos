@@ -1,0 +1,1562 @@
+<div class="container" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px;">
+    
+    <!-- Screen Blocker para operaciones -->
+    <div id="utilidadesScreenBlocker" class="utilidades-screen-blocker">
+        <div class="utilidades-blocker-content">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p id="utilidadesBlockerText">Procesando...</p>
+        </div>
+    </div>
+
+    <!-- Modal de Búsqueda de Producto para Utilidades -->
+    <div id="modalBuscarProductoUtilidades" class="utilidades-modal-overlay">
+        <div class="utilidades-modal-container" style="max-width: 600px;">
+            <div class="utilidades-modal-header">
+                <h2><i class="fas fa-search"></i> Buscar Producto</h2>
+                <button class="utilidades-modal-close" onclick="cerrarModalBuscarProducto()">&times;</button>
+            </div>
+            <div class="utilidades-modal-content">
+                <div class="form-group">
+                    <label class="form-label">Código o Nombre del Producto</label>
+                    <input type="text" id="utilidadesSearchInput" class="form-input"
+                        placeholder="Escanea código o escribe nombre..." autocomplete="off">
+                </div>
+                <div id="utilidadesSearchResults" class="utilidades-search-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Actualizar Inventario -->
+    <div id="modalActualizarInventario" class="utilidades-modal-overlay">
+        <div class="utilidades-modal-container" style="max-width: 500px;">
+            <div class="utilidades-modal-header">
+                <h2><i class="fas fa-edit"></i> Actualizar Inventario</h2>
+                <button class="utilidades-modal-close" onclick="cerrarModalActualizarInventario()">&times;</button>
+            </div>
+            <div class="utilidades-modal-content">
+                <!-- Info del producto -->
+                <div class="producto-info-card" id="productoInfoCard">
+                    <div class="producto-info-header">
+                        <div class="producto-codigo" id="productoCodigoInfo">-</div>
+                        <div class="producto-nombre" id="productoNombreInfo">-</div>
+                    </div>
+                </div>
+
+                <!-- Campos editables -->
+                <div class="actualizar-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-boxes"></i> Stock Actual
+                            </label>
+                            <input type="text" id="stockActualDisplay" class="form-input readonly-input" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-arrow-right"></i> Nuevo Stock
+                            </label>
+                            <input type="number" id="nuevoStockInput" class="form-input" 
+                                placeholder="0.00" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-map-marker-alt"></i> Zona
+                            </label>
+                            <input type="text" id="nuevaZonaInput" class="form-input" 
+                                placeholder="Ej: A1, B2, Bodega...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-exclamation-triangle"></i> Stock Mínimo
+                            </label>
+                            <input type="number" id="nuevoStockMinimoInput" class="form-input" 
+                                placeholder="0" step="0.01" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="utilidades-modal-actions">
+                    <button class="btn-utilidades-cancelar" onclick="cerrarModalActualizarInventario()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button class="btn-utilidades-confirmar" onclick="confirmarActualizacionInventario()">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirm Personalizado -->
+    <div id="utilidadesConfirmModal" class="utilidades-modal-overlay">
+        <div class="utilidades-modal-container utilidades-confirm-modal" style="max-width: 450px;">
+            <div class="utilidades-modal-header confirm-header">
+                <h2><i class="fas fa-question-circle"></i> Confirmar Actualización</h2>
+            </div>
+            <div class="utilidades-modal-content">
+                <div class="confirm-message" id="utilidadesConfirmMessage">
+                    <!-- Contenido dinámico -->
+                </div>
+                <div class="utilidades-modal-actions">
+                    <button class="btn-utilidades-cancelar" onclick="cancelarConfirmacion()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button class="btn-utilidades-confirmar" id="btnEjecutarActualizacion" onclick="ejecutarActualizacion()">
+                        <i class="fas fa-check"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALES DE PROVEEDORES -->
+    
+    <!-- Modal de Búsqueda de Proveedor -->
+    <div id="modalBuscarProveedorUtilidades" class="utilidades-modal-overlay">
+        <div class="utilidades-modal-container" style="max-width: 650px;">
+            <div class="utilidades-modal-header">
+                <h2><i class="fas fa-truck"></i> Seleccionar Proveedor</h2>
+                <button class="utilidades-modal-close" onclick="cerrarModalBuscarProveedor()">&times;</button>
+            </div>
+            <div class="utilidades-modal-content">
+                <div class="form-group">
+                    <label class="form-label">Nombre de la Empresa o Código</label>
+                    <input type="text" id="utilidadesSearchProveedorInput" class="form-input"
+                        placeholder="Escribe el nombre de la empresa..." autocomplete="off">
+                </div>
+                
+                <div class="botonera-alfabetica" id="botoneraAlfabetica">
+                    <!-- Generado por JS -->
+                </div>
+
+                <div id="utilidadesProveedorResults" class="utilidades-search-results">
+                    <div style="text-align: center; padding: 20px; color: #999;">
+                        Busca por nombre o usa la botonera
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Actualizar Proveedor -->
+    <div id="modalActualizarProveedor" class="utilidades-modal-overlay">
+        <div class="utilidades-modal-container" style="max-width: 500px;">
+            <div class="utilidades-modal-header">
+                <h2><i class="fas fa-edit"></i> Actualizar Datos de Proveedor</h2>
+                <button class="utilidades-modal-close" onclick="cerrarModalActualizarProveedor()">&times;</button>
+            </div>
+            <div class="utilidades-modal-content">
+                <!-- Info del proveedor -->
+                <div class="producto-info-card" id="proveedorInfoCard" style="background: linear-gradient(135deg, #1fa2ff 0%, #12d8fa 50%, #a6ffcb 100%);">
+                    <div class="producto-info-header">
+                        <div class="producto-codigo" id="proveedorCodigoInfo">-</div>
+                        <div class="producto-nombre" id="proveedorEmpresaInfo">-</div>
+                    </div>
+                </div>
+
+                <!-- Campos editables -->
+                <div class="actualizar-form">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label class="form-label">
+                            <i class="fas fa-user-tie"></i> Vendedor Actual
+                        </label>
+                        <input type="text" id="vendedorActualDisplay" class="form-input readonly-input" readonly>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label class="form-label">
+                            <i class="fas fa-user-edit"></i> Nuevo Vendedor
+                        </label>
+                        <input type="text" id="nuevoVendedorInput" class="form-input" 
+                            placeholder="Nombre del vendedor...">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label class="form-label">
+                            <i class="fas fa-phone"></i> Contacto (Teléfono/WhatsApp)
+                        </label>
+                        <input type="text" id="nuevoContactoInput" class="form-input" 
+                            placeholder="Ej: 0987654321...">
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="utilidades-modal-actions">
+                    <button class="btn-utilidades-cancelar" onclick="cerrarModalActualizarProveedor()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button class="btn-utilidades-confirmar" onclick="confirmarActualizacionProveedor()">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="utilidades-container">
+        <div class="utilidades-header">
+            <h2><i class="fas fa-tools"></i> Utilidades</h2>
+            <p>Herramientas de gestión y mantenimiento del sistema</p>
+        </div>
+
+        <div class="utilidades-gallery">
+            <!-- Botón Actualizar Inventario -->
+            <div class="utilidad-card" onclick="abrirActualizarInventario()">
+                <div class="utilidad-icon">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+                <div class="utilidad-info">
+                    <h3>Actualizar Inventario</h3>
+                    <p>Modifica stock, zona y stock mínimo de productos</p>
+                </div>
+                <div class="utilidad-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <!-- Botón Actualizar Proveedores -->
+            <div class="utilidad-card" onclick="abrirActualizarProveedores()">
+                <div class="utilidad-icon" style="background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="utilidad-info">
+                    <h3>Actualizar Proveedores</h3>
+                    <p>Modifica vendedor y contacto de los proveedores</p>
+                </div>
+                <div class="utilidad-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <!-- Aquí se pueden agregar más utilidades en el futuro -->
+        </div>
+    </div>
+</div>
+
+<style>
+    /* =====================================================
+       ESTILOS ADICIONALES
+       ===================================================== */
+    
+    .botonera-alfabetica {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 20px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        justify-content: center;
+    }
+
+    .btn-letra {
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: #495057;
+    }
+
+    .btn-letra:hover {
+        background: #d4a017;
+        color: white;
+        border-color: #d4a017;
+        transform: translateY(-2px);
+    }
+
+    .btn-letra.active {
+        background: #d4a017;
+        color: white;
+        border-color: #d4a017;
+    }
+
+    .utilidades-search-results-prov {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .prov-item {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .prov-item:hover {
+        background: #f0f7ff;
+    }
+
+    .prov-item-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+
+    .prov-empresa {
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+    .prov-codigo {
+        font-size: 0.85em;
+        color: #666;
+    }
+
+    .prov-meta {
+        display: flex;
+        gap: 15px;
+        font-size: 0.85em;
+        color: #777;
+    }
+
+    .prov-meta span i {
+        color: #2196F3;
+        margin-right: 5px;
+    }
+
+    /* =====================================================
+       ESTILOS GENERALES DE UTILIDADES
+       ===================================================== */
+    
+    .utilidades-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .utilidades-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+    }
+
+    .utilidades-header h2 {
+        font-size: 2em;
+        color: #1a1a1a;
+        margin-bottom: 10px;
+    }
+
+    .utilidades-header h2 i {
+        color: #d4a017;
+        margin-right: 10px;
+    }
+
+    .utilidades-header p {
+        color: #666;
+        font-size: 1.1em;
+    }
+
+    /* =====================================================
+       GALERÍA DE UTILIDADES
+       ===================================================== */
+
+    .utilidades-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        padding: 10px;
+    }
+
+    .utilidad-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid #e0e0e0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .utilidad-card:hover {
+        border-color: #d4a017;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(212, 160, 23, 0.2);
+    }
+
+    .utilidad-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #d4a017 0%, #f5c842 100%);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .utilidad-icon i {
+        font-size: 1.8em;
+        color: white;
+    }
+
+    .utilidad-info {
+        flex: 1;
+    }
+
+    .utilidad-info h3 {
+        font-size: 1.2em;
+        color: #1a1a1a;
+        margin-bottom: 5px;
+    }
+
+    .utilidad-info p {
+        color: #666;
+        font-size: 0.9em;
+        margin: 0;
+    }
+
+    .utilidad-arrow {
+        color: #ccc;
+        font-size: 1.2em;
+        transition: all 0.3s ease;
+    }
+
+    .utilidad-card:hover .utilidad-arrow {
+        color: #d4a017;
+        transform: translateX(5px);
+    }
+
+    /* =====================================================
+       SCREEN BLOCKER
+       ===================================================== */
+
+    .utilidades-screen-blocker {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 999999;
+    }
+
+    .utilidades-screen-blocker.active {
+        display: flex;
+    }
+
+    .utilidades-blocker-content {
+        text-align: center;
+        color: white;
+    }
+
+    .utilidades-blocker-content i {
+        font-size: 3em;
+        color: #d4a017;
+        margin-bottom: 20px;
+    }
+
+    .utilidades-blocker-content p {
+        font-size: 1.2em;
+        margin: 0;
+    }
+
+    /* =====================================================
+       MODALES DE UTILIDADES
+       ===================================================== */
+
+    .utilidades-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 99998;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    #utilidadesConfirmModal {
+        z-index: 99999; /* Por encima de los otros modales */
+    }
+
+    .utilidades-modal-overlay.active {
+        display: flex;
+        opacity: 1;
+    }
+
+    .utilidades-modal-container {
+        background: white;
+        border-radius: 20px;
+        width: 90%;
+        max-height: 90vh;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+    }
+
+    .utilidades-modal-overlay.active .utilidades-modal-container {
+        transform: scale(1);
+    }
+
+    .utilidades-modal-header {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        color: white;
+        padding: 20px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .utilidades-modal-header h2 {
+        margin: 0;
+        font-size: 1.3em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .utilidades-modal-header h2 i {
+        color: #d4a017;
+    }
+
+    .utilidades-modal-close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 2em;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        transition: all 0.2s ease;
+    }
+
+    .utilidades-modal-close:hover {
+        color: #d4a017;
+        transform: scale(1.1);
+    }
+
+    .utilidades-modal-content {
+        padding: 25px;
+        max-height: calc(90vh - 80px);
+        overflow-y: auto;
+    }
+
+    /* =====================================================
+       BÚSQUEDA DE PRODUCTOS
+       ===================================================== */
+
+    .utilidades-search-results {
+        max-height: 350px;
+        overflow-y: auto;
+        margin-top: 15px;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .utilidades-search-item {
+        padding: 15px;
+        border-bottom: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .utilidades-search-item:last-child {
+        border-bottom: none;
+    }
+
+    .utilidades-search-item:hover {
+        background: #f8f9fa;
+        padding-left: 20px;
+    }
+
+    .utilidades-search-item.selected {
+        background: #fff8e1;
+        border-left: 4px solid #d4a017;
+    }
+
+    .utilidades-search-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+    }
+
+    .utilidades-search-item-name {
+        font-weight: 600;
+        color: #1a1a1a;
+        font-size: 1em;
+    }
+
+    .utilidades-search-item-stock {
+        color: #28a745;
+        font-weight: 600;
+        font-size: 0.95em;
+    }
+
+    .utilidades-search-item-stock.bajo {
+        color: #dc3545;
+    }
+
+    .utilidades-search-item-meta {
+        display: flex;
+        gap: 15px;
+        font-size: 0.85em;
+        color: #666;
+    }
+
+    .utilidades-search-item-meta span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .badge-zona-util {
+        background: #e9ecef;
+        color: #495057;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75em;
+        font-weight: 600;
+    }
+
+    /* =====================================================
+       CARD DE PRODUCTO
+       ===================================================== */
+
+    .producto-info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 20px;
+        color: white;
+        margin-bottom: 25px;
+    }
+
+    .producto-info-header {
+        text-align: center;
+    }
+
+    .producto-codigo {
+        font-size: 0.9em;
+        opacity: 0.9;
+        margin-bottom: 5px;
+    }
+
+    .producto-nombre {
+        font-size: 1.3em;
+        font-weight: 600;
+    }
+
+    /* =====================================================
+       FORMULARIO DE ACTUALIZACIÓN
+       ===================================================== */
+
+    .actualizar-form {
+        margin-bottom: 20px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .form-label i {
+        color: #d4a017;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1em;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #d4a017;
+        box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.1);
+    }
+
+    .readonly-input {
+        background: #f5f5f5;
+        color: #666;
+        cursor: not-allowed;
+    }
+
+    /* =====================================================
+       BOTONES DE ACCIÓN
+       ===================================================== */
+
+    .utilidades-modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+
+    .btn-utilidades-cancelar,
+    .btn-utilidades-confirmar {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 10px;
+        font-size: 1em;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-utilidades-cancelar {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-utilidades-cancelar:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+
+    .btn-utilidades-confirmar {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+
+    .btn-utilidades-confirmar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    /* =====================================================
+       MODAL DE CONFIRMACIÓN
+       ===================================================== */
+
+    .confirm-header {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%) !important;
+    }
+
+    .confirm-message {
+        background: #fff8e1;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 10px;
+    }
+
+    .confirm-message h4 {
+        margin: 0 0 15px 0;
+        color: #e65100;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .confirm-changes {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .confirm-changes li {
+        padding: 10px 15px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .confirm-changes li:last-child {
+        margin-bottom: 0;
+    }
+
+    .change-label {
+        font-weight: 500;
+        color: #666;
+    }
+
+    .change-value {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .old-value {
+        color: #dc3545;
+        text-decoration: line-through;
+        font-size: 0.9em;
+    }
+
+    .new-value {
+        color: #28a745;
+        font-weight: 600;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 600px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .utilidades-gallery {
+            grid-template-columns: 1fr;
+        }
+
+        .utilidad-card {
+            padding: 18px;
+        }
+
+        .utilidad-icon {
+            width: 50px;
+            height: 50px;
+        }
+
+        .utilidad-icon i {
+            font-size: 1.4em;
+        }
+
+        .utilidades-modal-actions {
+            flex-direction: column;
+        }
+
+        .btn-utilidades-cancelar,
+        .btn-utilidades-confirmar {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    // =====================================================
+    // UTILIDADES - Módulo de herramientas del sistema
+    // =====================================================
+
+    // Estado del módulo de utilidades
+    let utilidadesState = {
+        // Inventario
+        productoSeleccionado: null,
+        busquedaResultados: [],
+        busquedaSeleccionado: -1,
+        pendienteActualizacion: null,
+        
+        // Proveedores
+        proveedorSeleccionado: null,
+        busquedaProvResultados: [],
+        letraSeleccionada: null,
+        tipoOperacion: null // 'INVENTARIO' o 'PROVEEDOR'
+    };
+
+    // Cache del inventario (reusamos el del punto de venta si existe)
+    let utilidadesInventarioCache = [];
+
+    // =====================================================
+    // INICIALIZACIÓN
+    // =====================================================
+
+    function initUtilidades() {
+        console.log('📦 Módulo Utilidades cargado');
+        
+        // Actualizar contador del navbar
+        if (window.app && window.app.updateNavbarCounter) {
+            window.app.updateNavbarCounter('utilidades');
+        }
+
+        // Configurar listeners de búsqueda
+        setupSearchListeners();
+        
+        // Generar botonera alfabética
+        generarBotoneraAlfabetica();
+    }
+
+    function generarBotoneraAlfabetica() {
+        const container = document.getElementById('botoneraAlfabetica');
+        if (!container) return;
+        
+        const letras = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
+        container.innerHTML = letras.map(l => `
+            <button class="btn-letra" onclick="filtrarPorLetra('${l}')">${l}</button>
+        `).join('');
+    }
+
+    function setupSearchListeners() {
+        // Buscador de productos
+        const searchInput = document.getElementById('utilidadesSearchInput');
+        if (searchInput) {
+            let debounceTimer;
+            searchInput.addEventListener('input', function(e) {
+                let valor = e.target.value;
+                clearTimeout(debounceTimer);
+                if (!valor || valor.trim().length === 0) {
+                    document.getElementById('utilidadesSearchResults').innerHTML = '';
+                    utilidadesState.busquedaResultados = [];
+                    utilidadesState.busquedaSeleccionado = -1;
+                    return;
+                }
+                utilidadesState.busquedaSeleccionado = -1;
+                debounceTimer = setTimeout(() => buscarProductosUtilidades(valor), 150);
+            });
+
+            searchInput.addEventListener('keydown', function(e) {
+                const resultados = utilidadesState.busquedaResultados;
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (utilidadesState.busquedaSeleccionado < resultados.length - 1) {
+                        utilidadesState.busquedaSeleccionado++;
+                        actualizarSeleccionBusqueda();
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (utilidadesState.busquedaSeleccionado > 0) {
+                        utilidadesState.busquedaSeleccionado--;
+                        actualizarSeleccionBusqueda();
+                    }
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (utilidadesState.busquedaSeleccionado >= 0 && resultados[utilidadesState.busquedaSeleccionado]) {
+                        seleccionarProductoParaActualizar(resultados[utilidadesState.busquedaSeleccionado]);
+                    }
+                }
+            });
+        }
+
+        // Buscador de proveedores
+        const searchProvInput = document.getElementById('utilidadesSearchProveedorInput');
+        if (searchProvInput) {
+            let debounceTimerProv;
+            searchProvInput.addEventListener('input', function(e) {
+                let valor = e.target.value;
+                clearTimeout(debounceTimerProv);
+                
+                // Desmarcar letra si escribe
+                if (valor.trim().length > 0) {
+                    utilidadesState.letraSeleccionada = null;
+                    document.querySelectorAll('.btn-letra').forEach(b => b.classList.remove('active'));
+                }
+
+                if (!valor || valor.trim().length === 0) {
+                    if (!utilidadesState.letraSeleccionada) {
+                        document.getElementById('utilidadesProveedorResults').innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">Busca por nombre o usa la botonera</div>';
+                        utilidadesState.busquedaProvResultados = [];
+                    }
+                    return;
+                }
+                debounceTimerProv = setTimeout(() => buscarProveedoresUtilidades(valor), 250);
+            });
+        }
+    }
+
+    // =====================================================
+    // BÚSQUEDA DE PRODUCTOS
+    // =====================================================
+
+    async function buscarProductosUtilidades(query) {
+        if (!query || query.trim().length < 2) {
+            document.getElementById('utilidadesSearchResults').innerHTML = '';
+            return;
+        }
+
+        try {
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
+            
+            if (!db) {
+                console.error('Base de datos no disponible');
+                return;
+            }
+
+            // Intentar usar caché primero
+            if (window.inventarioCache && window.inventarioCache.productos && window.inventarioCache.productos.length > 0) {
+                const resultados = buscarEnCacheUtilidades(query);
+                mostrarResultadosBusquedaUtilidades(resultados);
+                return;
+            }
+
+            // Fallback: buscar en BD
+            const palabras = query.trim().split(/\s+/).filter(p => p.length > 0);
+            let queryBuilder = db.from('inventario').select('*');
+
+            const esNumerico = /^\d+$/.test(query.trim());
+            const longitudNumeros = query.trim().length;
+
+            if (esNumerico && longitudNumeros >= 4) {
+                queryBuilder = queryBuilder.ilike('codigo', `${query.trim()}%`);
+            } else if (palabras.length === 1) {
+                const searchPattern = `%${palabras[0]}%`;
+                queryBuilder = queryBuilder.or(`codigo.ilike.${searchPattern},producto.ilike.${searchPattern}`);
+            } else {
+                palabras.forEach(palabra => {
+                    queryBuilder = queryBuilder.ilike('producto', `%${palabra}%`);
+                });
+            }
+
+            const { data, error } = await queryBuilder.limit(30);
+
+            if (error) throw error;
+
+            mostrarResultadosBusquedaUtilidades(data || []);
+
+        } catch (error) {
+            console.error('Error en búsqueda:', error);
+            if (window.app && window.app.showToast) {
+                window.app.showToast('Error al buscar productos', 'danger');
+            }
+        }
+    }
+
+    function buscarEnCacheUtilidades(query) {
+        const productos = window.inventarioCache.productos;
+        const queryLower = query.toLowerCase().trim();
+        const palabras = queryLower.split(/\s+/).filter(p => p.length > 0);
+
+        let resultados = productos.filter(p => {
+            const codigo = (p.codigo || '').toLowerCase();
+            const nombre = (p.producto || '').toLowerCase();
+
+            // Búsqueda por código exacto
+            if (codigo === queryLower || codigo.startsWith(queryLower)) {
+                return true;
+            }
+
+            // Búsqueda por palabras en el nombre
+            return palabras.every(palabra => nombre.includes(palabra));
+        });
+
+        // Limitar resultados
+        return resultados.slice(0, 30);
+    }
+
+    function mostrarResultadosBusquedaUtilidades(productos) {
+        const container = document.getElementById('utilidadesSearchResults');
+        utilidadesState.busquedaResultados = productos || [];
+
+        if (!productos || productos.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 30px; color: #999;"><i class="fas fa-search" style="font-size: 2em; margin-bottom: 10px; display: block;"></i>No se encontraron productos</div>';
+            return;
+        }
+
+        if (utilidadesState.busquedaSeleccionado === -1) {
+            utilidadesState.busquedaSeleccionado = 0;
+        }
+
+        container.innerHTML = productos.map((p, index) => {
+            const isSelected = index === utilidadesState.busquedaSeleccionado;
+            const stockBajo = p.stock < 10;
+            return `
+                <div class="utilidades-search-item ${isSelected ? 'selected' : ''}" 
+                     onclick="seleccionarProductoParaActualizar(utilidadesState.busquedaResultados[${index}])"
+                     data-index="${index}">
+                    <div class="utilidades-search-item-header">
+                        <span class="utilidades-search-item-name">${p.producto}</span>
+                        <span class="utilidades-search-item-stock ${stockBajo ? 'bajo' : ''}">
+                            Stock: ${p.stock} ${p.unidad_paquete || 'und'}
+                        </span>
+                    </div>
+                    <div class="utilidades-search-item-meta">
+                        <span><i class="fas fa-barcode"></i> ${p.codigo}</span>
+                        ${p.zona ? `<span class="badge-zona-util">ZONA: ${p.zona}</span>` : ''}
+                        ${p.stock_minimo ? `<span><i class="fas fa-exclamation-triangle"></i> Mín: ${p.stock_minimo}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function actualizarSeleccionBusqueda() {
+        const items = document.querySelectorAll('.utilidades-search-item');
+        items.forEach((item, index) => {
+            if (index === utilidadesState.busquedaSeleccionado) {
+                item.classList.add('selected');
+                item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    // =====================================================
+    // FLUJO DE ACTUALIZAR PROVEEDORES
+    // =====================================================
+
+    function abrirActualizarProveedores() {
+        utilidadesState.proveedorSeleccionado = null;
+        utilidadesState.busquedaProvResultados = [];
+        utilidadesState.letraSeleccionada = null;
+        utilidadesState.tipoOperacion = 'PROVEEDOR';
+
+        const searchInput = document.getElementById('utilidadesSearchProveedorInput');
+        if (searchInput) searchInput.value = '';
+        
+        document.getElementById('utilidadesProveedorResults').innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">Busca por nombre o usa la botonera</div>';
+        
+        // Reset botones letras
+        document.querySelectorAll('.btn-letra').forEach(b => b.classList.remove('active'));
+
+        document.getElementById('modalBuscarProveedorUtilidades').classList.add('active');
+        setTimeout(() => searchInput.focus(), 150);
+    }
+
+    function cerrarModalBuscarProveedor() {
+        document.getElementById('modalBuscarProveedorUtilidades').classList.remove('active');
+    }
+
+    async function buscarProveedoresUtilidades(query) {
+        try {
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
+            let q = db.from('proveedores').select('*');
+            
+            if (query.length === 1 && /^[A-ZÑ]$/i.test(query)) {
+                q = q.ilike('empresa', `${query}%`);
+            } else {
+                q = q.or(`empresa.ilike.%${query}%,codigo.ilike.%${query}%`);
+            }
+
+            const { data, error } = await q.order('empresa', { ascending: true }).limit(50);
+            if (error) throw error;
+            mostrarResultadosProveedores(data);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    function filtrarPorLetra(letra) {
+        utilidadesState.letraSeleccionada = letra;
+        utilidadesState.busquedaProvResultados = [];
+        
+        document.querySelectorAll('.btn-letra').forEach(b => {
+            if (b.textContent === letra) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+
+        const searchInput = document.getElementById('utilidadesSearchProveedorInput');
+        if (searchInput) searchInput.value = '';
+
+        buscarProveedoresUtilidades(letra);
+    }
+
+    function mostrarResultadosProveedores(data) {
+        const container = document.getElementById('utilidadesProveedorResults');
+        utilidadesState.busquedaProvResultados = data || [];
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">No se encontraron proveedores</div>';
+            return;
+        }
+
+        container.innerHTML = `<div class="utilidades-search-results-prov">
+            ${data.map((p, index) => `
+                <div class="prov-item" onclick="seleccionarProveedorParaActualizar(utilidadesState.busquedaProvResultados[${index}])">
+                    <div class="prov-item-header">
+                        <span class="prov-empresa">${p.empresa}</span>
+                        <span class="prov-codigo">${p.codigo}</span>
+                    </div>
+                    <div class="prov-meta">
+                        <span><i class="fas fa-user-tie"></i> ${p.vendedor || 'No asignado'}</span>
+                        <span><i class="fas fa-phone"></i> ${p.contacto || 'No asignado'}</span>
+                    </div>
+                </div>
+            `).join('')}
+        </div>`;
+    }
+
+    function seleccionarProveedorParaActualizar(proveedor) {
+        if (!proveedor) return;
+        utilidadesState.proveedorSeleccionado = proveedor;
+        cerrarModalBuscarProveedor();
+
+        document.getElementById('proveedorCodigoInfo').textContent = `Código: ${proveedor.codigo}`;
+        document.getElementById('proveedorEmpresaInfo').textContent = proveedor.empresa;
+        document.getElementById('vendedorActualDisplay').value = proveedor.vendedor || 'Sin vendedor';
+        document.getElementById('nuevoVendedorInput').value = proveedor.vendedor || '';
+        document.getElementById('nuevoContactoInput').value = proveedor.contacto || '';
+
+        document.getElementById('modalActualizarProveedor').classList.add('active');
+        setTimeout(() => document.getElementById('nuevoVendedorInput').focus(), 150);
+    }
+
+    function cerrarModalActualizarProveedor() {
+        document.getElementById('modalActualizarProveedor').classList.remove('active');
+    }
+
+    function confirmarActualizacionProveedor() {
+        const prov = utilidadesState.proveedorSeleccionado;
+        const nuevoVendedor = document.getElementById('nuevoVendedorInput').value.trim();
+        const nuevoContacto = document.getElementById('nuevoContactoInput').value.trim();
+
+        if (nuevoVendedor === (prov.vendedor || '') && nuevoContacto === (prov.contacto || '')) {
+            window.app.showToast('No hay cambios detectados', 'warning');
+            return;
+        }
+
+        utilidadesState.pendienteActualizacion = {
+            id: prov.id,
+            empresa: prov.empresa,
+            cambios: {
+                vendedor: { anterior: prov.vendedor || '(vacío)', nuevo: nuevoVendedor || '(vacío)' },
+                contacto: { anterior: prov.contacto || '(vacío)', nuevo: nuevoContacto || '(vacío)' }
+            }
+        };
+
+        let html = `
+            <h4><i class="fas fa-truck"></i> Actualizar: ${prov.empresa}</h4>
+            <ul class="confirm-changes">
+                <li>
+                    <span class="change-label">Vendedor</span>
+                    <span class="change-value">
+                        <span class="old-value">${prov.vendedor || '-'}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="new-value">${nuevoVendedor || '-'}</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="change-label">Contacto</span>
+                    <span class="change-value">
+                        <span class="old-value">${prov.contacto || '-'}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="new-value">${nuevoContacto || '-'}</span>
+                    </span>
+                </li>
+            </ul>
+        `;
+
+        document.getElementById('utilidadesConfirmMessage').innerHTML = html;
+        document.getElementById('btnEjecutarActualizacion').onclick = ejecutarActualizacionProveedor; 
+        document.getElementById('utilidadesConfirmModal').classList.add('active');
+    }
+
+    async function ejecutarActualizacionProveedor() {
+        const pending = utilidadesState.pendienteActualizacion;
+        document.getElementById('utilidadesConfirmModal').classList.remove('active');
+        mostrarScreenBlocker('Actualizando proveedor...');
+
+        try {
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
+            const { error } = await db.from('proveedores').update({
+                vendedor: pending.cambios.vendedor.nuevo === '(vacío)' ? null : pending.cambios.vendedor.nuevo,
+                contacto: pending.cambios.contacto.nuevo === '(vacío)' ? null : pending.cambios.contacto.nuevo
+            }).eq('id', pending.id);
+
+            if (error) throw error;
+
+            ocultarScreenBlocker();
+            cerrarModalActualizarProveedor();
+            window.app.showToast('Proveedor actualizado con éxito', 'success');
+        } catch (error) {
+            ocultarScreenBlocker();
+            window.app.showToast('Error al actualizar proveedor: ' + error.message, 'danger');
+        }
+    }
+
+    // =====================================================
+    // FLUJO DE ACTUALIZAR INVENTARIO
+    // =====================================================
+
+    function abrirActualizarInventario() {
+        // Limpiar estado anterior
+        utilidadesState.productoSeleccionado = null;
+        utilidadesState.busquedaResultados = [];
+        utilidadesState.busquedaSeleccionado = -1;
+        utilidadesState.tipoOperacion = 'INVENTARIO';
+
+        // Limpiar campo de búsqueda
+        const searchInput = document.getElementById('utilidadesSearchInput');
+        if (searchInput) searchInput.value = '';
+        document.getElementById('utilidadesSearchResults').innerHTML = '';
+
+        // Mostrar modal de búsqueda
+        const modal = document.getElementById('modalBuscarProductoUtilidades');
+        modal.classList.add('active');
+
+        // Enfocar input de búsqueda
+        setTimeout(() => {
+            searchInput.focus();
+        }, 150);
+    }
+
+    function cerrarModalBuscarProducto() {
+        document.getElementById('modalBuscarProductoUtilidades').classList.remove('active');
+    }
+
+    function seleccionarProductoParaActualizar(producto) {
+        if (!producto) return;
+
+        utilidadesState.productoSeleccionado = producto;
+
+        // Cerrar modal de búsqueda
+        cerrarModalBuscarProducto();
+
+        // Llenar datos en el modal de actualización
+        document.getElementById('productoCodigoInfo').textContent = `Código: ${producto.codigo}`;
+        document.getElementById('productoNombreInfo').textContent = producto.producto;
+        document.getElementById('stockActualDisplay').value = `${producto.stock} ${producto.unidad_paquete || 'und'}`;
+        document.getElementById('nuevoStockInput').value = producto.stock || 0;
+        document.getElementById('nuevaZonaInput').value = producto.zona || '';
+        document.getElementById('nuevoStockMinimoInput').value = producto.stock_minimo || '';
+
+        // Mostrar modal de actualización
+        const modal = document.getElementById('modalActualizarInventario');
+        modal.classList.add('active');
+
+        // Enfocar el input de nuevo stock
+        setTimeout(() => {
+            document.getElementById('nuevoStockInput').focus();
+            document.getElementById('nuevoStockInput').select();
+        }, 150);
+    }
+
+    function cerrarModalActualizarInventario() {
+        document.getElementById('modalActualizarInventario').classList.remove('active');
+        utilidadesState.productoSeleccionado = null;
+    }
+
+    // =====================================================
+    // CONFIRMACIÓN Y ACTUALIZACIÓN
+    // =====================================================
+
+    function confirmarActualizacionInventario() {
+        const producto = utilidadesState.productoSeleccionado;
+        if (!producto) return;
+
+        const nuevoStock = parseFloat(document.getElementById('nuevoStockInput').value) || 0;
+        const nuevaZona = document.getElementById('nuevaZonaInput').value.trim();
+        const nuevoStockMinimo = parseFloat(document.getElementById('nuevoStockMinimoInput').value) || 0;
+
+        // Validar que hay al menos un cambio
+        const stockCambio = nuevoStock !== producto.stock;
+        const zonaCambio = nuevaZona !== (producto.zona || '');
+        const stockMinimoCambio = nuevoStockMinimo !== (producto.stock_minimo || 0);
+
+        if (!stockCambio && !zonaCambio && !stockMinimoCambio) {
+            if (window.app && window.app.showToast) {
+                window.app.showToast('No hay cambios que guardar', 'warning');
+            }
+            return;
+        }
+
+        // Guardar datos pendientes
+        utilidadesState.pendienteActualizacion = {
+            codigo: producto.codigo,
+            producto: producto.producto,
+            cambios: {
+                stock: stockCambio ? { anterior: producto.stock, nuevo: nuevoStock } : null,
+                zona: zonaCambio ? { anterior: producto.zona || '-', nuevo: nuevaZona || '-' } : null,
+                stock_minimo: stockMinimoCambio ? { anterior: producto.stock_minimo || 0, nuevo: nuevoStockMinimo } : null
+            }
+        };
+
+        // Construir mensaje de confirmación
+        let changesHtml = `
+            <h4><i class="fas fa-info-circle"></i> Se actualizará: ${producto.producto}</h4>
+            <ul class="confirm-changes">
+        `;
+
+        if (stockCambio) {
+            changesHtml += `
+                <li>
+                    <span class="change-label">Stock</span>
+                    <span class="change-value">
+                        <span class="old-value">${producto.stock}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="new-value">${nuevoStock}</span>
+                    </span>
+                </li>
+            `;
+        }
+
+        if (zonaCambio) {
+            changesHtml += `
+                <li>
+                    <span class="change-label">Zona</span>
+                    <span class="change-value">
+                        <span class="old-value">${producto.zona || '-'}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="new-value">${nuevaZona || '-'}</span>
+                    </span>
+                </li>
+            `;
+        }
+
+        if (stockMinimoCambio) {
+            changesHtml += `
+                <li>
+                    <span class="change-label">Stock Mínimo</span>
+                    <span class="change-value">
+                        <span class="old-value">${producto.stock_minimo || 0}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="new-value">${nuevoStockMinimo}</span>
+                    </span>
+                </li>
+            `;
+        }
+
+        changesHtml += '</ul>';
+
+        document.getElementById('utilidadesConfirmMessage').innerHTML = changesHtml;
+        document.getElementById('btnEjecutarActualizacion').onclick = ejecutarActualizacion; 
+        // Mostrar modal de confirmación
+        document.getElementById('utilidadesConfirmModal').classList.add('active');
+    }
+
+    function cancelarConfirmacion() {
+        document.getElementById('utilidadesConfirmModal').classList.remove('active');
+        utilidadesState.pendienteActualizacion = null;
+    }
+
+    async function ejecutarActualizacion() {
+        const pendiente = utilidadesState.pendienteActualizacion;
+        if (!pendiente) return;
+
+        // Cerrar modal de confirmación
+        document.getElementById('utilidadesConfirmModal').classList.remove('active');
+
+        // Mostrar screen blocker
+        mostrarScreenBlocker('Actualizando inventario...');
+
+        try {
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
+            
+            if (!db) {
+                throw new Error('Base de datos no disponible');
+            }
+
+            // Construir objeto de actualización
+            const updateData = {};
+            
+            if (pendiente.cambios.stock) {
+                updateData.stock = pendiente.cambios.stock.nuevo;
+            }
+            if (pendiente.cambios.zona) {
+                updateData.zona = pendiente.cambios.zona.nuevo === '-' ? null : pendiente.cambios.zona.nuevo;
+            }
+            if (pendiente.cambios.stock_minimo) {
+                updateData.stock_minimo = pendiente.cambios.stock_minimo.nuevo;
+            }
+
+            // Ejecutar actualización
+            const { data, error } = await db
+                .from('inventario')
+                .update(updateData)
+                .eq('codigo', pendiente.codigo)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Actualizar caché si existe
+            if (window.inventarioCache && window.inventarioCache.productos) {
+                const index = window.inventarioCache.productos.findIndex(p => p.codigo === pendiente.codigo);
+                if (index !== -1) {
+                    window.inventarioCache.productos[index] = { ...window.inventarioCache.productos[index], ...updateData };
+                }
+            }
+
+            // Ocultar screen blocker
+            ocultarScreenBlocker();
+
+            // Cerrar modal de actualización
+            cerrarModalActualizarInventario();
+
+            // Mostrar mensaje de éxito
+            if (window.app && window.app.showToast) {
+                window.app.showToast('<i class="fas fa-check-circle"></i> Inventario actualizado correctamente', 'success', 3000);
+            }
+
+            // Limpiar estado
+            utilidadesState.pendienteActualizacion = null;
+
+        } catch (error) {
+            console.error('Error al actualizar inventario:', error);
+            ocultarScreenBlocker();
+            
+            if (window.app && window.app.showToast) {
+                window.app.showToast('<i class="fas fa-exclamation-triangle"></i> Error al actualizar: ' + error.message, 'danger', 5000);
+            }
+        }
+    }
+
+    // =====================================================
+    // SCREEN BLOCKER
+    // =====================================================
+
+    function mostrarScreenBlocker(mensaje = 'Procesando...') {
+        const blocker = document.getElementById('utilidadesScreenBlocker');
+        const text = document.getElementById('utilidadesBlockerText');
+        if (text) text.textContent = mensaje;
+        if (blocker) blocker.classList.add('active');
+    }
+
+    function ocultarScreenBlocker() {
+        const blocker = document.getElementById('utilidadesScreenBlocker');
+        if (blocker) blocker.classList.remove('active');
+    }
+
+    // =====================================================
+    // EXPONER FUNCIONES AL SCOPE GLOBAL
+    // =====================================================
+
+    window.initUtilidades = initUtilidades;
+    window.abrirActualizarInventario = abrirActualizarInventario;
+    window.cerrarModalBuscarProducto = cerrarModalBuscarProducto;
+    window.seleccionarProductoParaActualizar = seleccionarProductoParaActualizar;
+    window.cerrarModalActualizarInventario = cerrarModalActualizarInventario;
+    window.confirmarActualizacionInventario = confirmarActualizacionInventario;
+    window.cancelarConfirmacion = cancelarConfirmacion;
+    window.ejecutarActualizacion = ejecutarActualizacion;
+    
+    // Prov
+    window.abrirActualizarProveedores = abrirActualizarProveedores;
+    window.cerrarModalBuscarProveedor = cerrarModalBuscarProveedor;
+    window.filtrarPorLetra = filtrarPorLetra;
+    window.seleccionarProveedorParaActualizar = seleccionarProveedorParaActualizar;
+    window.cerrarModalActualizarProveedor = cerrarModalActualizarProveedor;
+    window.confirmarActualizacionProveedor = confirmarActualizacionProveedor;
+    window.ejecutarActualizacionProveedor = ejecutarActualizacionProveedor;
+
+    window.utilidadesState = utilidadesState;
+
+    // =====================================================
+    // INICIALIZAR AL CARGAR
+    // =====================================================
+
+    // Auto-inicializar cuando se carga el módulo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initUtilidades);
+    } else {
+        initUtilidades();
+    }
+</script>

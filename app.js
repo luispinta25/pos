@@ -68,6 +68,11 @@ function updateNavbarCounter(moduleName, value = null) {
             }
             break;
         
+        case 'utilidades':
+            totalLabel.textContent = 'Herramientas:';
+            totalAmount.textContent = '';
+            break;
+        
         default:
             totalLabel.textContent = 'Total:';
             totalAmount.textContent = '0';
