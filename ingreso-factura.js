@@ -1640,15 +1640,19 @@ async function procesarProductosNuevos(productos) {
     const codes = Array.from(new Set(productos.map(p => (p && p.codigo) ? p.codigo.toString() : '').filter(Boolean)));
     if (codes.length === 0) return results;
 
-    // 1) Traer filas existentes en una sola query
+    // 1) Traer filas existentes usando chunks para evitar URLs largas
     let existingRows = [];
     try {
-        const { data, error } = await client
-            .from('inventario')
-            .select('id,codigo,stock,precio,producto,zona')
-            .in('codigo', codes);
-        if (error) throw error;
-        existingRows = data || [];
+        const chunkSize = 15; // Tamaño conservador para evitar errores 400
+        for (let i = 0; i < codes.length; i += chunkSize) {
+            const chunk = codes.slice(i, i + chunkSize);
+            const { data, error } = await client
+                .from('inventario')
+                .select('id,codigo,stock,precio,producto,zona')
+                .in('codigo', chunk);
+            if (error) throw error;
+            if (data) existingRows = existingRows.concat(data);
+        }
     } catch (err) {
         existingRows = [];
     }
@@ -1823,17 +1827,23 @@ async function procesarProductosNuevos(productos) {
                 }
             }
         } catch (err) {
-            // Fallback paralelo: obtener stocks actuales y actualizar por id en paralelo
+            // Fallback paralelo: obtener stocks actuales usando chunks para evitar URLs largas
             try {
                 const codesToUpdate = stockIncrements.map(s => s.codigo);
-                const { data: latestRows, error: latestErr } = await client
-                    .from('inventario')
-                    .select('id,codigo,stock')
-                    .in('codigo', codesToUpdate);
-                if (latestErr) throw latestErr;
+                let latestRows = [];
+                const chunkSize = 15; // Tamaño conservador para evitar errores 400
+                for (let i = 0; i < codesToUpdate.length; i += chunkSize) {
+                    const chunk = codesToUpdate.slice(i, i + chunkSize);
+                    const { data, error } = await client
+                        .from('inventario')
+                        .select('id,codigo,stock')
+                        .in('codigo', chunk);
+                    if (error) throw error;
+                    if (data) latestRows = latestRows.concat(data);
+                }
 
                 const latestMap = {};
-                (latestRows || []).forEach(r => { if (r && r.codigo) latestMap[r.codigo.toString()] = r; });
+                latestRows.forEach(r => { if (r && r.codigo) latestMap[r.codigo.toString()] = r; });
 
                 // Ejecutar actualizaciones en paralelo
                 await Promise.all(stockIncrements.map(async si => {

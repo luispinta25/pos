@@ -26,6 +26,28 @@
                     <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Cantidad</div>
                     <div id="statsCantidad" style="font-size: 1.1em; font-weight: 600; color: #666;">0 ventas</div>
                 </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Mes Pasado (Real)</div>
+                    <div id="statsMesPasado" style="font-size: 1.1em; font-weight: 600; color: #666;">$0.00</div>
+                </div>
+
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0; position: relative;">
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="display: flex; align-items: center; gap: 5px;">
+                            <i class="fas fa-chart-line"></i>
+                            Proyección Mes
+                        </span>
+                        <span id="proyeccionCacheIndicator" style="font-size: 0.8em; opacity: 0.6;" title="Indica si la proyección está cacheada o recién calculada"></span>
+                    </div>
+                    <div id="statsProyeccion" style="font-size: 1.3em; font-weight: 700; color: #2196F3;">$0.00</div>
+                    <div id="proyeccionDetalles" style="font-size: 0.75em; color: #999; margin-top: 4px; line-height: 1.3;"></div>
+                    
+                    <button class="btn btn-sm btn-outline" onclick="mostrarDetalleProyeccion()" 
+                        style="width: 100%; margin-top: 8px; padding: 4px; font-size: 0.75em; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                        <i class="fas fa-info-circle"></i> Ver Análisis Detallado
+                    </button>
+                </div>
             </div>
 
 
@@ -336,6 +358,25 @@
             <div style="margin-top: 20px; text-align: right;">
                 <button class="btn btn-secondary" onclick="cerrarModalTop()">Cerrar</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalle Proyección -->
+<div id="modalDetalleProyeccion" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0; padding: 20px;">
+            <h2 class="modal-title" style="margin: 0; font-size: 1.4em;"><i class="fas fa-chart-line"></i> Análisis de Proyección</h2>
+            <button class="modal-close" onclick="cerrarModalProyeccion()" style="color: white; font-size: 1.5em;">&times;</button>
+        </div>
+        <div class="modal-body" id="modalProyeccionBody" style="padding: 25px;">
+            <!-- Contenido dinámico -->
+        </div>
+        <div class="modal-footer" style="padding: 15px 25px; border-top: 1px solid #eee; display: flex; justify-content: space-between; gap: 10px;">
+            <button class="btn" onclick="descargarPDFProyeccion()" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                <i class="fas fa-file-pdf"></i> Descargar Reporte PDF
+            </button>
+            <button class="btn btn-secondary" onclick="cerrarModalProyeccion()" style="padding: 10px 20px; border-radius: 8px;">Cerrar</button>
         </div>
     </div>
 </div>
@@ -688,6 +729,169 @@
         animation: slideUp 0.2s ease-in;
     }
 
+    /* Asegurar que el modal se centre correctamente */
+    #modalDetalleVenta {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(3px);
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    #modalDetalleVenta.active {
+        display: flex;
+    }
+
+    #modalDetalleVenta .modal-content {
+        max-width: 800px;
+        width: 100%;
+        max-height: 90vh;
+        margin: auto;
+        overflow-y: auto;
+        position: relative;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 0; /* Remove default padding to control it internally */
+    }
+
+    #modalDetalleVenta .modal-header {
+        padding: 20px 25px;
+        border-bottom: 2px solid #f0f0f0;
+        margin-bottom: 0;
+    }
+
+    #modalDetalleVenta .modal-body,
+    #modalDetalleVenta #modalDetalleBody {
+        padding: 20px 25px;
+    }
+
+    /* Responsivo para dispositivos móviles */
+    @media (max-width: 768px) {
+        #modalDetalleVenta {
+            padding: 10px;
+        }
+        
+        #modalDetalleVenta .modal-content {
+            max-width: 100%;
+            width: 100%;
+            max-height: 95vh;
+        }
+        
+        #modalDetalleVenta .modal-header,
+        #modalDetalleVenta .modal-body,
+        #modalDetalleVenta #modalDetalleBody {
+            padding: 15px 20px;
+        }
+    }
+
+    /* Asegurar centrado para modal de proyección */
+    #modalDetalleProyeccion {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(3px);
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    #modalDetalleProyeccion.active {
+        display: flex;
+    }
+
+    #modalDetalleProyeccion .modal-content {
+        max-width: 800px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 0;
+        margin: auto;
+    }
+
+    /* Asegurar centrado para modal de selección de cliente */
+    #modalSeleccionCliente {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(3px);
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    #modalSeleccionCliente.active {
+        display: flex;
+    }
+
+    #modalSeleccionCliente .modal-content {
+        max-width: 900px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 0;
+    }
+
+    /* Asegurar centrado para modal de top productos */
+    #modalTopProductos {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(3px);
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    #modalTopProductos.active {
+        display: flex;
+    }
+
+    #modalTopProductos .modal-content {
+        max-width: 900px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 0;
+    }
 
     .detalle-loading {
         display: flex;
@@ -835,6 +1039,10 @@
     }
 </style>
 
+<!-- jsPDF para generación de reportes PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
 <script>
     (function () {
         // =====================================================
@@ -846,7 +1054,15 @@
             ventaSeleccionada: null,
             filtroFecha: new Date(),
             filtroCodigo: '',
-            cargando: false
+            cargando: false,
+            proyeccionCache: {
+                valor: null,
+                timestamp: null,
+                detalles: null,
+                totalMesPasado: 0,
+                analisis: null,
+                CACHE_DURATION: 30 * 60 * 1000 // 30 minutos en milisegundos
+            }
         };
 
         // =====================================================
@@ -1096,6 +1312,967 @@
             if (statsTotal) statsTotal.textContent = window.app.formatCurrency(total);
             if (statsGanancia) statsGanancia.textContent = window.app.formatCurrency(ganancia);
             if (statsCantidad) statsCantidad.textContent = `${cantidad} venta${cantidad !== 1 ? 's' : ''}`;
+
+            // Calcular proyección de ventas del mes (solo si no hay filtro de código)
+            const proyeccionContainer = document.querySelector('#statsProyeccion').parentElement;
+            if (!ventasState.filtroCodigo) {
+                if (proyeccionContainer) proyeccionContainer.style.display = 'block';
+                calcularProyeccionVentas();
+            } else {
+                // Ocultar proyección cuando hay filtro de código
+                if (proyeccionContainer) proyeccionContainer.style.display = 'none';
+            }
+        }
+
+        // =====================================================
+        // PROYECCIÓN DE VENTAS
+        // =====================================================
+
+        async function calcularProyeccionVentas() {
+            try {
+                // Verificar si hay cache válido
+                const cache = ventasState.proyeccionCache;
+                const ahora = Date.now();
+                
+                if (cache.valor !== null && cache.timestamp !== null) {
+                    const tiempoTranscurrido = ahora - cache.timestamp;
+                    if (tiempoTranscurrido < cache.CACHE_DURATION) {
+                        // Cache válido, usar valor cacheado
+                        const statsMesPasado = document.getElementById('statsMesPasado');
+                        if (statsMesPasado) statsMesPasado.textContent = window.app.formatCurrency(cache.totalMesPasado);
+                        actualizarUIProyeccion(cache.valor, cache.detalles, true);
+                        return;
+                    }
+                }
+
+                // Cache expirado o no existe, calcular nueva proyección
+                const hoy = new Date();
+                const mesActual = hoy.getMonth();
+                const anioActual = hoy.getFullYear();
+                const diaActual = hoy.getDate();
+
+                // Obtener último día del mes actual
+                const ultimoDiaMes = new Date(anioActual, mesActual + 1, 0).getDate();
+                const diasRestantes = ultimoDiaMes - diaActual;
+
+                // Si ya pasó el mes o es el último día, no mostrar proyección
+                if (diasRestantes <= 0) {
+                    actualizarUIProyeccion(0, diasRestantes === 0 ? 'Último día del mes' : 'Mes finalizado', false);
+                    return;
+                }
+
+                // Si es el primer día del mes, mostrar mensaje especial
+                if (diaActual === 1) {
+                    actualizarUIProyeccion(0, 'Primer día del mes - proyección no disponible aún', false);
+                    return;
+                }
+
+                const db = window.app.db;
+
+                // Obtener ventas del mes actual
+                const inicioMesActual = new Date(anioActual, mesActual, 1);
+                inicioMesActual.setHours(0, 0, 0, 0);
+                const finHoy = new Date(hoy);
+                finHoy.setHours(23, 59, 59, 999);
+
+                const { data: ventasMesActual, error: errorActual } = await db
+                    .from('ventas')
+                    .select('total, fecha_hora_venta, id')
+                    .gte('fecha_hora_venta', inicioMesActual.toISOString())
+                    .lte('fecha_hora_venta', finHoy.toISOString());
+
+                if (errorActual) throw errorActual;
+
+                // Obtener ventas del mes anterior completo
+                const inicioMesAnterior = new Date(anioActual, mesActual - 1, 1);
+                inicioMesAnterior.setHours(0, 0, 0, 0);
+                const finMesAnterior = new Date(anioActual, mesActual, 0);
+                finMesAnterior.setHours(23, 59, 59, 999);
+
+                const { data: ventasMesAnterior, error: errorAnterior } = await db
+                    .from('ventas')
+                    .select('total, fecha_hora_venta')
+                    .gte('fecha_hora_venta', inicioMesAnterior.toISOString())
+                    .lte('fecha_hora_venta', finMesAnterior.toISOString());
+
+                if (errorAnterior) throw errorAnterior;
+
+                const totalMesAnterior = (ventasMesAnterior || []).reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+                const statsMesPasado = document.getElementById('statsMesPasado');
+                if (statsMesPasado) statsMesPasado.textContent = window.app.formatCurrency(totalMesAnterior);
+
+                // --- Análisis de Inventario y Productos Calientes ---
+                // Obtener ventas de los últimos 15 días CON sus detalles incluidos
+                const hace15Dias = new Date();
+                hace15Dias.setDate(hoy.getDate() - 15);
+
+                const { data: ventasConDetalles, error: errorVentasConDetalles } = await db
+                    .from('ventas')
+                    .select('id, ventas_detalle(producto_id, cantidad, subtotal, precio)')
+                    .gte('fecha_hora_venta', hace15Dias.toISOString());
+
+                // Extraer y aplanar los detalles de las ventas
+                let detallesRecientes = [];
+                if (!errorVentasConDetalles && ventasConDetalles) {
+                    ventasConDetalles.forEach(venta => {
+                        if (venta.ventas_detalle && Array.isArray(venta.ventas_detalle)) {
+                            // Solo incluir productos con precio > 1 USD
+                            const detallesFiltrados = venta.ventas_detalle.filter(d => 
+                                parseFloat(d.precio || 0) > 1
+                            );
+                            detallesRecientes = detallesRecientes.concat(detallesFiltrados);
+                        }
+                    });
+                }
+
+                // Obtener inventario actual (para análisis complementario)
+                const { data: inventario, error: errorInv } = await db
+                    .from('inventario')
+                    .select('codigo, producto, stock, stock_minimo');
+
+                // Calcular proyección con algoritmo complejo
+                const proyeccion = calcularProyeccionCompleja(
+                    ventasMesActual || [],
+                    ventasMesAnterior || [],
+                    diaActual,
+                    ultimoDiaMes,
+                    detallesRecientes,
+                    inventario || []
+                );
+
+                // Guardar en cache
+                cache.valor = proyeccion.total;
+                cache.timestamp = ahora;
+                cache.detalles = proyeccion.detalles;
+                cache.totalMesPasado = totalMesAnterior;
+                cache.analisis = proyeccion.analisis;
+
+                // Actualizar UI
+                actualizarUIProyeccion(proyeccion.total, proyeccion.detalles, false);
+
+            } catch (error) {
+                console.error('Error al calcular proyección:', error);
+                actualizarUIProyeccion(0, 'Error al calcular', false);
+            }
+        }
+
+        function calcularProyeccionCompleja(ventasMesActual, ventasMesAnterior, diaActual, ultimoDiaMes, detallesRecientes, inventario) {
+            // Total de ventas mes actual hasta hoy
+            const totalMesActual = ventasMesActual.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+
+            // Días restantes del mes
+            const diasRestantes = ultimoDiaMes - diaActual;
+
+            // Si no hay ventas este mes, proyección es 0
+            if (ventasMesActual.length === 0) {
+                return {
+                    total: 0,
+                    detalles: 'Sin ventas este mes',
+                    analisis: { mensaje: 'No hay datos suficientes este mes.' }
+                };
+            }
+
+            // Análisis del mes anterior
+            const ventasPorDiaMesAnterior = {};
+            const ultimoDiaMesAnterior = new Date(
+                new Date().getFullYear(),
+                new Date().getMonth(),
+                0
+            ).getDate();
+
+            ventasMesAnterior.forEach(venta => {
+                const fecha = new Date(venta.fecha_hora_venta);
+                const dia = fecha.getDate();
+                if (!ventasPorDiaMesAnterior[dia]) {
+                    ventasPorDiaMesAnterior[dia] = 0;
+                }
+                ventasPorDiaMesAnterior[dia] += parseFloat(venta.total || 0);
+            });
+
+            // Calcular patrón de distribución del mes anterior
+            let ventasInicio = 0, ventasMedio = 0, ventasFin = 0;
+            let diasInicio = 0, diasMedio = 0, diasFin = 0;
+
+            for (let dia = 1; dia <= ultimoDiaMesAnterior; dia++) {
+                const ventas = ventasPorDiaMesAnterior[dia] || 0;
+                if (dia <= 10) {
+                    ventasInicio += ventas;
+                    diasInicio++;
+                } else if (dia <= 20) {
+                    ventasMedio += ventas;
+                    diasMedio++;
+                } else {
+                    ventasFin += ventas;
+                    diasFin++;
+                }
+            }
+
+            const promedioInicio = diasInicio > 0 ? ventasInicio / diasInicio : 0;
+            const promedioMedio = diasMedio > 0 ? ventasMedio / diasMedio : 0;
+            const promedioFin = diasFin > 0 ? ventasFin / diasFin : 0;
+
+            let patron = 'equilibrado';
+            let factorAjustePatron = 1.0;
+            
+            if (promedioFin > promedioInicio * 1.2 && promedioFin > promedioMedio * 1.1) {
+                patron = 'Creciente al final';
+                factorAjustePatron = 1.15;
+            } else if (promedioInicio > promedioFin * 1.2) {
+                patron = 'Decreciente';
+                factorAjustePatron = 0.9;
+            } else if (promedioMedio > promedioInicio && promedioMedio > promedioFin) {
+                patron = 'Pico a mitad de mes';
+                factorAjustePatron = 1.0;
+            }
+
+            // Tendencia comparativa
+            const totalMesAnteriorMismoPeriodo = Object.keys(ventasPorDiaMesAnterior)
+                .filter(dia => parseInt(dia) <= diaActual)
+                .reduce((sum, dia) => sum + ventasPorDiaMesAnterior[dia], 0);
+
+            let factorTendencia = 1.0;
+            if (totalMesAnteriorMismoPeriodo > 0) {
+                const ratioComparativo = totalMesActual / totalMesAnteriorMismoPeriodo;
+                if (ratioComparativo > 1.1) factorTendencia = 1.1;
+                else if (ratioComparativo < 0.9) factorTendencia = 0.9;
+            }
+
+            // --- ANÁLISIS DE INVENTARIO Y PRODUCTOS HOT ---
+            const ventasPorProducto = {};
+            detallesRecientes.forEach(d => {
+                if (!ventasPorProducto[d.producto_id]) ventasPorProducto[d.producto_id] = 0;
+                ventasPorProducto[d.producto_id] += parseFloat(d.cantidad || 0);
+            });
+
+            const topProductos = Object.entries(ventasPorProducto)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            const alertasStock = [];
+            let impactoInventario = 1.0;
+
+            const invMap = {};
+            inventario.forEach(i => invMap[i.codigo] = i);
+
+            topProductos.forEach(([id, cant]) => {
+                const prod = invMap[id];
+                if (prod) {
+                    const ventasDiarias = cant / 15;
+                    const diasStockRestante = prod.stock / (ventasDiarias || 1);
+                    
+                    if (diasStockRestante < 5) {
+                        alertasStock.push({
+                            producto: prod.producto,
+                            stock: prod.stock,
+                            ventas15d: cant,
+                            diasEstimados: diasStockRestante.toFixed(1),
+                            recomendacion: `Stockear urgente (se agota en ~${diasStockRestante.toFixed(0)} días)`
+                        });
+                        // Si se agota un top seller, impacta negativamente la proyección de ventas futuras
+                        impactoInventario -= 0.03; // -3% por cada top seller en riesgo
+                    } else if (prod.stock <= prod.stock_minimo) {
+                        alertasStock.push({
+                            producto: prod.producto,
+                            stock: prod.stock,
+                            ventas15d: cant,
+                            diasEstimados: diasStockRestante.toFixed(1),
+                            recomendacion: 'Considerar reabastecimiento pronto'
+                        });
+                    }
+                }
+            });
+
+            // Proyectar
+            const promedioDiarioActual = totalMesActual / diaActual;
+            let proyeccionRestante = 0;
+            for (let dia = diaActual + 1; dia <= ultimoDiaMes; dia++) {
+                let promedioEsperado;
+                if (dia <= 10) promedioEsperado = promedioInicio || promedioDiarioActual;
+                else if (dia <= 20) promedioEsperado = promedioMedio || promedioDiarioActual;
+                else promedioEsperado = promedioFin || promedioDiarioActual;
+                
+                proyeccionRestante += promedioEsperado * factorTendencia * factorAjustePatron * impactoInventario;
+            }
+
+            const proyeccionTotal = totalMesActual + proyeccionRestante;
+            const iconoTendencia = factorTendencia > 1 ? '↗' : factorTendencia < 1 ? '↘' : '→';
+            const porcentajeTendencia = ((factorTendencia - 1) * 100).toFixed(0);
+            const signo = porcentajeTendencia > 0 ? '+' : '';
+            
+            const detalles = `${diasRestantes} días rest. | ${patron} | ${iconoTendencia} ${signo}${porcentajeTendencia}%`;
+
+            return {
+                total: proyeccionTotal,
+                detalles: detalles,
+                analisis: {
+                    totalActual: totalMesActual,
+                    totalMesPasado: totalMesAnteriorMismoPeriodo,
+                    diasRestantes,
+                    patron,
+                    tendencia: porcentajeTendencia,
+                    impactoInventario: ((impactoInventario - 1) * 100).toFixed(1),
+                    alertasStock,
+                    proyeccionRestante,
+                    // Datos de diagnóstico para verificar el análisis
+                    totalDetallesAnalizados: detallesRecientes.length,
+                    totalProductosUnicos: Object.keys(ventasPorProducto).length,
+                    topProductos: topProductos.map(([id, cant]) => {
+                        const prod = invMap[id];
+                        return {
+                            codigo: id,
+                            nombre: prod ? prod.producto : 'No encontrado en inventario',
+                            cantidadVendida: cant,
+                            stockActual: prod ? prod.stock : 'N/A',
+                            stockMinimo: prod ? prod.stock_minimo : 'N/A'
+                        };
+                    })
+                }
+            };
+        }
+
+        function mostrarDetalleProyeccion() {
+            const cache = ventasState.proyeccionCache;
+            if (!cache.analisis) {
+                window.app.showToast('No hay análisis disponible aún', 'info');
+                return;
+            }
+
+            const modal = document.getElementById('modalDetalleProyeccion');
+            const body = document.getElementById('modalProyeccionBody');
+            const data = cache.analisis;
+
+            let alertasHtml = '';
+            if (data.alertasStock && data.alertasStock.length > 0) {
+                alertasHtml = `
+                    <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); border-radius: 12px; border-left: 5px solid #ff9800;">
+                        <h4 style="color: #e65100; margin-bottom: 12px; font-size: 1em;"><i class="fas fa-exclamation-triangle"></i> Alertas de Inventario</h4>
+                        <div style="display: grid; gap: 10px;">
+                            ${data.alertasStock.map(a => `
+                                <div style="background: white; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                                    <i class="fas fa-box" style="color: #ff9800; font-size: 1.2em;"></i>
+                                    <div style="flex: 1;">
+                                        <strong style="color: #333;">${a.producto}</strong>
+                                        <div style="font-size: 0.85em; color: #666;">${a.recomendacion}</div>
+                                        <div style="font-size: 0.8em; color: #888;">Stock: ${a.stock} | Ventas 15d: ${a.ventas15d}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${parseFloat(data.impactoInventario) < 0 ? 
+                            `<div style="margin-top: 12px; padding: 8px; background: #ffebee; border-radius: 6px; text-align: center;">
+                                <i class="fas fa-arrow-down" style="color: #c62828;"></i>
+                                <span style="color: #c62828; font-weight: 600;">Proyección reducida ${Math.abs(data.impactoInventario)}% por riesgo de stock</span>
+                            </div>` : ''}
+                    </div>
+                `;
+            } else {
+                alertasHtml = `
+                    <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 12px; border-left: 5px solid #4caf50;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-check-circle" style="color: #2e7d32; font-size: 1.5em;"></i>
+                            <div>
+                                <h4 style="color: #2e7d32; margin: 0; font-size: 1em;">Stock Saludable</h4>
+                                <p style="font-size: 0.9em; margin: 5px 0 0 0; color: #555;">Los productos más vendidos tienen stock suficiente.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            body.innerHTML = `
+                <!-- Resumen principal -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 12px; color: white; text-align: center;">
+                        <i class="fas fa-dollar-sign" style="font-size: 1.3em; opacity: 0.8;"></i>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">Ventas Este Mes</div>
+                        <div style="font-weight: 700; font-size: 1.1em;">${window.app.formatCurrency(data.totalActual)}</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 15px; border-radius: 12px; color: white; text-align: center;">
+                        <i class="fas fa-history" style="font-size: 1.3em; opacity: 0.8;"></i>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">Mes Anterior (Día ${new Date().getDate()})</div>
+                        <div style="font-weight: 700; font-size: 1.1em;">${window.app.formatCurrency(data.totalMesPasado)}</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); padding: 15px; border-radius: 12px; color: white; text-align: center;">
+                        <i class="fas fa-calendar-alt" style="font-size: 1.3em; opacity: 0.8;"></i>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">Días Restantes</div>
+                        <div style="font-weight: 700; font-size: 1.4em;">${data.diasRestantes}</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, ${parseFloat(data.tendencia) >= 0 ? '#56ab2f, #a8e063' : '#cb2d3e, #ef473a'}); padding: 15px; border-radius: 12px; color: white; text-align: center;">
+                        <i class="fas fa-${parseFloat(data.tendencia) >= 0 ? 'arrow-up' : 'arrow-down'}" style="font-size: 1.3em; opacity: 0.8;"></i>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">Tendencia</div>
+                        <div style="font-weight: 700; font-size: 1.4em;">${data.tendencia > 0 ? '+' : ''}${data.tendencia}%</div>
+                    </div>
+                </div>
+
+                <!-- Indicadores secundarios -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div style="background: #f8f9fa; padding: 12px 15px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
+                        <i class="fas fa-chart-area" style="color: #7c4dff; font-size: 1.3em;"></i>
+                        <div>
+                            <div style="font-size: 0.8em; color: #666;">Patrón Histórico</div>
+                            <div style="font-weight: 600; color: #333;">${data.patron}</div>
+                        </div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 12px 15px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
+                        <i class="fas fa-plus-circle" style="color: #00bcd4; font-size: 1.3em;"></i>
+                        <div>
+                            <div style="font-size: 0.8em; color: #666;">Venta Adicional Estimada</div>
+                            <div style="font-weight: 600; color: #333;">${window.app.formatCurrency(data.proyeccionRestante)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Análisis de productos calientes -->
+                <div style="background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="color: #7b1fa2; margin: 0; font-size: 1em;"><i class="fas fa-fire-alt"></i> Top 5 Productos (Últimos 15 días)</h4>
+                        <div style="display: flex; gap: 8px;">
+                            <span style="background: #e1bee7; padding: 4px 10px; border-radius: 20px; font-size: 0.75em; color: #6a1b9a;">
+                                <i class="fas fa-receipt"></i> ${data.totalDetallesAnalizados || 0} líneas
+                            </span>
+                            <span style="background: #e1bee7; padding: 4px 10px; border-radius: 20px; font-size: 0.75em; color: #6a1b9a;">
+                                <i class="fas fa-tags"></i> ${data.totalProductosUnicos || 0} productos
+                            </span>
+                        </div>
+                    </div>
+                    ${data.topProductos && data.topProductos.length > 0 ? `
+                        <div style="display: grid; gap: 8px;">
+                            ${data.topProductos.map((p, i) => {
+                                const stockNum = parseFloat(p.stockActual) || 0;
+                                const stockMin = parseFloat(p.stockMinimo) || 0;
+                                const ventasDiarias = p.cantidadVendida / 15;
+                                const diasStock = stockNum / (ventasDiarias || 1);
+                                let estadoIcon = 'fa-check-circle';
+                                let estadoColor = '#4caf50';
+                                let estadoBg = '#e8f5e9';
+                                let estadoTexto = 'OK';
+                                if (p.stockActual === 'N/A') {
+                                    estadoIcon = 'fa-question-circle';
+                                    estadoColor = '#ff9800';
+                                    estadoBg = '#fff3e0';
+                                    estadoTexto = 'Sin inv.';
+                                } else if (diasStock < 5) {
+                                    estadoIcon = 'fa-exclamation-circle';
+                                    estadoColor = '#f44336';
+                                    estadoBg = '#ffebee';
+                                    estadoTexto = '~' + diasStock.toFixed(0) + 'd';
+                                } else if (stockNum <= stockMin) {
+                                    estadoIcon = 'fa-minus-circle';
+                                    estadoColor = '#ff9800';
+                                    estadoBg = '#fff3e0';
+                                    estadoTexto = 'Bajo';
+                                }
+                                const medals = ['🥇', '🥈', '🥉', '4°', '5°'];
+                                return `
+                                    <div style="background: white; padding: 10px 12px; border-radius: 8px; display: grid; grid-template-columns: auto 1fr auto auto auto; gap: 12px; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                                        <span style="font-size: 1.2em; width: 28px; text-align: center;">${medals[i]}</span>
+                                        <div style="min-width: 0;">
+                                            <div style="font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.nombre}</div>
+                                            <div style="font-size: 0.75em; color: #888;">${p.codigo}</div>
+                                        </div>
+                                        <div style="text-align: center; min-width: 60px;">
+                                            <div style="font-weight: 700; color: #333;">${p.cantidadVendida}</div>
+                                            <div style="font-size: 0.7em; color: #888;">vendidos</div>
+                                        </div>
+                                        <div style="text-align: center; min-width: 50px;">
+                                            <div style="font-weight: 600; color: #555;">${p.stockActual}</div>
+                                            <div style="font-size: 0.7em; color: #888;">stock</div>
+                                        </div>
+                                        <div style="background: ${estadoBg}; padding: 4px 8px; border-radius: 6px; text-align: center; min-width: 60px;">
+                                            <i class="fas ${estadoIcon}" style="color: ${estadoColor};"></i>
+                                            <span style="font-size: 0.8em; color: ${estadoColor}; font-weight: 600;"> ${estadoTexto}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : `
+                        <div style="text-align: center; padding: 20px; color: #888;">
+                            <i class="fas fa-inbox" style="font-size: 2em; margin-bottom: 10px;"></i>
+                            <p>No se encontraron productos con precio > $1 en los últimos 15 días.</p>
+                        </div>
+                    `}
+                </div>
+
+                ${alertasHtml}
+
+                <!-- Proyección final -->
+                <div style="margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center; color: white;">
+                    <i class="fas fa-bullseye" style="font-size: 1.5em; opacity: 0.8;"></i>
+                    <div style="font-size: 0.9em; opacity: 0.9; margin-top: 8px;">Proyección Final del Mes</div>
+                    <div style="font-size: 2.2em; font-weight: 800; margin-top: 5px;">${window.app.formatCurrency(cache.valor)}</div>
+                    ${parseFloat(data.impactoInventario) < 0 ? 
+                        `<div style="font-size: 0.8em; opacity: 0.8; margin-top: 8px;">
+                            <i class="fas fa-info-circle"></i> Ajustada por riesgo de inventario
+                        </div>` : ''}
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function cerrarModalProyeccion() {
+            document.getElementById('modalDetalleProyeccion').classList.remove('active');
+            document.getElementById('modalDetalleProyeccion').style.display = 'none';
+        }
+
+        // Función para generar PDF detallado de proyección
+        async function descargarPDFProyeccion() {
+            const cache = ventasState.proyeccionCache;
+            if (!cache.analisis) {
+                window.app.showToast('No hay análisis disponible', 'error');
+                return;
+            }
+
+            window.app.showToast('Generando reporte PDF...', 'info');
+
+            const data = cache.analisis;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 15;
+            let y = margin;
+
+            // Colores
+            const primaryColor = [102, 126, 234];
+            const successColor = [76, 175, 80];
+            const warningColor = [255, 152, 0];
+            const dangerColor = [244, 67, 54];
+            const textColor = [51, 51, 51];
+            const lightGray = [248, 249, 250];
+
+            // Función helper para agregar nueva página si es necesario
+            const checkNewPage = (neededHeight) => {
+                if (y + neededHeight > pageHeight - margin) {
+                    doc.addPage();
+                    y = margin;
+                    return true;
+                }
+                return false;
+            };
+
+            // ========== ENCABEZADO ==========
+            doc.setFillColor(...primaryColor);
+            doc.rect(0, 0, pageWidth, 35, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('REPORTE DE PROYECCIÓN DE VENTAS', pageWidth / 2, 15, { align: 'center' });
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            const fechaActual = new Date().toLocaleDateString('es-EC', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
+            doc.text(`Generado: ${fechaActual}`, pageWidth / 2, 23, { align: 'center' });
+            doc.text(`Ferrisoluciones - Sistema POS`, pageWidth / 2, 29, { align: 'center' });
+            
+            y = 45;
+
+            // ========== SECCIÓN 1: RESUMEN EJECUTIVO ==========
+            doc.setTextColor(...primaryColor);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('1. RESUMEN EJECUTIVO', margin, y);
+            y += 8;
+
+            doc.setDrawColor(...primaryColor);
+            doc.setLineWidth(0.5);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 8;
+
+            // Tarjetas de resumen
+            const cardWidth = (pageWidth - margin * 2 - 15) / 4;
+            const cardHeight = 22;
+            const cards = [
+                { label: 'Ventas Mes Actual', value: window.app.formatCurrency(data.totalActual), color: primaryColor },
+                { label: 'Mes Anterior (Mismo Día)', value: window.app.formatCurrency(data.totalMesPasado), color: successColor },
+                { label: 'Días Restantes', value: data.diasRestantes.toString(), color: warningColor },
+                { label: 'Tendencia', value: `${data.tendencia > 0 ? '+' : ''}${data.tendencia}%`, color: parseFloat(data.tendencia) >= 0 ? successColor : dangerColor }
+            ];
+
+            cards.forEach((card, i) => {
+                const x = margin + i * (cardWidth + 5);
+                doc.setFillColor(...card.color);
+                doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(7);
+                doc.setFont('helvetica', 'normal');
+                doc.text(card.label, x + cardWidth / 2, y + 7, { align: 'center' });
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text(card.value, x + cardWidth / 2, y + 16, { align: 'center' });
+            });
+
+            y += cardHeight + 15;
+
+            // ========== SECCIÓN 2: METODOLOGÍA DEL ANÁLISIS ==========
+            checkNewPage(60);
+            doc.setTextColor(...primaryColor);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('2. METODOLOGÍA DEL ANÁLISIS', margin, y);
+            y += 8;
+
+            doc.setDrawColor(...primaryColor);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 8;
+
+            doc.setTextColor(...textColor);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+
+            const metodologia = [
+                '• Período de análisis: Se analizan las ventas de los últimos 15 días para identificar tendencias recientes.',
+                '• Filtro de productos: Solo se consideran productos con precio unitario mayor a $1.00 USD para evitar distorsiones.',
+                '• Patrón histórico: Se compara el comportamiento del mes actual vs. el mes anterior en el mismo período.',
+                '• Factor de tendencia: Se calcula la variación porcentual entre las ventas actuales y las del mes pasado.',
+                '• Análisis de inventario: Se evalúa el stock de los productos más vendidos para ajustar la proyección.',
+                '• Impacto de stock: Si un producto top seller tiene menos de 5 días de stock, reduce la proyección en 3%.'
+            ];
+
+            metodologia.forEach(item => {
+                const lines = doc.splitTextToSize(item, pageWidth - margin * 2);
+                lines.forEach(line => {
+                    doc.text(line, margin, y);
+                    y += 5;
+                });
+            });
+
+            y += 10;
+
+            // ========== SECCIÓN 3: PARÁMETROS CALCULADOS ==========
+            checkNewPage(50);
+            doc.setTextColor(...primaryColor);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('3. PARÁMETROS CALCULADOS', margin, y);
+            y += 8;
+
+            doc.setDrawColor(...primaryColor);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 8;
+
+            const parametros = [
+                ['Patrón Histórico Detectado', data.patron || 'Equilibrado', 'Indica la distribución típica de ventas durante el mes (inicio, medio, fin).'],
+                ['Líneas de Venta Analizadas', (data.totalDetallesAnalizados || 0).toString(), 'Total de items vendidos en los últimos 15 días.'],
+                ['Productos Únicos (>$1)', (data.totalProductosUnicos || 0).toString(), 'Cantidad de productos diferentes vendidos con precio > $1.'],
+                ['Tendencia vs Mes Anterior', `${data.tendencia > 0 ? '+' : ''}${data.tendencia}%`, 'Comparación de ventas actuales contra el mismo período del mes pasado.'],
+                ['Impacto por Inventario', `${data.impactoInventario}%`, 'Ajuste aplicado por riesgo de agotamiento de productos populares.'],
+                ['Venta Adicional Proyectada', window.app.formatCurrency(data.proyeccionRestante), 'Estimación de ventas para los días restantes del mes.']
+            ];
+
+            parametros.forEach(([param, valor, desc]) => {
+                checkNewPage(18);
+                doc.setFillColor(...lightGray);
+                doc.roundedRect(margin, y, pageWidth - margin * 2, 15, 2, 2, 'F');
+                
+                doc.setTextColor(...textColor);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'bold');
+                doc.text(param + ':', margin + 3, y + 5);
+                
+                doc.setTextColor(...primaryColor);
+                doc.setFontSize(10);
+                doc.text(valor, margin + 70, y + 5);
+                
+                doc.setTextColor(100, 100, 100);
+                doc.setFontSize(7);
+                doc.setFont('helvetica', 'normal');
+                const descLines = doc.splitTextToSize(desc, pageWidth - margin * 2 - 6);
+                doc.text(descLines, margin + 3, y + 11);
+                
+                y += 18;
+            });
+
+            y += 5;
+
+            // ========== SECCIÓN 4: TOP PRODUCTOS ==========
+            checkNewPage(40);
+            doc.setTextColor(...primaryColor);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('4. TOP 10 PRODUCTOS MÁS VENDIDOS (15 DÍAS)', margin, y);
+            y += 8;
+
+            doc.setDrawColor(...primaryColor);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 5;
+
+            // Obtener datos de productos para la tabla
+            const db = window.app.db;
+            const hace15Dias = new Date();
+            hace15Dias.setDate(hace15Dias.getDate() - 15);
+
+            let todosLosProductos = [];
+            try {
+                const { data: ventasConDetalles, error: errorVentas } = await db
+                    .from('ventas')
+                    .select('id, ventas_detalle(producto_id, cantidad, subtotal, precio)')
+                    .gte('fecha_hora_venta', hace15Dias.toISOString());
+
+                if (errorVentas) {
+                    console.error('Error consultando ventas:', errorVentas);
+                }
+
+                const { data: inventario, error: errorInv } = await db
+                    .from('inventario')
+                    .select('codigo, producto, stock, stock_minimo');
+
+                if (errorInv) {
+                    console.error('Error consultando inventario:', errorInv);
+                }
+
+                const invMap = {};
+                if (inventario && Array.isArray(inventario)) {
+                    inventario.forEach(i => invMap[i.codigo] = i);
+                }
+
+                const ventasPorProducto = {};
+                if (ventasConDetalles && Array.isArray(ventasConDetalles)) {
+                    ventasConDetalles.forEach(v => {
+                        if (v.ventas_detalle && Array.isArray(v.ventas_detalle)) {
+                            v.ventas_detalle.filter(d => parseFloat(d.precio || 0) > 1).forEach(d => {
+                                if (!ventasPorProducto[d.producto_id]) {
+                                    ventasPorProducto[d.producto_id] = { cantidad: 0, total: 0 };
+                                }
+                                ventasPorProducto[d.producto_id].cantidad += parseFloat(d.cantidad || 0);
+                                ventasPorProducto[d.producto_id].total += parseFloat(d.subtotal || 0);
+                            });
+                        }
+                    });
+                }
+
+                todosLosProductos = Object.entries(ventasPorProducto)
+                    .map(([codigo, datos]) => {
+                        const prod = invMap[codigo];
+                        const ventasDiarias = datos.cantidad / 15;
+                        const diasStock = prod ? prod.stock / (ventasDiarias || 1) : 0;
+                        return {
+                            codigo,
+                            nombre: prod ? prod.producto : 'No encontrado',
+                            cantidadVendida: datos.cantidad,
+                            totalVendido: datos.total,
+                            stock: prod ? prod.stock : 'N/A',
+                            stockMinimo: prod ? prod.stock_minimo : 'N/A',
+                            ventasDiarias: ventasDiarias.toFixed(2),
+                            diasStock: diasStock.toFixed(1),
+                            estado: !prod ? 'SIN INV' : diasStock < 5 ? 'CRÍTICO' : (prod.stock <= prod.stock_minimo) ? 'BAJO' : 'OK'
+                        };
+                    })
+                    .sort((a, b) => b.cantidadVendida - a.cantidadVendida);
+            } catch (e) {
+                console.error('Error obteniendo datos para PDF:', e);
+            }
+
+            // Tabla de top 10 productos
+            const top10 = todosLosProductos.slice(0, 10);
+            
+            if (top10.length === 0) {
+                doc.setTextColor(150, 150, 150);
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'italic');
+                doc.text('No se encontraron datos de productos para el período analizado.', margin, y + 10);
+                y += 25;
+            } else {
+                doc.autoTable({
+                    startY: y,
+                    head: [['#', 'Código', 'Producto', 'Uds', 'Total', 'Día', 'Stock', 'Días', 'Estado']],
+                    body: top10.map((p, i) => [
+                        i + 1,
+                        p.codigo.substring(0, 10),
+                        p.nombre.substring(0, 22) + (p.nombre.length > 22 ? '..' : ''),
+                        p.cantidadVendida,
+                        window.app.formatCurrency(p.totalVendido),
+                        p.ventasDiarias,
+                        p.stock,
+                        p.diasStock,
+                        p.estado
+                    ]),
+                    styles: { fontSize: 7, cellPadding: 1.5 },
+                    headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 6 },
+                    alternateRowStyles: { fillColor: lightGray },
+                    margin: { left: margin, right: margin },
+                    tableWidth: 'auto',
+                    columnStyles: {
+                        0: { cellWidth: 7, halign: 'center' },
+                        1: { cellWidth: 18 },
+                        2: { cellWidth: 40 },
+                        3: { cellWidth: 12, halign: 'center' },
+                        4: { cellWidth: 20, halign: 'right' },
+                        5: { cellWidth: 12, halign: 'center' },
+                        6: { cellWidth: 12, halign: 'center' },
+                        7: { cellWidth: 12, halign: 'center' },
+                        8: { cellWidth: 16, halign: 'center' }
+                    },
+                    didParseCell: function(hookData) {
+                        if (hookData.column.index === 8 && hookData.section === 'body') {
+                            const estado = hookData.cell.raw;
+                            if (estado === 'CRÍTICO') hookData.cell.styles.textColor = dangerColor;
+                            else if (estado === 'BAJO') hookData.cell.styles.textColor = warningColor;
+                            else if (estado === 'OK') hookData.cell.styles.textColor = successColor;
+                        }
+                    }
+                });
+
+                y = doc.lastAutoTable.finalY + 10;
+            }
+
+            // ========== SECCIÓN 5: ALERTAS DE STOCK ==========
+            if (data.alertasStock && data.alertasStock.length > 0) {
+                checkNewPage(40);
+                doc.setTextColor(...warningColor);
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('5. ALERTAS DE INVENTARIO', margin, y);
+                y += 8;
+
+                doc.setDrawColor(...warningColor);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 5;
+
+                doc.autoTable({
+                    startY: y,
+                    head: [['Producto', 'Stock', 'Vtas 15d', 'Días Est.', 'Recomendación']],
+                    body: data.alertasStock.map(a => [
+                        (a.producto || '').substring(0, 30),
+                        a.stock,
+                        a.ventas15d,
+                        a.diasEstimados,
+                        (a.recomendacion || '').substring(0, 35)
+                    ]),
+                    styles: { fontSize: 7, cellPadding: 2 },
+                    headStyles: { fillColor: warningColor, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+                    margin: { left: margin, right: margin },
+                    tableWidth: 'auto',
+                    columnStyles: {
+                        0: { cellWidth: 45 },
+                        1: { cellWidth: 18, halign: 'center' },
+                        2: { cellWidth: 20, halign: 'center' },
+                        3: { cellWidth: 20, halign: 'center' },
+                        4: { cellWidth: 50 }
+                    }
+                });
+
+                y = doc.lastAutoTable.finalY + 10;
+            }
+
+            // ========== SECCIÓN 6: PROYECCIÓN FINAL ==========
+            checkNewPage(50);
+            
+            doc.setFillColor(...primaryColor);
+            doc.roundedRect(margin, y, pageWidth - margin * 2, 35, 5, 5, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text('PROYECCIÓN FINAL ESTIMADA DEL MES', pageWidth / 2, y + 12, { align: 'center' });
+            
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(window.app.formatCurrency(cache.valor), pageWidth / 2, y + 26, { align: 'center' });
+
+            y += 45;
+
+            // ========== SECCIÓN 7: NOTAS PARA ANÁLISIS HUMANO ==========
+            checkNewPage(50);
+            doc.setTextColor(...textColor);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('NOTAS PARA ANÁLISIS HUMANO', margin, y);
+            y += 8;
+
+            doc.setDrawColor(...textColor);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 8;
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+
+            const notas = [
+                'Este reporte es una herramienta de apoyo para la toma de decisiones. Los resultados son estimaciones basadas en datos históricos.',
+                '',
+                'Factores a considerar que pueden afectar la proyección real:',
+                '  • Temporadas o fechas especiales (feriados, promociones, eventos locales)',
+                '  • Cambios en precios o disponibilidad de productos',
+                '  • Nuevos competidores o cambios en el mercado',
+                '  • Condiciones climáticas o económicas',
+                '  • Campañas de marketing o publicidad',
+                '',
+                'Recomendaciones:',
+                '  • Revisar productos con estado CRÍTICO y reabastecer con prioridad',
+                '  • Analizar si el patrón histórico detectado coincide con expectativas',
+                '  • Comparar con reportes anteriores para validar tendencias',
+                '  • Ajustar la proyección manualmente si hay eventos conocidos próximos'
+            ];
+
+            notas.forEach(nota => {
+                checkNewPage(6);
+                doc.text(nota, margin, y);
+                y += 5;
+            });
+
+            // ========== PIE DE PÁGINA ==========
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(
+                    `Página ${i} de ${totalPages} | Ferrisoluciones - Generado el ${new Date().toLocaleString('es-EC')}`,
+                    pageWidth / 2,
+                    pageHeight - 8,
+                    { align: 'center' }
+                );
+            }
+
+            // Guardar el PDF
+            const nombreArchivo = `Proyeccion_Ventas_${new Date().toISOString().slice(0, 10)}.pdf`;
+            doc.save(nombreArchivo);
+            window.app.showToast(`Reporte "${nombreArchivo}" descargado exitosamente`, 'success');
+        }
+
+        // Hacer funciones accesibles globalmente si están dentro de un IIFE
+        window.mostrarDetalleProyeccion = mostrarDetalleProyeccion;
+        window.cerrarModalProyeccion = cerrarModalProyeccion;
+        window.descargarPDFProyeccion = descargarPDFProyeccion;
+        window.aplicarFiltroFecha = aplicarFiltroFecha;
+        window.resetearFiltros = resetearFiltros;
+        window.mostrarDashboard = mostrarDashboard;
+        window.ocultarDashboard = ocultarDashboard;
+        window.filtrarDashboard = filtrarDashboard;
+        window.mostrarTopProductos = mostrarTopProductos;
+        window.cerrarModalTop = cerrarModalTop;
+        window.verDetalleVenta = verDetalleVenta;
+        window.cerrarModalDetalle = cerrarModalDetalle;
+        window.cerrarModalSeleccionCliente = cerrarModalSeleccionCliente;
+
+        function actualizarUIProyeccion(valor, detalles, esCache) {
+            const statsProyeccion = document.getElementById('statsProyeccion');
+            const proyeccionDetalles = document.getElementById('proyeccionDetalles');
+            const cacheIndicator = document.getElementById('proyeccionCacheIndicator');
+
+            if (statsProyeccion) {
+                statsProyeccion.textContent = window.app.formatCurrency(valor);
+            }
+
+            if (proyeccionDetalles) {
+                proyeccionDetalles.textContent = detalles;
+            }
+
+            if (cacheIndicator) {
+                if (esCache) {
+                    const cache = ventasState.proyeccionCache;
+                    const minTranscurridos = Math.floor((Date.now() - cache.timestamp) / 60000);
+                    const tiempoRestante = Math.max(0, 30 - minTranscurridos);
+                    cacheIndicator.innerHTML = `<i class="fas fa-clock"></i> cache ${tiempoRestante}m`;
+                } else {
+                    cacheIndicator.innerHTML = '<i class="fas fa-sync-alt"></i> nuevo';
+                }
+            }
         }
 
         function actualizarContadorNavbar() {
@@ -1132,20 +2309,28 @@
 
                 if (detallesError) throw detallesError;
 
-                // Obtener información de productos
+                // Obtener información de productos (con chunks para evitar URLs largas)
                 const productosIds = detalles.map(d => d.producto_id);
-                const { data: productos, error: productosError } = await db
-                    .from('inventario')
-                    .select('codigo, producto')
-                    .in('codigo', productosIds);
+                let productosMap = {};
+                
+                if (productosIds.length > 0) {
+                    const chunkSize = 5; // Reducido a 5 para evitar URLs largas con UUIDs
+                    for (let i = 0; i < productosIds.length; i += chunkSize) {
+                        const chunk = productosIds.slice(i, i + chunkSize);
+                        const { data: productos, error: productosError } = await db
+                            .from('inventario')
+                            .select('codigo, producto')
+                            .in('codigo', chunk);
 
-                if (productosError) throw productosError;
-
-                // Crear un mapa de productos para fácil acceso
-                const productosMap = {};
-                productos.forEach(p => {
-                    productosMap[p.codigo] = p.producto;
-                });
+                        if (productosError) throw productosError;
+                        
+                        if (productos) {
+                            productos.forEach(p => {
+                                productosMap[p.codigo] = p.producto;
+                            });
+                        }
+                    }
+                }
 
                 // Renderizar modal
                 mostrarModalDetalle(venta, detalles, productosMap);
@@ -2377,7 +3562,7 @@
                 // Fetch in chunks to avoid URL length limits
                 let detalles = [];
                 if (ventaIds.length > 0) {
-                    const chunkSize = 40; // Lote seguro para evitar errores de URL
+                    const chunkSize = 5; // Reducido a 5 para evitar URLs largas con UUIDs
                     for (let i = 0; i < ventaIds.length; i += chunkSize) {
                         const chunk = ventaIds.slice(i, i + chunkSize);
                         const { data: det, error: detError } = await db
@@ -2398,7 +3583,7 @@
                 let productosMap = {};
 
                 if (productoIds.length > 0) {
-                    const chunkSize = 40;
+                    const chunkSize = 5; // Reducido a 5 para evitar URLs largas con UUIDs
                     for (let i = 0; i < productoIds.length; i += chunkSize) {
                         const chunk = productoIds.slice(i, i + chunkSize);
                         const { data: prods, error: prodError } = await db

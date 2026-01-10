@@ -1757,7 +1757,7 @@
 
             // 3. Obtener Detalles (en chunks para evitar límites)
             let detalles = [];
-            const chunkSize = 50;
+            const chunkSize = 5; // Reducido a 5 para evitar URLs largas con UUIDs
             for (let i = 0; i < ventaIds.length; i += chunkSize) {
                 const chunk = ventaIds.slice(i, i + chunkSize);
                 const { data: det, error: dError } = await db
@@ -1782,15 +1782,22 @@
                 prods.forEach(p => productosInfo[p.codigo] = p);
             }
 
+            // 4.2. Obtener información de proveedores (con chunks para evitar URLs largas)
             const provIds = [...new Set(Object.values(productosInfo).map(p => p.proveedor_id).filter(id => id))];
             let proveedoresInfo = { "sin-proveedor": "Sin Proveedor" };
             if (provIds.length > 0) {
-                const { data: provs, error: prError } = await db
-                    .from('proveedores')
-                    .select('id, empresa')
-                    .in('id', provIds);
-                if (prError) throw prError;
-                provs.forEach(p => proveedoresInfo[p.id] = p.empresa);
+                const chunkSize = 5; // Reducido a 5 para evitar URLs largas con UUIDs
+                for (let i = 0; i < provIds.length; i += chunkSize) {
+                    const chunk = provIds.slice(i, i + chunkSize);
+                    const { data: provs, error: prError } = await db
+                        .from('proveedores')
+                        .select('id, empresa')
+                        .in('id', chunk);
+                    if (prError) throw prError;
+                    if (provs) {
+                        provs.forEach(p => proveedoresInfo[p.id] = p.empresa);
+                    }
+                }
             }
 
             // 5. Agrupar Datos
