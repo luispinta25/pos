@@ -3061,9 +3061,93 @@
             height: auto !important;
         }
     }
+    /* Estilos para Eventualidades */
+    .btn-flotante-eventualidad {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: #6c5ce7;
+        color: white;
+        width: 180px;
+        height: 60px;
+        border-radius: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        z-index: 999;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 3px solid #1a1a1a;
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+
+    .btn-flotante-eventualidad:hover {
+        transform: scale(1.05) translateY(-5px);
+        background: #a29bfe;
+        box-shadow: 0 15px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    .btn-flotante-eventualidad i {
+        font-size: 1.3rem;
+    }
+
+    .eventualidad-alerta {
+        position: absolute;
+        top: -8px;
+        right: 15px;
+        background: #fdcb6e;
+        color: #1a1a1a;
+        font-size: 0.65rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 900;
+        border: 2px solid #1a1a1a;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
 </style>
 
 
+
+
+<!-- Boton Flotante Eventualidad -->
+<button class="btn-flotante-eventualidad" onclick="window.abrirModalEventualidad()">
+    <span class="eventualidad-alerta">AUDITORIA</span>
+    <i class="fas fa-exclamation-circle"></i>
+    <span>Eventualidad</span>
+</button>
+
+<!-- Modal de Eventualidad -->
+<div id="modalEventualidadOverlay" class="custom-confirm-overlay" style="z-index: 10001;">
+    <div class="custom-confirm-box" style="max-width: 500px;">
+        <div class="custom-confirm-title">
+            <i class="fas fa-exclamation-triangle" style="color: #6c5ce7;"></i>
+            Registrar Eventualidad
+        </div>
+        <div class="custom-confirm-message">
+            Resume lo que el cliente pidio o la duda que tuvo para mejorar nuestro stock.
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+            <input type="text" id="inputEventualidad" class="form-input" 
+                placeholder="Ej: PIDIO SPRAY ROJO, PREGUNTO POR CANDADO..." 
+                oninput="this.value = this.value.toUpperCase()"
+                style="font-weight: bold; border-radius: 10px; padding: 15px; border: 2px solid #6c5ce7;">
+        </div>
+        <div class="custom-confirm-buttons">
+            <button class="btn btn-secondary" onclick="window.cerrarModalEventualidad()">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn btn-accent" id="btnGuardarEventualidad" onclick="window.guardarEventualidad()" 
+                style="background: #6c5ce7; border-color: #6c5ce7;">
+                <i class="fas fa-check-circle"></i> REGISTRAR
+            </button>
+        </div>
+    </div>
+</div>
 
 <script>
     // =====================================================
@@ -9915,5 +9999,73 @@ _Sistema de Gestión Ferrisoluciones_`;
     window.abrirModalGarantia = abrirModalGarantia;
     window.cerrarModalGarantia = cerrarModalGarantia;
     window.generarGarantia = generarGarantia;
+
+    // =====================================================
+    // GESTION DE EVENTUALIDADES
+    // =====================================================
+
+    function abrirModalEventualidad() {
+        const modal = document.getElementById('modalEventualidadOverlay');
+        const input = document.getElementById('inputEventualidad');
+        modal.classList.add('active');
+        input.value = '';
+        
+        // Listener para Enter
+        input.onkeydown = function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                window.guardarEventualidad();
+            }
+        };
+
+        setTimeout(() => input.focus(), 150);
+    }
+
+    function cerrarModalEventualidad() {
+        document.getElementById('modalEventualidadOverlay').classList.remove('active');
+    }
+
+    async function guardarEventualidad() {
+        const input = document.getElementById('inputEventualidad');
+        const query = input.value.trim();
+        
+        if (query.length < 3) {
+            window.app?.showToast?.('Detalla la eventualidad (minimo 3 letras)', 'warning', 2000);
+            return;
+        }
+
+        const btn = document.getElementById('btnGuardarEventualidad');
+        if (btn.disabled) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+        try {
+            const db = window.app?.db;
+            const userResponse = await db?.auth?.getUser();
+            const userId = userResponse?.data?.user?.id;
+
+            const { error } = await db.from('eventualidades').insert({
+                descripcion: query,
+                usuario_id: userId
+            });
+            
+            if (error) throw error;
+
+            window.app?.showToast?.('Eventualidad registrada correctamente', 'success', 2000);
+            cerrarModalEventualidad();
+        } catch (error) {
+            console.error('Error al guardar eventualidad:', error);
+            window.app?.showToast?.('Error al registrar registro', 'error', 3000);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> REGISTRAR';
+        }
+    }
+
+    // Exportar funciones
+    window.abrirModalEventualidad = abrirModalEventualidad;
+    window.cerrarModalEventualidad = cerrarModalEventualidad;
+    window.guardarEventualidad = guardarEventualidad;
 
 </script>

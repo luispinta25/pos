@@ -913,6 +913,287 @@
             grid-template-columns: 1fr;
         }
     }
+
+    /* Estilos para productos priorizados por anotaciones */
+    .producto-card.prioridad-pendiente {
+        border-right: 6px solid #ff4d4d !important;
+        background: #fffafa !important;
+        box-shadow: 0 4px 15px rgba(255, 77, 77, 0.15) !important;
+    }
+
+    .producto-card.prioridad-pedido {
+        border-right: 6px solid #ff9f43 !important;
+        background: #fffaf5 !important;
+        box-shadow: 0 4px 15px rgba(255, 159, 67, 0.15) !important;
+    }
+
+    .badge-prioridad {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        margin-top: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .badge-prioridad.pendiente {
+        background: #ff4d4d;
+        color: white;
+    }
+
+    .badge-prioridad.pedido-alt {
+        background: #ff9f43;
+        color: white;
+    }
+
+    /* Categoría: Prioritario (Anotaciones) */
+    .categoria-prioritario .stock-categoria-header {
+        background: linear-gradient(135deg, #ff4d4d 0%, #d32f2f 100%);
+        color: white;
+        border: 2px solid #fff;
+        box-shadow: 0 4px 15px rgba(255, 77, 77, 0.3);
+    }
+
+    /* Categoría: No Olvides Preguntar Por */
+    .categoria-no_olvides .stock-categoria-header {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+        border: 2px solid #fff;
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .lista-compacta {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+        gap: 10px !important;
+    }
+
+    .producto-card-compacto {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 10px 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        height: 50px;
+    }
+
+    .producto-card-compacto:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
+    .producto-card-compacto.en-carrito {
+        border-color: #28a745;
+        background: #f1f8f1;
+    }
+
+    .compacto-nombre {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .compacto-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .badge-sugerido {
+        background: #e9ecef;
+        color: #495057;
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+
+    .compacto-meta i {
+        color: #adb5bd;
+        font-size: 0.8rem;
+    }
+
+    /* Botón flotante "Anotar para pedir" */
+    .btn-flotante-anotar {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: #d4a017;
+        color: #1a1a1a;
+        width: 180px;
+        height: 60px;
+        border-radius: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        z-index: 999;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 3px solid #1a1a1a;
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+
+    .btn-flotante-anotar:hover {
+        transform: scale(1.05) translateY(-5px);
+        background: #e5b429;
+        box-shadow: 0 15px 30px rgba(212, 160, 23, 0.4);
+    }
+
+    .btn-flotante-anotar i {
+        font-size: 1.3rem;
+    }
+
+    .anotar-alerta {
+        position: absolute;
+        top: -8px;
+        right: 15px;
+        background: #ff4757;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.65rem;
+        font-weight: 900;
+        border: 2px solid #1a1a1a;
+        animation: pulse-alert 2s infinite;
+    }
+
+    @keyframes pulse-alert {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+        70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+    }
+
+    /* Estilos Modal Anotar Mejorado */
+    .search-container-anotar {
+        position: relative;
+        background: #fff;
+        border-radius: 12px;
+        padding: 5px;
+    }
+
+    .anotar-modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 25px;
+        min-height: 500px;
+    }
+
+    .search-column {
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #eee;
+        padding-right: 20px;
+    }
+
+    .details-column {
+        background: #fcfcfc;
+        border-radius: 15px;
+        padding: 20px;
+        border: 1px dashed #ddd;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .search-results-anotar {
+        flex: 1;
+        margin-top: 15px;
+        background: white;
+        border-radius: 10px;
+        border: 1px solid #eee;
+        max-height: 450px;
+        overflow-y: auto;
+        display: none;
+    }
+
+    .search-item-anotar {
+        padding: 12px 15px;
+        border-bottom: 1px solid #f5f5f5;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .search-item-anotar:hover {
+        background: #f0f7ff;
+        transform: translateX(5px);
+    }
+
+    .search-item-anotar.selected {
+        background: #e3f2fd;
+        border-left: 4px solid #d4a017;
+    }
+
+    .search-item-anotar .item-nombre {
+        font-weight: 600;
+        color: #1a1a1a;
+        font-size: 0.95rem;
+        line-height: 1.3;
+        display: block;
+        word-break: break-word;
+    }
+
+    .search-item-anotar .item-meta {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+
+    .search-item-anotar .item-extra {
+        font-size: 0.8rem;
+        color: #777;
+        font-family: monospace;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .search-item-anotar .item-stock {
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .stock-ok { color: #2e7d32; background: #e8f5e9; }
+    .stock-warning { color: #d32f2f; background: #ffebee; }
+
+    .empty-state-anotar {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #bbb;
+        text-align: center;
+        padding: 40px;
+    }
+
+    .empty-state-anotar i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.3;
+    }
 </style>
 
 <!-- Sin altura fija en wrapper para permitir scroll natural de la página -->
@@ -1029,7 +1310,7 @@
             <div class="modal-cantidad-input-group">
                 <label for="modalCantidadInput">Cantidad a pedir:</label>
                 <input type="number" id="modalCantidadInput" class="modal-cantidad-input" placeholder="0" min="1"
-                    step="1" autofocus>
+                    step="1" onfocus="this.select()" autofocus>
             </div>
         </div>
         <div class="modal-cantidad-footer">
@@ -1054,7 +1335,8 @@
             <div class="modal-cantidad-input-group">
                 <label for="modalNuevoDescripcion">Descripción del producto:</label>
                 <input type="text" id="modalNuevoDescripcion" class="modal-cantidad-input"
-                    style="font-size: 1rem; text-align: left;" placeholder="Ej: Tubo PVC 1/2 pulgada" autofocus>
+                    oninput="this.value = this.value.toUpperCase()"
+                    style="font-size: 1rem; text-align: left; text-transform: uppercase;" placeholder="Ej: Tubo PVC 1/2 pulgada" autofocus>
             </div>
             <div class="modal-cantidad-input-group">
                 <label for="modalNuevoCantidad">Cantidad a pedir:</label>
@@ -1074,6 +1356,91 @@
     </div>
 </div>
 
+<!-- Botón Flotante "Anotar para Pedir" -->
+<button class="btn-flotante-anotar" onclick="window.pedidosAbrirModalAnotar()">
+    <span class="anotar-alerta">ANOTAR</span>
+    <i class="fas fa-list"></i>
+    <span>Para Pedir</span>
+</button>
+
+<!-- Modal Anotar para Pedir -->
+<div id="modalAnotarPedidoOverlay" class="custom-modal-overlay" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; align-items: center; justify-content: center;">
+    <div class="custom-modal" style="max-width: 850px; width: 95%;">
+        <div class="custom-modal-header">
+            <div class="custom-modal-icon"><i class="fas fa-edit"></i></div>
+            <div class="custom-modal-title">Anotar para Pedir</div>
+            <button onclick="window.pedidosCerrarModalAnotar()" style="background:none; border:none; color:white; font-size: 24px; cursor:pointer;">&times;</button>
+        </div>
+        <div class="custom-modal-content" style="padding: 25px; color: #333;">
+            <div class="anotar-modal-grid">
+                <!-- Columna Izquierda: Búsqueda -->
+                <div class="search-column">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span><i class="fas fa-search"></i> Buscar Producto</span>
+                            <span style="font-size: 0.7rem; color: #999; font-weight: normal;">Nombre, código o marca</span>
+                        </label>
+                        <div class="search-container-anotar">
+                            <input type="text" id="busquedaAnotar" class="form-input" placeholder="Escribe para empezar a filtrar..." autocomplete="off" oninput="this.value = this.value.toUpperCase()" style="border-radius: 10px; padding: 12px 15px; border: 2px solid #eee; text-transform: uppercase;">
+                        </div>
+                    </div>
+
+                    <div id="resultadosAnotar" class="search-results-anotar" style="display: block;">
+                        <div class="empty-state-anotar">
+                            <i class="fas fa-search"></i>
+                            <p>Ingresa al menos 2 caracteres para buscar productos en el inventario</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Detalles -->
+                <div class="details-column">
+                    <div id="placeholderAnotar" class="empty-state-anotar">
+                        <i class="fas fa-mouse-pointer"></i>
+                        <p>Selecciona un producto de la lista para ver sus detalles y anotarlo</p>
+                    </div>
+
+                    <div id="detalleProductoAnotar" style="display: none; animation: fadeIn 0.3s;">
+                        <div class="producto-seleccionado-info" style="background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e0a300; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                            <h4 id="nombreProductoAnotar" style="margin: 0; color: #1a1a1a; font-size: 1.1rem; line-height: 1.3;"></h4>
+                            <div style="display: flex; gap: 15px; margin-top: 8px;">
+                                <span id="codigoProductoAnotar" style="font-size: 0.75rem; color: #666; font-family: monospace; background: #eee; padding: 2px 6px; border-radius: 4px;"></span>
+                                <span id="stockActualAnotar" style="font-size: 0.75rem; color: #d4a017; font-weight: bold;"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label class="form-label"><i class="fas fa-shippping-fast"></i> Proveedor Principal</label>
+                            <input type="text" id="proveedorPrincipalAnotar" class="form-input" readonly style="background: #f0f0f0; border-color: #ddd; color: #555;">
+                            <input type="hidden" id="proveedorPrincipalIdAnotar">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label class="form-label"><i class="fas fa-exchange-alt"></i> Proveedor Alternativo</label>
+                            <select id="proveedorAlternativoAnotar" class="form-input">
+                                <option value="">-- Seleccionar --</option>
+                            </select>
+                            <input type="text" id="proveedorAlternativoDisplayAnotar" class="form-input" readonly style="display: none; background: #f0f0f0; border-color: #ddd; color: #555;" value="Producto nuevo">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 25px;">
+                            <label class="form-label"><i class="fas fa-sort-numeric-up"></i> Cantidad Sugerida</label>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="number" id="cantidadAnotar" class="form-input" value="0" min="0" onfocus="this.select()" style="font-size: 1.2rem; font-weight: bold; text-align: center;">
+                                <span style="font-size: 0.8rem; color: #777;">unidades</span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-accent btn-block" id="btnGuardarAnotacion" onclick="window.pedidosGuardarAnotacion()" style="padding: 15px; font-size: 1rem; height: auto;">
+                            <i class="fas fa-check-circle" style="margin-right: 8px;"></i> REGISTRAR ANOTACIÓN
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     (function () {
         // =====================================================
@@ -1081,6 +1448,7 @@
         // =====================================================
         let proveedores = [];
         let inventario = [];
+        let anotaciones = [];
         let proveedorActual = null;
         let carritoPedido = []; // { codigo, producto, cantidad, stock, stock_minimo }
         let productoSeleccionado = null;
@@ -1092,6 +1460,13 @@
         // CATEGORÍAS DE STOCK
         // =====================================================
         const CATEGORIAS_STOCK = {
+            prioritario: {
+                id: 'prioritario',
+                nombre: 'PRODUCTOS PRIORITARIOS',
+                icono: 'fa-star',
+                descripcion: 'Requerido manualmente',
+                filter: () => false
+            },
             critico: {
                 id: 'critico',
                 nombre: 'Sin Stock',
@@ -1151,11 +1526,22 @@
             // Cargar inventario (desde cache o Supabase)
             await cargarInventario();
 
+            // Cargar anotaciones de pedidos
+            await cargarAnotaciones();
+
             // Restaurar estado del pedido si existe
             restaurarEstadoPedido();
 
             // Configurar propagación de scroll para ocultar headers
             configurarScrollPropagacion();
+
+            // Configurar búsqueda de anotaciones
+            const inputBusquedaAnotar = document.getElementById('busquedaAnotar');
+            if (inputBusquedaAnotar) {
+                inputBusquedaAnotar.addEventListener('input', function (e) {
+                    buscarProductoAnotar(e.target.value);
+                });
+            }
 
             console.log('✅ Pedidos: Módulo inicializado');
         }
@@ -1289,6 +1675,25 @@
             }
         }
 
+        async function cargarAnotaciones() {
+            try {
+                const db = window.app?.db;
+                if (!db) return;
+
+                const { data, error } = await db
+                    .from('anotaciones_pedidos')
+                    .select('*')
+                    .or('estado.eq.pendiente,estado_alternativa.eq.pendiente');
+
+                if (error) throw error;
+                anotaciones = data || [];
+                console.log(`📝 ${anotaciones.length} anotaciones cargadas`);
+            } catch (error) {
+                console.error('Error cargando anotaciones:', error);
+                anotaciones = [];
+            }
+        }
+
         // =====================================================
         // RENDERIZADO DE PROVEEDORES
         // =====================================================
@@ -1373,10 +1778,70 @@
             const container = document.getElementById('productosContenedor');
             if (!container || !proveedorActual) return;
 
-            // Filtrar productos del proveedor
+            // 1. Filtrar productos del proveedor
             const productosProveedor = inventario.filter(p =>
                 p.proveedor_id === proveedorActual.id
             );
+
+            // 2. Buscar anotaciones relevantes para este proveedor
+            // El proveedor puede ser el principal o el alternativo. 
+            // NUEVO: Incluimos anotaciones sin código (productos nuevos) sin importar el proveedor.
+            const anotacionesProveedor = anotaciones.filter(a =>
+                (a.proveedor_principal_id === proveedorActual.id ||
+                 a.proveedor_alternativo_id === proveedorActual.id) ||
+                (a.codigo_producto === null || a.codigo_producto === undefined || a.codigo_producto === '')
+            );
+
+            // 3. Vincular anotaciones con productos
+            productosProveedor.forEach(p => {
+                const anotacion = anotacionesProveedor.find(a => a.codigo_producto === p.codigo);
+                if (anotacion) {
+                    p.prioridad = true;
+                    p.anotacion_id = anotacion.id;
+                    p.anotacion_estado = anotacion.estado;
+                    p.anotacion_estado_alt = anotacion.estado_alternativa;
+                    p.prov_principal_id = anotacion.proveedor_principal_id;
+                    p.prov_alternativo_id = anotacion.proveedor_alternativo_id;
+                    p.es_alternativo = (String(anotacion.proveedor_alternativo_id) === String(proveedorActual.id));
+                } else {
+                    p.prioridad = false;
+                }
+            });
+
+            // 4. Agregar productos que NO están en el inventario del proveedor pero tienen anotación (como alternativo)
+            // O que no tienen código (productos nuevos)
+            const productosNuevosAnotados = [];
+            
+            anotacionesProveedor.forEach(a => {
+                if (!a.codigo_producto) {
+                    // Es un producto nuevo anotado (sin código)
+                    productosNuevosAnotados.push({
+                        id_anotacion: a.id,
+                        producto: a.producto_nombre,
+                        es_nuevo_anotado: true,
+                        cantidad_sugerida: a.cantidad_sugerida
+                    });
+                    return;
+                }
+
+                const yaEsta = productosProveedor.some(p => p.codigo === a.codigo_producto);
+                if (!yaEsta) {
+                    const prodOriginal = inventario.find(p => p.codigo === a.codigo_producto);
+                    if (prodOriginal) {
+                        const copiaProd = { 
+                            ...prodOriginal, 
+                            prioridad: true,
+                            anotacion_id: a.id,
+                            anotacion_estado: a.estado,
+                            anotacion_estado_alt: a.estado_alternativa,
+                            prov_principal_id: a.proveedor_principal_id,
+                            prov_alternativo_id: a.proveedor_alternativo_id,
+                            es_alternativo: (String(a.proveedor_alternativo_id) === String(proveedorActual.id))
+                        };
+                        productosProveedor.push(copiaProd);
+                    }
+                }
+            });
 
             if (productosProveedor.length === 0) {
                 container.innerHTML = `
@@ -1388,14 +1853,28 @@
                 return;
             }
 
-            // Categorizar productos
+            // Separar productos prioritarios (anotaciones) del resto
+            const productosPrioritarios = productosProveedor.filter(p => p.prioridad);
+            const productosRestantes = productosProveedor.filter(p => !p.prioridad);
+
+            // Categorizar productos restantes por stock
             const productosPorCategoria = {};
-            const ordenCategorias = ['critico', 'bajo', 'cerca', 'suficiente', 'abundante', 'sobrestock'];
+            const ordenCategorias = ['no_olvides', 'prioritario', 'critico', 'bajo', 'cerca', 'suficiente', 'abundante', 'sobrestock'];
+
+            // Añadir sección de "No olvides"
+            if (productosNuevosAnotados.length > 0) {
+                productosPorCategoria['no_olvides'] = productosNuevosAnotados;
+            }
+
+            // Añadir sección prioritaria al objeto si hay elementos
+            if (productosPrioritarios.length > 0) {
+                productosPorCategoria['prioritario'] = productosPrioritarios;
+            }
 
             ordenCategorias.forEach(catId => {
+                if (catId === 'no_olvides' || catId === 'prioritario') return;
                 const categoria = CATEGORIAS_STOCK[catId];
-                const productosCategoria = productosProveedor.filter(p => {
-                    // Normalizar valores
+                let productosCategoria = productosRestantes.filter(p => {
                     const stock = parseFloat(p.stock) || 0;
                     const stockMinimo = parseFloat(p.stock_minimo) || 1;
                     return categoria.filter({ stock, stock_minimo: stockMinimo });
@@ -1408,25 +1887,38 @@
 
             // Renderizar HTML
             let html = '';
+            
+            // Categorías especiales
+            const todasLasCategorias = ordenCategorias;
+            const metaCategorias = {
+                no_olvides: { nombre: 'NO OLVIDES PREGUNTAR POR', icono: 'fa-question-circle', badge: 'Pendiente' },
+                prioritario: { nombre: 'PRODUCTOS PRIORITARIOS (ANOTADOS)', icono: 'fa-star', badge: 'Urgente' },
+                ...CATEGORIAS_STOCK
+            };
 
-            ordenCategorias.forEach(catId => {
-                if (!productosPorCategoria[catId]) return;
+            todasLasCategorias.forEach(catId => {
+                if (!productosPorCategoria[catId]) {
+                    // Si es "abundante" y no hay productos, aún podemos mostrar el "Agregar nuevo" aquí
+                    if (catId === 'abundante' && !html.includes('producto-card-agregar-nuevo')) {
+                        html += `
+                        <div class="producto-card-agregar-nuevo" onclick="window.pedidosAbrirModalNuevo()">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Producto no en Inventario</span>
+                        </div>`;
+                    }
+                    return;
+                }
 
-                const categoria = CATEGORIAS_STOCK[catId];
+                const categoria = metaCategorias[catId] || CATEGORIAS_STOCK[catId];
                 const productos = productosPorCategoria[catId];
 
-                // Insertar tarjeta "Agregar nuevo" justo antes de "abundante"
-                if (catId === 'abundante') {
+                // Insertar tarjeta "Agregar nuevo" justo antes de la categoría de productos con mucho stock
+                if (catId === 'abundante' && !html.includes('producto-card-agregar-nuevo')) {
                     html += `
-                    <div class="stock-categoria categoria-agregar-nuevo">
-                        <div class="productos-lista">
-                            <div class="producto-card-agregar-nuevo" onclick="window.pedidosAbrirModalNuevo()">
-                                <i class="fas fa-plus-circle"></i>
-                                <span>Agregar nuevo</span>
-                            </div>
-                        </div>
-                    </div>
-                    `;
+                    <div class="producto-card-agregar-nuevo" onclick="window.pedidosAbrirModalNuevo()">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Producto no en Inventario</span>
+                    </div>`;
                 }
 
                 html += `
@@ -1434,10 +1926,15 @@
                     <div class="stock-categoria-header">
                         <i class="fas ${categoria.icono}"></i>
                         <h4>${categoria.nombre}</h4>
-                        <span class="count-badge">${productos.length} producto${productos.length > 1 ? 's' : ''}</span>
+                        <span class="count-badge">${productos.length} item${productos.length > 1 ? 's' : ''}</span>
                     </div>
-                    <div class="productos-lista">
-                        ${productos.map(p => renderizarProductoCard(p, catId)).join('')}
+                    <div class="productos-lista ${catId === 'no_olvides' ? 'lista-compacta' : ''}">
+                        ${productos.map(p => {
+                            if (catId === 'no_olvides') {
+                                return renderizarProductoNuevoAnotado(p);
+                            }
+                            return renderizarProductoCard(p, catId);
+                        }).join('')}
                     </div>
                 </div>
             `;
@@ -1454,15 +1951,48 @@
         function renderizarProductoCard(producto, categoriaId) {
             const stock = parseFloat(producto.stock) || 0;
             const stockMinimo = parseFloat(producto.stock_minimo) || 0;
-            const categoria = CATEGORIAS_STOCK[categoriaId];
+            const categoria = CATEGORIAS_STOCK[categoriaId] || { descripcion: 'Estado desconocido', icono: 'fa-question' };
             const enCarrito = carritoPedido.some(item => item.codigo === producto.codigo);
             const claseCarrito = enCarrito ? 'en-carrito' : '';
 
+            // Lógica de anotaciones y prioridad
+            let markupPrioridad = '';
+            let clasePrioridad = '';
+            
+            if (producto.prioridad) {
+                const esPendienteTotal = producto.anotacion_estado === 'pendiente' && producto.anotacion_estado_alt === 'pendiente';
+                
+                if (esPendienteTotal) {
+                    clasePrioridad = 'prioridad-pendiente';
+                    markupPrioridad = `<div class="badge-prioridad pendiente"><i class="fas fa-exclamation-circle"></i> POR PEDIR</div>`;
+                } else {
+                    clasePrioridad = 'prioridad-pedido';
+                    const yaPedidoAlt = producto.anotacion_estado_alt === 'pedido';
+                    const yaPedidoPrin = producto.anotacion_estado === 'pedido';
+                    
+                    let textoBadge = 'YA PEDIDO';
+                    if (yaPedidoAlt) {
+                        const provAlt = proveedores.find(pr => String(pr.id) === String(producto.prov_alternativo_id));
+                        textoBadge = `PEDIDO A ${provAlt ? provAlt.empresa.toUpperCase() : 'ALTERNATIVA'}`;
+                    }
+                    if (yaPedidoPrin) {
+                        const provPrin = proveedores.find(pr => String(pr.id) === String(producto.prov_principal_id));
+                        textoBadge = `PEDIDO A ${provPrin ? provPrin.empresa.toUpperCase() : 'PRINCIPAL'}`;
+                    }
+                    
+                    markupPrioridad = `<div class="badge-prioridad pedido-alt"><i class="fas fa-info-circle"></i> ${textoBadge}</div>`;
+                }
+            }
+
             return `
-            <div class="producto-card clickable ${claseCarrito}" onclick="window.pedidosAbrirModal('${producto.codigo}')">
+            <div class="producto-card clickable ${claseCarrito} ${clasePrioridad}" onclick="window.pedidosAbrirModal('${producto.codigo}')">
                 <div class="producto-info">
                     <h5>${limpiarNombreProducto(producto.producto)}</h5>
-                    <span class="producto-codigo">${producto.codigo || 'Sin código'}</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="producto-codigo">${producto.codigo || 'Sin código'}</span>
+                        ${producto.es_alternativo ? '<span style="font-size: 0.65rem; color: #17a2b8; font-weight: bold; background: #e0f7fa; padding: 2px 5px; border-radius: 4px;">Proveedor Alt.</span>' : ''}
+                    </div>
+                    ${markupPrioridad}
                 </div>
                 <div class="producto-stock">
                     <div class="stock-actual">${formatearCantidad(stock)}</div>
@@ -1473,14 +2003,51 @@
         `;
         }
 
+        function renderizarProductoNuevoAnotado(p) {
+            const enCarrito = carritoPedido.some(item => 
+                item.anotacion_id === p.id_anotacion && item.esNuevoAnotado
+            );
+            
+            return `
+            <div class="producto-card-compacto ${enCarrito ? 'en-carrito' : ''}" onclick="window.pedidosAbrirModalFulfillment('${p.id_anotacion}')">
+                <div class="compacto-nombre">${limpiarNombreProducto(p.producto)}</div>
+                <div class="compacto-meta">
+                    <span class="badge-sugerido">Sugerido: ${p.cantidad_sugerida || 1}</span>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>`;
+        }
+
         // =====================================================
         // MODAL DE CANTIDAD
         // =====================================================
         function abrirModalCantidad(codigo) {
-            productoSeleccionado = inventario.find(p => p.codigo === codigo);
-            if (!productoSeleccionado) {
+            const baseProd = inventario.find(p => p.codigo === codigo);
+            if (!baseProd) {
                 console.error('Producto no encontrado:', codigo);
                 return;
+            }
+
+            // Crear una copia enriquecida con datos de la anotación si existe
+            // para que agregarAlCarrito sepa si es proveedor principal o alternativo
+            productoSeleccionado = { ...baseProd };
+            
+            if (proveedorActual && anotaciones && anotaciones.length > 0) {
+                // Buscamos si este producto tiene una anotación pendiente para el proveedor actual
+                // (Ya sea como principal o como alternativo)
+                const anotacion = anotaciones.find(a => 
+                    a.codigo_producto === codigo && 
+                    (String(a.proveedor_principal_id) === String(proveedorActual.id) || 
+                     String(a.proveedor_alternativo_id) === String(proveedorActual.id))
+                );
+                
+                if (anotacion) {
+                    productoSeleccionado.anotacion_id = anotacion.id;
+                    productoSeleccionado.cantidad_sugerida = anotacion.cantidad_sugerida;
+                    // Es alternativo si el proveedor seleccionado coincide con el alternativo de la anotación
+                    productoSeleccionado.es_alternativo = (String(anotacion.proveedor_alternativo_id) === String(proveedorActual.id));
+                    console.log(`📦 Producto en modal: ${codigo}, es_alt: ${productoSeleccionado.es_alternativo}, anot_id: ${anotacion.id}`);
+                }
             }
 
             const stock = parseFloat(productoSeleccionado.stock) || 0;
@@ -1493,9 +2060,17 @@
             document.getElementById('modalCantidadStockMinimo').textContent = formatearCantidad(stockMinimo);
 
             // Si ya está en el carrito, mostrar la cantidad existente
+            // Si no está en el carrito pero tiene cantidad sugerida (es prioritario), usar esa
             const itemEnCarrito = carritoPedido.find(item => item.codigo === codigo);
             const inputCantidad = document.getElementById('modalCantidadInput');
-            inputCantidad.value = itemEnCarrito ? itemEnCarrito.cantidad : '';
+            
+            if (itemEnCarrito) {
+                inputCantidad.value = itemEnCarrito.cantidad;
+            } else if (productoSeleccionado.cantidad_sugerida) {
+                inputCantidad.value = productoSeleccionado.cantidad_sugerida;
+            } else {
+                inputCantidad.value = '';
+            }
 
             // Mostrar modal
             document.getElementById('modalCantidadPedido').classList.add('active');
@@ -1515,6 +2090,39 @@
         function cerrarModalCantidad() {
             document.getElementById('modalCantidadPedido').classList.remove('active');
             productoSeleccionado = null;
+        }
+
+        function abrirModalFulfillment(anotacionId) {
+            const anotacion = anotaciones.find(a => String(a.id) === String(anotacionId));
+            if (!anotacion) return;
+
+            productoSeleccionado = {
+                producto: anotacion.producto_nombre,
+                codigo: `NUEVO_ANOT_${anotacion.id}`,
+                stock: 0,
+                stock_minimo: 0,
+                anotacion_id: anotacion.id,
+                esNuevoAnotado: true,
+                cantidad_sugerida: anotacion.cantidad_sugerida
+            };
+
+            // Reutilizar modal de cantidad normal
+            document.getElementById('modalCantidadProductoNombre').textContent = productoSeleccionado.producto;
+            document.getElementById('modalCantidadProductoCodigo').textContent = 'Producto sin código (Nuevo)';
+            document.getElementById('modalCantidadStockActual').textContent = '0';
+            document.getElementById('modalCantidadStockMinimo').textContent = '0';
+
+            const itemEnCarrito = carritoPedido.find(item => item.anotacion_id === anotacion.id && item.esNuevoAnotado);
+            const inputCantidad = document.getElementById('modalCantidadInput');
+            
+            if (itemEnCarrito) {
+                inputCantidad.value = itemEnCarrito.cantidad;
+            } else {
+                inputCantidad.value = productoSeleccionado.cantidad_sugerida || '1';
+            }
+
+            document.getElementById('modalCantidadPedido').classList.add('active');
+            setTimeout(() => inputCantidad.focus(), 100);
         }
 
         // =====================================================
@@ -1596,11 +2204,18 @@
             const nombreProducto = productoSeleccionado.producto || 'Producto';
 
             // Buscar si ya existe en el carrito
-            const indexExistente = carritoPedido.findIndex(item => item.codigo === productoSeleccionado.codigo);
+            const indexExistente = carritoPedido.findIndex(item => 
+                productoSeleccionado.esNuevoAnotado 
+                    ? (item.anotacion_id === productoSeleccionado.anotacion_id && item.esNuevoAnotado)
+                    : (item.codigo === productoSeleccionado.codigo)
+            );
 
             if (indexExistente >= 0) {
                 // Actualizar cantidad existente
                 carritoPedido[indexExistente].cantidad = cantidad;
+                // Mantener o actualizar metadatos si es necesario
+                carritoPedido[indexExistente].anotacion_id = productoSeleccionado.anotacion_id || null;
+                carritoPedido[indexExistente].es_alternativo = productoSeleccionado.es_alternativo || false;
             } else {
                 // Agregar nuevo item
                 carritoPedido.push({
@@ -1608,7 +2223,10 @@
                     producto: productoSeleccionado.producto,
                     cantidad: cantidad,
                     stock: parseFloat(productoSeleccionado.stock) || 0,
-                    stock_minimo: parseFloat(productoSeleccionado.stock_minimo) || 0
+                    stock_minimo: parseFloat(productoSeleccionado.stock_minimo) || 0,
+                    anotacion_id: productoSeleccionado.anotacion_id || null,
+                    es_alternativo: productoSeleccionado.es_alternativo || false,
+                    esNuevoAnotado: productoSeleccionado.esNuevoAnotado || false
                 });
             }
 
@@ -1860,6 +2478,73 @@
             }
         }
 
+        // =====================================================
+        // ACTUALIZACIÓN DE ESTADOS DE ANOTACIONES
+        // =====================================================
+        async function actualizarEstadoAnotaciones(itemsPedidos) {
+            try {
+                const db = window.app?.db;
+                if (!db || !itemsPedidos || itemsPedidos.length === 0 || !proveedorActual) return;
+
+                console.log('Actualizando estados de anotaciones para los productos pedidos...');
+                
+                // Filtrar solo los productos que vienen de una anotación
+                const itemsConAnotacion = itemsPedidos.filter(item => item.anotacion_id);
+                
+                if (itemsConAnotacion.length === 0) {
+                    console.log('No hay anotaciones vinculadas en este pedido.');
+                    return;
+                }
+
+                for (const item of itemsConAnotacion) {
+                    const updates = {};
+                    
+                    // Doble verificación: Consultamos la anotación en DB para estar 100% seguros
+                    // de si el proveedor actual es el principal o el alternativo
+                    const { data: anotacionActual } = await db
+                        .from('anotaciones_pedidos')
+                        .select('proveedor_alternativo_id, codigo_producto')
+                        .eq('id', item.anotacion_id)
+                        .single();
+
+                    if (anotacionActual) {
+                        // Si es un producto nuevo (sin código), actualizamos su proveedor principal y estado
+                        if (!anotacionActual.codigo_producto) {
+                            updates.proveedor_principal_id = proveedorActual.id;
+                            updates.estado = 'pedido';
+                            updates.estado_alternativa = 'pedido'; // Para que desaparezca de todas las listas
+                            console.log(`📦 Producto nuevo ${item.anotacion_id} asignado a ${proveedorActual.empresa}`);
+                        } else {
+                            const esAlt = (String(anotacionActual.proveedor_alternativo_id) === String(proveedorActual.id));
+                            
+                            if (esAlt) {
+                                updates.estado_alternativa = 'pedido';
+                            } else {
+                                updates.estado = 'pedido';
+                            }
+                        }
+
+                        const { error } = await db
+                            .from('anotaciones_pedidos')
+                            .update(updates)
+                            .eq('id', item.anotacion_id);
+
+                        if (error) {
+                            console.error(`Error actualizando anotación ${item.anotacion_id}:`, error);
+                        } else {
+                            console.log(`✅ Anotación ${item.anotacion_id} actualizada`);
+                        }
+                    }
+                }
+
+                // Recargar las anotaciones locales para que la UI se actualice
+                await cargarAnotaciones();
+                
+            } catch (error) {
+                console.error('Error en actualizarEstadoAnotaciones:', error);
+            }
+        }
+
         async function generarPedido() {
             if (carritoPedido.length === 0) {
                 window.app?.showToast?.('El carrito está vacío', 'warning', 2000);
@@ -1896,6 +2581,9 @@
                 if (resultado.success) {
                     window.app?.showToast?.('✅ Pedido enviado correctamente por WhatsApp', 'success', 4000);
                     console.log('Pedido enviado con éxito:', resultado);
+
+                    // 4. Actualizar estado de anotaciones en DB si existen
+                    await actualizarEstadoAnotaciones(items);
 
                     // Limpiar carrito y estado
                     carritoPedido = [];
@@ -1988,6 +2676,263 @@
         }
 
         // =====================================================
+        // ANOTAR PARA PEDIR (NUEVA FUNCIONALIDAD)
+        // =====================================================
+        function abrirModalAnotar() {
+            const overlay = document.getElementById('modalAnotarPedidoOverlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+                overlay.classList.add('active');
+                document.body.classList.add('modal-open');
+                setTimeout(() => {
+                    document.getElementById('busquedaAnotar').focus();
+                }, 100);
+            }
+
+            // Asegurar que la cantidad esté en 0 para facilidad de uso
+            const inputCantidad = document.getElementById('cantidadAnotar');
+            if (inputCantidad) inputCantidad.value = '0';
+
+            // Asegurar que la lista de proveedores esté llena
+            const selectAlt = document.getElementById('proveedorAlternativoAnotar');
+            if (selectAlt) {
+                // Si solo tiene la opción por defecto y hay proveedores cargados, llenarlo
+                if (selectAlt.options.length <= 1 && proveedores.length > 0) {
+                    proveedores.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = p.empresa;
+                        selectAlt.appendChild(opt);
+                    });
+                }
+            }
+        }
+
+        function cerrarModalAnotar() {
+            const overlay = document.getElementById('modalAnotarPedidoOverlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+                overlay.style.display = 'none';
+                document.body.classList.remove('modal-open');
+            }
+            // Limpiar
+            document.getElementById('busquedaAnotar').value = '';
+            document.getElementById('resultadosAnotar').innerHTML = `
+                <div class="empty-state-anotar">
+                    <i class="fas fa-search"></i>
+                    <p>Ingresa al menos 2 caracteres para buscar productos en el inventario</p>
+                </div>
+            `;
+            document.getElementById('detalleProductoAnotar').style.display = 'none';
+            document.getElementById('placeholderAnotar').style.display = 'flex';
+
+            // Resetear visuales de proveedores
+            document.getElementById('proveedorAlternativoAnotar').style.display = 'block';
+            document.getElementById('proveedorAlternativoDisplayAnotar').style.display = 'none';
+            document.getElementById('cantidadAnotar').value = '0';
+        }
+
+        function buscarProductoAnotar(query) {
+            const resultadosDiv = document.getElementById('resultadosAnotar');
+            if (!query || query.trim().length < 2) {
+                resultadosDiv.innerHTML = `
+                    <div class="empty-state-anotar">
+                        <i class="fas fa-search"></i>
+                        <p>Ingresa al menos 2 caracteres para buscar productos en el inventario</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const palabras = query.toLowerCase().split(' ').filter(p => p.length > 0);
+            const filtrados = inventario.filter(p => {
+                const nombreMatch = palabras.every(palabra => p.producto.toLowerCase().includes(palabra));
+                const codigoMatch = p.codigo && p.codigo.toLowerCase().includes(query.toLowerCase());
+                return nombreMatch || codigoMatch;
+            }).slice(0, 25); // Más resultados visibles
+
+            if (filtrados.length > 0) {
+                resultadosDiv.innerHTML = filtrados.map(p => {
+                    const stockClase = (p.stock || 0) <= (p.stock_minimo || 0) ? 'stock-warning' : 'stock-ok';
+                    return `
+                        <div class="search-item-anotar" id="item-anotar-${p.codigo}" onclick="window.pedidosSeleccionarProductoAnotar('${p.codigo}')">
+                            <div class="item-nombre" title="${p.producto}">${p.producto}</div>
+                            <div class="item-meta">
+                                <span class="item-extra"><i class="fas fa-barcode"></i> ${p.codigo || 'S/N'}</span>
+                                <span class="item-stock ${stockClase}"><i class="fas fa-box"></i> STK: ${p.stock || 0}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                resultadosDiv.innerHTML = `
+                    <div style="padding: 20px; text-align: center; background: #fffcf5; border: 2px dashed #e0a300; border-radius: 12px; margin-top: 10px;">
+                        <i class="fas fa-plus-circle" style="font-size: 2rem; color: #e0a300; margin-bottom: 10px;"></i>
+                        <p style="font-weight: bold; color: #333; margin-bottom: 15px;">"${query}" no está en el inventario</p>
+                        <button class="btn btn-accent btn-block" onclick="window.pedidosPrepararProductoNuevo('${query.replace(/'/g, "\\'")}')" style="height: auto; padding: 12px;">
+                            ANOTAR COMO PRODUCTO NUEVO
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function seleccionarProductoAnotar(codigo) {
+            const producto = inventario.find(p => p.codigo === codigo);
+            if (!producto) return;
+
+            // Visual feedback en la lista
+            document.querySelectorAll('.search-item-anotar').forEach(el => el.classList.remove('selected'));
+            document.getElementById(`item-anotar-${codigo}`)?.classList.add('selected');
+
+            document.getElementById('nombreProductoAnotar').textContent = producto.producto;
+            document.getElementById('codigoProductoAnotar').textContent = `${producto.codigo || 'S/N'}`;
+            document.getElementById('stockActualAnotar').textContent = `Stock Actual: ${producto.stock || 0}`;
+            document.getElementById('codigoProductoAnotar').style.display = 'inline-block';
+            document.getElementById('stockActualAnotar').style.display = 'inline-block';
+
+            // Buscar proveedor principal
+            const provPrincipal = proveedores.find(pr => pr.id == producto.proveedor_id);
+            const inputProvPrincipal = document.getElementById('proveedorPrincipalAnotar');
+            const hiddenProvId = document.getElementById('proveedorPrincipalIdAnotar');
+
+            inputProvPrincipal.value = provPrincipal ? provPrincipal.empresa : 'No definido';
+            hiddenProvId.value = producto.proveedor_id || '';
+
+            // Mostrar select de proveedor alternativo y ocultar visual de "Producto nuevo"
+            document.getElementById('proveedorAlternativoAnotar').style.display = 'block';
+            document.getElementById('proveedorAlternativoDisplayAnotar').style.display = 'none';
+
+            // Mostrar detalles, ocultar placeholder
+            document.getElementById('placeholderAnotar').style.display = 'none';
+            document.getElementById('detalleProductoAnotar').style.display = 'block';
+
+            window.productoParaAnotar = { ...producto, esNuevo: false };
+        }
+
+        function prepararProductoNuevo(nombre) {
+            // Asegurar que el nombre esté en mayúsculas
+            const nombreMayus = nombre.toUpperCase();
+
+            // Visual feedback en la lista (quitar selecciones previas)
+            document.querySelectorAll('.search-item-anotar').forEach(el => el.classList.remove('selected'));
+
+            document.getElementById('nombreProductoAnotar').textContent = nombreMayus;
+            document.getElementById('codigoProductoAnotar').style.display = 'none';
+            document.getElementById('stockActualAnotar').style.display = 'none';
+
+            const inputProvPrincipal = document.getElementById('proveedorPrincipalAnotar');
+            const hiddenProvId = document.getElementById('proveedorPrincipalIdAnotar');
+
+            inputProvPrincipal.value = 'Sin asignar (Producto nuevo)';
+            hiddenProvId.value = '';
+
+            // Ocultar select de proveedor alternativo y mostrar visual de "Producto nuevo"
+            document.getElementById('proveedorAlternativoAnotar').style.display = 'none';
+            document.getElementById('proveedorAlternativoAnotar').value = '';
+            document.getElementById('proveedorAlternativoDisplayAnotar').style.display = 'block';
+
+            // Mostrar detalles, ocultar placeholder
+            document.getElementById('placeholderAnotar').style.display = 'none';
+            document.getElementById('detalleProductoAnotar').style.display = 'block';
+
+            window.productoParaAnotar = {
+                producto: nombreMayus,
+                codigo: null,
+                proveedor_id: null,
+                esNuevo: true
+            };
+        }
+
+        async function guardarAnotacion() {
+            const db = window.app?.db;
+            if (!db) {
+                if (window.showCustomAlert) {
+                    await window.showCustomAlert('Error: Base de datos no disponible', 'error');
+                } else {
+                    alert('Error: Base de datos no disponible');
+                }
+                return;
+            }
+
+            const btn = document.getElementById('btnGuardarAnotacion');
+            btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                const item = window.productoParaAnotar;
+                const proveedorAltId = document.getElementById('proveedorAlternativoAnotar').value;
+                const cantidadSugerida = document.getElementById('cantidadAnotar').value;
+
+                // Obtener usuario actual para el RLS
+                const { data: { user } } = await db.auth.getUser();
+
+                const { error } = await db.from('anotaciones_pedidos').insert({
+                    codigo_producto: item.codigo,
+                    producto_nombre: item.producto,
+                    proveedor_principal_id: item.proveedor_id || null,
+                    proveedor_alternativo_id: proveedorAltId || null,
+                    cantidad_sugerida: parseInt(cantidadSugerida) || 1,
+                    estado: 'pendiente',
+                    estado_alternativa: 'pendiente',
+                    usuario_id: user?.id
+                });
+
+                if (error) throw error;
+
+                // Animación de éxito en el botón
+                btn.innerHTML = '<i class="fas fa-check"></i> ¡GUARDADO!';
+                btn.style.background = '#28a745';
+                btn.style.borderColor = '#1e7e34';
+
+                if (window.app?.showToast) {
+                    window.app.showToast('✅ Anotación registrada con éxito', 'success');
+                }
+
+                // Esperar un momento para mostrar el éxito y luego reiniciar el modal
+                setTimeout(() => {
+                    // Reiniciar estados visuales del botón
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                    btn.style.borderColor = '';
+                    btn.disabled = false;
+
+                    // Reiniciar modal para la siguiente anotación sin cerrarlo
+                    document.getElementById('busquedaAnotar').value = '';
+                    document.getElementById('busquedaAnotar').focus();
+                    document.getElementById('resultadosAnotar').innerHTML = `
+                        <div class="empty-state-anotar">
+                            <i class="fas fa-search"></i>
+                            <p>Ingresa al menos 2 caracteres para buscar productos en el inventario</p>
+                        </div>
+                    `;
+                    
+                    document.getElementById('detalleProductoAnotar').style.display = 'none';
+                    document.getElementById('placeholderAnotar').style.display = 'flex';
+                    
+                    // IMPORTANTE: Resetear campos de selección y cantidad
+                    document.getElementById('proveedorAlternativoAnotar').value = '';
+                    document.getElementById('proveedorAlternativoAnotar').style.display = 'block';
+                    document.getElementById('proveedorAlternativoDisplayAnotar').style.display = 'none';
+                    document.getElementById('cantidadAnotar').value = '0';
+                    
+                    window.productoParaAnotar = null;
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error guardando anotación:', error);
+                if (window.showCustomAlert) {
+                    await window.showCustomAlert('Error al guardar la anotación: ' + (error.message || error), 'error');
+                } else {
+                    alert('Error al guardar la anotación');
+                }
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // =====================================================
         // EXPORTAR FUNCIONES GLOBALES
         // =====================================================
         window.initPedidos = initPedidos;
@@ -2007,6 +2952,14 @@
         window.pedidosAbrirModalNuevo = abrirModalNuevo;
         window.pedidosCerrarModalNuevo = cerrarModalNuevo;
         window.pedidosAgregarNuevoAlCarrito = agregarNuevoAlCarrito;
+
+        // Nueva funcionalidad de anotaciones
+        window.pedidosAbrirModalAnotar = abrirModalAnotar;
+        window.pedidosCerrarModalAnotar = cerrarModalAnotar;
+        window.pedidosSeleccionarProductoAnotar = seleccionarProductoAnotar;
+        window.pedidosPrepararProductoNuevo = prepararProductoNuevo;
+        window.pedidosGuardarAnotacion = guardarAnotacion;
+        window.pedidosAbrirModalFulfillment = abrirModalFulfillment;
 
         // Auto-inicializar
         if (document.readyState === 'loading') {

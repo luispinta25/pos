@@ -130,20 +130,25 @@ async function loadModule(moduleName) {
         // y exponer la función de inicialización en `window` si fue definida en el script.
         scriptContents.forEach(scriptContent => {
             try {
-                const wrapper = `(function(){\n"use strict";\n${scriptContent}\n// Export known helpers if the module defined them (to keep backward compatibility)
-                try{ if (typeof ${initFunctionName} === 'function') window['${initFunctionName}'] = ${initFunctionName}; }catch(e){}
-                try{ if (typeof showAppLoader === 'function') window.showAppLoader = showAppLoader; }catch(e){}
-                try{ if (typeof hideAppLoader === 'function') window.hideAppLoader = hideAppLoader; }catch(e){}
-                try{ if (typeof proveedoresAlert === 'function') window.proveedoresAlert = proveedoresAlert; }catch(e){}
-                try{ if (typeof proveedoresConfirm === 'function') window.proveedoresConfirm = proveedoresConfirm; }catch(e){}
-                try{ if (typeof mostrarNotificacionProveedor === 'function') window.mostrarNotificacionProveedor = mostrarNotificacionProveedor; }catch(e){}
-                try{ if (typeof mostrarNotificacionIngreso === 'function') window.mostrarNotificacionIngreso = mostrarNotificacionIngreso; }catch(e){}
-                })();`;
+                // Usamos concatenación simple para evitar problemas con template literals (${} o `) en el contenido del script
+                let wrapper = '(function(){\n"use strict";\n';
+                wrapper += scriptContent;
+                wrapper += '\n// Export known helpers if the module defined them (to keep backward compatibility)\n';
+                wrapper += 'try{ if (typeof ' + initFunctionName + ' === "function") window["' + initFunctionName + '"] = ' + initFunctionName + '; }catch(e){}\n';
+                wrapper += 'try{ if (typeof showAppLoader === "function") window.showAppLoader = showAppLoader; }catch(e){}\n';
+                wrapper += 'try{ if (typeof hideAppLoader === "function") window.hideAppLoader = hideAppLoader; }catch(e){}\n';
+                wrapper += 'try{ if (typeof proveedoresAlert === "function") window.proveedoresAlert = proveedoresAlert; }catch(e){}\n';
+                wrapper += 'try{ if (typeof proveedoresConfirm === "function") window.proveedoresConfirm = proveedoresConfirm; }catch(e){}\n';
+                wrapper += 'try{ if (typeof mostrarNotificacionProveedor === "function") window.mostrarNotificacionProveedor = mostrarNotificacionProveedor; }catch(e){}\n';
+                wrapper += 'try{ if (typeof mostrarNotificacionIngreso === "function") window.mostrarNotificacionIngreso = mostrarNotificacionIngreso; }catch(e){}\n';
+                wrapper += '})();';
+                
                 const scriptElement = document.createElement('script');
                 scriptElement.textContent = wrapper;
                 document.body.appendChild(scriptElement);
                 document.body.removeChild(scriptElement);
             } catch (error) {
+                console.error('[app.js] Error al inyectar script del módulo:', error);
             }
         });
 
