@@ -1523,11 +1523,12 @@
             // Cargar proveedores
             await cargarProveedores();
 
+            // Cargar anotaciones de pedidos (Ahora antes o en paralelo al inventario si se desea, 
+            // pero el usuario pidió que si no hay cache se consulte anotaciones)
+            await cargarAnotaciones();
+
             // Cargar inventario (desde cache o Supabase)
             await cargarInventario();
-
-            // Cargar anotaciones de pedidos
-            await cargarAnotaciones();
 
             // Restaurar estado del pedido si existe
             restaurarEstadoPedido();
@@ -1626,6 +1627,8 @@
         }
 
         async function cargarInventario() {
+            let cacheValido = false;
+
             // Intentar cargar desde cache primero
             try {
                 const cacheData = localStorage.getItem('inventario_cache');
@@ -1637,21 +1640,32 @@
                     if (now - cache.timestamp < CACHE_DURATION) {
                         inventario = cache.data || [];
                         console.log(`✅ ${inventario.length} productos cargados desde cache`);
-                        return;
+                        cacheValido = true;
                     }
                 }
             } catch (error) {
                 console.error('Error leyendo cache de inventario:', error);
             }
 
-            // Si no hay cache o está expirado, cargar de Supabase
-            console.log('📦 Cargando inventario desde Supabase...');
+            // Si hay cache válido, lanzamos actualización en segundo plano
+            if (cacheValido) {
+                console.log('🔄 Actualizando inventario en segundo plano...');
+                actualizarInventarioEnBackground();
+                return;
+            }
+
+            // Si no hay cache o está expirado, cargar de Supabase de forma bloqueante
+            await actualizarInventarioEnBackground(true);
+        }
+
+        /**
+         * Actualiza el inventario desde Supabase
+         * @param {boolean} mostrarLog - Si debe mostrar logs o no
+         */
+        async function actualizarInventarioEnBackground(bloqueante = false) {
             try {
                 const db = window.app?.db;
-                if (!db) {
-                    console.error('❌ Supabase no disponible para inventario');
-                    return;
-                }
+                if (!db) return;
 
                 const { data, error } = await db
                     .from('inventario')
@@ -1661,17 +1675,24 @@
                 if (error) throw error;
 
                 inventario = data || [];
-                console.log(`✅ ${inventario.length} productos cargados desde Supabase`);
-
+                
                 // Guardar en cache para futuras cargas
                 localStorage.setItem('inventario_cache', JSON.stringify({
                     data: inventario,
                     timestamp: Date.now()
                 }));
-                console.log('💾 Cache de inventario actualizado');
+
+                if (bloqueante) {
+                    console.log(`✅ ${inventario.length} productos cargados desde Supabase (Bloqueante)`);
+                } else {
+                    console.log('💾 Cache de inventario actualizado en segundo plano');
+                    // Si ya estamos viendo productos de un proveedor, quizás convenga refrescar
+                    if (proveedorActual) {
+                        window.pedidosSeleccionarProveedor(proveedorActual.id);
+                    }
+                }
             } catch (error) {
-                console.error('Error cargando inventario desde Supabase:', error);
-                inventario = [];
+                console.error('Error actualizando inventario:', error);
             }
         }
 
@@ -2521,6 +2542,13 @@
                                 updates.estado_alternativa = 'pedido';
                             } else {
                                 updates.estado = 'pedido';
+                                
+                                // Solicitud del usuario: Si no tiene proveedor alternativo, 
+                                // al pedir al principal debe desaparecer de todas las listas.
+                                if (!anotacionActual.proveedor_alternativo_id) {
+                                    updates.estado_alternativa = 'pedido';
+                                    console.log(`✨ Anotación ${item.anotacion_id} sin alternativa, marcada como completada global`);
+                                }
                             }
                         }
 
