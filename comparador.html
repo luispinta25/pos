@@ -779,10 +779,16 @@
                 <i class="fas fa-balance-scale"></i>
                 Comparador de Precios
             </h1>
-            <button onclick="window.volverAProveedores()" class="btn-volver">
-                <i class="fas fa-arrow-left"></i>
-                Volver
-            </button>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="window.refrescarDatos()" class="btn-volver" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%);" title="Actualizar datos desde el servidor">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualizar
+                </button>
+                <button onclick="window.volverAProveedores()" class="btn-volver">
+                    <i class="fas fa-arrow-left"></i>
+                    Volver
+                </button>
+            </div>
         </div>
         <p class="comparador-subtitle">Compara precios de proveedores y calcula tu margen de ganancia en tiempo real</p>
     </div>
@@ -905,11 +911,11 @@
     let mostrarConIVA = true;
 
     // =====================================================
-    // CACHE MANAGEMENT - Usa el mismo localStorage de app.js
+    // CACHE MANAGEMENT - Usar un cache específico para el comparador para evitar conflictos
     // =====================================================
     function obtenerProductosDeCache() {
         try {
-            const cacheData = localStorage.getItem('inventario_cache');
+            const cacheData = localStorage.getItem('comparador_inventario_cache');
             if (!cacheData) return null;
             
             const cache = JSON.parse(cacheData);
@@ -917,7 +923,7 @@
             const CACHE_DURATION = 60 * 60 * 1000; // 1 hora
             
             if (now - cache.timestamp < CACHE_DURATION) {
-                console.log('✅ Productos cargados desde caché', cache.data.length);
+                console.log('✅ Productos cargados desde caché específico', cache.data.length);
                 return cache.data;
             }
             
@@ -1016,6 +1022,12 @@
                 nombre: item.producto,
                 precio: parseFloat(item.precio_proveedor) || 0,
                 proveedor_id: item.proveedor_id || ''
+            }));
+
+            // Guardar en caché específico del comparador para evitar que otros módulos lo sobreescriban
+            localStorage.setItem('comparador_inventario_cache', JSON.stringify({
+                data: data,
+                timestamp: Date.now()
             }));
 
             await cargarProveedores();
@@ -1255,6 +1267,13 @@
             seleccionarProducto(producto);
         }
     };
+    window.refrescarDatos = async function() {
+        console.log('🔄 Refrescando datos del comparador...');
+        localStorage.removeItem('comparador_inventario_cache');
+        await initComparador();
+        window.app?.showToast?.('Datos actualizados correctamente', 'success', 2000);
+    };
+
     window.volverAProveedores = function() {
         // Cambiar a modo facturas (primer tab)
         if (window.cambiarModoProveedor) {

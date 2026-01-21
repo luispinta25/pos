@@ -1655,7 +1655,7 @@
 
                 const { data, error } = await db
                     .from('inventario')
-                    .select('codigo, producto, stock, stock_minimo, proveedor_id')
+                    .select('codigo, producto, stock, stock_minimo, proveedor_id, precio_proveedor')
                     .order('producto', { ascending: true });
 
                 if (error) throw error;
