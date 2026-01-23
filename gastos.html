@@ -680,7 +680,7 @@
             // Usar filtro que compara solo la fecha (cast a date en PostgreSQL)
             // Esto ignora la hora y zona horaria, comparando solo YYYY-MM-DD
             const { data, error } = await db
-                .from('gastos')
+                .from('ferre_gastos')
                 .select('*')
                 .gte('fechayhora', `${fechaHoy}T00:00:00-05:00`) // Hora Ecuador (UTC-5)
                 .lte('fechayhora', `${fechaHoy}T23:59:59-05:00`)
@@ -696,7 +696,7 @@
 
             // Cargar todos los usuarios para mapear nombres
             const { data: usuarios } = await db
-                .from('usuarios_ferreteria')
+                .from('ferre_usuarios_ferreteria')
                 .select('email, nombres, apellidos');
 
             const usuariosMap = {};
@@ -877,7 +877,7 @@
             const db = window.app ? window.app.db : supabaseClient;
             
             const { data: userData, error: userError } = await db
-                .from('usuarios_ferreteria')
+                .from('ferre_usuarios_ferreteria')
                 .select('nombres, apellidos')
                 .eq('email', userEmail)
                 .single();
@@ -929,7 +929,7 @@
 
             // Ahora sí insertar en la base de datos con el messageId
             const { data: gastoInsertado, error } = await db
-                .from('gastos')
+                .from('ferre_gastos')
                 .insert([nuevoGasto])
                 .select()
                 .single();
@@ -971,7 +971,7 @@
             
             // Obtener configuración de WhatsApp
             const { data: ferredatos, error } = await db
-                .from('ferredatos')
+                .from('ferre_ferredatos')
                 .select('*')
                 .limit(1)
                 .single();
@@ -1091,7 +1091,7 @@ _Powered by Ferrisoluciones Tech_`;
             // Eliminar de la base de datos
             const db = window.app ? window.app.db : supabaseClient;
             const { error } = await db
-                .from('gastos')
+                .from('ferre_gastos')
                 .delete()
                 .eq('idigasto', idigasto);
 
@@ -1127,7 +1127,7 @@ _Powered by Ferrisoluciones Tech_`;
             const db = window.app ? window.app.db : supabaseClient;
             
             const { data: ferredatos, error } = await db
-                .from('ferredatos')
+                .from('ferre_ferredatos')
                 .select('*')
                 .limit(1)
                 .single();

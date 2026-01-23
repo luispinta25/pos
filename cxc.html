@@ -1026,7 +1026,7 @@
             setLoading('cuentas', true);
             const db = getDB();
             const { data, error } = await db
-                .from('vista_cuentas_por_cobrar')
+                .from('ferre_vista_cuentas_por_cobrar')
                 .select('*')
                 .order('fecha_otorgada', { ascending: false })
                 .limit(500);
@@ -1054,7 +1054,7 @@
             setLoading('deudores', true);
             const db = getDB();
             const { data, error } = await db
-                .from('vista_resumen_deudores')
+                .from('ferre_vista_resumen_deudores')
                 .select('*')
                 .order('nombre', { ascending: true });
 
@@ -1080,8 +1080,8 @@
             setLoading('pagos', true);
             const db = getDB();
             const { data, error } = await db
-                .from('pagos_cuentas_por_cobrar')
-                .select(`*, cuenta:cuentas_por_cobrar(id, codigo, motivo, deudor_id, saldo_pendiente, deudor:deudores(id, nombre, cedula_ruc))`)
+                .from('ferre_pagos_cuentas_por_cobrar')
+                .select(`*, cuenta:ferre_cuentas_por_cobrar(id, codigo, motivo, deudor_id, saldo_pendiente, deudor:ferre_deudores(id, nombre, cedula_ruc))`)
                 .order('fecha_pago', { ascending: false })
                 .limit(300);
 
@@ -1132,7 +1132,7 @@
 
         try {
             const { data: deudor, error } = await db
-                .from('deudores')
+                .from('ferre_deudores')
                 .select('*')
                 .eq('cedula_ruc', documento)
                 .maybeSingle();
@@ -1146,7 +1146,7 @@
             }
 
             const { data: cliente } = await db
-                .from('clientes')
+                .from('ferre_clientes')
                 .select('*')
                 .eq('cedula', documento)
                 .maybeSingle();
@@ -1234,7 +1234,7 @@
         console.log('🔍 Buscando deudor existente con documento:', documento);
 
         const { data: deudorExistente, error: errorDeudor } = await db
-            .from('deudores')
+            .from('ferre_deudores')
             .select('*')
             .eq('cedula_ruc', documento)
             .maybeSingle();
@@ -1275,7 +1275,7 @@
         console.log('📝 Payload para crear deudor:', deudorPayload);
 
         const { data: nuevoDeudor, error: errorInsert } = await db
-            .from('deudores')
+            .from('ferre_deudores')
             .insert([deudorPayload])
             .select()
             .single();
@@ -1367,7 +1367,7 @@
             };
 
             const { data: cuenta, error: errorCuenta } = await db
-                .from('cuentas_por_cobrar')
+                .from('ferre_cuentas_por_cobrar')
                 .insert([cuentaPayload])
                 .select()
                 .single();
@@ -1388,7 +1388,7 @@
                 };
 
                 const { data: pago, error: errorPago } = await db
-                    .from('pagos_cuentas_por_cobrar')
+                    .from('ferre_pagos_cuentas_por_cobrar')
                     .insert([pagoPayload])
                     .select()
                     .single();
@@ -1450,7 +1450,7 @@
             try {
                 const db = getDB();
                 const { data: detalles, error: detallesError } = await db
-                    .from('ventas_detalle')
+                    .from('ferre_ventas_detalle')
                     .select('cantidad, producto_id, precio')
                     .eq('venta_id', cuenta.venta_id);
                 
@@ -1462,7 +1462,7 @@
                     const productosConNombres = await Promise.all(
                         detalles.map(async (d) => {
                             const { data: inv } = await db
-                                .from('inventario')
+                                .from('ferre_inventario')
                                 .select('producto')
                                 .eq('codigo', d.producto_id)
                                 .maybeSingle();
@@ -1690,7 +1690,7 @@
             };
 
             const { data: pago, error } = await db
-                .from('pagos_cuentas_por_cobrar')
+                .from('ferre_pagos_cuentas_por_cobrar')
                 .insert([payload])
                 .select()
                 .single();
@@ -1734,7 +1734,7 @@
             };
 
             const { data, error } = await db
-                .from('deudores')
+                .from('ferre_deudores')
                 .insert([payload])
                 .select()
                 .single();

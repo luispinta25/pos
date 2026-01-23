@@ -3717,7 +3717,7 @@
 
         try {
             const { data, error } = await supabase
-                .from('caja_diaria')
+                .from('ferre_caja_diaria')
                 .select('*')
                 .lt('fecha', fechaISO)
                 .order('fecha', { ascending: false })
@@ -3770,7 +3770,7 @@
             }
 
             const { data, error } = await supabase
-                .from('caja_inicial')
+                .from('ferre_caja_inicial')
                 .select('*')
                 .eq('fecha', fechaISO)
                 .maybeSingle();
@@ -3932,7 +3932,7 @@
             };
 
             const { data, error } = await supabase
-                .from('caja_inicial')
+                .from('ferre_caja_inicial')
                 .upsert(payload, { onConflict: 'fecha' })
                 .select()
                 .maybeSingle();
@@ -4081,7 +4081,7 @@
         try {
             // 1. Obtener ventas en EFECTIVO del día
             const { data: ventas, error: eVentas } = await supabase
-                .from('ventas')
+                .from('ferre_ventas')
                 .select('total')
                 .eq('fecha_venta', fechaISO)
                 .eq('metodo_pago', 'EFECTIVO');
@@ -4091,7 +4091,7 @@
 
             // 2. Obtener movimientos de caja (ingresos/egresos)
             const { data: movs, error: eMovs } = await supabase
-                .from('movimientos_caja')
+                .from('ferre_movimientos_caja')
                 .select('tipo, monto')
                 .eq('fecha', fechaISO);
             
@@ -4101,7 +4101,7 @@
 
             // 3. Pagos de CxC en efectivo
             const { data: pagosCxC, error: eCxC } = await supabase
-                .from('cuentas_por_cobrar_pagos')
+                .from('ferre_cuentas_por_cobrar_pagos')
                 .select('monto_pago')
                 .eq('fecha_pago', fechaISO)
                 .eq('forma_pago', 'EFECTIVO');
@@ -4195,7 +4195,7 @@
 
         try {
             const { error } = await supabase
-                .from('caja_diaria')
+                .from('ferre_caja_diaria')
                 .upsert(payload, { onConflict: 'fecha' });
 
             if (error) throw error;
@@ -4243,7 +4243,7 @@
 
 
             const { data, error } = await db
-                .from('api')
+                .from('ferre_api')
                 .select('service_name, webservices_token')
                 .eq('is_active', true);
 
@@ -4283,7 +4283,7 @@
             const inicio = Date.now();
 
             const { data, error } = await db
-                .from('clientes')
+                .from('ferre_clientes')
                 .select('*')
                 .order('razon_social');
 
@@ -4386,7 +4386,7 @@
             const inicio = Date.now();
 
             const { data, error } = await db
-                .from('inventario')
+                .from('ferre_inventario')
                 .select('*')
                 .order('producto');
 
@@ -4424,7 +4424,7 @@
             const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
 
             const { data, error } = await db
-                .from('inventario')
+                .from('ferre_inventario')
                 .select('*')
                 .order('producto');
 
@@ -4752,7 +4752,7 @@
             if (!db) return;
 
             const { data: ferredatos, error } = await db
-                .from('ferredatos')
+                .from('ferre_ferredatos')
                 .select('*')
                 .limit(1)
                 .single();
@@ -5278,7 +5278,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                             if (!producto) {
                                 const db = window.app.db;
                                 const { data, error } = await db
-                                    .from('inventario')
+                                    .from('ferre_inventario')
                                     .select('*')
                                     .eq('codigo', valor)
                                     .single();
@@ -5505,7 +5505,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             // Búsqueda en BD con lógica mejorada
             const palabras = query.trim().split(/\s+/).filter(p => p.length > 0);
-            let queryBuilder = db.from('inventario').select('*');
+            let queryBuilder = db.from('ferre_inventario').select('*');
 
             // Verificar si es búsqueda numérica de 4+ dígitos
             const esNumerico = /^\d+$/.test(query.trim());
@@ -5597,7 +5597,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         try {
             const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
             const { data, error } = await db
-                .from('inventario')
+                .from('ferre_inventario')
                 .select('*')
                 .eq('codigo', codigo)
                 .single();
@@ -5639,8 +5639,8 @@ _Sistema de Gestión Ferrisoluciones_`;
                 const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
 
                 const [respuestaExacto, respuestaUnidades] = await Promise.all([
-                    db.from('inventario').select('*').eq('codigo', codigo).maybeSingle(),
-                    db.from('inventario').select('*').eq('codigo', codigoConUnidades).maybeSingle()
+                    db.from('ferre_inventario').select('*').eq('codigo', codigo).maybeSingle(),
+                    db.from('ferre_inventario').select('*').eq('codigo', codigoConUnidades).maybeSingle()
                 ]);
 
                 productoExacto = respuestaExacto.data;
@@ -5960,7 +5960,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         console.log('🔍 Buscando deudor existente con cédula:', documento);
 
         const { data: deudorExistente, error: errorDeudor } = await db
-            .from('deudores')
+            .from('ferre_deudores')
             .select('*')
             .eq('cedula_ruc', documento)
             .maybeSingle();
@@ -6003,7 +6003,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         console.log('📝 Payload para crear deudor:', payload);
 
         const { data: nuevoDeudor, error: errorInsert } = await db
-            .from('deudores')
+            .from('ferre_deudores')
             .insert([payload])
             .select()
             .single();
@@ -6160,7 +6160,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             console.log('📝 Insertando venta:', ventaPayload);
 
             const { data: ventaInsertada, error: ventaError } = await db
-                .from('ventas')
+                .from('ferre_ventas')
                 .insert([ventaPayload])
                 .select()
                 .single();
@@ -6185,13 +6185,13 @@ _Sistema de Gestión Ferrisoluciones_`;
             console.log('📦 Insertando detalles de venta:', detallesPayload);
 
             const { error: detalleError } = await db
-                .from('ventas_detalle')
+                .from('ferre_ventas_detalle')
                 .insert(detallesPayload);
 
             if (detalleError) {
                 console.error('❌ Error insertando detalles:', detalleError);
                 console.log('🔄 Rollback: eliminando venta...');
-                await db.from('ventas').delete().eq('id', ventaInsertada.id);
+                await db.from('ferre_ventas').delete().eq('id', ventaInsertada.id);
                 throw new Error(detalleError.message || 'No se pudieron registrar los productos de la venta.');
             }
 
@@ -6219,7 +6219,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             console.log('💳 Insertando cuenta por cobrar:', cuentaPayload);
 
             const { data: cuentaInsertada, error: cuentaError } = await db
-                .from('cuentas_por_cobrar')
+                .from('ferre_cuentas_por_cobrar')
                 .insert([cuentaPayload])
                 .select()
                 .single();
@@ -6227,8 +6227,8 @@ _Sistema de Gestión Ferrisoluciones_`;
             if (cuentaError) {
                 console.error('❌ Error insertando cuenta:', cuentaError);
                 console.log('🔄 Rollback: eliminando venta y detalles...');
-                await db.from('ventas_detalle').delete().eq('venta_id', ventaInsertada.id);
-                await db.from('ventas').delete().eq('id', ventaInsertada.id);
+                await db.from('ferre_ventas_detalle').delete().eq('venta_id', ventaInsertada.id);
+                await db.from('ferre_ventas').delete().eq('id', ventaInsertada.id);
                 throw new Error(cuentaError.message || 'No se pudo registrar la cuenta por cobrar.');
             }
 
@@ -6247,7 +6247,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 console.log('💰 Insertando pago inicial:', pagoPayload);
 
                 const { error: pagoError } = await db
-                    .from('pagos_cuentas_por_cobrar')
+                    .from('ferre_pagos_cuentas_por_cobrar')
                     .insert([pagoPayload]);
 
                 if (pagoError) {
@@ -6397,7 +6397,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         try {
             const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
             const { data, error } = await db
-                .from('inventario')
+                .from('ferre_inventario')
                 .select('stock, precio')
                 .eq('codigo', codigo)
                 .single();
@@ -6871,7 +6871,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 // Fallback a búsqueda en DB si cache no está listo
                 const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
 
-                let queryBuilder = db.from('clientes').select('*');
+                let queryBuilder = db.from('ferre_clientes').select('*');
 
                 if (esNumerico) {
                     queryBuilder = queryBuilder.ilike('cedula', `${query}%`);
@@ -7017,7 +7017,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         try {
             const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
             const { data, error } = await db
-                .from('clientes')
+                .from('ferre_clientes')
                 .select('*')
                 .eq('cedula', cedula)
                 .single();
@@ -7950,7 +7950,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             // Si no está en caché, buscar en BD
             if (!producto) {
                 const { data, error } = await db
-                    .from('inventario')
+                    .from('ferre_inventario')
                     .select('*')
                     .eq('codigo', codigo)
                     .single();
@@ -8220,7 +8220,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
 
             const { data: productoActual, error } = await db
-                .from('inventario')
+                .from('ferre_inventario')
                 .select('stock, precio')
                 .eq('codigo', producto.codigo)
                 .single();
@@ -8417,7 +8417,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             // Actualizar en Supabase
             const { data, error } = await db
-                .from('clientes')
+                .from('ferre_clientes')
                 .update({
                     razon_social: razonSocial,
                     direccion: direccion || null,
@@ -8615,7 +8615,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             // Insertar en Supabase
             const { data, error } = await db
-                .from('clientes')
+                .from('ferre_clientes')
                 .insert([{
                     cedula: cedula.padStart(10, '0'),
                     razon_social: razonSocial,
@@ -9073,7 +9073,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             // Obtener configuración SRI
             const { data: configSRI, error: errorSRI } = await db
-                .from('facelectronicaconfig')
+                .from('ferre_facelectronicaconfig')
                 .select('*')
                 .single();
 
@@ -9084,7 +9084,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             // Obtener configuración de servicios
             const { data: configServicios, error: errorServicios } = await db
-                .from('config_servicios')
+                .from('ferre_config_servicios')
                 .select('*')
                 .single();
 
@@ -9404,7 +9404,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         if (resultado.success) {
             if (supabase && typeof supabase.from === 'function') {
                 const { error: updateError } = await supabase
-                    .from('ventas')
+                    .from('ferre_ventas')
                     .update({ estado: 'AUTORIZADO' })
                     .eq('id', ventaId);
 
@@ -9420,7 +9420,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             if (resultado.statusCode && resultado.statusCode >= 200 && resultado.statusCode < 300) {
                 if (supabase && typeof supabase.from === 'function') {
                     const { error: updateError } = await supabase
-                        .from('ventas')
+                        .from('ferre_ventas')
                         .update({ estado: 'RECHAZADO' })
                         .eq('id', ventaId);
 
@@ -9572,7 +9572,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
                 // Actualizar número de comprobante en la BD
                 const { error: updateConfigError } = await db
-                    .from('facelectronicaconfig')
+                    .from('ferre_facelectronicaconfig')
                     .update({ comprobante_actual: nuevoComprobante })
                     .eq('id', configSRIData.id);
 
@@ -9601,7 +9601,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             };
 
             const { data: ventaInsertada, error: ventaError } = await db
-                .from('ventas')
+                .from('ferre_ventas')
                 .insert([ventaData])
                 .select()
                 .single();
@@ -9626,14 +9626,14 @@ _Sistema de Gestión Ferrisoluciones_`;
             }));
 
             const { data: detallesInsertados, error: detalleError } = await db
-                .from('ventas_detalle')
+                .from('ferre_ventas_detalle')
                 .insert(detalles)
                 .select();
 
             if (detalleError) {
                 console.error('Error insertando detalles:', detalleError);
                 // Intentar revertir la venta si fallan los detalles
-                await db.from('ventas').delete().eq('id', ventaInsertada.id);
+                await db.from('ferre_ventas').delete().eq('id', ventaInsertada.id);
                 throw new Error(`Error al registrar productos: ${detalleError.message}`);
             }
 
@@ -10045,7 +10045,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             const userResponse = await db?.auth?.getUser();
             const userId = userResponse?.data?.user?.id;
 
-            const { error } = await db.from('eventualidades').insert({
+            const { error } = await db.from('ferre_eventualidades').insert({
                 descripcion: query,
                 usuario_id: userId
             });

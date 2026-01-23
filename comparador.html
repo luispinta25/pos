@@ -973,7 +973,7 @@
         try {
             const db = window.app.db;
             const { data, error } = await db
-                .from('proveedores')
+                .from('ferre_proveedores')
                 .select('id, codigo, empresa');
             
             if (error) throw error;
@@ -1011,7 +1011,7 @@
             const db = window.app.db;
             
             const { data, error } = await db
-                .from('inventario')
+                .from('ferre_inventario')
                 .select('codigo, producto, precio_proveedor, proveedor_id')
                 .order('producto', { ascending: true });
 

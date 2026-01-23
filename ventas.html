@@ -1161,7 +1161,7 @@
 
                 // Construir query base
                 let query = db
-                    .from('ventas')
+                    .from('ferre_ventas')
                     .select('*');
 
                 // Si hay filtro por código, buscar en todo el histórico
@@ -1376,7 +1376,7 @@
                 finHoy.setHours(23, 59, 59, 999);
 
                 const { data: ventasMesActual, error: errorActual } = await db
-                    .from('ventas')
+                    .from('ferre_ventas')
                     .select('total, fecha_hora_venta, id')
                     .gte('fecha_hora_venta', inicioMesActual.toISOString())
                     .lte('fecha_hora_venta', finHoy.toISOString());
@@ -1390,7 +1390,7 @@
                 finMesAnterior.setHours(23, 59, 59, 999);
 
                 const { data: ventasMesAnterior, error: errorAnterior } = await db
-                    .from('ventas')
+                    .from('ferre_ventas')
                     .select('total, fecha_hora_venta')
                     .gte('fecha_hora_venta', inicioMesAnterior.toISOString())
                     .lte('fecha_hora_venta', finMesAnterior.toISOString());
@@ -1407,8 +1407,8 @@
                 hace15Dias.setDate(hoy.getDate() - 15);
 
                 const { data: ventasConDetalles, error: errorVentasConDetalles } = await db
-                    .from('ventas')
-                    .select('id, ventas_detalle(producto_id, cantidad, subtotal, precio)')
+                    .from('ferre_ventas')
+                    .select('id, ventas_detalle:ferre_ventas_detalle(producto_id, cantidad, subtotal, precio)')
                     .gte('fecha_hora_venta', hace15Dias.toISOString());
 
                 // Extraer y aplanar los detalles de las ventas
@@ -1427,7 +1427,7 @@
 
                 // Obtener inventario actual (para análisis complementario)
                 const { data: inventario, error: errorInv } = await db
-                    .from('inventario')
+                    .from('ferre_inventario')
                     .select('codigo, producto, stock, stock_minimo');
 
                 // Calcular proyección con algoritmo complejo
@@ -2010,8 +2010,8 @@
             let todosLosProductos = [];
             try {
                 const { data: ventasConDetalles, error: errorVentas } = await db
-                    .from('ventas')
-                    .select('id, ventas_detalle(producto_id, cantidad, subtotal, precio)')
+                    .from('ferre_ventas')
+                    .select('id, ventas_detalle:ferre_ventas_detalle(producto_id, cantidad, subtotal, precio)')
                     .gte('fecha_hora_venta', hace15Dias.toISOString());
 
                 if (errorVentas) {
@@ -2019,7 +2019,7 @@
                 }
 
                 const { data: inventario, error: errorInv } = await db
-                    .from('inventario')
+                    .from('ferre_inventario')
                     .select('codigo, producto, stock, stock_minimo');
 
                 if (errorInv) {
@@ -2294,7 +2294,7 @@
 
                 // Obtener venta
                 const { data: venta, error: ventaError } = await db
-                    .from('ventas')
+                    .from('ferre_ventas')
                     .select('*')
                     .eq('id', ventaId)
                     .single();
@@ -2303,7 +2303,7 @@
 
                 // Obtener detalles de la venta
                 const { data: detalles, error: detallesError } = await db
-                    .from('ventas_detalle')
+                    .from('ferre_ventas_detalle')
                     .select('*')
                     .eq('venta_id', ventaId);
 
@@ -2318,7 +2318,7 @@
                     for (let i = 0; i < productosIds.length; i += chunkSize) {
                         const chunk = productosIds.slice(i, i + chunkSize);
                         const { data: productos, error: productosError } = await db
-                            .from('inventario')
+                            .from('ferre_inventario')
                             .select('codigo, producto')
                             .in('codigo', chunk);
 
@@ -2595,9 +2595,9 @@
                 // Obtener configuraciones
                 const db = window.app.db;
 
-                const { data: configSRI } = await db.from('facelectronicaconfig').select('*').single();
-                const { data: configServicios } = await db.from('config_servicios').select('*').single();
-                const { data: clienteData } = await db.from('clientes').select('*').eq('cedula', venta.cliente_id).single();
+                const { data: configSRI } = await db.from('ferre_facelectronicaconfig').select('*').single();
+                const { data: configServicios } = await db.from('ferre_config_servicios').select('*').single();
+                const { data: clienteData } = await db.from('ferre_clientes').select('*').eq('cedula', venta.cliente_id).single();
 
                 if (!configSRI || !configServicios) {
                     window.app?.showToast?.('Error: Configuración de facturación no disponible', 'error', 3000);
@@ -2744,7 +2744,7 @@
                 const searchTerm = `%${query}%`;
 
                 const { data, error } = await db
-                    .from('clientes')
+                    .from('ferre_clientes')
                     .select('*')
                     .or(`cedula.ilike.${searchTerm},razon_social.ilike.${searchTerm}`)
                     .limit(20);
@@ -2810,8 +2810,8 @@
                 const db = window.app.db;
 
                 // 1. Obtener configuraciones
-                const { data: configSRI } = await db.from('facelectronicaconfig').select('*').single();
-                const { data: configServicios } = await db.from('config_servicios').select('*').single();
+                const { data: configSRI } = await db.from('ferre_facelectronicaconfig').select('*').single();
+                const { data: configServicios } = await db.from('ferre_config_servicios').select('*').single();
 
                 if (!configSRI || !configServicios) {
                     throw new Error('Configuración de facturación no disponible');
@@ -2820,7 +2820,7 @@
                 // 2. Incrementar número de comprobante
                 const nuevoNumero = parseInt(configSRI.comprobante_actual) + 1;
                 const { error: updateError } = await db
-                    .from('facelectronicaconfig')
+                    .from('ferre_facelectronicaconfig')
                     .update({ comprobante_actual: nuevoNumero })
                     .eq('id', configSRI.id);
 
@@ -2849,7 +2849,7 @@
 
                 // 4. Actualizar venta en BD
                 const { error: ventaUpdateError } = await db
-                    .from('ventas')
+                    .from('ferre_ventas')
                     .update({
                         tipo: 'FACTURA',
                         cliente_id: cliente.cedula,
@@ -2948,7 +2948,7 @@
                     console.groupEnd();
 
                     if (resultado.success) {
-                        await db.from('ventas').update({ estado: 'AUTORIZADO' }).eq('id', venta.id);
+                        await db.from('ferre_ventas').update({ estado: 'AUTORIZADO' }).eq('id', venta.id);
                         window.app?.showToast?.('✅ Factura convertida y autorizada por el SRI', 'success', 4000);
                     } else {
                         console.warn('%c⚠️ FACTURA CONVERTIDA PERO PENDIENTE', 'color:#FF9800;font-weight:bold;font-size:14px;');
@@ -2998,9 +2998,9 @@
                 const db = window.app.db;
 
                 // Obtener configuraciones
-                const { data: configSRI } = await db.from('facelectronicaconfig').select('*').single();
-                const { data: configServicios } = await db.from('config_servicios').select('*').single();
-                const { data: clienteData } = await db.from('clientes').select('*').eq('cedula', venta.cliente_id).single();
+                const { data: configSRI } = await db.from('ferre_facelectronicaconfig').select('*').single();
+                const { data: configServicios } = await db.from('ferre_config_servicios').select('*').single();
+                const { data: clienteData } = await db.from('ferre_clientes').select('*').eq('cedula', venta.cliente_id).single();
 
                 if (!configSRI || !configServicios) {
                     throw new Error('Configuración no disponible');
@@ -3085,7 +3085,7 @@
                 if (esExitoso) {
                     // Primero verificar que el registro existe
                     const { data: checkData, error: checkError } = await db
-                        .from('ventas')
+                        .from('ferre_ventas')
                         .select('id, estado, usuario_email')
                         .eq('id', venta.id)
                         .single();
@@ -3098,7 +3098,7 @@
 
                     // Actualizar estado en la base de datos
                     const { error: updateError } = await db
-                        .from('ventas')
+                        .from('ferre_ventas')
                         .update({
                             estado: 'AUTORIZADO',
                             updated_at: new Date().toISOString()
@@ -3549,7 +3549,7 @@
 
                 // Fetch sales
                 const { data: ventas, error } = await db
-                    .from('ventas')
+                    .from('ferre_ventas')
                     .select('*')
                     .gte('fecha_hora_venta', fechaInicio.toISOString())
                     .lte('fecha_hora_venta', fechaFin.toISOString());
@@ -3566,7 +3566,7 @@
                     for (let i = 0; i < ventaIds.length; i += chunkSize) {
                         const chunk = ventaIds.slice(i, i + chunkSize);
                         const { data: det, error: detError } = await db
-                            .from('ventas_detalle')
+                            .from('ferre_ventas_detalle')
                             .select('producto_id, cantidad, subtotal, ganancia')
                             .in('venta_id', chunk);
 
@@ -3587,7 +3587,7 @@
                     for (let i = 0; i < productoIds.length; i += chunkSize) {
                         const chunk = productoIds.slice(i, i + chunkSize);
                         const { data: prods, error: prodError } = await db
-                            .from('inventario')
+                            .from('ferre_inventario')
                             .select('codigo, producto')
                             .in('codigo', chunk);
 
@@ -3929,7 +3929,7 @@
 
                 // Buscar en transferencias por id_venta
                 const { data, error } = await db
-                    .from('transferencias')
+                    .from('ferre_transferencias')
                     .select('fotografia')
                     .eq('id_venta', idVenta)
                     .maybeSingle();

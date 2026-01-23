@@ -56,7 +56,7 @@ async function loadUserRole() {
     const client = getSupabaseClient();
     try {
         const { data, error } = await client
-            .from('usuarios_ferreteria')
+            .from('ferre_usuarios_ferreteria')
             .select('rol, nombres, apellidos')
             .eq('user_id', currentUser.id)
             .single();
@@ -121,7 +121,7 @@ async function register(email, password, nombres, apellidos) {
 
         // Crear registro en tabla usuarios_ferreteria
         const { error: insertError } = await client
-            .from('usuarios_ferreteria')
+            .from('ferre_usuarios_ferreteria')
             .insert([
                 {
                     user_id: data.user.id,

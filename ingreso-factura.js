@@ -574,7 +574,7 @@ async function cargarInventarioCompleto() {
     try {
         const client = window.app?.db || window.supabaseClient;
         const { data, error } = await client
-            .from('inventario')
+            .from('ferre_inventario')
             .select('id, codigo, producto, precio_proveedor, precio, zona, stock')
             .order('producto', { ascending: true });
         
@@ -1177,7 +1177,7 @@ async function guardarFacturaIngreso() {
         
         // Insertar factura
         const { data: facturaInsertada, error: errorFactura } = await client
-            .from('facturas_proveedores')
+            .from('ferre_facturas_proveedores')
             .insert([facturaData])
             .select()
             .single();
@@ -1199,7 +1199,7 @@ async function guardarFacturaIngreso() {
         }));
         
         const { error: errorDetalles } = await client
-            .from('detalle_facturas_proveedores')
+            .from('ferre_detalle_facturas_proveedores')
             .insert(detallesData);
         
         if (errorDetalles) throw errorDetalles;
@@ -1217,7 +1217,7 @@ async function guardarFacturaIngreso() {
 
             // Insert pago_proveedores as usual
             const { error: errorPago } = await client
-                .from('pagos_proveedores')
+                .from('ferre_pagos_proveedores')
                 .insert([pagoData]);
 
             if (errorPago) throw errorPago;
@@ -1250,7 +1250,7 @@ async function guardarFacturaIngreso() {
                     // insertar en tabla transferencias
                     try {
                         const { data: transferenciaInsertada, error: errTrans } = await client
-                            .from('transferencias')
+                            .from('ferre_transferencias')
                             .insert([transferenciaRow])
                             .select()
                             .single();
@@ -1554,7 +1554,7 @@ async function enviarNotificacionWhatsAppLocal(transferencia, ferredatos) {
 async function obtenerConfiguracionWhatsAppLocal(supabase) {
     try {
         const { data, error } = await supabase
-            .from('ferredatos')
+            .from('ferre_ferredatos')
             .select('*')
             .limit(1)
             .single();
@@ -1647,7 +1647,7 @@ async function procesarProductosNuevos(productos) {
         for (let i = 0; i < codes.length; i += chunkSize) {
             const chunk = codes.slice(i, i + chunkSize);
             const { data, error } = await client
-                .from('inventario')
+                .from('ferre_inventario')
                 .select('id,codigo,stock,precio,producto,zona')
                 .in('codigo', chunk);
             if (error) throw error;
@@ -1783,7 +1783,7 @@ async function procesarProductosNuevos(productos) {
             }
 
             const { data: upsertedData, error: upsertErr } = await client
-                .from('inventario')
+                .from('ferre_inventario')
                 .upsert(upsertRows, { onConflict: 'codigo' })
                 .select();
 
@@ -1835,7 +1835,7 @@ async function procesarProductosNuevos(productos) {
                 for (let i = 0; i < codesToUpdate.length; i += chunkSize) {
                     const chunk = codesToUpdate.slice(i, i + chunkSize);
                     const { data, error } = await client
-                        .from('inventario')
+                        .from('ferre_inventario')
                         .select('id,codigo,stock')
                         .in('codigo', chunk);
                     if (error) throw error;
@@ -1858,7 +1858,7 @@ async function procesarProductosNuevos(productos) {
                     const nuevoStock = previousStock + (parseFloat(si.cantidad) || 0);
                     try {
                         const { error: updErr } = await client
-                            .from('inventario')
+                            .from('ferre_inventario')
                             .update({ stock: nuevoStock, updated_at: new Date().toISOString() })
                             .eq('id', row.id);
                         if (updErr) {
@@ -1959,7 +1959,7 @@ async function guardarNuevoProveedorIngreso(e) {
         };
         
         const { data, error } = await client
-            .from('proveedores')
+            .from('ferre_proveedores')
             .insert([proveedorData])
             .select()
             .single();

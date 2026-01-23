@@ -1733,7 +1733,7 @@ async function cargarProveedoresData() {
     try {
         const client = getSupabaseClient();
         const { data, error } = await client
-            .from('proveedores')
+            .from('ferre_proveedores')
             .select('id, codigo, empresa')
             .order('empresa', { ascending: true });
         
@@ -1780,7 +1780,7 @@ async function cargarFacturasData() {
         logProveedor('Consultando vista v_facturas_proveedores_completa...');
         
         const { data, error } = await client
-            .from('v_facturas_proveedores_completa')
+            .from('ferre_v_facturas_proveedores_completa')
             .select('*')
             .order('fecha_vencimiento', { ascending: true });
         
@@ -1811,10 +1811,10 @@ async function cargarNotasData() {
     try {
         const client = getSupabaseClient();
         const { data, error } = await client
-            .from('notas_proveedores')
+            .from('ferre_notas_proveedores')
             .select(`
                 *,
-                proveedor:proveedores(empresa)
+                proveedor:ferre_proveedores(empresa)
             `)
             .order('created_at', { ascending: false });
         
@@ -2073,7 +2073,7 @@ async function cargarHistorialPagosProveedor(facturaId) {
     try {
         const client = getSupabaseClient();
         const { data, error } = await client
-            .from('pagos_proveedores')
+            .from('ferre_pagos_proveedores')
             .select('*')
             .eq('factura_id', facturaId)
             .order('fecha_pago', { ascending: false });
@@ -2237,7 +2237,7 @@ async function registrarPagoProveedor(e) {
         
         logProveedor('Enviando INSERT a pagos_proveedores...');
         const { data, error } = await client
-            .from('pagos_proveedores')
+            .from('ferre_pagos_proveedores')
             .insert(datosInsert)
             .select();
         
@@ -2459,7 +2459,7 @@ async function procesarTransferenciaProveedor(datos, client) {
         
         // Insertar en tabla transferencias
         const { data: transferenciaInsertada, error: errTrans } = await client
-            .from('transferencias')
+            .from('ferre_transferencias')
             .insert([transferenciaRow])
             .select()
             .single();
@@ -2496,7 +2496,7 @@ async function enviarNotificacionWhatsAppProveedor(transferencia, client) {
         
         // Obtener configuración de ferredatos
         const { data: ferredatos, error } = await client
-            .from('ferredatos')
+            .from('ferre_ferredatos')
             .select('*')
             .limit(1)
             .single();
@@ -2850,7 +2850,7 @@ async function enviarWhatsAppProveedor(mensaje) {
         
         // Obtener configuración de WhatsApp desde ferredatos
         const { data: ferredatos, error } = await client
-            .from('ferredatos')
+            .from('ferre_ferredatos')
             .select('*')
             .limit(1)
             .single();
@@ -3222,7 +3222,7 @@ async function guardarFacturaEmergencia(e) {
         
         // Verificar duplicados
         const { data: existing } = await client
-            .from('facturas_proveedores')
+            .from('ferre_facturas_proveedores')
             .select('id')
             .eq('proveedor_id', proveedorId)
             .eq('numero_factura', numeroFactura)
@@ -3246,7 +3246,7 @@ async function guardarFacturaEmergencia(e) {
         };
         
         const { error } = await client
-            .from('facturas_proveedores')
+            .from('ferre_facturas_proveedores')
             .insert(nuevaFactura);
             
         if (error) throw error;

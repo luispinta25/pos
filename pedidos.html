@@ -1610,7 +1610,7 @@
                 }
 
                 const { data, error } = await db
-                    .from('proveedores')
+                    .from('ferre_proveedores')
                     .select('id, codigo, empresa')
                     .order('empresa', { ascending: true });
 
@@ -1668,7 +1668,7 @@
                 if (!db) return;
 
                 const { data, error } = await db
-                    .from('inventario')
+                    .from('ferre_inventario')
                     .select('codigo, producto, stock, stock_minimo, proveedor_id, precio_proveedor')
                     .order('producto', { ascending: true });
 
@@ -1702,7 +1702,7 @@
                 if (!db) return;
 
                 const { data, error } = await db
-                    .from('anotaciones_pedidos')
+                    .from('ferre_anotaciones_pedidos')
                     .select('*')
                     .or('estado.eq.pendiente,estado_alternativa.eq.pendiente');
 
@@ -2353,7 +2353,7 @@
             try {
                 const client = getSupabaseClient();
                 const { data: ferredatos, error } = await client
-                    .from('ferredatos')
+                    .from('ferre_ferredatos')
                     .select('*')
                     .limit(1)
                     .single();
@@ -2523,7 +2523,7 @@
                     // Doble verificación: Consultamos la anotación en DB para estar 100% seguros
                     // de si el proveedor actual es el principal o el alternativo
                     const { data: anotacionActual } = await db
-                        .from('anotaciones_pedidos')
+                        .from('ferre_anotaciones_pedidos')
                         .select('proveedor_alternativo_id, codigo_producto')
                         .eq('id', item.anotacion_id)
                         .single();
@@ -2553,7 +2553,7 @@
                         }
 
                         const { error } = await db
-                            .from('anotaciones_pedidos')
+                            .from('ferre_anotaciones_pedidos')
                             .update(updates)
                             .eq('id', item.anotacion_id);
 
@@ -2896,7 +2896,7 @@
                 // Obtener usuario actual para el RLS
                 const { data: { user } } = await db.auth.getUser();
 
-                const { error } = await db.from('anotaciones_pedidos').insert({
+                const { error } = await db.from('ferre_anotaciones_pedidos').insert({
                     codigo_producto: item.codigo,
                     producto_nombre: item.producto,
                     proveedor_principal_id: item.proveedor_id || null,

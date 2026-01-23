@@ -1028,7 +1028,7 @@
             if (!db) return;
 
             const { data, error } = await db
-                .from('proveedores')
+                .from('ferre_proveedores')
                 .select('id, empresa')
                 .order('empresa');
 
@@ -1166,7 +1166,7 @@
 
             // Fallback: buscar en BD
             const palabras = query.trim().split(/\s+/).filter(p => p.length > 0);
-            let queryBuilder = db.from('inventario').select('*');
+            let queryBuilder = db.from('ferre_inventario').select('*');
 
             const esNumerico = /^\d+$/.test(query.trim());
             const longitudNumeros = query.trim().length;
@@ -1295,7 +1295,7 @@
     async function buscarProveedoresUtilidades(query) {
         try {
             const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
-            let q = db.from('proveedores').select('*');
+            let q = db.from('ferre_proveedores').select('*');
             
             if (query.length === 1 && /^[A-ZÑ]$/i.test(query)) {
                 q = q.ilike('empresa', `${query}%`);
@@ -1423,7 +1423,7 @@
 
         try {
             const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
-            const { error } = await db.from('proveedores').update({
+            const { error } = await db.from('ferre_proveedores').update({
                 vendedor: pending.cambios.vendedor.nuevo === '(vacío)' ? null : pending.cambios.vendedor.nuevo,
                 contacto: pending.cambios.contacto.nuevo === '(vacío)' ? null : pending.cambios.contacto.nuevo
             }).eq('id', pending.id);
@@ -1662,7 +1662,7 @@
 
             // Ejecutar actualización
             const { data, error } = await db
-                .from('inventario')
+                .from('ferre_inventario')
                 .update(updateData)
                 .eq('codigo', pendiente.codigo)
                 .select()
@@ -1749,7 +1749,7 @@
 
             // 2. Obtener Ventas
             const { data: ventas, error: vError } = await db
-                .from('ventas')
+                .from('ferre_ventas')
                 .select('id, fecha_hora_venta')
                 .gte('fecha_hora_venta', inicioMes.toISOString())
                 .lte('fecha_hora_venta', finMes.toISOString());
@@ -1775,7 +1775,7 @@
             for (let i = 0; i < ventaIds.length; i += chunkSize) {
                 const chunk = ventaIds.slice(i, i + chunkSize);
                 const { data: det, error: dError } = await db
-                    .from('ventas_detalle')
+                    .from('ferre_ventas_detalle')
                     .select('producto_id, cantidad, subtotal')
                     .in('venta_id', chunk);
                 if (dError) throw dError;
@@ -1789,7 +1789,7 @@
             for (let i = 0; i < prodIds.length; i += chunkSize) {
                 const chunk = prodIds.slice(i, i + chunkSize);
                 const { data: prods, error: pError } = await db
-                    .from('inventario')
+                    .from('ferre_inventario')
                     .select('codigo, producto, proveedor_id')
                     .in('codigo', chunk);
                 if (pError) throw pError;
@@ -1806,7 +1806,7 @@
                 for (let i = 0; i < provIds.length; i += chunkSizeProv) {
                     const chunk = provIds.slice(i, i + chunkSizeProv);
                     const { data: provs, error: prError } = await db
-                        .from('proveedores')
+                        .from('ferre_proveedores')
                         .select('id, empresa')
                         .in('id', chunk);
                     if (prError) throw prError;
