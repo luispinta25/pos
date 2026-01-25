@@ -262,6 +262,18 @@
     </div>
 </div>
 
+<!-- Overlay de Carga para Procesos Largos -->
+<div id="conversionLoadingOverlay" 
+    style="display: none; z-index: 999999; background: rgba(0,0,0,0.7); flex-direction: column; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;">
+    <div class="spinner-large"
+        style="width: 60px; height: 60px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid #d4a017; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;">
+    </div>
+    <div style="color: white; font-size: 1.2rem; font-weight: 500; text-align: center;">
+        <p id="conversionLoadingText" style="margin: 0;">Convirtiendo recibo a factura...</p>
+        <p style="font-size: 0.9rem; color: #ccc; margin: 5px 0 0 0;">Por favor, espere un momento.</p>
+    </div>
+</div>
+
 <!-- Modal para Selección de Cliente (Convertir a Factura) -->
 <div id="modalSeleccionCliente" class="modal">
     <div class="modal-content" style="max-width: 900px;">
@@ -2803,6 +2815,13 @@
                 return;
             }
 
+            const loadingOverlay = document.getElementById('conversionLoadingOverlay');
+            const loadingText = document.getElementById('conversionLoadingText');
+            if (loadingOverlay) {
+                if (loadingText) loadingText.textContent = 'Convirtiendo recibo a factura...';
+                loadingOverlay.style.display = 'flex';
+            }
+
             try {
                 window.app?.showToast?.('<i class="fas fa-spinner fa-spin"></i> Convirtiendo recibo a factura...', 'info', 3000);
 
@@ -2966,6 +2985,9 @@
             } catch (error) {
                 console.error('Error convirtiendo recibo:', error);
                 window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
+            } finally {
+                const loadingOverlay = document.getElementById('conversionLoadingOverlay');
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
             }
         }
 
@@ -2993,6 +3015,13 @@
             }
 
             try {
+                const loadingOverlay = document.getElementById('conversionLoadingOverlay');
+                const loadingText = document.getElementById('conversionLoadingText');
+                if (loadingOverlay) {
+                    if (loadingText) loadingText.textContent = 'Reenviando comprobante al SRI...';
+                    loadingOverlay.style.display = 'flex';
+                }
+
                 window.app?.showToast?.('<i class="fas fa-sync-alt fa-spin"></i> Reenviando factura al SRI...', 'info', 3000);
 
                 const db = window.app.db;
@@ -3123,6 +3152,9 @@
             } catch (error) {
                 console.error('Error reenviando al SRI:', error);
                 window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
+            } finally {
+                const loadingOverlay = document.getElementById('conversionLoadingOverlay');
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
             }
         }
 

@@ -4959,6 +4959,9 @@ _Sistema de Gestión Ferrisoluciones_`;
     // =====================================================
 
     async function initPuntoVenta() {
+        // Resetear guards de eventos para permitir re-vinculación al recargar módulo
+        window._clienteBusquedaListenerAdded = false;
+        
         setupCajaInicialModal();
         await verificarCajaInicialDelDia({ forceConsulta: true });
 
