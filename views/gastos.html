@@ -1,0 +1,1195 @@
+
+
+<div class="container-full" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px;">
+
+    
+    <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; height: 100%;">
+        
+        
+        <div style="overflow-y: auto; padding-right: 10px; height: 100%; scrollbar-width: thin;">
+            
+            <div class="card">
+                <h3 style="margin-bottom: 20px; font-size: 1.3em;">
+                    <i class="fas fa-plus-circle"></i> Registrar Gasto
+                </h3>
+
+                <div id="formError" class="alert alert-danger hidden"></div>
+                <div id="formSuccess" class="alert alert-success hidden"></div>
+
+                <form id="gastoForm">
+                    <div class="form-group">
+                        <label class="form-label">Monto *</label>
+                        <input 
+                            type="number" 
+                            id="montoInput" 
+                            class="form-input" 
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0.01"
+                            required
+                            autofocus>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Motivo / Descripción *</label>
+                        <textarea 
+                            id="motivoInput" 
+                            class="form-input" 
+                            placeholder="Describe el motivo del gasto..."
+                            rows="4"
+                            required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-accent btn-block">
+                        <i class="fas fa-save"></i>
+                        <span>Registrar Gasto</span>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+        
+        <div style="overflow-y: auto; padding-right: 10px; height: 100%; scrollbar-width: thin;">
+            
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 1.3em;">
+                        <i class="fas fa-list"></i> Gastos Registrados
+                    </h3>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Total del Día</div>
+                        <div id="totalGastos" style="font-size: 1.8em; font-weight: 800; color: #d4a017;">$0.00</div>
+                    </div>
+                </div>
+
+                <div id="gastosContainer" class="gastos-container hidden">
+                    
+                </div>
+
+                
+                <div id="badgeActualizando" class="badge-actualizando hidden">
+                    <i class="fas fa-sync fa-spin"></i>
+                    Actualizando
+                </div>
+
+                
+                <div id="badgeEliminando" class="badge-eliminando hidden">
+                    <i class="fas fa-trash fa-pulse"></i>
+                    Eliminando...
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="custom-confirm-overlay" id="modalEliminarGasto">
+    <div class="custom-confirm-box">
+        <div class="custom-confirm-title">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Eliminar Gasto</span>
+        </div>
+        <div class="custom-confirm-message">
+            ¿Estás seguro de eliminar este gasto? Esta acción no se puede deshacer.
+        </div>
+        <div class="custom-confirm-buttons">
+            <button class="custom-confirm-btn custom-confirm-btn-cancel" onclick="cerrarModalEliminar()">
+                Cancelar
+            </button>
+            <button class="custom-confirm-btn custom-confirm-btn-danger" onclick="confirmarEliminarGasto()">
+                Eliminar
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    
+    
+    .gastos-container {
+        max-height: none;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .gastos-container.cache-activo {
+        border: 3px solid #007bff;
+        border-radius: 12px;
+        padding: 16px;
+        background: rgba(0, 123, 255, 0.02);
+        box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
+    }
+
+    .badge-actualizando {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        font-size: 0.9em;
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+        z-index: 1000;
+        animation: slideInRight 0.3s ease;
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .badge-eliminando {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: #dc3545;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        font-size: 0.9em;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        z-index: 1000;
+        animation: slideInRight 0.3s ease;
+    }
+
+    .gasto-item {
+        background: #f8f9fa;
+        border-left: 4px solid #d4a017;
+        padding: 16px;
+        margin-bottom: 12px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .gasto-item:hover {
+        background: #f0f0f0;
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .gasto-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .gasto-fecha {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .gasto-fecha-dia {
+        font-size: 0.85em;
+        color: #666;
+    }
+
+    .gasto-fecha-hora {
+        font-size: 0.8em;
+        color: #999;
+    }
+
+    .gasto-monto {
+        font-size: 1.5em;
+        font-weight: 800;
+        color: #dc3545;
+    }
+
+    .gasto-motivo {
+        color: #333;
+        line-height: 1.5;
+        margin-bottom: 12px;
+    }
+
+    .gasto-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .gasto-usuario {
+        font-size: 0.85em;
+        color: #666;
+    }
+
+    .gasto-usuario i {
+        margin-right: 6px;
+        color: #d4a017;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75em;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+
+    .badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-warning {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-danger {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .btn-eliminar-gasto {
+        padding: 6px 16px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85em;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-eliminar-gasto:hover {
+        background: #c82333;
+        transform: scale(1.05);
+    }
+
+    .btn-loading {
+        animation: pulse-glow 1.5s ease-in-out infinite;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-loading::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes pulse-glow {
+        0%, 100% {
+            box-shadow: 0 0 10px rgba(212, 160, 23, 0.5);
+        }
+        50% {
+            box-shadow: 0 0 20px rgba(212, 160, 23, 0.8);
+        }
+    }
+
+    @keyframes shimmer {
+        0% {
+            left: -100%;
+        }
+        100% {
+            left: 100%;
+        }
+    }
+
+    .alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.95em;
+    }
+
+    .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        border-left: 4px solid #dc3545;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border-left: 4px solid #28a745;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 4em;
+        color: #e0e0e0;
+        margin-bottom: 20px;
+    }
+
+    .empty-state h4 {
+        color: #666;
+        margin-bottom: 10px;
+        font-size: 1.3em;
+    }
+
+    .empty-state p {
+        color: #999;
+        font-size: 0.95em;
+    }
+
+    
+    .custom-confirm-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        animation: fadeIn 0.2s ease;
+    }
+
+    .custom-confirm-overlay.active {
+        display: flex;
+    }
+
+    .custom-confirm-box {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 450px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideDown 0.3s ease;
+    }
+
+    .custom-confirm-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.4em;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 15px;
+    }
+
+    .custom-confirm-title i {
+        color: #dc3545;
+        font-size: 1.2em;
+    }
+
+    .custom-confirm-message {
+        color: #666;
+        font-size: 1em;
+        line-height: 1.6;
+        margin-bottom: 25px;
+    }
+
+    .custom-confirm-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+    }
+
+    .custom-confirm-btn {
+        padding: 10px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.95em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .custom-confirm-btn-cancel {
+        background: #e0e0e0;
+        color: #333;
+    }
+
+    .custom-confirm-btn-cancel:hover {
+        background: #d0d0d0;
+    }
+
+    .custom-confirm-btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .custom-confirm-btn-danger:hover {
+        background: #c82333;
+        transform: scale(1.05);
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideDown {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    
+    .container > div > div {
+        scrollbar-width: thin;
+        scrollbar-color: #d4a017 #f1f1f1;
+    }
+
+    .container > div > div::-webkit-scrollbar {
+        width: 3px;
+    }
+
+    .container > div > div::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .container > div > div::-webkit-scrollbar-thumb {
+        background: #d4a017;
+        border-radius: 10px;
+    }
+
+    @media (max-width: 992px) {
+        .container > div {
+            grid-template-columns: 1fr !important;
+            height: auto !important;
+        }
+        
+        .container > div > div {
+            overflow-y: visible !important;
+            height: auto !important;
+        }
+    }
+</style>
+
+<script>
+    // =====================================================
+    // ESTADO DEL MÓDULO GASTOS
+    // =====================================================
+    
+    if (!window.gastosState) {
+        window.gastosState = {
+            gastos: [],
+            gastoToDelete: null,
+            isLoading: false,
+            cacheActivo: false,
+            actualizandoCache: false
+        };
+    }
+    
+    var gastosState = window.gastosState;
+
+    // =====================================================
+    // GESTIÓN DE CACHÉ
+    // =====================================================
+    
+    var CACHE_KEY = 'ferreteria_gastos_cache';
+    var CACHE_DURATION = 7 * 60 * 60 * 1000; // 7 horas en milisegundos
+
+    function guardarGastosEnCache() {
+        try {
+            const data = {
+                gastos: gastosState.gastos,
+                timestamp: new Date().getTime(),
+                userRole: gastosState.userRole
+            };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        } catch (error) {
+            console.error('❌ Error guardando caché de gastos:', error);
+        }
+    }
+
+    function cargarGastosDesdeCache() {
+        try {
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (!cached) return null;
+
+            const data = JSON.parse(cached);
+            const ahora = new Date();
+            const fechaCache = new Date(data.timestamp);
+            
+            // Verificar si el caché es del mismo día
+            const esMismoDia = fechaCache.getDate() === ahora.getDate() &&
+                               fechaCache.getMonth() === ahora.getMonth() &&
+                               fechaCache.getFullYear() === ahora.getFullYear();
+            
+            // Si no es del mismo día, limpiar el caché
+            if (!esMismoDia) {
+                limpiarCacheGastos();
+                return null;
+            }
+
+            // Verificar antigüedad (máximo 7 horas en el mismo día)
+            const edad = ahora.getTime() - fechaCache.getTime();
+            if (edad > CACHE_DURATION) {
+                limpiarCacheGastos();
+                return null;
+            }
+
+            return data;
+
+        } catch (error) {
+            console.error('❌ Error cargando caché de gastos:', error);
+            return null;
+        }
+    }
+
+    function limpiarCacheGastos() {
+        try {
+            localStorage.removeItem(CACHE_KEY);
+        } catch (error) {
+            console.error('❌ Error limpiando caché:', error);
+        }
+    }
+
+    // =====================================================
+    // INICIALIZACIÓN
+    // =====================================================
+
+    async function initGastos() {
+        // Inicializar contador del navbar en 0
+        if (window.app && window.app.updateNavbarCounter) {
+            window.app.updateNavbarCounter('gastos', 0);
+        }
+        
+        // Configurar event listeners
+        setupGastosEventListeners();
+        
+        // Intentar cargar desde caché primero
+        const cached = cargarGastosDesdeCache();
+        
+        if (cached) {
+            // Mostrar datos del caché inmediatamente
+            gastosState.gastos = cached.gastos;
+            gastosState.userRole = cached.userRole;
+            gastosState.cacheActivo = true;
+            renderizarGastos();
+            actualizarTotalGastos();
+            
+            // Actualizar en segundo plano
+            gastosState.actualizandoCache = true;
+            renderizarGastos(); // Re-renderizar para mostrar badge
+            
+            await cargarGastosFrescos();
+            
+            gastosState.actualizandoCache = false;
+            gastosState.cacheActivo = false;
+            renderizarGastos(); // Re-renderizar sin badge
+        } else {
+            // No hay caché, cargar normalmente
+            await cargarGastosFrescos();
+        }
+    }
+
+    function setupGastosEventListeners() {
+        // Formulario de registro
+        const form = document.getElementById('gastoForm');
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await registrarGasto();
+            });
+        }
+
+        // Event delegation para botones de eliminar - Solo si no se ha configurado antes
+        if (!window._gastosClickListenerAdded) {
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('.btn-eliminar-gasto');
+                if (btn) {
+                    const idigasto = parseInt(btn.dataset.idigasto);
+                    const messageid = btn.dataset.messageid;
+                    const remotejid = btn.dataset.remotejid;
+                    eliminarGasto(idigasto, messageid, remotejid);
+                }
+            });
+            window._gastosClickListenerAdded = true;
+        }
+
+        // Focus en el campo de monto
+        const montoInput = document.getElementById('montoInput');
+        if (montoInput) {
+            setTimeout(() => montoInput.focus(), 100);
+        }
+    }
+
+    // =====================================================
+    // GESTIÓN DE GASTOS
+    // =====================================================
+
+    async function cargarGastosFrescos() {
+        try {
+            gastosState.isLoading = true;
+
+            const db = window.app ? window.app.db : supabaseClient;
+            const auth = window.auth;
+            const userRole = auth.getUserRole();
+
+            // Obtener fecha actual en formato YYYY-MM-DD
+            const hoy = new Date();
+            const año = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            const fechaHoy = `${año}-${mes}-${dia}`;
+            
+
+
+            // Usar filtro que compara solo la fecha (cast a date en PostgreSQL)
+            // Esto ignora la hora y zona horaria, comparando solo YYYY-MM-DD
+            const { data, error } = await db
+                .from('ferre_gastos')
+                .select('*')
+                .gte('fechayhora', `${fechaHoy}T00:00:00-05:00`) // Hora Ecuador (UTC-5)
+                .lte('fechayhora', `${fechaHoy}T23:59:59-05:00`)
+                .order('fechayhora', { ascending: false });
+
+            if (error) {
+                console.error('❌ Error en consulta:', error);
+                throw error;
+            }
+            
+            if (data && data.length > 0) {
+            }
+
+            // Cargar todos los usuarios para mapear nombres
+            const { data: usuarios } = await db
+                .from('ferre_usuarios_ferreteria')
+                .select('email, nombres, apellidos');
+
+            const usuariosMap = {};
+            usuarios.forEach(u => {
+                usuariosMap[u.email] = `${u.nombres} ${u.apellidos}`;
+            });
+
+            // Agregar nombreUsuario a cada gasto
+            gastosState.gastos = (data || []).map(gasto => ({
+                ...gasto,
+                nombreUsuario: usuariosMap[gasto.usuario] || gasto.usuario
+            }));
+            
+            gastosState.userRole = userRole;
+            
+            // Guardar en caché
+            guardarGastosEnCache();
+            
+            renderizarGastos();
+            actualizarTotalGastos();
+
+        } catch (error) {
+            console.error('Error cargando gastos:', error);
+            if (!gastosState.actualizandoCache) {
+                window.app.showToast('Error al cargar gastos', 'danger');
+            }
+        } finally {
+            gastosState.isLoading = false;
+        }
+    }
+
+    function renderizarGastos() {
+        const container = document.getElementById('gastosContainer');
+        
+        // Si el contenedor no existe, el módulo fue descargado
+        if (!container) return;
+        
+        const isAdmin = gastosState.userRole === 'admin' || gastosState.userRole === 'contador';
+        
+        if (!gastosState.gastos || gastosState.gastos.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <h4>No hay gastos registrados</h4>
+                    <p>${isAdmin ? 'No hay gastos en el sistema' : 'Los gastos del día aparecerán aquí'}</p>
+                </div>
+            `;
+            container.classList.remove('hidden');
+            return;
+        }
+
+        container.innerHTML = gastosState.gastos.map(gasto => {
+            const fecha = new Date(gasto.fechayhora);
+            
+            let fechaTexto, horaTexto;
+            
+            if (isAdmin) {
+                // Admin ve fecha completa y hora
+                fechaTexto = fecha.toLocaleDateString('es-EC', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                horaTexto = fecha.toLocaleTimeString('es-EC', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+            } else {
+                // Usuario normal solo ve la hora (porque siempre es del día actual)
+                fechaTexto = 'Hoy';
+                horaTexto = fecha.toLocaleTimeString('es-EC', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+            }
+
+            // Badge de estado de notificación
+            const statusBadge = gasto.messageid 
+                ? '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Notificado</span>'
+                : '<span class="badge badge-warning"><i class="fas fa-exclamation-circle"></i> Sin notificar</span>';
+
+            return `
+                <div class="gasto-item">
+                    <div class="gasto-header">
+                        <div class="gasto-fecha">
+                            <div class="gasto-fecha-dia">${fechaTexto}</div>
+                            <div class="gasto-fecha-hora"><i class="fas fa-clock"></i> ${horaTexto}</div>
+                        </div>
+                        <div class="gasto-monto">$${parseFloat(gasto.monto).toFixed(2)}</div>
+                    </div>
+                    <div class="gasto-motivo">${gasto.motivo}</div>
+                    <div class="gasto-footer">
+                        <div class="gasto-usuario">
+                            <i class="fas fa-user"></i>
+                            ${gasto.nombreUsuario || 'Usuario desconocido'}
+                            ${statusBadge}
+                        </div>
+                        <button 
+                            class="btn-eliminar-gasto" 
+                            data-idigasto="${gasto.idigasto}"
+                            data-messageid="${gasto.messageid || ''}"
+                            data-remotejid="${gasto.remotejid || ''}">
+                            <i class="fas fa-trash"></i>
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.classList.remove('hidden');
+        
+        // Aplicar clase de caché activo
+        if (gastosState.cacheActivo || gastosState.actualizandoCache) {
+            container.classList.add('cache-activo');
+        } else {
+            container.classList.remove('cache-activo');
+        }
+        
+        // Mostrar/ocultar badge de actualización
+        const badge = document.getElementById('badgeActualizando');
+        if (badge) {
+            if (gastosState.actualizandoCache) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+    }
+
+    function actualizarTotalGastos() {
+        const totalEl = document.getElementById('totalGastos');
+        
+        // Si el elemento no existe, el módulo fue descargado
+        if (!totalEl) return;
+        
+        const total = gastosState.gastos.reduce((sum, gasto) => sum + parseFloat(gasto.monto || 0), 0);
+        totalEl.textContent = window.app.formatCurrency(total);
+        
+        // Actualizar contador en navbar (número de transacciones)
+        if (window.app && window.app.updateNavbarCounter) {
+            window.app.updateNavbarCounter('gastos', gastosState.gastos.length);
+        }
+    }
+
+    async function registrarGasto() {
+        try {
+            const monto = document.getElementById('montoInput').value;
+            const motivo = document.getElementById('motivoInput').value;
+
+            if (!monto || parseFloat(monto) <= 0) {
+                mostrarError('El monto debe ser mayor a 0');
+                return;
+            }
+
+            if (!motivo || motivo.trim().length === 0) {
+                mostrarError('El motivo es obligatorio');
+                return;
+            }
+
+            // Validar que auth esté disponible
+            if (!window.auth || typeof window.auth.getUserEmail !== 'function') {
+                console.error('Sistema de autenticación no disponible');
+                mostrarError('Error: Sistema de autenticación no disponible');
+                return;
+            }
+
+            const userEmail = window.auth.getUserEmail();
+            
+            if (!userEmail) {
+                mostrarError('Error: No se pudo obtener el email del usuario');
+                return;
+            }
+
+            // Obtener datos del usuario desde la base de datos
+            const db = window.app ? window.app.db : supabaseClient;
+            
+            const { data: userData, error: userError } = await db
+                .from('ferre_usuarios_ferreteria')
+                .select('nombres, apellidos')
+                .eq('email', userEmail)
+                .single();
+
+            if (userError || !userData) {
+                console.error('Error obteniendo datos del usuario:', userError);
+                mostrarError('Error al obtener datos del usuario');
+                return;
+            }
+
+            const nomcompleto = `${userData.nombres} ${userData.apellidos}`;
+
+            mostrarError('', false);
+            
+            // Animar botón de guardar
+            const submitBtn = document.querySelector('#gastoForm button[type="submit"]');
+            const btnOriginalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Guardando...';
+            submitBtn.classList.add('btn-loading');
+
+            // Calcular total del día incluyendo el nuevo gasto
+            const totalActual = gastosState.gastos.reduce((sum, g) => sum + parseFloat(g.monto || 0), 0);
+            const totalConNuevo = totalActual + parseFloat(monto);
+
+            // Preparar el gasto (columnas que existen en la BD)
+            const nuevoGasto = {
+                monto: parseFloat(monto),
+                motivo: motivo.trim(),
+                usuario: userEmail,
+                messageid: null,
+                remotejid: null
+            };
+
+            // Primero enviar al webhook de WhatsApp y esperar respuesta
+            const webhookResponse = await enviarNotificacionWhatsApp({
+                monto: nuevoGasto.monto,
+                motivo: nuevoGasto.motivo,
+                nomcompleto: nomcompleto,
+                fechayhora: new Date().toISOString(),
+                totalDia: totalConNuevo
+            }, userData);
+
+            // Si el webhook respondió con messageId, agregarlo al gasto
+            if (webhookResponse && webhookResponse.messageId) {
+                nuevoGasto.messageid = webhookResponse.messageId;
+                nuevoGasto.remotejid = webhookResponse.remoteJid;
+            }
+
+            // Ahora sí insertar en la base de datos con el messageId
+            const { data: gastoInsertado, error } = await db
+                .from('ferre_gastos')
+                .insert([nuevoGasto])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Restaurar botón
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = btnOriginalText;
+            submitBtn.classList.remove('btn-loading');
+
+            mostrarExito('Gasto registrado exitosamente');
+            
+            // Limpiar formulario
+            document.getElementById('gastoForm').reset();
+            document.getElementById('montoInput').focus();
+
+            // Limpiar caché y recargar
+            limpiarCacheGastos();
+            await cargarGastosFrescos();
+
+        } catch (error) {
+            console.error('Error registrando gasto:', error);
+            mostrarError('Error al registrar el gasto');
+            
+            // Restaurar botón en caso de error
+            const submitBtn = document.querySelector('#gastoForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Gasto';
+                submitBtn.classList.remove('btn-loading');
+            }
+        }
+    }
+
+    async function enviarNotificacionWhatsApp(gasto, userData) {
+        try {
+            const db = window.app ? window.app.db : supabaseClient;
+            
+            // Obtener configuración de WhatsApp
+            const { data: ferredatos, error } = await db
+                .from('ferre_ferredatos')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (error || !ferredatos) {
+                console.error('Configuración de WhatsApp no disponible');
+                return null;
+            }
+
+            const fecha = new Date(gasto.fechayhora);
+            const fechaFormateada = fecha.toLocaleDateString('es-EC', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            const horaFormateada = fecha.toLocaleTimeString('es-EC', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+
+            const montoFormateado = parseFloat(gasto.monto).toFixed(2);
+            const totalFormateado = parseFloat(gasto.totalDia || gasto.monto).toFixed(2);
+            const nombreCompleto = `${userData.nombres} ${userData.apellidos}`;
+
+            const texto = `💸 *Nuevo Gasto Registrado*
+
+*DETALLES DEL GASTO*
+
+📅 *Fecha:* ${fechaFormateada}
+🕐 *Hora:* ${horaFormateada}
+
+💵 *Monto:* $${montoFormateado}
+
+📝 *Motivo:*
+${gasto.motivo}
+
+👤 *Registrado por:*
+${nombreCompleto}
+
+📊 *Total Gastos del Día:* $${totalFormateado}
+
+_Sistema de Gestión Ferrisoluciones_
+_Powered by Ferrisoluciones Tech_`;
+
+            const url = `https://api.ferrisoluciones.com/message/sendText/${ferredatos.instance}`;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'apikey': ferredatos.apikey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    number: ferredatos.number,
+                    text: texto,
+                    delay: 1000,
+                    linkPreview: false
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.key && data.key.id) {
+                return {
+                    messageId: data.key.id,
+                    remoteJid: data.key.remoteJid
+                };
+            }
+
+            return null;
+
+        } catch (error) {
+            console.error('Error enviando notificación WhatsApp:', error);
+            return null;
+        }
+    }
+
+    // =====================================================
+    // ELIMINACIÓN DE GASTOS
+    // =====================================================
+
+    function eliminarGasto(idigasto, messageid, remotejid) {
+        gastosState.gastoToDelete = { idigasto, messageid, remotejid };
+        
+        const modal = document.getElementById('modalEliminarGasto');
+        if (modal) {
+            modal.classList.add('active');
+        }
+    }
+
+    function cerrarModalEliminar() {
+        document.getElementById('modalEliminarGasto').classList.remove('active');
+        gastosState.gastoToDelete = null;
+    }
+
+    async function confirmarEliminarGasto() {
+        if (!gastosState.gastoToDelete) return;
+
+        const { idigasto, messageid, remotejid } = gastosState.gastoToDelete;
+        
+        cerrarModalEliminar();
+
+        // Mostrar badge de eliminación
+        const badgeEliminando = document.getElementById('badgeEliminando');
+        if (badgeEliminando) {
+            badgeEliminando.classList.remove('hidden');
+        }
+
+        try {
+            // Si tiene messageId, eliminar mensaje de WhatsApp primero
+            if (messageid && messageid !== 'null' && remotejid && remotejid !== 'null') {
+                await eliminarMensajeWhatsApp(messageid, remotejid);
+            }
+
+            // Eliminar de la base de datos
+            const db = window.app ? window.app.db : supabaseClient;
+            const { error } = await db
+                .from('ferre_gastos')
+                .delete()
+                .eq('idigasto', idigasto);
+
+            if (error) throw error;
+
+            // Ocultar badge
+            if (badgeEliminando) {
+                badgeEliminando.classList.add('hidden');
+            }
+
+            window.app.showToast('Gasto eliminado exitosamente', 'success');
+            
+            // Limpiar caché y recargar
+            limpiarCacheGastos();
+            await cargarGastosFrescos();
+
+        } catch (error) {
+            console.error('Error eliminando gasto:', error);
+            
+            // Ocultar badge en caso de error
+            if (badgeEliminando) {
+                badgeEliminando.classList.add('hidden');
+            }
+            
+            window.app.showToast('Error al eliminar el gasto', 'danger');
+        }
+
+        gastosState.gastoToDelete = null;
+    }
+
+    async function eliminarMensajeWhatsApp(messageid, remotejid) {
+        try {
+            const db = window.app ? window.app.db : supabaseClient;
+            
+            const { data: ferredatos, error } = await db
+                .from('ferre_ferredatos')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (error || !ferredatos) {
+                console.error('Configuración de WhatsApp no disponible');
+                return;
+            }
+
+            const url = `https://api.ferrisoluciones.com/chat/deleteMessageForEveryone/${ferredatos.instance}`;
+
+            await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'apikey': ferredatos.apikey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: messageid,
+                    remoteJid: remotejid,
+                    fromMe: true
+                })
+            });
+
+        } catch (error) {
+            console.error('Error eliminando mensaje de WhatsApp:', error);
+        }
+    }
+
+    // =====================================================
+    // UTILIDADES
+    // =====================================================
+
+    function mostrarError(mensaje, mostrar = true) {
+        const errorDiv = document.getElementById('formError');
+        if (mostrar && mensaje) {
+            errorDiv.textContent = mensaje;
+            errorDiv.classList.remove('hidden');
+            setTimeout(() => errorDiv.classList.add('hidden'), 5000);
+        } else {
+            errorDiv.classList.add('hidden');
+        }
+    }
+
+    function mostrarExito(mensaje) {
+        const successDiv = document.getElementById('formSuccess');
+        successDiv.textContent = mensaje;
+        successDiv.classList.remove('hidden');
+        setTimeout(() => successDiv.classList.add('hidden'), 3000);
+    }
+
+    // =====================================================
+    // EXPORTAR FUNCIONES GLOBALES
+    // =====================================================
+    
+    window.initGastos = initGastos;
+    window.eliminarGasto = eliminarGasto;
+    window.cerrarModalEliminar = cerrarModalEliminar;
+    window.confirmarEliminarGasto = confirmarEliminarGasto;
+
+</script>
+
+
+
+

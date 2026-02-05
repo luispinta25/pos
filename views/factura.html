@@ -1,0 +1,405 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=80mm, initial-scale=1.0"> 
+    <title>FACTURA</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            font-size: 3mm;
+            text-align: center;
+            padding: 0;
+            width: 80mm;
+            background-color: white;
+        }
+
+        #thermal-invoice {
+            margin: 0 auto;
+            width: 76mm;
+            padding: 2mm;
+        }
+
+        .header {
+            border-bottom: 1px solid #000;
+            padding-bottom: 2mm;
+            margin-bottom: 2mm;
+        }
+
+        .logo-container {
+            margin-bottom: 2mm;
+        }
+
+        .company-info {
+            text-align: center;
+            margin-bottom: 2mm;
+        }
+
+        .invoice-details {
+            border: 1px solid #000;
+            border-radius: 2mm;
+            padding: 2mm;
+            margin-bottom: 3mm;
+        }
+
+        .customer-details {
+            border: 1px solid #000;
+            border-radius: 2mm;
+            padding: 2mm;
+            margin-bottom: 3mm;
+            text-align: left;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 3mm;
+        }
+
+        .table th {
+            border-bottom: 1px solid #000;
+            padding: 1mm 0;
+            font-weight: bold;
+            font-size: 2.8mm;
+        }
+
+        .table-item {
+            border-bottom: 1px dotted #000;
+        }
+
+        .table td {
+            padding: 1mm 0;
+            font-size: 2.8mm;
+        }
+
+        .right-align {
+            text-align: right;
+        }
+
+        .left-align {
+            text-align: left;
+        }
+
+        .center-align {
+            text-align: center;
+        }
+
+        .totals {
+            width: 100%;
+            border-top: 1px solid #000;
+            padding-top: 2mm;
+        }
+
+        .totals table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .totals td {
+            padding: 0.5mm 0;
+        }
+
+        .footer {
+            margin-top: 3mm;
+            border-top: 1px solid #000;
+            padding-top: 2mm;
+            font-size: 2.5mm;
+            text-align: center;
+        }
+
+        .no-margin {
+            margin: 0;
+        }
+
+        .rimpe-notice {
+            font-weight: bold;
+            margin: 2mm 0;
+            padding: 1mm;
+            border: 1px solid #000;
+            text-align: center;
+        }
+
+        .barcode {
+            margin: 3mm 0;
+            text-align: center;
+        }
+
+        .invoice-box {
+            border: 1px solid #000;
+            padding: 2mm;
+            border-radius: 2mm;
+            margin-bottom: 2mm;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1mm;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            width: 40%;
+            text-align: left;
+        }
+
+        .detail-value {
+            width: 60%;
+            text-align: right;
+        }
+
+        .authorization-number {
+            font-size: 2.2mm;
+            word-break: break-all;
+        }
+        .footer2 {
+            background-color: black;
+            color: white;
+            text-align: center;
+            padding: 5px;
+            border-radius: 10px;
+            margin-top: 10px;
+            font-size: 10px;
+        }
+        
+        /* Nuevos estilos */
+        .owner-name {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 2mm;
+        }
+        
+        .customer-title {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 2mm;
+        }
+    </style>
+</head>
+<body onafterprint="window.close()">
+    <div id="thermal-invoice">
+        <div class="header">
+            <div class="logo-container">
+                <img id="company-logo" alt="Logo" style="max-width:70mm; max-height:25mm;" />
+            </div>
+            
+            <div class="company-info">
+                <p class="bold no-margin" id="company-name"></p>
+                <p class="no-margin" id="company-owner"></p>
+                <p class="no-margin">RUC: <span id="company-ruc"></span></p>
+                <p class="no-margin" id="company-address"></p>
+                <p class="no-margin">TELÉFONO: <span id="company-phone"></span></p>
+            </div>
+        </div>
+
+        <div class="invoice-box">
+            <p class="owner-name">JESSICA NATALIA NISHVE CORO</p>
+            
+            <div class="detail-row">
+                <span class="detail-label">FACTURA N°:</span>
+                <span class="detail-value" id="invoice-number"></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">FECHA EMISIÓN:</span>
+                <span class="detail-value" id="invoice-date"></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">AMBIENTE:</span>
+                <span class="detail-value" id="invoice-environment"></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">EMISIÓN:</span>
+                <span class="detail-value" id="invoice-emission"></span>
+            </div>
+            <div class="authorization-number">
+                <span class="bold">CLAVE DE ACCESO:</span>
+                <span id="auth-number"></span>
+            </div>
+        </div>
+
+        <div class="customer-details">
+            <p class="customer-title">DATOS DEL CLIENTE</p>
+            
+            <div class="detail-row">
+                <span class="detail-label">RAZÓN SOCIAL:</span>
+                <span class="detail-value" id="customer-name"></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">RUC/CI:</span>
+                <span class="detail-value" id="customer-id"></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">DIRECCIÓN:</span>
+                <span class="detail-value" id="customer-address"></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">TELÉFONO:</span>
+                <span class="detail-value" id="customer-phone"></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">EMAIL:</span>
+                <span class="detail-value" id="customer-email"></span>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="left-align">CANT </th>
+                    <th class="left-align">DESCRIPCIÓN </th>
+                    <th class="right-align">P.UNIT </th>
+                    <th class="right-align">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody id="item-table-body">
+                </tbody>
+        </table>
+
+        <div class="totals">
+            <table>
+                <tr>
+                    <td class="left-align bold">SUBTOTAL:</td>
+                    <td class="right-align" id="subtotal-value"></td>
+                </tr>
+                <tr>
+                    <td class="left-align bold">DESCUENTO:</td>
+                    <td class="right-align" id="discount-value"></td>
+                </tr>
+                <tr>
+                    <td class="left-align bold">IVA 0%:</td>
+                    <td class="right-align" id="total-value-no-tax"></td>
+                </tr>
+                <tr>
+                    <td class="left-align bold">TOTAL:</td>
+                    <td class="right-align bold" id="total-value"></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="rimpe-notice">
+            CONTRIBUYENTE RÉGIMEN RIMPE - NEGOCIO POPULAR
+        </div>
+
+        <div class="barcode">
+            <img id="barcode-img" alt="Código de Barras" style="max-width:70mm;">
+        </div>
+
+        <div class="footer">
+            <p class="no-margin">ATENDIDO POR: <span id="attendant-name"></span></p>
+            <p class="no-margin">* Conserve su factura. Es requisito indispensable para reclamos o garantías *</p>
+        </div>
+    </div>
+    <div class="footer2">
+        ¡GRACIAS POR SU PREFERENCIA!
+    </div>
+
+    <script>
+        window.onload = function() {
+            // Obtener los parámetros de la URL
+            const params = new URLSearchParams(window.location.search);
+
+            // Información de la empresa
+            const companyName = params.get('company_name') || 'FERRESOLUCIONES';
+            const companyOwner = params.get('company_owner') || '';
+            const companyRuc = params.get('company_ruc') || '1727849695001';
+            const companyAddress = params.get('company_address') || 'LUIS CORDERO 132 Y JOSÉ MEJÍA';
+            const companyPhone = params.get('company_phone') || '0962248046';
+            const logoUrl = params.get('logo_url') || 'https://lh3.googleusercontent.com/d/1-_IsocnUhx_k6EGsNSpaJUNnQ2Nn4cFj=w2048?name=ISO%20DELGADO.png';
+
+            // Información de la factura
+            const invoiceNumber = params.get('invoice_number') || '002-002-000000083';
+            const invoiceDate = params.get('invoice_date') || new Date().toLocaleString('es-EC');
+            const invoiceEnvironment = params.get('environment') || 'PRODUCCIÓN';
+            const invoiceEmission = params.get('emission') || 'NORMAL';
+            const authNumber = params.get('auth_number') || '0508201901160031200100120020020000000837477040611';
+
+            // Información del cliente
+            const customerName = params.get('customer_name') || 'CONSUMIDOR FINAL';
+            const customerId = params.get('customer_id') || '9999999999999';
+            const customerAddress = params.get('customer_address') || '---';
+            const customerPhone = params.get('customer_phone') || '---';
+            const customerEmail = params.get('customer_email') || '---';
+
+            // Información del vendedor
+            const attendantName = params.get('attendant') || '---';
+
+            // Datos de productos
+            const quantities = (params.get('quantities') || '0').split(',');
+            const descriptions = (params.get('descriptions') || 'No hay artículos').split(',');
+            const unitPrices = (params.get('unit_prices') || '0.00').split(',');
+            const totalPrices = (params.get('total_prices') || '0.00').split(',');
+            
+            // Totales
+            const subtotal = parseFloat(params.get('subtotal') || '0.00').toLocaleString('es-EC', { minimumFractionDigits: 2 });
+            const discount = parseFloat(params.get('discount') || '0.00').toLocaleString('es-EC', { minimumFractionDigits: 2 });
+            const total = parseFloat(params.get('total') || '0.00').toLocaleString('es-EC', { minimumFractionDigits: 2 });
+
+            // Establecer los valores en la plantilla
+            document.getElementById('company-logo').src = logoUrl;
+            document.getElementById('company-name').textContent = companyName;
+            document.getElementById('company-owner').textContent = companyOwner;
+            document.getElementById('company-ruc').textContent = companyRuc;
+            document.getElementById('company-address').textContent = companyAddress;
+            document.getElementById('company-phone').textContent = companyPhone;
+
+            document.getElementById('invoice-number').textContent = invoiceNumber;
+            document.getElementById('invoice-date').textContent = invoiceDate;
+            document.getElementById('invoice-environment').textContent = invoiceEnvironment;
+            document.getElementById('invoice-emission').textContent = invoiceEmission;
+            document.getElementById('auth-number').textContent = authNumber;
+
+            document.getElementById('customer-name').textContent = customerName;
+            document.getElementById('customer-id').textContent = customerId;
+            document.getElementById('customer-address').textContent = customerAddress;
+            document.getElementById('customer-phone').textContent = customerPhone;
+            document.getElementById('customer-email').textContent = customerEmail;
+
+            document.getElementById('subtotal-value').textContent = '$ ' + subtotal;
+            document.getElementById('discount-value').textContent = '$ ' + discount;
+            document.getElementById('total-value-no-tax').textContent = '$ ' + subtotal; // Asumiendo que el subtotal es el valor sin IVA para RIMPE
+            document.getElementById('total-value').textContent = '$ ' + total;
+
+            document.getElementById('attendant-name').textContent = attendantName;
+
+            // Generar la tabla de productos
+            const tableBody = document.getElementById('item-table-body');
+            
+            for (let i = 0; i < quantities.length; i++) {
+                if (descriptions[i] && descriptions[i] !== 'No hay artículos') {
+                    const row = document.createElement('tr');
+                    row.className = 'table-item';
+                    
+                    const formattedUnitPrice = parseFloat(unitPrices[i]).toLocaleString('es-EC', { minimumFractionDigits: 2 });
+                    const formattedTotalPrice = parseFloat(totalPrices[i]).toLocaleString('es-EC', { minimumFractionDigits: 2 });
+                    
+                    row.innerHTML = `
+                        <td class="left-align">${quantities[i]}</td>
+                        <td class="left-align">${descriptions[i]}</td>
+                        <td class="right-align">$ ${formattedUnitPrice}</td>
+                        <td class="right-align">$ ${formattedTotalPrice}</td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                }
+            }
+
+            // Generar el código de barras
+            const barcodeUrl = `https://barcode.tec-it.com/barcode.ashx?data=${authNumber}&code=Code128&imagetype=Png`;
+            document.getElementById('barcode-img').src = barcodeUrl;
+
+            // CAMBIO CLAVE: Añadir una pausa de 300ms antes de imprimir.
+            // Esto le da tiempo al navegador para cargar el logo y el código de barras.
+            setTimeout(function() {
+                window.print();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

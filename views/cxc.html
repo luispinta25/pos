@@ -1,0 +1,2006 @@
+<link rel="stylesheet" href="css/cxc-styles.css">
+
+<div class="cxc-wrapper" id="cxcModule">
+    <div class="module-header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1 class="module-title">
+                    <i class="fas fa-wallet"></i>
+                    Cuentas por Cobrar
+                </h1>
+                <p class="module-subtitle">Gestión integral de deudores, créditos y abonos</p>
+            </div>
+            <div class="header-right">
+                <div class="stats-group" id="cxcHeaderStats">
+                    <div class="stat-item">
+                        <span class="stat-label">Deuda Activa</span>
+                        <span class="stat-value accent" id="cxcStatTotalDeuda">$0.00</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Pendientes</span>
+                        <span class="stat-value danger" id="cxcStatPendientes">$0.00</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Vencidas</span>
+                        <span class="stat-value danger" id="cxcStatVencidas">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cxc-tabs" role="tablist">
+        <button class="cxc-tab active" data-view="dashboard" role="tab" aria-selected="true">
+            <i class="fas fa-list"></i>
+            Cuentas
+        </button>
+        <button class="cxc-tab" data-view="deudores" role="tab" aria-selected="false">
+            <i class="fas fa-user-friends"></i>
+            Deudores
+        </button>
+        <button class="cxc-tab" data-view="pagos" role="tab" aria-selected="false">
+            <i class="fas fa-cash-register"></i>
+            Pagos
+        </button>
+        <button class="cxc-tab" data-view="reportes" role="tab" aria-selected="false">
+            <i class="fas fa-print"></i>
+            Reimpresiones
+        </button>
+    </div>
+
+    <div id="cxcViewDashboard" class="cxc-view active" role="tabpanel">
+        <div class="cxc-toolbar">
+            <div class="toolbar-left">
+                <button class="btn btn-primary" id="btnNuevaDeuda">
+                    <i class="fas fa-plus-circle"></i>
+                    Nueva deuda
+                </button>
+                <button class="btn btn-success" id="btnRegistroPago" disabled>
+                    <i class="fas fa-hand-holding-usd"></i>
+                    Registrar pago
+                </button>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-secondary" id="btnRecargarCuentas">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualizar
+                </button>
+                <button class="btn btn-secondary" id="btnReimprimirCuenta" disabled>
+                    <i class="fas fa-ticket-alt"></i>
+                    Reimprimir ticket
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-row" id="cxcStatsRow">
+            <div class="stat-card">
+                <div class="stat-icon pendiente">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>Saldo pendiente</h4>
+                    <div class="stat-value" id="cxcSaldoPendiente">$0.00</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon parcial">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>Pagos del mes</h4>
+                    <div class="stat-value" id="cxcPagosMes">$0.00</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon vencido">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>Cuentas vencidas</h4>
+                    <div class="stat-value" id="cxcCuentasVencidas">0</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon pagado">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>Clientes al día</h4>
+                    <div class="stat-value" id="cxcClientesAlDia">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cxc-filters" id="cxcFilters">
+            <div class="filter-group">
+                <label for="cxcFiltroEstado"><i class="fas fa-traffic-light"></i> Estado</label>
+                <select id="cxcFiltroEstado">
+                    <option value="activos">Activos (Pendiente / Parcial / Vencido)</option>
+                    <option value="pendiente">Solo pendientes</option>
+                    <option value="parcial">Solo parciales</option>
+                    <option value="vencido">Solo vencidos</option>
+                    <option value="pagado">Pagadas</option>
+                    <option value="todas">Todas</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="cxcFiltroDeudor"><i class="fas fa-user-tag"></i> Deudor</label>
+                <select id="cxcFiltroDeudor">
+                    <option value="todos">Todos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="cxcFiltroFechaDesde"><i class="fas fa-calendar-alt"></i> Desde</label>
+                <input type="date" id="cxcFiltroFechaDesde">
+            </div>
+            <div class="filter-group">
+                <label for="cxcFiltroFechaHasta"><i class="fas fa-calendar-check"></i> Hasta</label>
+                <input type="date" id="cxcFiltroFechaHasta">
+            </div>
+            <div class="filter-group" style="flex:1;">
+                <label for="cxcFiltroTexto"><i class="fas fa-search"></i> Buscar</label>
+                <input type="text" id="cxcFiltroTexto" placeholder="Código, motivo o notas">
+            </div>
+        </div>
+
+        <div id="cxcCuentasContainer" class="cuentas-gallery"></div>
+        <div id="cxcEmptyCuentas" class="empty-state hidden">
+            <i class="fas fa-folder-open"></i>
+            <p>No se encontraron cuentas con los filtros seleccionados.</p>
+        </div>
+    </div>
+
+    <div id="cxcViewDeudores" class="cxc-view" role="tabpanel" aria-hidden="true">
+        <div class="cxc-toolbar">
+            <div class="toolbar-left">
+                <button class="btn btn-primary" id="btnNuevoDeudor">
+                    <i class="fas fa-user-plus"></i>
+                    Nuevo deudor
+                </button>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-secondary" id="btnRecargarDeudores">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualizar
+                </button>
+            </div>
+        </div>
+
+        <div class="deudores-gallery" id="cxcDeudoresContainer"></div>
+        <div id="cxcEmptyDeudores" class="empty-state hidden">
+            <i class="fas fa-users"></i>
+            <p>No hay deudores registrados. Registra uno nuevo para comenzar.</p>
+        </div>
+    </div>
+
+    <div id="cxcViewPagos" class="cxc-view" role="tabpanel" aria-hidden="true">
+        <div class="cxc-toolbar">
+            <div class="toolbar-left">
+                <h3 style="margin:0;color:#555;display:flex;align-items:center;gap:10px;">
+                    <i class="fas fa-cash-register"></i>
+                    Historial de pagos recientes
+                </h3>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-secondary" id="btnRecargarPagos">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualizar
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table" id="cxcPagosTabla">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Deudor</th>
+                        <th>Cuenta</th>
+                        <th>Monto</th>
+                        <th>Método</th>
+                        <th>Referencia</th>
+                        <th>Recibido por</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="cxcEmptyPagos" class="empty-state hidden">
+            <i class="fas fa-receipt"></i>
+            <p>Aún no hay pagos registrados.</p>
+        </div>
+    </div>
+
+    <div id="cxcViewReportes" class="cxc-view" role="tabpanel" aria-hidden="true">
+        <div class="reportes-wrapper">
+            <div class="reporte-section">
+                <h3><i class="fas fa-print"></i> Reimprimir ticket</h3>
+                <form id="cxcFormReimpresion" class="reimpresion-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cxcReimpresionTipo">Tipo de reimpresión</label>
+                            <select id="cxcReimpresionTipo" required>
+                                <option value="cuenta">Ticket de cuenta específica</option>
+                                <option value="pago">Ticket de pago específico</option>
+                                <option value="consolidado">Consolidado por deudor</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="cxcReimpresionCuentaGroup">
+                            <label for="cxcReimpresionCuenta">Cuenta</label>
+                            <select id="cxcReimpresionCuenta"></select>
+                        </div>
+                        <div class="form-group hidden" id="cxcReimpresionPagoGroup">
+                            <label for="cxcReimpresionPago">Pago</label>
+                            <select id="cxcReimpresionPago"></select>
+                        </div>
+                        <div class="form-group hidden" id="cxcReimpresionDeudorGroup">
+                            <label for="cxcReimpresionDeudor">Deudor</label>
+                            <select id="cxcReimpresionDeudor"></select>
+                        </div>
+                        <div class="form-group hidden" id="cxcReimpresionFechas">
+                            <label for="cxcReimpresionDesde">Rango de fechas</label>
+                            <div class="input-with-button">
+                                <input type="date" id="cxcReimpresionDesde">
+                                <input type="date" id="cxcReimpresionHasta">
+                            </div>
+                            <span class="form-hint">Opcional: deja vacío para incluir todo el historial</span>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="btnReimprimirGenerar" class="btn btn-primary">
+                            <i class="fas fa-print"></i>
+                            Generar ticket
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Nueva Deuda -->
+<div id="cxcModalNuevaDeuda" class="modal-overlay" aria-hidden="true">
+    <div class="modal-content modal-lg" role="dialog" aria-modal="true">
+        <div class="modal-header">
+            <h3><i class="fas fa-hand-holding-usd"></i> Registrar nueva deuda</h3>
+            <button class="modal-close" data-close="cxcModalNuevaDeuda">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="cxcFormNuevaDeuda">
+            <div class="modal-body">
+                <div class="info-box" id="cxcNuevaDeudaEstadoBox" hidden>
+                    <div class="info-item">
+                        <span class="info-label">Deudor seleccionado</span>
+                        <span class="info-value" id="cxcNuevaDeudaNombre"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Crédito disponible</span>
+                        <span class="info-value" id="cxcNuevaDeudaDisponible">$0.00</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cxcDeudaDocumento">Cédula / RUC <span class="required">*</span></label>
+                        <div class="input-with-button">
+                            <input type="text" id="cxcDeudaDocumento" placeholder="Ej: 0102030405" required>
+                            <button type="button" class="btn-icon" id="cxcBuscarDeudor"><i class="fas fa-search"></i></button>
+                        </div>
+                        <span class="form-hint">Si no existe en deudores, se buscará en clientes automáticamente.</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="cxcDeudaNombre">Nombre / Razón Social <span class="required">*</span></label>
+                        <input type="text" id="cxcDeudaNombre" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cxcDeudaDireccion">Dirección</label>
+                        <input type="text" id="cxcDeudaDireccion" placeholder="Dirección principal">
+                    </div>
+                    <div class="form-group">
+                        <label for="cxcDeudaTelefono">Teléfono</label>
+                        <input type="text" id="cxcDeudaTelefono" placeholder="0999999999">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cxcDeudaEmail">Correo electrónico</label>
+                        <input type="email" id="cxcDeudaEmail" placeholder="cliente@ejemplo.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="cxcDeudaLimite">Límite de crédito</label>
+                        <input type="number" min="0" step="0.01" id="cxcDeudaLimite" placeholder="Opcional">
+                    </div>
+                </div>
+
+                <hr style="margin:20px 0;border:none;border-top:1px solid #eee;">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cxcDeudaTipo">Tipo de obligación <span class="required">*</span></label>
+                        <select id="cxcDeudaTipo" required>
+                            <option value="VENTA">Venta desde punto de venta</option>
+                            <option value="OTROS">Otros (servicio, nota, etc.)</option>
+                            <option value="EFECTIVO">Entrega de efectivo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cxcDeudaMotivo">Motivo <span class="required">*</span></label>
+                        <input type="text" id="cxcDeudaMotivo" placeholder="Descripción breve" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cxcDeudaMonto">Monto total <span class="required">*</span></label>
+                        <input type="number" id="cxcDeudaMonto" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cxcDeudaAbono">Abono inicial</label>
+                        <input type="number" id="cxcDeudaAbono" min="0" step="0.01" value="0">
+                        <span class="form-hint">Opcional. Registra un pago inicial al crear la deuda.</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cxcDeudaMetodo">Método de abono</label>
+                        <select id="cxcDeudaMetodo">
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                            <option value="CHEQUE">Cheque</option>
+                            <option value="TARJETA">Tarjeta</option>
+                            <option value="DEPOSITO">Depósito</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cxcDeudaVencimiento">Fecha de vencimiento <span class="required">*</span></label>
+                        <input type="date" id="cxcDeudaVencimiento" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="cxcDeudaNotas">Notas internas</label>
+                    <textarea id="cxcDeudaNotas" rows="3" placeholder="Observaciones adicionales"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer form-actions">
+                <button type="button" class="btn btn-secondary" data-close="cxcModalNuevaDeuda">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Guardar deuda
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Registrar Pago -->
+<div id="cxcModalPago" class="modal-overlay" aria-hidden="true">
+    <div class="modal-content modal-md" role="dialog" aria-modal="true">
+        <div class="modal-header">
+            <h3><i class="fas fa-hand-holding-usd"></i> Registrar pago</h3>
+            <button class="modal-close" data-close="cxcModalPago">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="cxcFormPago">
+            <div class="modal-body">
+                <div class="pago-info" id="cxcPagoResumen">
+                    <strong id="cxcPagoDeudor">Deudor</strong>
+                    <div id="cxcPagoCuenta"></div>
+                    <div>Saldo pendiente: <strong id="cxcPagoSaldo">$0.00</strong></div>
+                </div>
+                <div class="form-group">
+                    <label for="cxcPagoMonto">Monto del pago <span class="required">*</span></label>
+                    <input type="number" id="cxcPagoMonto" min="0" step="0.01" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cxcPagoMetodo">Método de pago <span class="required">*</span></label>
+                        <select id="cxcPagoMetodo" required>
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                            <option value="CHEQUE">Cheque</option>
+                            <option value="TARJETA">Tarjeta</option>
+                            <option value="DEPOSITO">Depósito</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cxcPagoReferencia">Referencia</label>
+                        <input type="text" id="cxcPagoReferencia" placeholder="No. de transacción o cheque">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cxcPagoNotas">Notas</label>
+                    <textarea id="cxcPagoNotas" rows="3" placeholder="Observaciones opcionales"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer form-actions">
+                <button type="button" class="btn btn-secondary" data-close="cxcModalPago">Cancelar</button>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i>
+                    Registrar pago
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Detalle de cuenta -->
+<div id="cxcModalDetalle" class="modal-overlay" aria-hidden="true">
+    <div class="modal-content modal-lg" role="dialog" aria-modal="true">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-invoice-dollar"></i> Detalle de cuenta</h3>
+            <button class="modal-close" data-close="cxcModalDetalle">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="cxcDetalleContenido"></div>
+        <div class="modal-footer modal-actions">
+            <div>
+                <button class="btn btn-secondary" id="cxcDetalleReimprimir">
+                    <i class="fas fa-print"></i>
+                    Reimprimir
+                </button>
+            </div>
+            <div>
+                <button class="btn btn-success" id="cxcDetalleAbonar">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    Registrar pago
+                </button>
+                <button class="btn btn-secondary" data-close="cxcModalDetalle">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Nuevo deudor manual -->
+<div id="cxcModalDeudor" class="modal-overlay" aria-hidden="true">
+    <div class="modal-content modal-md" role="dialog" aria-modal="true">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-plus"></i> Registrar deudor</h3>
+            <button class="modal-close" data-close="cxcModalDeudor">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="cxcFormDeudor">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="cxcNuevoDocumento">Cédula / RUC <span class="required">*</span></label>
+                    <input type="text" id="cxcNuevoDocumento" required>
+                </div>
+                <div class="form-group">
+                    <label for="cxcNuevoNombre">Nombre / Razón Social <span class="required">*</span></label>
+                    <input type="text" id="cxcNuevoNombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="cxcNuevoDireccion">Dirección</label>
+                    <input type="text" id="cxcNuevoDireccion">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cxcNuevoTelefono">Teléfono</label>
+                        <input type="text" id="cxcNuevoTelefono">
+                    </div>
+                    <div class="form-group">
+                        <label for="cxcNuevoEmail">Correo</label>
+                        <input type="email" id="cxcNuevoEmail">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cxcNuevoLimite">Límite de crédito</label>
+                    <input type="number" id="cxcNuevoLimite" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="cxcNuevoNotas">Notas</label>
+                    <textarea id="cxcNuevoNotas" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer form-actions">
+                <button type="button" class="btn btn-secondary" data-close="cxcModalDeudor">Cancelar</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Guardar deudor
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function(){
+    "use strict";
+
+    const state = {
+        initialized: false,
+        cuentas: [],
+        deudores: [],
+        pagos: [],
+        vistaActiva: 'dashboard',
+        filtros: {
+            estado: 'activos',
+            deudorId: 'todos',
+            desde: '',
+            hasta: '',
+            texto: ''
+        },
+        seleccion: {
+            cuentaId: null,
+            pagoId: null
+        },
+        loading: {
+            cuentas: false,
+            deudores: false,
+            pagos: false
+        },
+        metrics: {
+            saldoPendiente: 0,
+            pagosMes: 0,
+            cuentasVencidas: 0,
+            clientesAlDia: 0,
+            deudaActiva: 0,
+            totalPendiente: 0
+        }
+    };
+
+    const selectors = {
+        tabs: document.querySelectorAll('.cxc-tab'),
+        views: {
+            dashboard: document.getElementById('cxcViewDashboard'),
+            deudores: document.getElementById('cxcViewDeudores'),
+            pagos: document.getElementById('cxcViewPagos'),
+            reportes: document.getElementById('cxcViewReportes')
+        },
+        cuentasContainer: document.getElementById('cxcCuentasContainer'),
+        cuentasEmpty: document.getElementById('cxcEmptyCuentas'),
+        filtros: {
+            estado: document.getElementById('cxcFiltroEstado'),
+            deudor: document.getElementById('cxcFiltroDeudor'),
+            desde: document.getElementById('cxcFiltroFechaDesde'),
+            hasta: document.getElementById('cxcFiltroFechaHasta'),
+            texto: document.getElementById('cxcFiltroTexto')
+        },
+        deudoresContainer: document.getElementById('cxcDeudoresContainer'),
+        deudoresEmpty: document.getElementById('cxcEmptyDeudores'),
+        pagosTabla: document.getElementById('cxcPagosTabla').querySelector('tbody'),
+        pagosEmpty: document.getElementById('cxcEmptyPagos'),
+        stats: {
+            headerTotal: document.getElementById('cxcStatTotalDeuda'),
+            headerPendientes: document.getElementById('cxcStatPendientes'),
+            headerVencidas: document.getElementById('cxcStatVencidas'),
+            saldoPendiente: document.getElementById('cxcSaldoPendiente'),
+            pagosMes: document.getElementById('cxcPagosMes'),
+            cuentasVencidas: document.getElementById('cxcCuentasVencidas'),
+            clientesAlDia: document.getElementById('cxcClientesAlDia')
+        },
+        botones: {
+            nuevaDeuda: document.getElementById('btnNuevaDeuda'),
+            registroPago: document.getElementById('btnRegistroPago'),
+            recargarCuentas: document.getElementById('btnRecargarCuentas'),
+            recargarDeudores: document.getElementById('btnRecargarDeudores'),
+            recargarPagos: document.getElementById('btnRecargarPagos'),
+            reimprimirCuenta: document.getElementById('btnReimprimirCuenta'),
+            nuevoDeudor: document.getElementById('btnNuevoDeudor'),
+            reimprimirGenerar: document.getElementById('btnReimprimirGenerar')
+        },
+        reimpresion: {
+            tipo: document.getElementById('cxcReimpresionTipo'),
+            cuenta: document.getElementById('cxcReimpresionCuenta'),
+            pago: document.getElementById('cxcReimpresionPago'),
+            deudor: document.getElementById('cxcReimpresionDeudor'),
+            fechas: document.getElementById('cxcReimpresionFechas'),
+            desde: document.getElementById('cxcReimpresionDesde'),
+            hasta: document.getElementById('cxcReimpresionHasta'),
+            cuentaGroup: document.getElementById('cxcReimpresionCuentaGroup'),
+            pagoGroup: document.getElementById('cxcReimpresionPagoGroup'),
+            deudorGroup: document.getElementById('cxcReimpresionDeudorGroup')
+        },
+        modals: {
+            nuevaDeuda: document.getElementById('cxcModalNuevaDeuda'),
+            pago: document.getElementById('cxcModalPago'),
+            detalle: document.getElementById('cxcModalDetalle'),
+            deudor: document.getElementById('cxcModalDeudor')
+        },
+        formularios: {
+            nuevaDeuda: document.getElementById('cxcFormNuevaDeuda'),
+            pago: document.getElementById('cxcFormPago'),
+            deudor: document.getElementById('cxcFormDeudor')
+        },
+        nuevaDeudaCampos: {
+            documento: document.getElementById('cxcDeudaDocumento'),
+            buscar: document.getElementById('cxcBuscarDeudor'),
+            nombre: document.getElementById('cxcDeudaNombre'),
+            direccion: document.getElementById('cxcDeudaDireccion'),
+            telefono: document.getElementById('cxcDeudaTelefono'),
+            email: document.getElementById('cxcDeudaEmail'),
+            limite: document.getElementById('cxcDeudaLimite'),
+            tipo: document.getElementById('cxcDeudaTipo'),
+            motivo: document.getElementById('cxcDeudaMotivo'),
+            monto: document.getElementById('cxcDeudaMonto'),
+            abono: document.getElementById('cxcDeudaAbono'),
+            metodo: document.getElementById('cxcDeudaMetodo'),
+            vencimiento: document.getElementById('cxcDeudaVencimiento'),
+            notas: document.getElementById('cxcDeudaNotas'),
+            infoBox: document.getElementById('cxcNuevaDeudaEstadoBox'),
+            infoNombre: document.getElementById('cxcNuevaDeudaNombre'),
+            infoCredito: document.getElementById('cxcNuevaDeudaDisponible')
+        },
+        pagoCampos: {
+            monto: document.getElementById('cxcPagoMonto'),
+            metodo: document.getElementById('cxcPagoMetodo'),
+            referencia: document.getElementById('cxcPagoReferencia'),
+            notas: document.getElementById('cxcPagoNotas'),
+            resumen: document.getElementById('cxcPagoResumen'),
+            deudor: document.getElementById('cxcPagoDeudor'),
+            cuenta: document.getElementById('cxcPagoCuenta'),
+            saldo: document.getElementById('cxcPagoSaldo')
+        },
+        detalle: {
+            contenedor: document.getElementById('cxcDetalleContenido'),
+            btnReimprimir: document.getElementById('cxcDetalleReimprimir'),
+            btnAbonar: document.getElementById('cxcDetalleAbonar')
+        }
+    };
+
+    Object.values(selectors.modals).forEach(modal => {
+        if (modal && !modal.classList.contains('active')) {
+            modal.setAttribute('inert', '');
+        }
+    });
+
+    let deudorActivoFormulario = null;
+    let cuentaSeleccionada = null;
+    let pagoSeleccionado = null;
+
+    function formatCurrency(value) {
+        return window.app ? window.app.formatCurrency(Number(value || 0)) : `$${Number(value || 0).toFixed(2)}`;
+    }
+
+    function formatDate(value) {
+        if (!value) return '';
+        return window.app ? window.app.formatDate(value) : new Date(value).toLocaleDateString();
+    }
+
+    function formatDateTime(value) {
+        if (!value) return '';
+        return window.app ? window.app.formatDateTime(value) : new Date(value).toLocaleString();
+    }
+
+    function cleanNumber(value) {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : 0;
+    }
+
+    function openModal(modal) {
+        if (!modal) return;
+        modal.classList.add('active');
+        modal.removeAttribute('inert');
+        modal.setAttribute('aria-hidden', 'false');
+
+        const focusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable && typeof focusable.focus === 'function') {
+            focusable.focus({ preventScroll: true });
+        }
+    }
+
+    function closeModal(modal) {
+        if (!modal) return;
+        const activeElement = document.activeElement;
+        if (activeElement && modal.contains(activeElement) && typeof activeElement.blur === 'function') {
+            activeElement.blur();
+        }
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+        modal.setAttribute('inert', '');
+    }
+
+    function closeModalById(id) {
+        closeModal(document.getElementById(id));
+    }
+
+    function handleModalCloseClick(event) {
+        const target = event.target.closest('[data-close]');
+        if (target) {
+            const modalId = target.getAttribute('data-close');
+            closeModalById(modalId);
+        }
+    }
+
+    function handleOverlayClick(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            closeModal(event.target);
+        }
+    }
+
+    function setLoading(section, value) {
+        state.loading[section] = value;
+    }
+
+    function showToast(message, type = 'info', duration = 3000) {
+        if (window.app && typeof window.app.showToast === 'function') {
+            window.app.showToast(message, type, duration);
+        }
+    }
+
+    function getDB() {
+        return window.app ? window.app.db : (window.getSupabaseClient ? window.getSupabaseClient() : window.supabaseClient);
+    }
+
+    function debounce(fn, delay) {
+        let timer;
+        return function(...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+    }
+
+    function applyFilters() {
+        const cuentasFiltradas = state.cuentas.filter(cuenta => {
+            if (!cuenta) return false;
+
+            if (state.filtros.estado !== 'todas') {
+                if (state.filtros.estado === 'activos') {
+                    if (!['PENDIENTE', 'PARCIAL', 'VENCIDO'].includes(cuenta.estado)) {
+                        return false;
+                    }
+                } else if (cuenta.estado !== state.filtros.estado.toUpperCase()) {
+                    return false;
+                }
+            }
+
+            if (state.filtros.deudorId !== 'todos' && cuenta.deudor_id !== state.filtros.deudorId) {
+                return false;
+            }
+
+            if (state.filtros.desde) {
+                if (!cuenta.fecha_otorgada || cuenta.fecha_otorgada < state.filtros.desde) {
+                    return false;
+                }
+            }
+
+            if (state.filtros.hasta) {
+                if (!cuenta.fecha_otorgada || cuenta.fecha_otorgada > state.filtros.hasta + 'T23:59:59') {
+                    return false;
+                }
+            }
+
+            if (state.filtros.texto) {
+                const text = state.filtros.texto.toLowerCase();
+                const match = (
+                    (cuenta.codigo || '').toLowerCase().includes(text) ||
+                    (cuenta.motivo || '').toLowerCase().includes(text) ||
+                    (cuenta.otros_detalles || '').toLowerCase().includes(text) ||
+                    (cuenta.deudor_nombre || '').toLowerCase().includes(text)
+                );
+                if (!match) return false;
+            }
+
+            return true;
+        });
+
+        return cuentasFiltradas.sort((a, b) => {
+            if (!a || !b) return 0;
+            return new Date(b.fecha_otorgada || b.created_at || '1970-01-01') - new Date(a.fecha_otorgada || a.created_at || '1970-01-01');
+        });
+    }
+
+    function renderCuentas() {
+        const cuentas = applyFilters();
+        selectors.cuentasContainer.innerHTML = '';
+
+        if (!cuentas.length) {
+            selectors.cuentasEmpty.classList.remove('hidden');
+            selectors.botones.registroPago.disabled = true;
+            selectors.botones.reimprimirCuenta.disabled = true;
+            state.seleccion.cuentaId = null;
+            return;
+        }
+
+        selectors.cuentasEmpty.classList.add('hidden');
+
+        const fragment = document.createDocumentFragment();
+        cuentas.forEach(cuenta => {
+            const card = document.createElement('div');
+            card.className = `cuenta-card ${cuenta.estado ? cuenta.estado.toLowerCase() : ''} ${state.seleccion.cuentaId === cuenta.id ? 'selected' : ''}`;
+            card.dataset.id = cuenta.id;
+            card.setAttribute('role', 'button');
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('aria-label', `Ver detalle de la cuenta ${cuenta.codigo || ''}`.trim());
+            card.innerHTML = `
+                <div class="cuenta-header">
+                    <div>
+                        <div class="cuenta-codigo">${cuenta.codigo || 'SIN CÓDIGO'}</div>
+                        <div class="cuenta-deudor">
+                            <i class="fas fa-user"></i>
+                            ${cuenta.deudor_nombre || 'Deudor desconocido'}
+                        </div>
+                    </div>
+                    <span class="cuenta-estado ${cuenta.estado || ''}">${cuenta.estado || ''}</span>
+                </div>
+                <div class="cuenta-montos">
+                    <div class="monto-item">
+                        <span class="monto-label">Total</span>
+                        <span class="monto-value total">${formatCurrency(cuenta.monto)}</span>
+                    </div>
+                    <div class="monto-item">
+                        <span class="monto-label">Saldo</span>
+                        <span class="monto-value pendiente">${formatCurrency(cuenta.saldo_pendiente)}</span>
+                    </div>
+                    <div class="monto-item">
+                        <span class="monto-label">Vencimiento</span>
+                        <span class="monto-value">${cuenta.fecha_vencimiento ? formatDate(cuenta.fecha_vencimiento) : 'Sin fecha'}</span>
+                    </div>
+                </div>
+                <div class="cuenta-footer">
+                    <span><i class="fas fa-calendar"></i> ${formatDateTime(cuenta.fecha_otorgada)}</span>
+                    <span class="cuenta-hint"><i class="fas fa-external-link-alt"></i> Ver detalle</span>
+                </div>
+            `;
+            fragment.appendChild(card);
+        });
+
+        selectors.cuentasContainer.appendChild(fragment);
+    }
+
+    function renderDeudores() {
+        selectors.deudoresContainer.innerHTML = '';
+        if (!state.deudores.length) {
+            selectors.deudoresEmpty.classList.remove('hidden');
+            return;
+        }
+        selectors.deudoresEmpty.classList.add('hidden');
+
+        const fragment = document.createDocumentFragment();
+        state.deudores.forEach(deudor => {
+            const card = document.createElement('div');
+            card.className = 'deudor-card';
+            card.dataset.id = deudor.id;
+            card.innerHTML = `
+                <div class="deudor-header">
+                    <div>
+                        <div class="deudor-nombre">${deudor.nombre || 'Sin nombre'}</div>
+                        <div class="deudor-cedula">CI/RUC: ${deudor.cedula_ruc || '-'}</div>
+                    </div>
+                    <span class="deudor-estado ${deudor.estado || 'ACTIVO'}">${deudor.estado || 'ACTIVO'}</span>
+                </div>
+                <div class="deudor-credito">
+                    <div class="credito-item">
+                        <span class="credito-label">Límite</span>
+                        <span class="credito-value">${formatCurrency(deudor.limite_credito || 0)}</span>
+                    </div>
+                    <div class="credito-item">
+                        <span class="credito-label">Disponible</span>
+                        <span class="credito-value">${formatCurrency(deudor.credito_disponible || 0)}</span>
+                    </div>
+                    <div class="credito-item">
+                        <span class="credito-label">Deuda activa</span>
+                        <span class="credito-value">${formatCurrency(deudor.deuda_activa || 0)}</span>
+                    </div>
+                    <div class="credito-item">
+                        <span class="credito-label">Cuentas activas</span>
+                        <span class="credito-value">${deudor.cuentas_pendientes || 0} pendientes / ${deudor.cuentas_vencidas || 0} vencidas</span>
+                    </div>
+                </div>
+                <div class="deudor-acciones">
+                    <button class="btn-deudor-action" data-action="nueva-deuda" data-id="${deudor.id}">
+                        <i class="fas fa-plus-circle"></i> Nueva deuda
+                    </button>
+                    <button class="btn-deudor-action" data-action="ver-cuentas" data-id="${deudor.id}">
+                        <i class="fas fa-list"></i> Ver cuentas
+                    </button>
+                    <button class="btn-deudor-action" data-action="reimprimir" data-id="${deudor.id}">
+                        <i class="fas fa-print"></i> Reimprimir
+                    </button>
+                </div>
+            `;
+            fragment.appendChild(card);
+        });
+
+        selectors.deudoresContainer.appendChild(fragment);
+    }
+
+    function renderPagos() {
+        selectors.pagosTabla.innerHTML = '';
+        if (!state.pagos.length) {
+            selectors.pagosEmpty.classList.remove('hidden');
+            return;
+        }
+        selectors.pagosEmpty.classList.add('hidden');
+
+        const fragment = document.createDocumentFragment();
+        state.pagos.forEach(pago => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${formatDateTime(pago.fecha_pago)}</td>
+                <td>${pago.deudor_nombre || '-'}</td>
+                <td>${pago.cuenta_codigo || '-'}</td>
+                <td>${formatCurrency(pago.monto_pago)}</td>
+                <td>${pago.forma_pago || '-'}</td>
+                <td>${pago.numero_referencia || '-'}</td>
+                <td>${pago.recibido_por || '-'}</td>
+                <td>
+                    <button class="btn btn-secondary btn-small" data-action="ticket-pago" data-id="${pago.id}">
+                        <i class="fas fa-ticket-alt"></i>
+                    </button>
+                </td>
+            `;
+            fragment.appendChild(tr);
+        });
+
+        selectors.pagosTabla.appendChild(fragment);
+    }
+
+    function recalculateMetrics() {
+        const hoy = new Date();
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString();
+        let saldoPendiente = 0;
+        let cuentasVencidas = 0;
+        let clientesAlDia = 0;
+        let totalPendiente = 0;
+
+        const deudoresConDeuda = new Set();
+        const deudoresVencidos = new Set();
+
+        state.cuentas.forEach(cuenta => {
+            if (!cuenta) return;
+            if (['PENDIENTE', 'PARCIAL', 'VENCIDO'].includes(cuenta.estado)) {
+                saldoPendiente += cleanNumber(cuenta.saldo_pendiente);
+                totalPendiente += cleanNumber(cuenta.saldo_pendiente);
+            }
+
+            if (cuenta.estado === 'VENCIDO') {
+                cuentasVencidas += 1;
+                if (cuenta.deudor_id) {
+                    deudoresVencidos.add(cuenta.deudor_id);
+                }
+            }
+
+            if (['PENDIENTE', 'PARCIAL', 'VENCIDO'].includes(cuenta.estado) && cuenta.deudor_id) {
+                deudoresConDeuda.add(cuenta.deudor_id);
+            }
+        });
+
+        state.deudores.forEach(deudor => {
+            if (!deudor) return;
+            const deudaActiva = cleanNumber(deudor.deuda_activa);
+            if (deudaActiva <= 0) {
+                clientesAlDia += 1;
+            }
+        });
+
+        let pagosMes = 0;
+        state.pagos.forEach(pago => {
+            if (!pago || !pago.fecha_pago) return;
+            if (pago.fecha_pago >= inicioMes) {
+                pagosMes += cleanNumber(pago.monto_pago);
+            }
+        });
+
+        state.metrics = {
+            saldoPendiente,
+            pagosMes,
+            cuentasVencidas,
+            clientesAlDia,
+            deudaActiva: saldoPendiente,
+            totalPendiente
+        };
+
+        selectors.stats.headerTotal.textContent = formatCurrency(saldoPendiente);
+        selectors.stats.headerPendientes.textContent = formatCurrency(totalPendiente);
+        selectors.stats.headerVencidas.textContent = String(cuentasVencidas);
+        selectors.stats.saldoPendiente.textContent = formatCurrency(saldoPendiente);
+        selectors.stats.pagosMes.textContent = formatCurrency(pagosMes);
+        selectors.stats.cuentasVencidas.textContent = String(cuentasVencidas);
+        selectors.stats.clientesAlDia.textContent = String(clientesAlDia);
+
+        if (window.app && typeof window.app.updateNavbarCounter === 'function') {
+            window.app.updateNavbarCounter('cxc', saldoPendiente);
+        }
+    }
+
+    function populateDeudorSelects() {
+        const optionsHtml = ['<option value="todos">Todos</option>'];
+        const reimpresionDeudorOptions = ['<option value="">Selecciona un deudor</option>'];
+
+        state.deudores
+            .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+            .forEach(deudor => {
+                optionsHtml.push(`<option value="${deudor.id}">${deudor.nombre || deudor.cedula_ruc}</option>`);
+                reimpresionDeudorOptions.push(`<option value="${deudor.id}">${deudor.nombre || deudor.cedula_ruc}</option>`);
+            });
+
+        selectors.filtros.deudor.innerHTML = optionsHtml.join('');
+        selectors.reimpresion.deudor.innerHTML = reimpresionDeudorOptions.join('');
+    }
+
+    async function fetchCuentas() {
+        try {
+            setLoading('cuentas', true);
+            const db = getDB();
+            const { data, error } = await db
+                .from('ferre_vista_cuentas_por_cobrar')
+                .select('*')
+                .order('fecha_otorgada', { ascending: false })
+                .limit(500);
+
+            if (error) {
+                console.error('Error cargando cuentas:', error);
+                showToast('No se pudieron cargar las cuentas por cobrar', 'danger');
+                return;
+            }
+
+            state.cuentas = data || [];
+            recalculateMetrics();
+            renderCuentas();
+            populateReimpresionCuentas();
+        } catch (error) {
+            console.error('Error inesperado en fetchCuentas:', error);
+            showToast('Error inesperado al cargar cuentas', 'danger');
+        } finally {
+            setLoading('cuentas', false);
+        }
+    }
+
+    async function fetchDeudores() {
+        try {
+            setLoading('deudores', true);
+            const db = getDB();
+            const { data, error } = await db
+                .from('ferre_vista_resumen_deudores')
+                .select('*')
+                .order('nombre', { ascending: true });
+
+            if (error) {
+                console.error('Error cargando deudores:', error);
+                showToast('No se pudieron cargar los deudores', 'danger');
+                return;
+            }
+
+            state.deudores = data || [];
+            populateDeudorSelects();
+            renderDeudores();
+        } catch (error) {
+            console.error('Error inesperado en fetchDeudores:', error);
+            showToast('Error inesperado al cargar deudores', 'danger');
+        } finally {
+            setLoading('deudores', false);
+        }
+    }
+
+    async function fetchPagos() {
+        try {
+            setLoading('pagos', true);
+            const db = getDB();
+            const { data, error } = await db
+                .from('ferre_pagos_cuentas_por_cobrar')
+                .select(`*, cuenta:ferre_cuentas_por_cobrar(id, codigo, motivo, deudor_id, saldo_pendiente, deudor:ferre_deudores(id, nombre, cedula_ruc))`)
+                .order('fecha_pago', { ascending: false })
+                .limit(300);
+
+            if (error) {
+                console.error('Error cargando pagos:', error);
+                showToast('No se pudieron cargar los pagos', 'danger');
+                return;
+            }
+
+            state.pagos = (data || []).map(pago => ({
+                ...pago,
+                cuenta_codigo: pago.cuenta?.codigo || null,
+                deudor_nombre: pago.cuenta?.deudor?.nombre || null,
+                deudor_id: pago.cuenta?.deudor?.id || pago.cuenta?.deudor_id || null,
+                saldo_posterior: pago.cuenta ? cleanNumber(pago.cuenta.saldo_pendiente) : null
+            }));
+
+            renderPagos();
+            recalculateMetrics();
+            populateReimpresionPagos();
+        } catch (error) {
+            console.error('Error inesperado en fetchPagos:', error);
+            showToast('Error inesperado al cargar pagos', 'danger');
+        } finally {
+            setLoading('pagos', false);
+        }
+    }
+
+    function populateReimpresionCuentas() {
+        const options = ['<option value="">Selecciona una cuenta</option>'];
+        state.cuentas.forEach(cuenta => {
+            options.push(`<option value="${cuenta.id}">${cuenta.codigo || cuenta.motivo} — ${cuenta.deudor_nombre || ''}</option>`);
+        });
+        selectors.reimpresion.cuenta.innerHTML = options.join('');
+    }
+
+    function populateReimpresionPagos() {
+        const options = ['<option value="">Selecciona un pago</option>'];
+        state.pagos.forEach(pago => {
+            options.push(`<option value="${pago.id}">${formatDateTime(pago.fecha_pago)} — ${formatCurrency(pago.monto_pago)} — ${pago.deudor_nombre || ''}</option>`);
+        });
+        selectors.reimpresion.pago.innerHTML = options.join('');
+    }
+
+    async function buscarDeudor(documento) {
+        if (!documento) return null;
+        const db = getDB();
+
+        try {
+            const { data: deudor, error } = await db
+                .from('ferre_deudores')
+                .select('*')
+                .eq('cedula_ruc', documento)
+                .maybeSingle();
+
+            if (error) {
+                console.warn('Error buscando deudor:', error);
+            }
+
+            if (deudor) {
+                return { tipo: 'deudor', data: deudor };
+            }
+
+            const { data: cliente } = await db
+                .from('ferre_clientes')
+                .select('*')
+                .eq('cedula', documento)
+                .maybeSingle();
+
+            if (cliente) {
+                return {
+                    tipo: 'cliente',
+                    data: {
+                        cedula_ruc: cliente.cedula,
+                        nombre: cliente.razon_social,
+                        direccion: cliente.direccion,
+                        telefono: cliente.telefono,
+                        email: cliente.correo,
+                        limite_credito: null,
+                        credito_disponible: null,
+                        estado: 'ACTIVO'
+                    }
+                };
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Error buscando documento:', error);
+            showToast('No se pudo buscar el documento ingresado', 'danger');
+            return null;
+        }
+    }
+
+    function fillNuevaDeudaForm(data) {
+        const campos = selectors.nuevaDeudaCampos;
+        campos.nombre.value = data.nombre || '';
+        campos.direccion.value = data.direccion || '';
+        campos.telefono.value = data.telefono || '';
+        campos.email.value = data.email || '';
+        if (data.limite_credito !== undefined && data.limite_credito !== null) {
+            campos.limite.value = Number(data.limite_credito || 0);
+        }
+    }
+
+    function resetNuevaDeudaForm() {
+        selectors.formularios.nuevaDeuda.reset();
+        selectors.nuevaDeudaCampos.infoBox.hidden = true;
+        selectors.nuevaDeudaCampos.infoNombre.textContent = '';
+        selectors.nuevaDeudaCampos.infoCredito.textContent = '$0.00';
+        deudorActivoFormulario = null;
+    }
+
+    async function handleBuscarDeudor() {
+        const documento = selectors.nuevaDeudaCampos.documento.value.trim();
+        if (!documento) {
+            showToast('Ingresa un número de cédula o RUC', 'warning');
+            return;
+        }
+
+        const resultado = await buscarDeudor(documento);
+        if (!resultado) {
+            showToast('No se encontró información. Puedes completar los datos manualmente.', 'info');
+            fillNuevaDeudaForm({});
+            selectors.nuevaDeudaCampos.infoBox.hidden = true;
+            deudorActivoFormulario = null;
+            return;
+        }
+
+        if (resultado.tipo === 'deudor') {
+            const deudor = resultado.data;
+            deudorActivoFormulario = deudor;
+            fillNuevaDeudaForm(deudor);
+            selectors.nuevaDeudaCampos.infoNombre.textContent = deudor.nombre || '';
+            selectors.nuevaDeudaCampos.infoCredito.textContent = formatCurrency(deudor.credito_disponible);
+            selectors.nuevaDeudaCampos.infoBox.hidden = false;
+            showToast('Deudor encontrado y cargado', 'success');
+        } else if (resultado.tipo === 'cliente') {
+            const cliente = resultado.data;
+            deudorActivoFormulario = null;
+            fillNuevaDeudaForm(cliente);
+            selectors.nuevaDeudaCampos.infoBox.hidden = true;
+            showToast('Cliente encontrado. Completa los datos y guarda la deuda.', 'info');
+        }
+    }
+
+    async function ensureDeudorExistente(payload) {
+        const db = getDB();
+        const documento = payload.cedula_ruc.trim();
+
+        console.log('🔍 Buscando deudor existente con documento:', documento);
+
+        const { data: deudorExistente, error: errorDeudor } = await db
+            .from('ferre_deudores')
+            .select('*')
+            .eq('cedula_ruc', documento)
+            .maybeSingle();
+
+        if (errorDeudor) {
+            console.error('❌ Error verificando deudor:', errorDeudor);
+        }
+
+        if (deudorExistente) {
+            console.log('✅ Deudor encontrado:', deudorExistente);
+            console.log('💰 Crédito disponible actual:', deudorExistente.credito_disponible);
+            return deudorExistente;
+        }
+
+        console.log('⚠️ Deudor no existe, creando nuevo...');
+        console.log('📄 Datos del payload:', payload);
+
+        // Si no hay límite de crédito, usar 1000 por defecto
+        const limiteCredito = payload.limite_credito != null && Number(payload.limite_credito) > 0 
+            ? Number(payload.limite_credito) 
+            : 1000;
+        const creditoDisponible = limiteCredito;
+
+        console.log('💳 Límite de crédito a usar:', limiteCredito);
+        console.log('💰 Crédito disponible inicial:', creditoDisponible);
+
+        const deudorPayload = {
+            cedula_ruc: payload.cedula_ruc,
+            nombre: payload.nombre,
+            direccion: payload.direccion || null,
+            telefono: payload.telefono || null,
+            email: payload.email || null,
+            limite_credito: limiteCredito,
+            credito_disponible: creditoDisponible,
+            notas: payload.notas || null
+        };
+
+        console.log('📝 Payload para crear deudor:', deudorPayload);
+
+        const { data: nuevoDeudor, error: errorInsert } = await db
+            .from('ferre_deudores')
+            .insert([deudorPayload])
+            .select()
+            .single();
+
+        if (errorInsert) {
+            console.error('❌ Error creando deudor:', errorInsert);
+            throw errorInsert;
+        }
+
+        console.log('✅ Deudor creado exitosamente:', nuevoDeudor);
+        
+        await fetchDeudores();
+        return nuevoDeudor;
+    }
+
+    function generarCodigoCuenta(tipo = 'VENTA') {
+        const prefijo = tipo === 'VENTA' ? 'V' : tipo === 'EFECTIVO' ? 'E' : 'O';
+        const timestamp = Date.now().toString();
+        return `${prefijo}${timestamp}`;
+    }
+
+    function obtenerUsuarioActual() {
+        if (window.auth && typeof window.auth.getUserEmail === 'function') {
+            const email = window.auth.getUserEmail();
+            const nombres = window.auth.getUserNombres ? window.auth.getUserNombres() : '';
+            const apellidos = window.auth.getUserApellidos ? window.auth.getUserApellidos() : '';
+            return {
+                email,
+                nombre: `${nombres || ''} ${apellidos || ''}`.trim() || email || 'Usuario'
+            };
+        }
+        return { email: null, nombre: 'Usuario' };
+    }
+
+    async function guardarNuevaDeuda(event) {
+        event.preventDefault();
+        const campos = selectors.nuevaDeudaCampos;
+        const documento = campos.documento.value.trim();
+        const nombre = campos.nombre.value.trim();
+        const monto = cleanNumber(campos.monto.value);
+        const abono = cleanNumber(campos.abono.value);
+        const vencimiento = campos.vencimiento.value;
+        const motivo = campos.motivo.value.trim();
+        const tipo = campos.tipo.value;
+
+        if (!documento || !nombre || !monto || !vencimiento || !motivo) {
+            showToast('Completa todos los campos obligatorios', 'warning');
+            return;
+        }
+
+        if (abono > monto) {
+            showToast('El abono no puede ser mayor que el monto total', 'warning');
+            return;
+        }
+
+        try {
+            const usuario = obtenerUsuarioActual();
+            const deudorPayload = {
+                cedula_ruc: documento,
+                nombre,
+                direccion: campos.direccion.value.trim() || null,
+                telefono: campos.telefono.value.trim() || null,
+                email: campos.email.value.trim() || null,
+                limite_credito: campos.limite.value ? cleanNumber(campos.limite.value) : 0,
+                notas: campos.notas.value.trim() || null
+            };
+
+            const deudor = deudorActivoFormulario || await ensureDeudorExistente(deudorPayload);
+
+            const db = getDB();
+            const codigoCuenta = generarCodigoCuenta(tipo);
+            const fechaOtorgada = new Date().toISOString();
+            const estado = abono >= monto ? 'PAGADO' : (abono > 0 ? 'PARCIAL' : 'PENDIENTE');
+            const saldoPendiente = Math.max(monto - abono, 0);
+
+            const cuentaPayload = {
+                codigo: codigoCuenta,
+                tipo,
+                motivo,
+                monto,
+                saldo_pendiente: saldoPendiente,
+                venta_id: null,
+                deudor_id: deudor.id,
+                estado,
+                fecha_otorgada: fechaOtorgada,
+                fecha_vencimiento: vencimiento,
+                aprobado_por: usuario.nombre || usuario.email || 'Usuario',
+                otros_detalles: campos.notas.value.trim() || null
+            };
+
+            const { data: cuenta, error: errorCuenta } = await db
+                .from('ferre_cuentas_por_cobrar')
+                .insert([cuentaPayload])
+                .select()
+                .single();
+
+            if (errorCuenta) {
+                throw errorCuenta;
+            }
+
+            let pagoRegistrado = null;
+            if (abono > 0) {
+                const pagoPayload = {
+                    cuenta_id: cuenta.id,
+                    monto_pago: abono,
+                    forma_pago: campos.metodo.value,
+                    numero_referencia: null,
+                    notas: `Pago inicial registrado al crear deuda. ${campos.notas.value.trim() || ''}`.trim(),
+                    recibido_por: usuario.nombre || usuario.email || 'Usuario'
+                };
+
+                const { data: pago, error: errorPago } = await db
+                    .from('ferre_pagos_cuentas_por_cobrar')
+                    .insert([pagoPayload])
+                    .select()
+                    .single();
+
+                if (errorPago) {
+                    console.error('Error registrando pago inicial:', errorPago);
+                } else {
+                    pagoRegistrado = pago;
+                }
+            }
+
+            await Promise.all([fetchCuentas(), fetchDeudores(), fetchPagos()]);
+            closeModal(selectors.modals.nuevaDeuda);
+            selectors.formularios.nuevaDeuda.reset();
+            selectors.nuevaDeudaCampos.infoBox.hidden = true;
+            deudorActivoFormulario = null;
+
+            abrirTicketDeuda({
+                cuenta,
+                deudor,
+                abonoInicial: abono,
+                usuario,
+                notas: campos.notas.value.trim() || null,
+                productos: []
+            });
+
+            showToast('Deuda registrada correctamente', 'success');
+        } catch (error) {
+            console.error('Error guardando deuda:', error);
+            showToast('No se pudo guardar la deuda: ' + (error.message || error), 'danger', 6000);
+        }
+    }
+
+    async function abrirTicketDeuda({ cuenta, deudor, abonoInicial = 0, usuario, notas, productos = [], ventaId = null }) {
+        if (!cuenta) return;
+        const params = new URLSearchParams();
+        params.set('codigo', cuenta.codigo || '');
+        params.set('tipo', cuenta.tipo || '');
+        params.set('motivo', cuenta.motivo || '');
+        params.set('monto', cleanNumber(cuenta.monto));
+        params.set('saldo', cleanNumber(cuenta.saldo_pendiente));
+        params.set('abono_inicial', cleanNumber(abonoInicial));
+        params.set('fecha', cuenta.fecha_otorgada || '');
+        params.set('vencimiento', cuenta.fecha_vencimiento || '');
+        params.set('estado', cuenta.estado || '');
+        params.set('aprobado_por', usuario?.nombre || usuario?.email || '');
+        params.set('deudor_nombre', deudor?.nombre || '');
+        params.set('deudor_documento', deudor?.cedula_ruc || '');
+        params.set('deudor_direccion', deudor?.direccion || '');
+        params.set('deudor_telefono', deudor?.telefono || '');
+        params.set('deudor_email', deudor?.email || '');
+        params.set('notas', notas || '');
+        params.set('venta_id', ventaId || '');
+
+        if (productos && productos.length) {
+            const items = productos.map(item => `${item.cantidad || 1}x ${item.nombre || ''} — ${formatCurrency(item.precio || item.total || 0)}`).join('|');
+            params.set('items', items);
+        } else if (cuenta.venta_id && cuenta.tipo === 'VENTA') {
+            try {
+                const db = getDB();
+                const { data: detalles, error: detallesError } = await db
+                    .from('ferre_ventas_detalle')
+                    .select('cantidad, producto_id, precio')
+                    .eq('venta_id', cuenta.venta_id);
+                
+                if (detallesError) {
+                    console.error('Error en query ventas_detalle:', detallesError);
+                }
+                
+                if (detalles && detalles.length) {
+                    const productosConNombres = await Promise.all(
+                        detalles.map(async (d) => {
+                            const { data: inv } = await db
+                                .from('ferre_inventario')
+                                .select('producto')
+                                .eq('codigo', d.producto_id)
+                                .maybeSingle();
+                            return {
+                                cantidad: d.cantidad,
+                                nombre: inv?.producto || d.producto_id || 'Producto',
+                                precio: d.precio
+                            };
+                        })
+                    );
+                    
+                    const items = productosConNombres.map(p => 
+                        `${p.cantidad}x ${p.nombre} — ${formatCurrency(p.precio)}`
+                    ).join('|');
+                    params.set('items', items);
+                }
+            } catch (error) {
+                console.error('Error cargando productos de venta:', error);
+            }
+        }
+
+        const pagosRelacionados = state.pagos.filter(p => p.cuenta_id === cuenta.id);
+        if (pagosRelacionados && pagosRelacionados.length) {
+            const listaPagos = pagosRelacionados.map(p => `${formatDateTime(p.fecha_pago)}~${formatCurrency(p.monto_pago)}~${p.forma_pago || ''}`).join('|');
+            params.set('pagos', listaPagos);
+        }
+
+        const url = `views/ticket_cxc_deuda.html?${params.toString()}`;
+        window.open(url, '_blank');
+    }
+
+    function abrirTicketPago(pago, cuenta, deudor) {
+        if (!pago) return;
+        const params = new URLSearchParams();
+        params.set('codigo', cuenta?.codigo || '');
+        params.set('motivo', cuenta?.motivo || '');
+        params.set('monto_pago', cleanNumber(pago.monto_pago));
+        params.set('forma_pago', pago.forma_pago || '');
+        params.set('referencia', pago.numero_referencia || '');
+        params.set('fecha_pago', pago.fecha_pago || '');
+        params.set('recibido_por', pago.recibido_por || '');
+        params.set('saldo_resultante', cuenta ? cleanNumber(cuenta.saldo_pendiente) : '');
+        params.set('deudor_nombre', deudor?.nombre || pago.deudor_nombre || '');
+        params.set('deudor_documento', deudor?.cedula_ruc || '');
+        params.set('notas', pago.notas || '');
+
+        const url = `views/ticket_cxc_pago.html?${params.toString()}`;
+        window.open(url, '_blank');
+    }
+
+    function abrirTicketConsolidado(deudor, cuentas, pagos, filtros) {
+        if (!deudor) return;
+        const params = new URLSearchParams();
+        params.set('deudor_nombre', deudor.nombre || '');
+        params.set('deudor_documento', deudor.cedula_ruc || '');
+        params.set('total_deuda', formatCurrency(deudor.deuda_activa || 0));
+        params.set('limite_credito', formatCurrency(deudor.limite_credito || 0));
+        params.set('credito_disponible', formatCurrency(deudor.credito_disponible || 0));
+        params.set('desde', filtros?.desde || '');
+        params.set('hasta', filtros?.hasta || '');
+
+        const listaCuentas = (cuentas || []).map(c => `${c.codigo || ''}~${formatDate(c.fecha_otorgada)}~${formatCurrency(c.monto)}~${formatCurrency(c.saldo_pendiente)}~${c.estado || ''}`).join('|');
+        const listaPagos = (pagos || []).map(p => `${formatDateTime(p.fecha_pago)}~${formatCurrency(p.monto_pago)}~${p.forma_pago || ''}~${p.numero_referencia || ''}`).join('|');
+
+        params.set('cuentas', listaCuentas);
+        params.set('pagos', listaPagos);
+
+        const url = `views/ticket_cxc_consolidado.html?${params.toString()}`;
+        window.open(url, '_blank');
+    }
+
+    function seleccionarCuenta(id) {
+        state.seleccion.cuentaId = id;
+        selectors.botones.registroPago.disabled = !id;
+        selectors.botones.reimprimirCuenta.disabled = !id;
+        renderCuentas();
+    }
+
+    function obtenerCuentaPorId(id) {
+        return state.cuentas.find(c => c.id === id);
+    }
+
+    function obtenerDeudorPorId(id) {
+        return state.deudores.find(d => d.id === id);
+    }
+
+    function mostrarDetalleCuenta(id) {
+        const cuenta = obtenerCuentaPorId(id);
+        if (!cuenta) return;
+        const deudor = obtenerDeudorPorId(cuenta.deudor_id);
+        cuentaSeleccionada = cuenta;
+
+        const pagosRelacionados = state.pagos.filter(p => p.cuenta_id === id);
+
+        const detallesHTML = `
+            <div class="detalle-header">
+                <div>
+                    <div class="detalle-codigo">${cuenta.codigo || ''}</div>
+                    <div>${cuenta.motivo || ''}</div>
+                </div>
+                <span class="detalle-estado ${cuenta.estado || ''}">${cuenta.estado || ''}</span>
+            </div>
+            <div class="detalle-grid">
+                <div class="detalle-card">
+                    <h4><i class="fas fa-user"></i> Deudor</h4>
+                    <div class="detalle-item">
+                        <span class="label">Nombre</span>
+                        <span class="value">${deudor?.nombre || cuenta.deudor_nombre || '-'}</span>
+                    </div>
+                    <div class="detalle-item">
+                        <span class="label">Documento</span>
+                        <span class="value">${deudor?.cedula_ruc || '-'}</span>
+                    </div>
+                    <div class="detalle-item">
+                        <span class="label">Teléfono</span>
+                        <span class="value">${deudor?.telefono || '-'}</span>
+                    </div>
+                    <div class="detalle-item">
+                        <span class="label">Correo</span>
+                        <span class="value">${deudor?.email || '-'}</span>
+                    </div>
+                </div>
+                <div class="detalle-card">
+                    <h4><i class="fas fa-info-circle"></i> Información</h4>
+                    <div class="detalle-item">
+                        <span class="label">Monto</span>
+                        <span class="value">${formatCurrency(cuenta.monto)}</span>
+                    </div>
+                    <div class="detalle-item">
+                        <span class="label">Saldo</span>
+                        <span class="value">${formatCurrency(cuenta.saldo_pendiente)}</span>
+                    </div>
+                    <div class="detalle-item">
+                        <span class="label">Otorgada</span>
+                        <span class="value">${formatDateTime(cuenta.fecha_otorgada)}</span>
+                    </div>
+                    <div class="detalle-item">
+                        <span class="label">Vencimiento</span>
+                        <span class="value">${formatDate(cuenta.fecha_vencimiento)}</span>
+                    </div>
+                    <div class="detalle-item">
+                        <span class="label">Aprobado por</span>
+                        <span class="value">${cuenta.aprobado_por || '-'}</span>
+                    </div>
+                </div>
+                <div class="detalle-card full-width">
+                    <h4><i class="fas fa-sticky-note"></i> Notas</h4>
+                    <p>${cuenta.otros_detalles || 'Sin notas adicionales'}</p>
+                </div>
+            </div>
+            <div class="pagos-section">
+                <h4><i class="fas fa-hand-holding-usd"></i> Pagos registrados</h4>
+                ${pagosRelacionados.length ? `
+                    <div class="pagos-list">
+                        ${pagosRelacionados.map(pago => `
+                            <div class="pago-item">
+                                <div class="pago-header">
+                                    <div class="pago-monto">${formatCurrency(pago.monto_pago)}</div>
+                                    <div class="pago-fecha">${formatDateTime(pago.fecha_pago)}</div>
+                                </div>
+                                <div class="pago-detalles">
+                                    <div class="pago-detalle"><strong>Método:</strong> ${pago.forma_pago}</div>
+                                    <div class="pago-detalle"><strong>Referencia:</strong> ${pago.numero_referencia || '-'}</div>
+                                    <div class="pago-detalle"><strong>Recibido por:</strong> ${pago.recibido_por || '-'}</div>
+                                    <div class="pago-detalle"><strong>Notas:</strong> ${pago.notas || '-'}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : '<div class="empty-state-small"><i class="fas fa-receipt"></i><p>No hay pagos registrados.</p></div>'}
+            </div>
+        `;
+
+        selectors.detalle.contenedor.innerHTML = detallesHTML;
+        openModal(selectors.modals.detalle);
+    }
+
+    function prepararFormularioPago(cuenta) {
+        if (!cuenta) return;
+        const campos = selectors.pagoCampos;
+        const deudor = obtenerDeudorPorId(cuenta.deudor_id);
+
+        campos.deudor.textContent = deudor?.nombre || cuenta.deudor_nombre || 'Deudor';
+        campos.cuenta.innerHTML = `<strong>${cuenta.codigo || ''}</strong> — ${cuenta.motivo || ''}`;
+        campos.saldo.textContent = formatCurrency(cuenta.saldo_pendiente);
+        campos.monto.value = cuenta.saldo_pendiente > 0 ? Number(cuenta.saldo_pendiente).toFixed(2) : '0.00';
+        campos.metodo.value = 'EFECTIVO';
+        campos.referencia.value = '';
+        campos.notas.value = '';
+    }
+
+    async function registrarPago(event) {
+        event.preventDefault();
+        if (!cuentaSeleccionada) {
+            showToast('Selecciona una cuenta primero', 'warning');
+            return;
+        }
+
+        const cuenta = cuentaSeleccionada;
+        const monto = cleanNumber(selectors.pagoCampos.monto.value);
+        const metodo = selectors.pagoCampos.metodo.value;
+        const referencia = selectors.pagoCampos.referencia.value.trim();
+        const notas = selectors.pagoCampos.notas.value.trim();
+
+        if (!monto || monto <= 0) {
+            showToast('Ingresa un monto válido', 'warning');
+            return;
+        }
+
+        if (monto > cleanNumber(cuenta.saldo_pendiente)) {
+            showToast('El pago excede el saldo pendiente', 'warning');
+            return;
+        }
+
+        try {
+            const usuario = obtenerUsuarioActual();
+            const db = getDB();
+            const payload = {
+                cuenta_id: cuenta.id,
+                monto_pago: monto,
+                forma_pago: metodo,
+                numero_referencia: referencia || null,
+                notas: notas || null,
+                recibido_por: usuario.nombre || usuario.email || 'Usuario'
+            };
+
+            const { data: pago, error } = await db
+                .from('ferre_pagos_cuentas_por_cobrar')
+                .insert([payload])
+                .select()
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            await Promise.all([fetchCuentas(), fetchPagos(), fetchDeudores()]);
+            closeModal(selectors.modals.pago);
+            showToast('Pago registrado correctamente', 'success');
+
+            const cuentaActualizada = obtenerCuentaPorId(cuenta.id);
+            const deudor = obtenerDeudorPorId(cuenta.deudor_id);
+            abrirTicketPago(pago, cuentaActualizada || cuenta, deudor);
+        } catch (error) {
+            console.error('Error registrando pago:', error);
+            showToast('No se pudo registrar el pago: ' + (error.message || error), 'danger', 6000);
+        }
+    }
+
+    async function crearDeudorManual(event) {
+        event.preventDefault();
+        const documento = document.getElementById('cxcNuevoDocumento').value.trim();
+        const nombre = document.getElementById('cxcNuevoNombre').value.trim();
+        if (!documento || !nombre) {
+            showToast('Documento y nombre son obligatorios', 'warning');
+            return;
+        }
+
+        try {
+            const db = getDB();
+            const payload = {
+                cedula_ruc: documento,
+                nombre,
+                direccion: document.getElementById('cxcNuevoDireccion').value.trim() || null,
+                telefono: document.getElementById('cxcNuevoTelefono').value.trim() || null,
+                email: document.getElementById('cxcNuevoEmail').value.trim() || null,
+                limite_credito: document.getElementById('cxcNuevoLimite').value ? cleanNumber(document.getElementById('cxcNuevoLimite').value) : 0,
+                notas: document.getElementById('cxcNuevoNotas').value.trim() || null
+            };
+
+            const { data, error } = await db
+                .from('ferre_deudores')
+                .insert([payload])
+                .select()
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            closeModal(selectors.modals.deudor);
+            selectors.formularios.deudor.reset();
+            await fetchDeudores();
+            showToast('Deudor registrado correctamente', 'success');
+        } catch (error) {
+            console.error('Error creando deudor:', error);
+            showToast('No se pudo crear el deudor: ' + (error.message || error), 'danger', 6000);
+        }
+    }
+
+    function switchTab(tabButton) {
+        const view = tabButton.getAttribute('data-view');
+        if (!view || !selectors.views[view]) return;
+
+        selectors.tabs.forEach(tab => {
+            const isActive = tab === tabButton;
+            tab.classList.toggle('active', isActive);
+            tab.setAttribute('aria-selected', isActive);
+        });
+
+        Object.entries(selectors.views).forEach(([key, element]) => {
+            const isActive = key === view;
+            element.classList.toggle('active', isActive);
+            element.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+        });
+
+        state.vistaActiva = view;
+    }
+
+    function handleCuentasClick(event) {
+        const card = event.target.closest('.cuenta-card');
+        if (!card) return;
+        const id = card.dataset.id;
+        if (!id) return;
+        seleccionarCuenta(id);
+        mostrarDetalleCuenta(id);
+    }
+
+    function handleCuentasKeydown(event) {
+        if (!['Enter', ' ', 'Spacebar'].includes(event.key)) return;
+        const card = event.target.closest('.cuenta-card');
+        if (!card) return;
+        event.preventDefault();
+        const id = card.dataset.id;
+        if (!id) return;
+        seleccionarCuenta(id);
+        mostrarDetalleCuenta(id);
+    }
+
+    async function handleDeudoresClick(event) {
+        const actionButton = event.target.closest('[data-action]');
+        if (!actionButton) return;
+        const action = actionButton.getAttribute('data-action');
+        const id = actionButton.getAttribute('data-id');
+        const deudor = obtenerDeudorPorId(id);
+        if (!deudor) return;
+
+        if (action === 'nueva-deuda') {
+            resetNuevaDeudaForm();
+            selectors.nuevaDeudaCampos.documento.value = deudor.cedula_ruc || '';
+            selectors.nuevaDeudaCampos.nombre.value = deudor.nombre || '';
+            selectors.nuevaDeudaCampos.direccion.value = deudor.direccion || '';
+            selectors.nuevaDeudaCampos.telefono.value = deudor.telefono || '';
+            selectors.nuevaDeudaCampos.email.value = deudor.email || '';
+            selectors.nuevaDeudaCampos.limite.value = deudor.limite_credito || 0;
+            selectors.nuevaDeudaCampos.infoNombre.textContent = deudor.nombre || '';
+            selectors.nuevaDeudaCampos.infoCredito.textContent = formatCurrency(deudor.credito_disponible || 0);
+            selectors.nuevaDeudaCampos.infoBox.hidden = false;
+            deudorActivoFormulario = deudor;
+            openModal(selectors.modals.nuevaDeuda);
+        } else if (action === 'ver-cuentas') {
+            selectors.filtros.deudor.value = id;
+            state.filtros.deudorId = id;
+            switchTab(document.querySelector('.cxc-tab[data-view="dashboard"]'));
+            renderCuentas();
+        } else if (action === 'reimprimir') {
+            const cuentas = state.cuentas.filter(c => c.deudor_id === id);
+            const pagos = state.pagos.filter(p => p.deudor_id === id);
+            await abrirTicketConsolidado(deudor, cuentas, pagos, { desde: '', hasta: '' });
+        }
+    }
+
+    function handlePagosClick(event) {
+        const button = event.target.closest('[data-action="ticket-pago"]');
+        if (!button) return;
+        const id = button.getAttribute('data-id');
+        const pago = state.pagos.find(p => p.id === id);
+        if (!pago) return;
+        const cuenta = state.cuentas.find(c => c.id === pago.cuenta_id);
+        const deudor = obtenerDeudorPorId(pago.deudor_id || cuenta?.deudor_id);
+        abrirTicketPago(pago, cuenta, deudor);
+    }
+
+    function handleFiltroChange() {
+        state.filtros.estado = selectors.filtros.estado.value;
+        state.filtros.deudorId = selectors.filtros.deudor.value;
+        state.filtros.desde = selectors.filtros.desde.value || '';
+        state.filtros.hasta = selectors.filtros.hasta.value || '';
+        renderCuentas();
+    }
+
+    const handleTextoFiltro = debounce(value => {
+        state.filtros.texto = value.trim();
+        renderCuentas();
+    }, 200);
+
+    function handleReimpresionTipo() {
+        const tipo = selectors.reimpresion.tipo.value;
+        selectors.reimpresion.cuentaGroup.classList.toggle('hidden', tipo !== 'cuenta');
+        selectors.reimpresion.pagoGroup.classList.toggle('hidden', tipo !== 'pago');
+        selectors.reimpresion.deudorGroup.classList.toggle('hidden', tipo !== 'consolidado');
+        selectors.reimpresion.fechas.classList.toggle('hidden', tipo !== 'consolidado');
+    }
+
+    async function generarReimpresion() {
+        const tipo = selectors.reimpresion.tipo.value;
+        if (tipo === 'cuenta') {
+            const id = selectors.reimpresion.cuenta.value;
+            if (!id) {
+                showToast('Selecciona una cuenta', 'warning');
+                return;
+            }
+            const cuenta = obtenerCuentaPorId(id);
+            if (!cuenta) {
+                showToast('Cuenta no encontrada', 'danger');
+                return;
+            }
+            const deudor = obtenerDeudorPorId(cuenta.deudor_id);
+            await abrirTicketDeuda({ cuenta, deudor, abonoInicial: 0, usuario: obtenerUsuarioActual(), notas: cuenta.otros_detalles });
+        } else if (tipo === 'pago') {
+            const id = selectors.reimpresion.pago.value;
+            if (!id) {
+                showToast('Selecciona un pago', 'warning');
+                return;
+            }
+            const pago = state.pagos.find(p => p.id === id);
+            if (!pago) {
+                showToast('Pago no encontrado', 'danger');
+                return;
+            }
+            const cuenta = obtenerCuentaPorId(pago.cuenta_id);
+            const deudor = obtenerDeudorPorId(pago.deudor_id || cuenta?.deudor_id);
+            abrirTicketPago(pago, cuenta, deudor);
+        } else if (tipo === 'consolidado') {
+            const deudorId = selectors.reimpresion.deudor.value;
+            if (!deudorId) {
+                showToast('Selecciona un deudor', 'warning');
+                return;
+            }
+            const desde = selectors.reimpresion.desde.value || '';
+            const hasta = selectors.reimpresion.hasta.value || '';
+            const deudor = obtenerDeudorPorId(deudorId);
+            const cuentas = state.cuentas.filter(c => c.deudor_id === deudorId);
+            const pagos = state.pagos.filter(p => (p.deudor_id || p.cuenta?.deudor_id) === deudorId);
+            abrirTicketConsolidado(deudor, cuentas, pagos, { desde, hasta });
+        }
+    }
+
+    function setupEventListeners() {
+        selectors.tabs.forEach(tab => {
+            tab.addEventListener('click', () => switchTab(tab));
+        });
+
+        selectors.botones.nuevaDeuda.addEventListener('click', () => {
+            resetNuevaDeudaForm();
+            openModal(selectors.modals.nuevaDeuda);
+        });
+
+        selectors.botones.nuevoDeudor?.addEventListener('click', () => {
+            selectors.formularios.deudor.reset();
+            openModal(selectors.modals.deudor);
+        });
+
+        selectors.botones.recargarCuentas.addEventListener('click', fetchCuentas);
+        selectors.botones.recargarDeudores?.addEventListener('click', fetchDeudores);
+        selectors.botones.recargarPagos?.addEventListener('click', fetchPagos);
+
+        selectors.botones.registroPago.addEventListener('click', () => {
+            if (!state.seleccion.cuentaId) {
+                showToast('Selecciona una cuenta', 'warning');
+                return;
+            }
+            const cuenta = obtenerCuentaPorId(state.seleccion.cuentaId);
+            if (!cuenta) return;
+            cuentaSeleccionada = cuenta;
+            prepararFormularioPago(cuenta);
+            openModal(selectors.modals.pago);
+        });
+
+        selectors.botones.reimprimirCuenta.addEventListener('click', async () => {
+            if (!state.seleccion.cuentaId) return;
+            const cuenta = obtenerCuentaPorId(state.seleccion.cuentaId);
+            const deudor = obtenerDeudorPorId(cuenta?.deudor_id);
+            await abrirTicketDeuda({ cuenta, deudor, abonoInicial: 0, usuario: obtenerUsuarioActual(), notas: cuenta?.otros_detalles });
+        });
+
+        selectors.cuentasContainer.addEventListener('click', handleCuentasClick);
+        selectors.cuentasContainer.addEventListener('keydown', handleCuentasKeydown);
+        selectors.deudoresContainer.addEventListener('click', handleDeudoresClick);
+        selectors.pagosTabla.addEventListener('click', handlePagosClick);
+
+        selectors.filtros.estado.addEventListener('change', handleFiltroChange);
+        selectors.filtros.deudor.addEventListener('change', handleFiltroChange);
+        selectors.filtros.desde.addEventListener('change', handleFiltroChange);
+        selectors.filtros.hasta.addEventListener('change', handleFiltroChange);
+        selectors.filtros.texto.addEventListener('input', e => handleTextoFiltro(e.target.value));
+
+        selectors.nuevaDeudaCampos.buscar.addEventListener('click', handleBuscarDeudor);
+        selectors.nuevaDeudaCampos.documento.addEventListener('blur', () => {
+            if (selectors.nuevaDeudaCampos.documento.value.trim()) {
+                handleBuscarDeudor();
+            }
+        });
+
+        selectors.formularios.nuevaDeuda.addEventListener('submit', guardarNuevaDeuda);
+        selectors.formularios.pago.addEventListener('submit', registrarPago);
+        selectors.formularios.deudor?.addEventListener('submit', crearDeudorManual);
+
+        selectors.modals.nuevaDeuda.addEventListener('click', handleModalCloseClick);
+        selectors.modals.pago.addEventListener('click', handleModalCloseClick);
+        selectors.modals.detalle.addEventListener('click', handleModalCloseClick);
+        selectors.modals.deudor?.addEventListener('click', handleModalCloseClick);
+
+        document.addEventListener('click', handleOverlayClick);
+
+        selectors.detalle.btnReimprimir.addEventListener('click', async () => {
+            if (!cuentaSeleccionada) return;
+            const deudor = obtenerDeudorPorId(cuentaSeleccionada.deudor_id);
+            await abrirTicketDeuda({ cuenta: cuentaSeleccionada, deudor, abonoInicial: 0, usuario: obtenerUsuarioActual(), notas: cuentaSeleccionada.otros_detalles });
+        });
+
+        selectors.detalle.btnAbonar.addEventListener('click', () => {
+            if (!cuentaSeleccionada) return;
+            closeModal(selectors.modals.detalle);
+            setTimeout(() => {
+                prepararFormularioPago(cuentaSeleccionada);
+                openModal(selectors.modals.pago);
+            }, 100);
+        });
+
+        selectors.reimpresion.tipo.addEventListener('change', handleReimpresionTipo);
+        selectors.botones.reimprimirGenerar.addEventListener('click', generarReimpresion);
+    }
+
+    async function initCxc() {
+        if (state.initialized) {
+            await Promise.all([fetchCuentas(), fetchDeudores(), fetchPagos()]);
+            return;
+        }
+
+        setupEventListeners();
+        handleReimpresionTipo();
+
+        await Promise.all([fetchCuentas(), fetchDeudores(), fetchPagos()]);
+
+        state.initialized = true;
+    }
+
+    window.initCxc = initCxc;
+})();
+</script>

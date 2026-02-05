@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=80mm, initial-scale=1.0">
+    <title>Ticket Pago CxC</title>
+    <style>
+        @page {
+            size: 80mm auto;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #111;
+            background: #fff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .ticket {
+            max-width: 80mm;
+            margin: 0 auto;
+            padding: 10px 8px 16px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed #999;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .logo {
+            width: 25%;
+        }
+
+        .logo img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .store-info {
+            width: 75%;
+            text-align: right;
+        }
+
+        .brand {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+        }
+
+        .tagline {
+            font-size: 10px;
+            margin-top: 2px;
+        }
+
+        .section {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed #ddd;
+        }
+
+        .section:first-of-type {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .section-title {
+            text-transform: uppercase;
+            font-weight: 700;
+            font-size: 11px;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            gap: 6px;
+        }
+
+        .row span:last-child {
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .notes {
+            border: 1px dashed #ccc;
+            padding: 6px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 10px;
+            border-top: 1px dashed #999;
+            padding-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ticket">
+        <div class="header">
+            <div class="logo">
+                <img src="https://lh3.googleusercontent.com/d/1-_IsocnUhx_k6EGsNSpaJUNnQ2Nn4cFj=w2048?name=ISO%20DELGADO.png" alt="Logo Ferretería" />
+            </div>
+            <div class="store-info">
+                <div class="brand">FERRESOLUCIONES</div>
+                <div class="tagline">RUC: 1727849695001</div>
+                <div class="tagline">CEL: 0962248046</div>
+                <div class="tagline">Registro de pagos CxC</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Pago</div>
+            <div class="row"><span>Código de cuenta</span><span id="pagoCuenta">---</span></div>
+            <div class="row"><span>Motivo</span><span id="pagoMotivo">---</span></div>
+            <div class="row"><span>Fecha</span><span id="pagoFecha">---</span></div>
+            <div class="row"><span>Recibido por</span><span id="pagoRecibido">---</span></div>
+            <div class="row"><span>Monto del pago</span><span id="pagoMonto">$ 0,00</span></div>
+            <div class="row"><span>Método</span><span id="pagoMetodo">---</span></div>
+            <div class="row"><span>Referencia</span><span id="pagoReferencia">---</span></div>
+            <div class="row"><span>Saldo posterior</span><span id="pagoSaldo">$ 0,00</span></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Deudor</div>
+            <div class="row"><span>Nombre</span><span id="deudorNombre">---</span></div>
+            <div class="row"><span>Documento</span><span id="deudorDocumento">---</span></div>
+        </div>
+
+        <div class="section" id="notasSection" style="display:none;">
+            <div class="section-title">Notas</div>
+            <div class="notes" id="pagoNotas"></div>
+        </div>
+
+        <div class="footer">
+            Ticket generado desde módulo CxC<br>
+            Gracias por su pago
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            const params = new URLSearchParams(window.location.search);
+            const $ = id => document.getElementById(id);
+            const get = key => params.get(key) || '';
+
+            const formatCurrency = value => {
+                const number = Number(value);
+                if (!Number.isFinite(number)) return '0,00';
+                return number.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+
+            const formatDateTime = value => {
+                if (!value) return '---';
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) return value;
+                return date.toLocaleString('es-EC');
+            };
+
+            const setCurrency = (id, value) => {
+                $(id).textContent = '$ ' + formatCurrency(value);
+            };
+
+            $('pagoCuenta').textContent = get('codigo') || '---';
+            $('pagoMotivo').textContent = get('motivo') || '---';
+            $('pagoFecha').textContent = formatDateTime(get('fecha_pago'));
+            $('pagoRecibido').textContent = get('recibido_por') || '---';
+            $('pagoMetodo').textContent = get('forma_pago') || '---';
+            $('pagoReferencia').textContent = get('referencia') || '---';
+            $('deudorNombre').textContent = get('deudor_nombre') || '---';
+            $('deudorDocumento').textContent = get('deudor_documento') || '---';
+
+            setCurrency('pagoMonto', get('monto_pago'));
+            setCurrency('pagoSaldo', get('saldo_resultante'));
+
+            const notas = get('notas');
+            if (notas) {
+                $('pagoNotas').textContent = notas;
+                document.getElementById('notasSection').style.display = 'block';
+            }
+
+            setTimeout(() => window.print(), 300);
+            window.onafterprint = () => window.close();
+        })();
+    </script>
+</body>
+</html>

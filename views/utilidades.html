@@ -1,0 +1,2044 @@
+<div class="container" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px;">
+    
+    <!-- Screen Blocker para operaciones -->
+    <div id="utilidadesScreenBlocker" class="utilidades-screen-blocker">
+        <div class="utilidades-blocker-content">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p id="utilidadesBlockerText">Procesando...</p>
+        </div>
+    </div>
+
+    <!-- Modal de Búsqueda de Producto para Utilidades -->
+    <div id="modalBuscarProductoUtilidades" class="utilidades-modal-overlay">
+        <div class="utilidades-modal-container" style="max-width: 600px;">
+            <div class="utilidades-modal-header">
+                <h2><i class="fas fa-search"></i> Buscar Producto</h2>
+                <button class="utilidades-modal-close" onclick="cerrarModalBuscarProducto()">&times;</button>
+            </div>
+            <div class="utilidades-modal-content">
+                <div class="form-group">
+                    <label class="form-label">Código o Nombre del Producto</label>
+                    <input type="text" id="utilidadesSearchInput" class="form-input"
+                        placeholder="Escanea código o escribe nombre..." autocomplete="off">
+                </div>
+                <div id="utilidadesSearchResults" class="utilidades-search-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Actualizar Inventario -->
+    <div id="modalActualizarInventario" class="utilidades-modal-overlay">
+        <div class="utilidades-modal-container" style="max-width: 500px;">
+            <div class="utilidades-modal-header">
+                <h2><i class="fas fa-edit"></i> Actualizar Inventario</h2>
+                <button class="utilidades-modal-close" onclick="cerrarModalActualizarInventario()">&times;</button>
+            </div>
+            <div class="utilidades-modal-content">
+                <!-- Info del producto -->
+                <div class="producto-info-card" id="productoInfoCard">
+                    <div class="producto-info-header">
+                        <div class="producto-codigo" id="productoCodigoInfo">-</div>
+                        <div class="producto-nombre" id="productoNombreInfo">-</div>
+                    </div>
+                </div>
+
+                <!-- Campos editables -->
+                <div class="actualizar-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-boxes"></i> Stock Actual
+                            </label>
+                            <input type="text" id="stockActualDisplay" class="form-input readonly-input" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-arrow-right"></i> Nuevo Stock
+                            </label>
+                            <input type="number" id="nuevoStockInput" class="form-input" 
+                                placeholder="0.00" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-map-marker-alt"></i> Zona
+                            </label>
+                            <input type="text" id="nuevaZonaInput" class="form-input" 
+                                placeholder="Ej: A1, B2, Bodega...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-exclamation-triangle"></i> Stock Mínimo
+                            </label>
+                            <input type="number" id="nuevoStockMinimoInput" class="form-input" 
+                                placeholder="0" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label class="form-label">
+                            <i class="fas fa-truck"></i> Proveedor
+                        </label>
+                        <select id="nuevoProveedorIdInput" class="form-input">
+                            <option value="">Sin Proveedor</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="utilidades-modal-actions">
+                    <button class="btn-utilidades-cancelar" onclick="cerrarModalActualizarInventario()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button class="btn-utilidades-confirmar" onclick="confirmarActualizacionInventario()">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirm Personalizado -->
+    <div id="utilidadesConfirmModal" class="utilidades-modal-overlay">
+        <div class="utilidades-modal-container utilidades-confirm-modal" style="max-width: 450px;">
+            <div class="utilidades-modal-header confirm-header">
+                <h2><i class="fas fa-question-circle"></i> Confirmar Actualización</h2>
+            </div>
+            <div class="utilidades-modal-content">
+                <div class="confirm-message" id="utilidadesConfirmMessage">
+                    <!-- Contenido dinámico -->
+                </div>
+                <div class="utilidades-modal-actions">
+                    <button class="btn-utilidades-cancelar" onclick="cancelarConfirmacion()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button class="btn-utilidades-confirmar" id="btnEjecutarActualizacion" onclick="ejecutarActualizacion()">
+                        <i class="fas fa-check"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALES DE PROVEEDORES -->
+    
+    <!-- Modal de Búsqueda de Proveedor -->
+    <div id="modalBuscarProveedorUtilidades" class="utilidades-modal-overlay">
+        <div class="utilidades-modal-container" style="max-width: 650px;">
+            <div class="utilidades-modal-header">
+                <h2><i class="fas fa-truck"></i> Seleccionar Proveedor</h2>
+                <button class="utilidades-modal-close" onclick="cerrarModalBuscarProveedor()">&times;</button>
+            </div>
+            <div class="utilidades-modal-content">
+                <div class="form-group">
+                    <label class="form-label">Nombre de la Empresa o Código</label>
+                    <input type="text" id="utilidadesSearchProveedorInput" class="form-input"
+                        placeholder="Escribe el nombre de la empresa..." autocomplete="off">
+                </div>
+                
+                <div class="botonera-alfabetica" id="botoneraAlfabetica">
+                    <!-- Generado por JS -->
+                </div>
+
+                <div id="utilidadesProveedorResults" class="utilidades-search-results">
+                    <div style="text-align: center; padding: 20px; color: #999;">
+                        Busca por nombre o usa la botonera
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Actualizar Proveedor -->
+    <div id="modalActualizarProveedor" class="utilidades-modal-overlay">
+        <!-- ... existing code ... -->
+    </div>
+
+    <!-- MODAL DE REPORTES -->
+    <div id="modalReportesUtilidades" class="utilidades-modal-overlay">
+        <div class="utilidades-modal-container" style="max-width: 550px;">
+            <div class="utilidades-modal-header" style="background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);">
+                <h2><i class="fas fa-file-chart-line"></i> Reportes del Sistema</h2>
+                <button class="utilidades-modal-close" onclick="cerrarModalReportes()">&times;</button>
+            </div>
+            <div class="utilidades-modal-content">
+                <div class="reportes-filtros" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 12px; border: 1px solid #e9ecef;">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-calendar-day"></i> Seleccionar Mes</label>
+                        <select id="reporteMesSelect" class="form-input">
+                            <option value="0">Enero</option>
+                            <option value="1">Febrero</option>
+                            <option value="2">Marzo</option>
+                            <option value="3">Abril</option>
+                            <option value="4">Mayo</option>
+                            <option value="5">Junio</option>
+                            <option value="6">Julio</option>
+                            <option value="7">Agosto</option>
+                            <option value="8">Septiembre</option>
+                            <option value="9">Octubre</option>
+                            <option value="10">Noviembre</option>
+                            <option value="11">Diciembre</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-calendar-alt"></i> Seleccionar Año</label>
+                        <select id="reporteAnioSelect" class="form-input">
+                            <!-- Se poblará dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="reportes-grid">
+                    <div class="reporte-opcion" onclick="generarReporteVentasMes()">
+                        <div class="reporte-opcion-icon" style="background: #e3f2fd; color: #1976d2;">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="reporte-opcion-info">
+                            <h4>Ventas Consolidadas</h4>
+                            <p>Generar reporte PDF con los datos del periodo seleccionado.</p>
+                        </div>
+                        <div class="reporte-opcion-action">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="utilidades-modal-actions">
+                    <button class="btn-utilidades-cancelar" onclick="cerrarModalReportes()">
+                        <i class="fas fa-times"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="utilidades-container">
+        <div class="utilidades-header">
+            <h2><i class="fas fa-tools"></i> Utilidades</h2>
+            <p>Herramientas de gestión y mantenimiento del sistema</p>
+        </div>
+
+        <div class="utilidades-gallery">
+            <!-- Botón Actualizar Inventario -->
+            <div class="utilidad-card" onclick="abrirActualizarInventario()">
+                <div class="utilidad-icon">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+                <div class="utilidad-info">
+                    <h3>Actualizar Inventario</h3>
+                    <p>Modifica stock, zona y stock mínimo de productos</p>
+                </div>
+                <div class="utilidad-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <!-- Botón Actualizar Proveedores -->
+            <div class="utilidad-card" onclick="abrirActualizarProveedores()">
+                <div class="utilidad-icon" style="background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="utilidad-info">
+                    <h3>Actualizar Proveedores</h3>
+                    <p>Modifica vendedor y contacto de los proveedores</p>
+                </div>
+                <div class="utilidad-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <!-- Botón Reportes -->
+            <div class="utilidad-card clickable" onclick="abrirReportes()">
+                <div class="utilidad-icon" style="background: linear-gradient(135deg, #FF512F 0%, #DD2476 100%);">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <div class="utilidad-info">
+                    <h3>Reportes PDF</h3>
+                    <p>Genera reportes de ventas mensuales organizados por proveedor y productos.</p>
+                </div>
+                <div class="utilidad-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <!-- Botón Ir a Contabilidad -->
+            <div class="utilidad-card clickable" onclick="window.open('https://contabilidad.ferrisoluciones.com', '_blank')">
+                <div class="utilidad-icon" style="background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <div class="utilidad-info">
+                    <h3>Ir a contabilidad</h3>
+                    <p>Accede al sistema contable externo de Ferrisoluciones.</p>
+                </div>
+                <div class="utilidad-arrow">
+                    <i class="fas fa-external-link-alt"></i>
+                </div>
+            </div>
+
+            <!-- Aquí se pueden agregar más utilidades en el futuro -->
+        </div>
+    </div>
+</div>
+
+<style>
+    /* =====================================================
+       ESTILOS ADICIONALES
+       ===================================================== */
+    
+    .botonera-alfabetica {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 20px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        justify-content: center;
+    }
+
+    .btn-letra {
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: #495057;
+    }
+
+    .btn-letra:hover {
+        background: #d4a017;
+        color: white;
+        border-color: #d4a017;
+        transform: translateY(-2px);
+    }
+
+    .btn-letra.active {
+        background: #d4a017;
+        color: white;
+        border-color: #d4a017;
+    }
+
+    .utilidades-search-results-prov {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .prov-item {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .prov-item:hover {
+        background: #f0f7ff;
+    }
+
+    .prov-item-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+
+    .prov-empresa {
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+    .prov-codigo {
+        font-size: 0.85em;
+        color: #666;
+    }
+
+    .prov-meta {
+        display: flex;
+        gap: 15px;
+        font-size: 0.85em;
+        color: #777;
+    }
+
+    .prov-meta span i {
+        color: #2196F3;
+        margin-right: 5px;
+    }
+
+    /* =====================================================
+       ESTILOS GENERALES DE UTILIDADES
+       ===================================================== */
+    
+    .utilidades-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .utilidades-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+    }
+
+    .utilidades-header h2 {
+        font-size: 2em;
+        color: #1a1a1a;
+        margin-bottom: 10px;
+    }
+
+    .utilidades-header h2 i {
+        color: #d4a017;
+        margin-right: 10px;
+    }
+
+    .utilidades-header p {
+        color: #666;
+        font-size: 1.1em;
+    }
+
+    /* =====================================================
+       GALERÍA DE UTILIDADES
+       ===================================================== */
+
+    .utilidades-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        padding: 10px;
+    }
+
+    .utilidad-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid #e0e0e0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .utilidad-card:hover {
+        border-color: #d4a017;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(212, 160, 23, 0.2);
+    }
+
+    .utilidad-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #d4a017 0%, #f5c842 100%);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .utilidad-icon i {
+        font-size: 1.8em;
+        color: white;
+    }
+
+    .utilidad-info {
+        flex: 1;
+    }
+
+    .utilidad-info h3 {
+        font-size: 1.2em;
+        color: #1a1a1a;
+        margin-bottom: 5px;
+    }
+
+    .utilidad-info p {
+        color: #666;
+        font-size: 0.9em;
+        margin: 0;
+    }
+
+    .utilidad-arrow {
+        color: #ccc;
+        font-size: 1.2em;
+        transition: all 0.3s ease;
+    }
+
+    .utilidad-card:hover .utilidad-arrow {
+        color: #d4a017;
+        transform: translateX(5px);
+    }
+
+    /* =====================================================
+       SCREEN BLOCKER
+       ===================================================== */
+
+    .utilidades-screen-blocker {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 999999;
+    }
+
+    .utilidades-screen-blocker.active {
+        display: flex;
+    }
+
+    .utilidades-blocker-content {
+        text-align: center;
+        color: white;
+    }
+
+    .utilidades-blocker-content i {
+        font-size: 3em;
+        color: #d4a017;
+        margin-bottom: 20px;
+    }
+
+    .utilidades-blocker-content p {
+        font-size: 1.2em;
+        margin: 0;
+    }
+
+    /* =====================================================
+       MODALES DE UTILIDADES
+       ===================================================== */
+
+    .utilidades-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 99998;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    #utilidadesConfirmModal {
+        z-index: 99999; /* Por encima de los otros modales */
+    }
+
+    .utilidades-modal-overlay.active {
+        display: flex;
+        opacity: 1;
+    }
+
+    .utilidades-modal-container {
+        background: white;
+        border-radius: 20px;
+        width: 90%;
+        max-height: 90vh;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+    }
+
+    .utilidades-modal-overlay.active .utilidades-modal-container {
+        transform: scale(1);
+    }
+
+    .utilidades-modal-header {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        color: white;
+        padding: 20px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .utilidades-modal-header h2 {
+        margin: 0;
+        font-size: 1.3em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .utilidades-modal-header h2 i {
+        color: #d4a017;
+    }
+
+    .utilidades-modal-close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 2em;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        transition: all 0.2s ease;
+    }
+
+    .utilidades-modal-close:hover {
+        color: #d4a017;
+        transform: scale(1.1);
+    }
+
+    .utilidades-modal-content {
+        padding: 25px;
+        max-height: calc(90vh - 80px);
+        overflow-y: auto;
+    }
+
+    /* =====================================================
+       BÚSQUEDA DE PRODUCTOS
+       ===================================================== */
+
+    .utilidades-search-results {
+        max-height: 350px;
+        overflow-y: auto;
+        margin-top: 15px;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .utilidades-search-item {
+        padding: 15px;
+        border-bottom: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .utilidades-search-item:last-child {
+        border-bottom: none;
+    }
+
+    .utilidades-search-item:hover {
+        background: #f8f9fa;
+        padding-left: 20px;
+    }
+
+    .utilidades-search-item.selected {
+        background: #fff8e1;
+        border-left: 4px solid #d4a017;
+    }
+
+    .utilidades-search-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+    }
+
+    .utilidades-search-item-name {
+        font-weight: 600;
+        color: #1a1a1a;
+        font-size: 1em;
+    }
+
+    .utilidades-search-item-stock {
+        color: #28a745;
+        font-weight: 600;
+        font-size: 0.95em;
+    }
+
+    .utilidades-search-item-stock.bajo {
+        color: #dc3545;
+    }
+
+    .utilidades-search-item-meta {
+        display: flex;
+        gap: 15px;
+        font-size: 0.85em;
+        color: #666;
+    }
+
+    .utilidades-search-item-meta span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .badge-zona-util {
+        background: #e9ecef;
+        color: #495057;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75em;
+        font-weight: 600;
+    }
+
+    /* =====================================================
+       CARD DE PRODUCTO
+       ===================================================== */
+
+    .producto-info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 20px;
+        color: white;
+        margin-bottom: 25px;
+    }
+
+    .producto-info-header {
+        text-align: center;
+    }
+
+    .producto-codigo {
+        font-size: 0.9em;
+        opacity: 0.9;
+        margin-bottom: 5px;
+    }
+
+    .producto-nombre {
+        font-size: 1.3em;
+        font-weight: 600;
+    }
+
+    /* =====================================================
+       FORMULARIO DE ACTUALIZACIÓN
+       ===================================================== */
+
+    .actualizar-form {
+        margin-bottom: 20px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .form-label i {
+        color: #d4a017;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1em;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #d4a017;
+        box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.1);
+    }
+
+    .readonly-input {
+        background: #f5f5f5;
+        color: #666;
+        cursor: not-allowed;
+    }
+
+    /* =====================================================
+       BOTONES DE ACCIÓN
+       ===================================================== */
+
+    .utilidades-modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+
+    .btn-utilidades-cancelar,
+    .btn-utilidades-confirmar {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 10px;
+        font-size: 1em;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-utilidades-cancelar {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-utilidades-cancelar:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+
+    .btn-utilidades-confirmar {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+
+    .btn-utilidades-confirmar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    /* =====================================================
+       MODAL DE CONFIRMACIÓN
+       ===================================================== */
+
+    .confirm-header {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%) !important;
+    }
+
+    .confirm-message {
+        background: #fff8e1;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 10px;
+    }
+
+    .confirm-message h4 {
+        margin: 0 0 15px 0;
+        color: #e65100;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .confirm-changes {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .confirm-changes li {
+        padding: 10px 15px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .confirm-changes li:last-child {
+        margin-bottom: 0;
+    }
+
+    .change-label {
+        font-weight: 500;
+        color: #666;
+    }
+
+    .change-value {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .old-value {
+        color: #dc3545;
+        text-decoration: line-through;
+        font-size: 0.9em;
+    }
+
+    .new-value {
+        color: #28a745;
+        font-weight: 600;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 600px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .utilidades-gallery {
+            grid-template-columns: 1fr;
+        }
+
+        .utilidad-card {
+            padding: 18px;
+        }
+
+        .utilidad-icon {
+            width: 50px;
+            height: 50px;
+        }
+
+        .utilidad-icon i {
+            font-size: 1.4em;
+        }
+
+        .utilidades-modal-actions {
+            flex-direction: column;
+        }
+
+        .btn-utilidades-cancelar,
+        .btn-utilidades-confirmar {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* =====================================================
+       ESTILOS ESPECÍFICOS DE REPORTES
+       ===================================================== */
+    
+    .reportes-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .reporte-opcion {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        gap: 15px;
+    }
+
+    .reporte-opcion:hover {
+        border-color: #4b6cb7;
+        background: #f1f4f9;
+        transform: translateX(5px);
+    }
+
+    .reporte-opcion-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3em;
+        flex-shrink: 0;
+    }
+
+    .reporte-opcion-info {
+        flex: 1;
+    }
+
+    .reporte-opcion-info h4 {
+        margin: 0 0 3px 0;
+        color: #1a1a1a;
+        font-size: 1.1em;
+    }
+
+    .reporte-opcion-info p {
+        margin: 0;
+        font-size: 0.85em;
+        color: #666;
+        line-height: 1.4;
+    }
+
+    .reporte-opcion-action {
+        color: #adb5bd;
+        font-size: 1.1em;
+    }
+
+    .reporte-opcion:hover .reporte-opcion-action {
+        color: #4b6cb7;
+    }
+</style>
+
+<script>
+    // =====================================================
+    // UTILIDADES - Módulo de herramientas del sistema
+    // =====================================================
+
+    // Estado del módulo de utilidades
+    let utilidadesState = {
+        // Inventario
+        productoSeleccionado: null,
+        busquedaResultados: [],
+        busquedaSeleccionado: -1,
+        pendienteActualizacion: null,
+        
+        // Proveedores
+        proveedorSeleccionado: null,
+        busquedaProvResultados: [],
+        letraSeleccionada: null,
+        tipoOperacion: null // 'INVENTARIO' o 'PROVEEDOR'
+    };
+
+    // Cache del inventario (reusamos el del punto de venta si existe)
+    let utilidadesInventarioCache = [];
+
+    // =====================================================
+    // INICIALIZACIÓN
+    // =====================================================
+
+    function initUtilidades() {
+        console.log('📦 Módulo Utilidades cargado');
+        
+        // Actualizar contador del navbar
+        if (window.app && window.app.updateNavbarCounter) {
+            window.app.updateNavbarCounter('utilidades');
+        }
+
+        // Configurar listeners de búsqueda
+        setupSearchListeners();
+        
+        // Generar botonera alfabética
+        generarBotoneraAlfabetica();
+
+        // Inicializar Reportes
+        initReportes();
+
+        // Cargar lista de proveedores para el select de inventario
+        cargarListaProveedores();
+    }
+
+    async function cargarListaProveedores() {
+        try {
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : (window.supabaseClient || null));
+            if (!db) return;
+
+            const { data, error } = await db
+                .from('ferre_proveedores')
+                .select('id, empresa')
+                .order('empresa');
+
+            if (error) throw error;
+            utilidadesState.listaProveedores = data || [];
+        } catch (error) {
+            console.error('Error al cargar proveedores:', error);
+        }
+    }
+
+    function initReportes() {
+        const mesSelect = document.getElementById('reporteMesSelect');
+        const anioSelect = document.getElementById('reporteAnioSelect');
+        if (!mesSelect || !anioSelect) return;
+
+        const ahora = new Date();
+        // Por defecto mes anterior
+        const fechaDefault = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+        
+        mesSelect.value = fechaDefault.getMonth();
+
+        // Poblar años: Desde 2024 hasta el actual + 1
+        const anioActual = ahora.getFullYear();
+        anioSelect.innerHTML = '';
+        for (let i = 2024; i <= anioActual + 1; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = i;
+            if (i === fechaDefault.getFullYear()) opt.selected = true;
+            anioSelect.appendChild(opt);
+        }
+    }
+
+    function generarBotoneraAlfabetica() {
+        const container = document.getElementById('botoneraAlfabetica');
+        if (!container) return;
+        
+        const letras = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
+        container.innerHTML = letras.map(l => `
+            <button class="btn-letra" onclick="filtrarPorLetra('${l}')">${l}</button>
+        `).join('');
+    }
+
+    function setupSearchListeners() {
+        // Buscador de productos
+        const searchInput = document.getElementById('utilidadesSearchInput');
+        if (searchInput) {
+            let debounceTimer;
+            searchInput.addEventListener('input', function(e) {
+                let valor = e.target.value;
+                clearTimeout(debounceTimer);
+                if (!valor || valor.trim().length === 0) {
+                    document.getElementById('utilidadesSearchResults').innerHTML = '';
+                    utilidadesState.busquedaResultados = [];
+                    utilidadesState.busquedaSeleccionado = -1;
+                    return;
+                }
+                utilidadesState.busquedaSeleccionado = -1;
+                debounceTimer = setTimeout(() => buscarProductosUtilidades(valor), 150);
+            });
+
+            searchInput.addEventListener('keydown', function(e) {
+                const resultados = utilidadesState.busquedaResultados;
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (utilidadesState.busquedaSeleccionado < resultados.length - 1) {
+                        utilidadesState.busquedaSeleccionado++;
+                        actualizarSeleccionBusqueda();
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (utilidadesState.busquedaSeleccionado > 0) {
+                        utilidadesState.busquedaSeleccionado--;
+                        actualizarSeleccionBusqueda();
+                    }
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (utilidadesState.busquedaSeleccionado >= 0 && resultados[utilidadesState.busquedaSeleccionado]) {
+                        seleccionarProductoParaActualizar(resultados[utilidadesState.busquedaSeleccionado]);
+                    }
+                }
+            });
+        }
+
+        // Buscador de proveedores
+        const searchProvInput = document.getElementById('utilidadesSearchProveedorInput');
+        if (searchProvInput) {
+            let debounceTimerProv;
+            searchProvInput.addEventListener('input', function(e) {
+                let valor = e.target.value;
+                clearTimeout(debounceTimerProv);
+                
+                // Desmarcar letra si escribe
+                if (valor.trim().length > 0) {
+                    utilidadesState.letraSeleccionada = null;
+                    document.querySelectorAll('.btn-letra').forEach(b => b.classList.remove('active'));
+                }
+
+                if (!valor || valor.trim().length === 0) {
+                    if (!utilidadesState.letraSeleccionada) {
+                        document.getElementById('utilidadesProveedorResults').innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">Busca por nombre o usa la botonera</div>';
+                        utilidadesState.busquedaProvResultados = [];
+                    }
+                    return;
+                }
+                debounceTimerProv = setTimeout(() => buscarProveedoresUtilidades(valor), 250);
+            });
+        }
+    }
+
+    // =====================================================
+    // BÚSQUEDA DE PRODUCTOS
+    // =====================================================
+
+    async function buscarProductosUtilidades(query) {
+        if (!query || query.trim().length < 2) {
+            document.getElementById('utilidadesSearchResults').innerHTML = '';
+            return;
+        }
+
+        try {
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
+            
+            if (!db) {
+                console.error('Base de datos no disponible');
+                return;
+            }
+
+            // Intentar usar caché primero
+            if (window.inventarioCache && window.inventarioCache.productos && window.inventarioCache.productos.length > 0) {
+                const resultados = buscarEnCacheUtilidades(query);
+                mostrarResultadosBusquedaUtilidades(resultados);
+                return;
+            }
+
+            // Fallback: buscar en BD
+            const palabras = query.trim().split(/\s+/).filter(p => p.length > 0);
+            let queryBuilder = db.from('ferre_inventario').select('*');
+
+            const esNumerico = /^\d+$/.test(query.trim());
+            const longitudNumeros = query.trim().length;
+
+            if (esNumerico && longitudNumeros >= 4) {
+                queryBuilder = queryBuilder.ilike('codigo', `${query.trim()}%`);
+            } else if (palabras.length === 1) {
+                const searchPattern = `%${palabras[0]}%`;
+                queryBuilder = queryBuilder.or(`codigo.ilike.${searchPattern},producto.ilike.${searchPattern}`);
+            } else {
+                palabras.forEach(palabra => {
+                    queryBuilder = queryBuilder.ilike('producto', `%${palabra}%`);
+                });
+            }
+
+            const { data, error } = await queryBuilder.limit(30);
+
+            if (error) throw error;
+
+            mostrarResultadosBusquedaUtilidades(data || []);
+
+        } catch (error) {
+            console.error('Error en búsqueda:', error);
+            if (window.app && window.app.showToast) {
+                window.app.showToast('Error al buscar productos', 'danger');
+            }
+        }
+    }
+
+    function buscarEnCacheUtilidades(query) {
+        const productos = window.inventarioCache.productos;
+        const queryLower = query.toLowerCase().trim();
+        const palabras = queryLower.split(/\s+/).filter(p => p.length > 0);
+
+        let resultados = productos.filter(p => {
+            const codigo = (p.codigo || '').toLowerCase();
+            const nombre = (p.producto || '').toLowerCase();
+
+            // Búsqueda por código exacto
+            if (codigo === queryLower || codigo.startsWith(queryLower)) {
+                return true;
+            }
+
+            // Búsqueda por palabras en el nombre
+            return palabras.every(palabra => nombre.includes(palabra));
+        });
+
+        // Limitar resultados
+        return resultados.slice(0, 30);
+    }
+
+    function mostrarResultadosBusquedaUtilidades(productos) {
+        const container = document.getElementById('utilidadesSearchResults');
+        utilidadesState.busquedaResultados = productos || [];
+
+        if (!productos || productos.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 30px; color: #999;"><i class="fas fa-search" style="font-size: 2em; margin-bottom: 10px; display: block;"></i>No se encontraron productos</div>';
+            return;
+        }
+
+        if (utilidadesState.busquedaSeleccionado === -1) {
+            utilidadesState.busquedaSeleccionado = 0;
+        }
+
+        container.innerHTML = productos.map((p, index) => {
+            const isSelected = index === utilidadesState.busquedaSeleccionado;
+            const stockBajo = p.stock < 10;
+            return `
+                <div class="utilidades-search-item ${isSelected ? 'selected' : ''}" 
+                     onclick="seleccionarProductoParaActualizar(utilidadesState.busquedaResultados[${index}])"
+                     data-index="${index}">
+                    <div class="utilidades-search-item-header">
+                        <span class="utilidades-search-item-name">${p.producto}</span>
+                        <span class="utilidades-search-item-stock ${stockBajo ? 'bajo' : ''}">
+                            Stock: ${p.stock} ${p.unidad_paquete || 'und'}
+                        </span>
+                    </div>
+                    <div class="utilidades-search-item-meta">
+                        <span><i class="fas fa-barcode"></i> ${p.codigo}</span>
+                        ${p.zona ? `<span class="badge-zona-util">ZONA: ${p.zona}</span>` : ''}
+                        ${p.stock_minimo ? `<span><i class="fas fa-exclamation-triangle"></i> Mín: ${p.stock_minimo}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function actualizarSeleccionBusqueda() {
+        const items = document.querySelectorAll('.utilidades-search-item');
+        items.forEach((item, index) => {
+            if (index === utilidadesState.busquedaSeleccionado) {
+                item.classList.add('selected');
+                item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    // =====================================================
+    // FLUJO DE ACTUALIZAR PROVEEDORES
+    // =====================================================
+
+    function abrirActualizarProveedores() {
+        utilidadesState.proveedorSeleccionado = null;
+        utilidadesState.busquedaProvResultados = [];
+        utilidadesState.letraSeleccionada = null;
+        utilidadesState.tipoOperacion = 'PROVEEDOR';
+
+        const searchInput = document.getElementById('utilidadesSearchProveedorInput');
+        if (searchInput) searchInput.value = '';
+        
+        document.getElementById('utilidadesProveedorResults').innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">Busca por nombre o usa la botonera</div>';
+        
+        // Reset botones letras
+        document.querySelectorAll('.btn-letra').forEach(b => b.classList.remove('active'));
+
+        document.getElementById('modalBuscarProveedorUtilidades').classList.add('active');
+        setTimeout(() => searchInput.focus(), 150);
+    }
+
+    function cerrarModalBuscarProveedor() {
+        document.getElementById('modalBuscarProveedorUtilidades').classList.remove('active');
+    }
+
+    async function buscarProveedoresUtilidades(query) {
+        try {
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
+            let q = db.from('ferre_proveedores').select('*');
+            
+            if (query.length === 1 && /^[A-ZÑ]$/i.test(query)) {
+                q = q.ilike('empresa', `${query}%`);
+            } else {
+                q = q.or(`empresa.ilike.%${query}%,codigo.ilike.%${query}%`);
+            }
+
+            const { data, error } = await q.order('empresa', { ascending: true }).limit(50);
+            if (error) throw error;
+            mostrarResultadosProveedores(data);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    function filtrarPorLetra(letra) {
+        utilidadesState.letraSeleccionada = letra;
+        utilidadesState.busquedaProvResultados = [];
+        
+        document.querySelectorAll('.btn-letra').forEach(b => {
+            if (b.textContent === letra) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+
+        const searchInput = document.getElementById('utilidadesSearchProveedorInput');
+        if (searchInput) searchInput.value = '';
+
+        buscarProveedoresUtilidades(letra);
+    }
+
+    function mostrarResultadosProveedores(data) {
+        const container = document.getElementById('utilidadesProveedorResults');
+        utilidadesState.busquedaProvResultados = data || [];
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">No se encontraron proveedores</div>';
+            return;
+        }
+
+        container.innerHTML = `<div class="utilidades-search-results-prov">
+            ${data.map((p, index) => `
+                <div class="prov-item" onclick="seleccionarProveedorParaActualizar(utilidadesState.busquedaProvResultados[${index}])">
+                    <div class="prov-item-header">
+                        <span class="prov-empresa">${p.empresa}</span>
+                        <span class="prov-codigo">${p.codigo}</span>
+                    </div>
+                    <div class="prov-meta">
+                        <span><i class="fas fa-user-tie"></i> ${p.vendedor || 'No asignado'}</span>
+                        <span><i class="fas fa-phone"></i> ${p.contacto || 'No asignado'}</span>
+                    </div>
+                </div>
+            `).join('')}
+        </div>`;
+    }
+
+    function seleccionarProveedorParaActualizar(proveedor) {
+        if (!proveedor) return;
+        utilidadesState.proveedorSeleccionado = proveedor;
+        cerrarModalBuscarProveedor();
+
+        document.getElementById('proveedorCodigoInfo').textContent = `Código: ${proveedor.codigo}`;
+        document.getElementById('proveedorEmpresaInfo').textContent = proveedor.empresa;
+        document.getElementById('vendedorActualDisplay').value = proveedor.vendedor || 'Sin vendedor';
+        document.getElementById('nuevoVendedorInput').value = proveedor.vendedor || '';
+        document.getElementById('nuevoContactoInput').value = proveedor.contacto || '';
+
+        document.getElementById('modalActualizarProveedor').classList.add('active');
+        setTimeout(() => document.getElementById('nuevoVendedorInput').focus(), 150);
+    }
+
+    function cerrarModalActualizarProveedor() {
+        document.getElementById('modalActualizarProveedor').classList.remove('active');
+    }
+
+    function confirmarActualizacionProveedor() {
+        const prov = utilidadesState.proveedorSeleccionado;
+        const nuevoVendedor = document.getElementById('nuevoVendedorInput').value.trim();
+        const nuevoContacto = document.getElementById('nuevoContactoInput').value.trim();
+
+        if (nuevoVendedor === (prov.vendedor || '') && nuevoContacto === (prov.contacto || '')) {
+            window.app.showToast('No hay cambios detectados', 'warning');
+            return;
+        }
+
+        utilidadesState.pendienteActualizacion = {
+            id: prov.id,
+            empresa: prov.empresa,
+            cambios: {
+                vendedor: { anterior: prov.vendedor || '(vacío)', nuevo: nuevoVendedor || '(vacío)' },
+                contacto: { anterior: prov.contacto || '(vacío)', nuevo: nuevoContacto || '(vacío)' }
+            }
+        };
+
+        let html = `
+            <h4><i class="fas fa-truck"></i> Actualizar: ${prov.empresa}</h4>
+            <ul class="confirm-changes">
+                <li>
+                    <span class="change-label">Vendedor</span>
+                    <span class="change-value">
+                        <span class="old-value">${prov.vendedor || '-'}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="new-value">${nuevoVendedor || '-'}</span>
+                    </span>
+                </li>
+                <li>
+                    <span class="change-label">Contacto</span>
+                    <span class="change-value">
+                        <span class="old-value">${prov.contacto || '-'}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="new-value">${nuevoContacto || '-'}</span>
+                    </span>
+                </li>
+            </ul>
+        `;
+
+        document.getElementById('utilidadesConfirmMessage').innerHTML = html;
+        document.getElementById('btnEjecutarActualizacion').onclick = ejecutarActualizacionProveedor; 
+        document.getElementById('utilidadesConfirmModal').classList.add('active');
+    }
+
+    async function ejecutarActualizacionProveedor() {
+        const pending = utilidadesState.pendienteActualizacion;
+        document.getElementById('utilidadesConfirmModal').classList.remove('active');
+        mostrarScreenBlocker('Actualizando proveedor...');
+
+        try {
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
+            const { error } = await db.from('ferre_proveedores').update({
+                vendedor: pending.cambios.vendedor.nuevo === '(vacío)' ? null : pending.cambios.vendedor.nuevo,
+                contacto: pending.cambios.contacto.nuevo === '(vacío)' ? null : pending.cambios.contacto.nuevo
+            }).eq('id', pending.id);
+
+            if (error) throw error;
+
+            ocultarScreenBlocker();
+            cerrarModalActualizarProveedor();
+            window.app.showToast('Proveedor actualizado con éxito', 'success');
+        } catch (error) {
+            ocultarScreenBlocker();
+            window.app.showToast('Error al actualizar proveedor: ' + error.message, 'danger');
+        }
+    }
+
+    // =====================================================
+    // FLUJO DE ACTUALIZAR INVENTARIO
+    // =====================================================
+
+    function abrirActualizarInventario() {
+        // Limpiar estado anterior
+        utilidadesState.productoSeleccionado = null;
+        utilidadesState.busquedaResultados = [];
+        utilidadesState.busquedaSeleccionado = -1;
+        utilidadesState.tipoOperacion = 'INVENTARIO';
+
+        // Limpiar campo de búsqueda
+        const searchInput = document.getElementById('utilidadesSearchInput');
+        if (searchInput) searchInput.value = '';
+        document.getElementById('utilidadesSearchResults').innerHTML = '';
+
+        // Mostrar modal de búsqueda
+        const modal = document.getElementById('modalBuscarProductoUtilidades');
+        modal.classList.add('active');
+
+        // Enfocar input de búsqueda
+        setTimeout(() => {
+            searchInput.focus();
+        }, 150);
+    }
+
+    function cerrarModalBuscarProducto() {
+        document.getElementById('modalBuscarProductoUtilidades').classList.remove('active');
+    }
+
+    function seleccionarProductoParaActualizar(producto) {
+        if (!producto) return;
+
+        utilidadesState.productoSeleccionado = producto;
+
+        // Cerrar modal de búsqueda
+        cerrarModalBuscarProducto();
+
+        // Llenar datos en el modal de actualización
+        document.getElementById('productoCodigoInfo').textContent = `Código: ${producto.codigo}`;
+        document.getElementById('productoNombreInfo').textContent = producto.producto;
+        document.getElementById('stockActualDisplay').value = `${producto.stock} ${producto.unidad_paquete || 'und'}`;
+        document.getElementById('nuevoStockInput').value = producto.stock || 0;
+        document.getElementById('nuevaZonaInput').value = producto.zona || '';
+        document.getElementById('nuevoStockMinimoInput').value = producto.stock_minimo || '';
+
+        // Poblar select de proveedores
+        const provSelect = document.getElementById('nuevoProveedorIdInput');
+        if (provSelect) {
+            provSelect.innerHTML = '<option value="">Sin Proveedor</option>';
+            if (utilidadesState.listaProveedores) {
+                utilidadesState.listaProveedores.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.empresa;
+                    if (p.id === producto.proveedor_id) opt.selected = true;
+                    provSelect.appendChild(opt);
+                });
+            }
+        }
+
+        // Mostrar modal de actualización
+        const modal = document.getElementById('modalActualizarInventario');
+        modal.classList.add('active');
+
+        // Enfocar el input de nuevo stock
+        setTimeout(() => {
+            document.getElementById('nuevoStockInput').focus();
+            document.getElementById('nuevoStockInput').select();
+        }, 150);
+    }
+
+    function cerrarModalActualizarInventario() {
+        document.getElementById('modalActualizarInventario').classList.remove('active');
+        utilidadesState.productoSeleccionado = null;
+    }
+
+    // =====================================================
+    // CONFIRMACIÓN Y ACTUALIZACIÓN
+    // =====================================================
+
+    function confirmarActualizacionInventario() {
+        const producto = utilidadesState.productoSeleccionado;
+        if (!producto) return;
+
+        const nuevoStock = parseFloat(document.getElementById('nuevoStockInput').value) || 0;
+        const nuevaZona = document.getElementById('nuevaZonaInput').value.trim();
+        const nuevoStockMinimo = parseFloat(document.getElementById('nuevoStockMinimoInput').value) || 0;
+        const nuevoProvId = document.getElementById('nuevoProveedorIdInput').value;
+
+        // Validar que hay al menos un cambio
+        const stockCambio = nuevoStock !== producto.stock;
+        const zonaCambio = nuevaZona !== (producto.zona || '');
+        const stockMinimoCambio = nuevoStockMinimo !== (producto.stock_minimo || 0);
+        const provCambio = nuevoProvId !== (producto.proveedor_id ? producto.proveedor_id.toString() : '');
+
+        if (!stockCambio && !zonaCambio && !stockMinimoCambio && !provCambio) {
+            if (window.app && window.app.showToast) {
+                window.app.showToast('No hay cambios que guardar', 'warning');
+            }
+            return;
+        }
+
+        // Guardar datos pendientes
+        utilidadesState.pendienteActualizacion = {
+            codigo: producto.codigo,
+            producto: producto.producto,
+            cambios: {
+                stock: stockCambio ? { anterior: producto.stock, nuevo: nuevoStock } : null,
+                zona: zonaCambio ? { anterior: producto.zona || '-', nuevo: nuevaZona || '-' } : null,
+                stock_minimo: stockMinimoCambio ? { anterior: producto.stock_minimo || 0, nuevo: nuevoStockMinimo } : null,
+                proveedor_id: provCambio ? { anterior: producto.proveedor_id, nuevo: nuevoProvId || null } : null
+            }
+        };
+
+        // Construir mensaje de confirmación
+        let changesHtml = `
+            <h4><i class="fas fa-info-circle"></i> Se actualizará: ${producto.producto}</h4>
+            <ul class="confirm-changes">
+        `;
+
+        if (stockCambio) {
+            changesHtml += `
+                <li>
+                    <span class="change-label">Stock</span>
+                    <span class="change-value">
+                        <span class="old-value">${producto.stock}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="new-value">${nuevoStock}</span>
+                    </span>
+                </li>
+            `;
+        }
+
+        if (zonaCambio) {
+            changesHtml += `
+                <li>
+                    <span class="change-label">Zona</span>
+                    <span class="change-value">
+                        <span class="old-value">${producto.zona || '-'}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="new-value">${nuevaZona || '-'}</span>
+                    </span>
+                </li>
+            `;
+        }
+
+        if (stockMinimoCambio) {
+            changesHtml += `
+                <li>
+                    <span class="change-label">Stock Mínimo</span>
+                    <span class="change-value">
+                        <span class="old-value">${producto.stock_minimo || 0}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="new-value">${nuevoStockMinimo}</span>
+                    </span>
+                </li>
+            `;
+        }
+
+        if (provCambio) {
+            const oldProv = utilidadesState.listaProveedores.find(p => p.id == producto.proveedor_id)?.empresa || 'Sin Proveedor';
+            const newProv = utilidadesState.listaProveedores.find(p => p.id == nuevoProvId)?.empresa || 'Sin Proveedor';
+            changesHtml += `
+                <li>
+                    <span class="change-label">Proveedor</span>
+                    <span class="change-value">
+                        <span class="old-value">${oldProv}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="new-value">${newProv}</span>
+                    </span>
+                </li>
+            `;
+        }
+
+        changesHtml += '</ul>';
+
+        document.getElementById('utilidadesConfirmMessage').innerHTML = changesHtml;
+        document.getElementById('btnEjecutarActualizacion').onclick = ejecutarActualizacion; 
+        // Mostrar modal de confirmación
+        document.getElementById('utilidadesConfirmModal').classList.add('active');
+    }
+
+    function cancelarConfirmacion() {
+        document.getElementById('utilidadesConfirmModal').classList.remove('active');
+        utilidadesState.pendienteActualizacion = null;
+    }
+
+    async function ejecutarActualizacion() {
+        const pendiente = utilidadesState.pendienteActualizacion;
+        if (!pendiente) return;
+
+        // Cerrar modal de confirmación
+        document.getElementById('utilidadesConfirmModal').classList.remove('active');
+
+        // Mostrar screen blocker
+        mostrarScreenBlocker('Actualizando inventario...');
+
+        try {
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
+            
+            if (!db) {
+                throw new Error('Base de datos no disponible');
+            }
+
+            // Construir objeto de actualización
+            const updateData = {};
+            
+            if (pendiente.cambios.stock) {
+                updateData.stock = pendiente.cambios.stock.nuevo;
+            }
+            if (pendiente.cambios.zona) {
+                updateData.zona = pendiente.cambios.zona.nuevo === '-' ? null : pendiente.cambios.zona.nuevo;
+            }
+            if (pendiente.cambios.stock_minimo) {
+                updateData.stock_minimo = pendiente.cambios.stock_minimo.nuevo;
+            }
+            if (pendiente.cambios.proveedor_id) {
+                updateData.proveedor_id = pendiente.cambios.proveedor_id.nuevo;
+            }
+
+            // Ejecutar actualización
+            const { data, error } = await db
+                .from('ferre_inventario')
+                .update(updateData)
+                .eq('codigo', pendiente.codigo)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Actualizar caché si existe
+            if (window.inventarioCache && window.inventarioCache.productos) {
+                const index = window.inventarioCache.productos.findIndex(p => p.codigo === pendiente.codigo);
+                if (index !== -1) {
+                    window.inventarioCache.productos[index] = { ...window.inventarioCache.productos[index], ...updateData };
+                }
+            }
+
+            // Ocultar screen blocker
+            ocultarScreenBlocker();
+
+            // Cerrar modal de actualización
+            cerrarModalActualizarInventario();
+
+            // Mostrar mensaje de éxito
+            if (window.app && window.app.showToast) {
+                window.app.showToast('<i class="fas fa-check-circle"></i> Inventario actualizado correctamente', 'success', 3000);
+            }
+
+            // Limpiar estado
+            utilidadesState.pendienteActualizacion = null;
+
+        } catch (error) {
+            console.error('Error al actualizar inventario:', error);
+            ocultarScreenBlocker();
+            
+            if (window.app && window.app.showToast) {
+                window.app.showToast('<i class="fas fa-exclamation-triangle"></i> Error al actualizar: ' + error.message, 'danger', 5000);
+            }
+        }
+    }
+
+    // =====================================================
+    // SCREEN BLOCKER
+    // =====================================================
+
+    function mostrarScreenBlocker(mensaje = 'Procesando...') {
+        const blocker = document.getElementById('utilidadesScreenBlocker');
+        const text = document.getElementById('utilidadesBlockerText');
+        if (text) text.textContent = mensaje;
+        if (blocker) blocker.classList.add('active');
+    }
+
+    function ocultarScreenBlocker() {
+        const blocker = document.getElementById('utilidadesScreenBlocker');
+        if (blocker) blocker.classList.remove('active');
+    }
+
+    // =====================================================
+    // REPORTES PDF
+    // =====================================================
+
+    function abrirReportes() {
+        document.getElementById('modalReportesUtilidades').classList.add('active');
+    }
+
+    function cerrarModalReportes() {
+        document.getElementById('modalReportesUtilidades').classList.remove('active');
+    }
+
+    async function generarReporteVentasMes() {
+        const mesSeleccionado = parseInt(document.getElementById('reporteMesSelect').value);
+        const anioSeleccionado = parseInt(document.getElementById('reporteAnioSelect').value);
+        
+        mostrarScreenBlocker('Preparando datos del reporte...');
+        
+        try {
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : (window.supabaseClient || null));
+            
+            if (!db) {
+                throw new Error('Base de datos no disponible. Por favor, recargue la página.');
+            }
+
+            // 1. Fechas del periodo seleccionado
+            const inicioMes = new Date(anioSeleccionado, mesSeleccionado, 1);
+            const finMes = new Date(anioSeleccionado, mesSeleccionado + 1, 0, 23, 59, 59);
+
+            // 2. Obtener Ventas
+            const { data: ventas, error: vError } = await db
+                .from('ferre_ventas')
+                .select('id, fecha_hora_venta')
+                .gte('fecha_hora_venta', inicioMes.toISOString())
+                .lte('fecha_hora_venta', finMes.toISOString());
+
+            if (vError) throw vError;
+            if (!ventas || ventas.length === 0) {
+                ocultarScreenBlocker();
+                const nombreMes = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(inicioMes);
+                if (window.app && window.app.showToast) {
+                    window.app.showToast(`<i class="fas fa-info-circle"></i> No hay ventas en ${nombreMes} ${anioSeleccionado}.`, 'info');
+                } else {
+                    alert(`No hay ventas registradas en ${nombreMes} ${anioSeleccionado}.`);
+                }
+                return;
+            }
+
+            mostrarScreenBlocker('Procesando detalles de ventas...');
+            const ventaIds = ventas.map(v => v.id);
+
+            // 3. Obtener Detalles (en chunks para evitar límites)
+            let detalles = [];
+            const chunkSize = 50; // Aumentado para mayor velocidad
+            for (let i = 0; i < ventaIds.length; i += chunkSize) {
+                const chunk = ventaIds.slice(i, i + chunkSize);
+                const { data: det, error: dError } = await db
+                    .from('ferre_ventas_detalle')
+                    .select('producto_id, cantidad, subtotal')
+                    .in('venta_id', chunk);
+                if (dError) throw dError;
+                if (det) detalles.push(...det);
+            }
+
+            mostrarScreenBlocker('Cruzando información de inventario...');
+            // 4. Obtener Información de Productos y Proveedores
+            const prodIds = [...new Set(detalles.map(d => d.producto_id))];
+            let productosInfo = {};
+            for (let i = 0; i < prodIds.length; i += chunkSize) {
+                const chunk = prodIds.slice(i, i + chunkSize);
+                const { data: prods, error: pError } = await db
+                    .from('ferre_inventario')
+                    .select('codigo, producto, proveedor_id')
+                    .in('codigo', chunk);
+                if (pError) throw pError;
+                if (prods) {
+                    prods.forEach(p => productosInfo[p.codigo] = p);
+                }
+            }
+
+            // 4.2. Obtener información de proveedores (con chunks para evitar URLs largas)
+            const provIds = [...new Set(Object.values(productosInfo).map(p => p.proveedor_id).filter(id => id))];
+            let proveedoresInfo = { "sin-proveedor": "Sin Proveedor" };
+            if (provIds.length > 0) {
+                const chunkSizeProv = 50; 
+                for (let i = 0; i < provIds.length; i += chunkSizeProv) {
+                    const chunk = provIds.slice(i, i + chunkSizeProv);
+                    const { data: provs, error: prError } = await db
+                        .from('ferre_proveedores')
+                        .select('id, empresa')
+                        .in('id', chunk);
+                    if (prError) throw prError;
+                    if (provs) {
+                        provs.forEach(p => proveedoresInfo[p.id] = p.empresa);
+                    }
+                }
+            }
+
+            // 5. Agrupar Datos
+            const dataAgrupada = {};
+            const generalRanking = {};
+            let totalGeneralMes = 0;
+
+            detalles.forEach(det => {
+                const prod = productosInfo[det.producto_id];
+                const provId = prod?.proveedor_id || "sin-proveedor";
+                const provNombre = proveedoresInfo[provId] || "Desconocido";
+
+                if (!dataAgrupada[provId]) {
+                    dataAgrupada[provId] = {
+                        nombre: provNombre,
+                        total: 0,
+                        productos: {}
+                    };
+                }
+
+                if (!dataAgrupada[provId].productos[det.producto_id]) {
+                    dataAgrupada[provId].productos[det.producto_id] = {
+                        nombre: prod?.producto || "Producto Desconocido",
+                        cant: 0,
+                        total: 0
+                    };
+                }
+
+                dataAgrupada[provId].productos[det.producto_id].cant += det.cantidad;
+                dataAgrupada[provId].productos[det.producto_id].total += det.subtotal;
+                dataAgrupada[provId].total += det.subtotal;
+                totalGeneralMes += det.subtotal;
+
+                // Global ranking
+                if (!generalRanking[det.producto_id]) {
+                    generalRanking[det.producto_id] = {
+                        nombre: prod?.producto || "Producto Desconocido",
+                        cant: 0,
+                        total: 0,
+                        proveedor: provNombre
+                    };
+                }
+                generalRanking[det.producto_id].cant += det.cantidad;
+                generalRanking[det.producto_id].total += det.subtotal;
+            });
+
+            mostrarScreenBlocker('Generando PDF...');
+            // 6. Generar PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const nombreMesStr = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(inicioMes).toUpperCase();
+            
+            // Branding y Encabezado
+            doc.setFillColor(24, 40, 72);
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            doc.setFontSize(22);
+            doc.setTextColor(255, 255, 255);
+            doc.text('FERRISOLUCIONES', 105, 18, { align: 'center' });
+            
+            doc.setFontSize(10);
+            doc.setTextColor(200, 200, 200);
+            doc.text('REPORTE CONSOLIDADO DE VENTAS', 105, 26, { align: 'center' });
+            doc.setFontSize(12);
+            doc.setTextColor(255, 255, 255);
+            doc.text(`${nombreMesStr} ${anioSeleccionado}`, 105, 34, { align: 'center' });
+
+            let currentY = 50;
+
+            // CUADRO RESUMEN TOTAL
+            doc.setFillColor(240, 240, 240);
+            doc.roundedRect(14, currentY, 182, 20, 3, 3, 'F');
+            doc.setFontSize(12);
+            doc.setTextColor(60);
+            doc.text('TOTAL VENTAS DEL PERIODO:', 20, currentY + 13);
+            doc.setFontSize(16);
+            doc.setTextColor(24, 40, 72);
+            doc.setFont(undefined, 'bold');
+            doc.text(`$${totalGeneralMes.toFixed(2)}`, 190, currentY + 13, { align: 'right' });
+            doc.setFont(undefined, 'normal');
+
+            currentY += 30;
+
+            // Tabla 1: Resumen por Proveedor
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text('1. Resumen por Proveedor', 14, currentY);
+            currentY += 5;
+
+            const tableProvData = Object.values(dataAgrupada)
+                .sort((a, b) => b.total - a.total)
+                .map(p => [p.nombre, `$${p.total.toFixed(2)}`]);
+
+            doc.autoTable({
+                startY: currentY,
+                head: [['Proveedor', 'Total Vendido']],
+                body: tableProvData,
+                theme: 'striped',
+                headStyles: { fillColor: [75, 108, 183] }
+            });
+
+            currentY = doc.lastAutoTable.finalY + 15;
+
+            // Tabla 2: Ranking de Productos (Los 30 más vendidos)
+            doc.setFontSize(14);
+            doc.text('2. Top 30 Productos Más Vendidos', 14, currentY);
+            currentY += 5;
+
+            const tableTopData = Object.entries(generalRanking)
+                .sort((a, b) => b[1].cant - a[1].cant)
+                .slice(0, 30)
+                .map(([id, info], index) => [
+                    index + 1,
+                    id,
+                    info.nombre,
+                    info.proveedor,
+                    info.cant,
+                    `$${info.total.toFixed(2)}`
+                ]);
+
+            doc.autoTable({
+                startY: currentY,
+                head: [['#', 'Código', 'Producto', 'Proveedor', 'Cant.', 'Total']],
+                body: tableTopData,
+                theme: 'grid',
+                headStyles: { fillColor: [24, 40, 72] },
+                columnStyles: {
+                    0: { cellWidth: 10 },
+                    4: { halign: 'center' },
+                    5: { halign: 'right' }
+                }
+            });
+
+            // Tabla 3: Detalle por Proveedor (En nueva página)
+            doc.addPage();
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text('3. Detalle de Productos por Proveedor', 14, 20);
+            let detailY = 30;
+
+            Object.values(dataAgrupada)
+                .sort((a, b) => b.total - a.total)
+                .forEach(prov => {
+                    if (detailY > 250) {
+                        doc.addPage();
+                        detailY = 20;
+                    }
+
+                    doc.setFontSize(11);
+                    doc.setTextColor(75, 108, 183);
+                    doc.text(`Proveedor: ${prov.nombre} (Total: $${prov.total.toFixed(2)})`, 14, detailY);
+                    detailY += 4;
+
+                    const provProds = Object.values(prov.productos)
+                        .sort((a, b) => b.cant - a.cant)
+                        .map(p => [p.nombre, p.cant, `$${p.total.toFixed(2)}`]);
+
+                    doc.autoTable({
+                        startY: detailY,
+                        head: [['Producto', 'Cant.', 'Subtotal']],
+                        body: provProds,
+                        theme: 'plain',
+                        headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0] },
+                        margin: { left: 15 },
+                        styles: { fontSize: 8 }
+                    });
+
+                    detailY = doc.lastAutoTable.finalY + 10;
+                });
+
+            // Guardar PDF
+            const nombreArchivo = `Reporte_Ventas_${nombreMesStr}_${anioSeleccionado}.pdf`;
+            doc.save(nombreArchivo);
+
+            ocultarScreenBlocker();
+            cerrarModalReportes();
+            
+            if (window.app && window.app.showToast) {
+                window.app.showToast('<i class="fas fa-check-circle"></i> Reporte generado correctamente', 'success');
+            }
+
+        } catch (error) {
+            console.error('Error al generar reporte:', error);
+            ocultarScreenBlocker();
+            alert('Error al generar reporte: ' + error.message);
+        }
+    }
+
+    // =====================================================
+    // EXPONER FUNCIONES AL SCOPE GLOBAL
+    // =====================================================
+
+    window.initUtilidades = initUtilidades;
+    window.abrirActualizarInventario = abrirActualizarInventario;
+    window.cerrarModalBuscarProducto = cerrarModalBuscarProducto;
+    window.seleccionarProductoParaActualizar = seleccionarProductoParaActualizar;
+    window.cerrarModalActualizarInventario = cerrarModalActualizarInventario;
+    window.confirmarActualizacionInventario = confirmarActualizacionInventario;
+    window.cancelarConfirmacion = cancelarConfirmacion;
+    window.ejecutarActualizacion = ejecutarActualizacion;
+    
+    // Prov
+    window.abrirActualizarProveedores = abrirActualizarProveedores;
+    window.cerrarModalBuscarProveedor = cerrarModalBuscarProveedor;
+    window.filtrarPorLetra = filtrarPorLetra;
+    window.seleccionarProveedorParaActualizar = seleccionarProveedorParaActualizar;
+    window.cerrarModalActualizarProveedor = cerrarModalActualizarProveedor;
+    window.confirmarActualizacionProveedor = confirmarActualizacionProveedor;
+    window.ejecutarActualizacionProveedor = ejecutarActualizacionProveedor;
+
+    // Reportes
+    window.abrirReportes = abrirReportes;
+    window.cerrarModalReportes = cerrarModalReportes;
+    window.generarReporteVentasMes = generarReporteVentasMes;
+
+    window.utilidadesState = utilidadesState;
+
+    // =====================================================
+    // INICIALIZAR AL CARGAR
+    // =====================================================
+
+    // Auto-inicializar cuando se carga el módulo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initUtilidades);
+    } else {
+        initUtilidades();
+    }
+</script>

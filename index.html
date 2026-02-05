@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferrisoluciones - Sistema de Gestión</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="icon" href="img/favicon.ico">
+</head>
+
+<body>
+
+
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <img src="https://i.ibb.co/8gLPXfjh/FERRISOLUCIONES-1.png" alt="Ferrisoluciones" class="login-logo">
+                    <h1 class="login-title">Ferrisoluciones</h1>
+                    <p class="login-subtitle">Sistema de Gestión Ferretería</p>
+                </div>
+
+
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="loginEmail" class="form-label">Correo Electrónico</label>
+                        <input type="email" id="loginEmail" class="form-input" placeholder="correo@ejemplo.com"
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword" class="form-label">Contraseña</label>
+                        <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-accent btn-block">
+                        <span>Iniciar Sesión</span>
+                    </button>
+                    <div class="auth-toggle">
+                        <p>¿No tienes cuenta? <a href="#" id="showRegister">Registrarse</a></p>
+                    </div>
+                </form>
+
+
+                <form id="registerForm" class="auth-form hidden">
+                    <div class="form-group">
+                        <label for="registerNombres" class="form-label">Nombres</label>
+                        <input type="text" id="registerNombres" class="form-input" placeholder="Juan" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerApellidos" class="form-label">Apellidos</label>
+                        <input type="text" id="registerApellidos" class="form-input" placeholder="Pérez" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail" class="form-label">Correo Electrónico</label>
+                        <input type="email" id="registerEmail" class="form-input" placeholder="correo@ejemplo.com"
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword" class="form-label">Contraseña</label>
+                        <input type="password" id="registerPassword" class="form-input"
+                            placeholder="Mínimo 6 caracteres" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPasswordConfirm" class="form-label">Confirmar Contraseña</label>
+                        <input type="password" id="registerPasswordConfirm" class="form-input"
+                            placeholder="Confirma tu contraseña" required>
+                    </div>
+                    <button type="submit" class="btn btn-accent btn-block">
+                        <span>Crear Cuenta</span>
+                    </button>
+                    <div class="auth-toggle">
+                        <p>¿Ya tienes cuenta? <a href="#" id="showLogin">Iniciar Sesión</a></p>
+                    </div>
+                </form>
+
+                <div id="authMessage" class="auth-message hidden"></div>
+                
+                <div class="lp-solutions-footer">
+                    <div class="lp-powered-by">
+                        POWERED BY <img src="img/dev/lpsolutionsblack.webp" alt="LP Solutions" class="lp-brand-logo">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="appScreen" class="app-screen hidden">
+
+
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <img src="https://i.ibb.co/8gLPXfjh/FERRISOLUCIONES-1.png" alt="Logo" class="nav-logo">
+                    <span class="nav-title">Ferrisoluciones</span>
+                </div>
+
+                <div class="nav-menu">
+                    <a href="#" class="nav-btn active" data-module="punto-venta" data-tooltip="Punto de venta"
+                        aria-label="Punto de venta">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="nav-btn-text" aria-hidden="true">Punto de venta</span>
+                    </a>
+                    <a href="#" class="nav-btn" data-module="ventas" data-tooltip="Historial de ventas"
+                        aria-label="Historial de ventas">
+                        <i class="fas fa-history"></i>
+                        <span class="nav-btn-text" aria-hidden="true">Historial de ventas</span>
+                    </a>
+                    <a href="#" class="nav-btn" data-module="gastos" data-tooltip="Registro de gastos"
+                        aria-label="Registro de gastos">
+                        <i class="fas fa-receipt"></i>
+                        <span class="nav-btn-text" aria-hidden="true">Registro de gastos</span>
+                    </a>
+                    <a href="#" class="nav-btn" data-module="proveedores" data-tooltip="Gestión de proveedores"
+                        aria-label="Gestión de proveedores">
+                        <i class="fas fa-truck"></i>
+                        <span class="nav-btn-text" aria-hidden="true">Gestión de proveedores</span>
+                    </a>
+                    <a href="#" class="nav-btn" data-module="cxc" data-tooltip="Cuentas por cobrar"
+                        aria-label="Cuentas por cobrar">
+                        <i class="fas fa-wallet"></i>
+                        <span class="nav-btn-text" aria-hidden="true">Cuentas por cobrar</span>
+                    </a>
+                    <a href="#" class="nav-btn" data-module="pedidos" data-tooltip="Pedidos a proveedores"
+                        aria-label="Pedidos a proveedores">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span class="nav-btn-text" aria-hidden="true">Pedidos a proveedores</span>
+                    </a>
+                    <a href="#" class="nav-btn" data-module="utilidades" data-tooltip="Utilidades"
+                        aria-label="Utilidades">
+                        <i class="fas fa-tools"></i>
+                        <span class="nav-btn-text" aria-hidden="true">Utilidades</span>
+                    </a>
+                </div>
+
+                <div class="nav-user">
+                    <div class="nav-total" id="navTotal">
+                        <span class="total-label">Total:</span>
+                        <span class="total-amount" id="navTotalAmount">$0.00</span>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Usuario</div>
+                        <div class="user-role" id="userRole">Rol</div>
+                    </div>
+                    <button class="btn-logout" id="logoutBtn">Cerrar Sesión</button>
+                </div>
+            </div>
+        </nav>
+
+
+        <div id="moduleContainer" class="module-container">
+        </div>
+
+
+        <div class="custom-modal-overlay" id="customModalOverlay">
+            <div class="custom-modal">
+                <div class="custom-modal-header">
+                    <div class="custom-modal-icon" id="customModalIcon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="custom-modal-title" id="customModalTitle">Título</div>
+                    <button class="custom-modal-close" id="customModalClose">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="custom-modal-body">
+                    <div class="custom-modal-message" id="customModalMessage">Mensaje</div>
+                    <div class="custom-modal-input-container" id="customModalInputContainer" style="display: none;">
+                        <input type="text" class="custom-modal-input" id="customModalInput"
+                            placeholder="Ingrese valor...">
+                    </div>
+                </div>
+                <div class="custom-modal-footer">
+                    <button class="btn btn-secondary custom-modal-btn" id="customModalCancel">Cancelar</button>
+                    <button class="btn btn-primary custom-modal-btn" id="customModalConfirm">Aceptar</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navButtons = document.querySelectorAll('.nav-btn');
+
+            navButtons.forEach(button => {
+                button.addEventListener('focus', () => button.classList.add('nav-btn-focused'));
+                button.addEventListener('blur', () => button.classList.remove('nav-btn-focused'));
+            });
+        });
+    </script>
+
+    <style>
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            padding: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .login-logo {
+            height: 80px;
+            margin-bottom: 20px;
+        }
+
+        .login-title {
+            font-size: 2em;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 10px;
+        }
+
+        .login-subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .auth-form {
+            margin-bottom: 20px;
+        }
+
+        .auth-toggle {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+
+        .auth-toggle a {
+            color: #d4a017;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-toggle a:hover {
+            text-decoration: underline;
+        }
+
+        .btn-block {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .auth-message {
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            margin-top: 15px;
+        }
+
+        .auth-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .auth-message.error {
+         login-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .powered-by {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .dev-logo {
+            height: 25px;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .dev-logo:hover {
+            opacity: 1;
+        }
+
+        .app-screen {
+            min-height: 100vh;
+        }
+
+        /* Loading Screen Redesign */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-height: 300px;
+            gap: 20px;
+        }
+
+        .spinner-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(212, 160, 23, 0.1);
+            border-left-color: #d4a017;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-logo-mini {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            font-weight: 500;
+            color: #d4a017;
+            letter-spacing: 0.5px;
+            margin: 0
+            border: 1px solid #f5c6cb;
+        }
+
+        .app-screen {
+            min-height: 100vh;
+        }
+
+        /* =====================================================
+           MODALES PERSONALIZADOS GLOBALES
+           ===================================================== */
+
+        .custom-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .custom-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .custom-modal {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .custom-modal-overlay.active .custom-modal {
+            transform: scale(1);
+        }
+
+        .custom-modal-header {
+            display: flex;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid #eee;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #ffffff;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .custom-modal-icon {
+            font-size: 24px;
+            margin-right: 15px;
+            color: #d4a017;
+        }
+
+        .custom-modal-title {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .custom-modal-close {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .custom-modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+
+        .custom-modal-body {
+            padding: 25px;
+        }
+
+        .custom-modal-message {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #333333;
+            margin-bottom: 15px;
+        }
+
+        .custom-modal-input-container {
+            margin-top: 15px;
+        }
+
+        .custom-modal-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 15px;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+        }
+
+        .custom-modal-input:focus {
+            outline: none;
+            border-color: #d4a017;
+            box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.1);
+        }
+
+        .custom-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 20px 25px;
+            border-top: 1px solid #eee;
+            background: #f8f9fa;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .custom-modal-btn {
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            min-width: 80px;
+        }
+
+        .custom-modal-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Tipos de modal */
+        .custom-modal-info .custom-modal-icon {
+            color: #17a2b8;
+        }
+
+        .custom-modal-success .custom-modal-icon {
+            color: #28a745;
+        }
+
+        .custom-modal-warning .custom-modal-icon {
+            color: #ffc107;
+        }
+
+        .custom-modal-error .custom-modal-icon {
+            color: #dc3545;
+        }
+
+        .custom-modal-confirm .custom-modal-icon {
+            color: #ffc107;
+        }
+
+        .custom-modal-prompt .custom-modal-icon {
+            color: #17a2b8;
+        }
+    </style>
+
+</body>
+
+</html>

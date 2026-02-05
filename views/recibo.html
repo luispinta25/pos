@@ -1,0 +1,433 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=80mm, initial-scale=1.0">
+    <title>RECIBO</title>
+    <link rel="stylesheet" media="print" href="css/print.css">
+    <style media="print">
+        @page {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        #thermal-pos {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+    </style>
+    <style>
+        /* Estilos generales - Diseño limpio y moderno con interlineado reducido */
+        @page {
+            margin: 0;
+            padding: 0;
+            size: 80mm auto;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 2.5mm; /* Reducido aún más */
+            text-align: center;
+            background-color: white;
+            color: black;
+            line-height: 1; /* Reducido aún más */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        #thermal-pos {
+            margin: 0 auto;
+            max-width: 80mm;
+            padding: 1mm; /* Reducido aún más */
+        }
+
+        /* Contenedor principal con borde sólido */
+        .receipt-container {
+            border: 1px solid black;
+            border-radius: 3px; /* Reducido */
+            padding: 2mm; /* Reducido aún más */
+            margin-bottom: 1mm; /* Reducido aún más */
+        }
+
+        /* Estilos para el encabezado con logo e información */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1mm; /* Reducido aún más */
+        }
+
+        .logo {
+            width: 22%; /* Reducido */
+        }
+
+        .logo img {
+            max-width: 180%;
+            height: auto;
+        }
+
+        .store-info {
+            width: 78%; /* Aumentado */
+            text-align: right;
+        }
+
+        .store-name {
+            font-size: 3.5mm; /* Aumentado un poco */
+            font-weight: bold;
+            margin-bottom: 0.3mm; /* Reducido aún más */
+            letter-spacing: 0.1mm; /* Mejora legibilidad */
+        }
+
+        .store-details {
+            font-size: 2.5mm; /* Aumentado un poco */
+            line-height: 1.1; /* Aumentado un poco */
+            font-weight: bold; /* Añadido negrita */
+        }
+        
+        /* Compresión adicional para la información RUC, DIR, CEL */
+        .store-details br {
+            display: none;
+        }
+        
+        .store-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Estilo para cápsulas de sección */
+        .section-capsule {
+            background-color: black;
+            color: white;
+            padding: 0.7mm 1.5mm; /* Reducido aún más */
+            border-radius: 1.5mm; /* Reducido aún más */
+            display: inline-block;
+            margin: 1mm 0 0.5mm 0; /* Reducido aún más */
+            font-weight: bold;
+            font-size: 2.5mm; /* Reducido aún más */
+            text-align: center;
+        }
+
+        /* Información de secciones en formato limpio */
+        .info-section {
+            padding-top: 0.5mm; /* Reducido aún más */
+            padding-bottom: 0.5mm; /* Reducido aún más */
+            margin-bottom: 1mm; /* Reducido aún más */
+            border-bottom: 1px solid black;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.8mm; /* Reducido aún más */
+            text-align: left;
+        }
+
+        .info-label {
+            font-weight: normal;
+            color: black;
+        }
+
+        .info-value {
+            font-weight: bold;
+            text-align: right;
+        }
+
+        /* Estilos para la tabla de productos */
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1mm; /* Reducido aún más */
+        }
+
+        .table-header th {
+            border-bottom: 1px solid black;
+            padding: 0.5mm 0; /* Reducido aún más */
+            font-weight: bold;
+            text-align: center;
+            font-size: 2.3mm; /* Reducido aún más */
+        }
+
+        .table-item td {
+            padding: 0.5mm 0; /* Reducido aún más */
+            border-bottom: 1px solid #000000;
+            font-size: 2.5mm; /* Reducido aún más */
+        }
+
+        .table-item td:last-child {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        /* Estilos para la sección de totales */
+        .totals-section {
+            margin-top: 0.5mm; /* Reducido aún más */
+            margin-bottom: 1mm; /* Reducido aún más */
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5mm; /* Reducido aún más */
+        }
+
+        .grand-total {
+            font-size: 3.2mm; /* Reducido */
+            font-weight: bold;
+            padding-top: 0.5mm; /* Reducido aún más */
+            margin-top: 0.5mm; /* Reducido aún más */
+            border-top: 1px solid black;
+        }
+
+        /* Estilo para el código de barras */
+        .barcode-container {
+            margin: 2mm 0; /* Reducido */
+            text-align: center;
+            height: 10mm; /* Altura fija de 1cm */
+            overflow: hidden; /* Ocultar exceso */
+            position: relative; /* Para posicionamiento */
+        }
+        
+        .barcode-container img {
+            width: 90%;
+            position: absolute;
+            bottom: 0; /* Fijar en la parte inferior */
+            left: 5%; /* Centrar */
+            height: auto; /* Mantener proporción */
+            max-height: none; /* Quitar límite de altura */
+        }
+        
+        /* Adicionales para la tabla de productos */
+        .table-header th:nth-child(3),
+        .table-header th:last-child {
+            text-align: center;
+        }
+
+        /* Pie del recibo con borde de ticket */
+        .receipt-footer {
+            margin-top: 2mm; /* Reducido aún más */
+            position: relative;
+        }
+
+        .footer-content {
+            padding: 1mm; /* Reducido aún más */
+            text-align: center;
+            font-size: 2.3mm; /* Reducido */
+        }
+
+        /* Diseño de borde de ticket en la parte superior del footer */
+        .ticket-edge {
+            height: 2mm; /* Reducido */
+            width: 100%;
+            position: absolute;
+            top: -1.5mm; /* Reducido */
+            left: 0;
+            background-image: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 2mm,
+                white 2mm,
+                white 4mm
+            );
+            background-size: 4mm 100%;
+        }
+    </style>
+</head>
+<body onafterprint="window.close()">
+
+    <div id="thermal-pos">
+        <div class="receipt-container">
+            <div class="header">
+                <div class="logo">
+                    <img src="https://lh3.googleusercontent.com/d/1-_IsocnUhx_k6EGsNSpaJUNnQ2Nn4cFj=w2048?name=ISO%20DELGADO.png" alt="Logo Ferretería" />
+                </div>
+                <div class="store-info">
+                    <div class="store-name">FERRESOLUCIONES</div>
+                    <div class="store-details">
+                        <span>RUC: 1727849695001</span>
+                        <span>DIR: LUIS CORDERO Y JOSÉ MEJÍA</span>
+                        <span>CEL: 0962248046</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: left;">
+                <div class="section-capsule">DETALLES DEL RECIBO</div>
+            </div>
+            <div class="info-section">
+                <div class="info-row">
+                    <span class="info-label">Nº Recibo</span>
+                    <span class="info-value" id="venta_id"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Fecha y Hora</span>
+                    <span class="info-value" id="fechaR"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Atendido por</span>
+                    <span class="info-value" id="vendedor_id"></span>
+                </div>
+            </div>
+
+            <div style="text-align: left;">
+                <div class="section-capsule">DETALLES DEL CLIENTE</div>
+            </div>
+            <div class="info-section">
+                <div class="info-row">
+                    <span class="info-label">Cliente</span>
+                    <span class="info-value" id="nombre_id"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Cédula/RUC</span>
+                    <span class="info-value" id="cedula_id"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Dirección</span>
+                    <span class="info-value" id="direccion_id"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Teléfono</span>
+                    <span class="info-value" id="telefono_id"></span>
+                </div>
+            </div>
+
+            <div style="text-align: left;">
+                <div class="section-capsule">DETALLES DE LA COMPRA</div>
+            </div>
+            
+            <table class="products-table">
+                <thead>
+                    <tr class="table-header">
+                        <th>CANT</th>
+                        <th>DESC</th>
+                        <th>PRECIO <br>UNIT</th>
+                        <th>PRECIO<br>TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaBody">
+                    </tbody>
+            </table>
+
+            <div class="totals-section">
+                <div class="total-row">
+                    <span>Subtotal</span>
+                    <span>$ <span id="subtotal_id"></span></span>
+                </div>
+                <div class="total-row">
+                    <span>Descuento</span>
+                    <span>$ <span id="descuento_id"></span></span>
+                </div>
+                <div class="total-row grand-total">
+                    <span>TOTAL</span>
+                    <span>$ <span id="total_id"></span></span>
+                </div>
+            </div>
+
+            <div class="barcode-container">
+                <img id="barcode" alt="Código de Barras">
+            </div>
+        
+
+            <div class="receipt-footer">
+                <div class="ticket-edge"></div>
+                <div class="footer-content">
+                    <strong style="font-size: 2.3mm;">FERRESOLUCIONES</strong><br>
+                    <strong style="font-size: 2.3mm;">¡GRACIAS POR SU COMPRA!</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            // Obtener los parámetros de la URL
+            const params = new URLSearchParams(window.location.search);
+
+            // Obtener los valores de los parámetros
+            var venta = params.has('venta') ? params.get('venta') : "---";
+            var nombre_cliente = params.has('nombre_cliente') ? params.get('nombre_cliente') : "---";
+            var cedula_cliente = params.has('cedula_cliente') ? params.get('cedula_cliente') : "---";
+            var direccion_cliente = params.has('direccion_cliente') ? params.get('direccion_cliente') : "---";
+            var telefono_cliente = params.has('telefono_cliente') ? params.get('telefono_cliente') : "---";
+            var vendedor = params.has('vendedor') ? params.get('vendedor') : "---";
+            var fecha = params.has('fecha') ? params.get('fecha') : "dd/mm/aaaa hh:mm:ss";
+            var total = params.has('total') ? params.get('total') : "0.00";
+            var subtotal = params.has('subtotal') ? params.get('subtotal') : "0.00";
+            var descuento = params.has('descuento') ? params.get('descuento') : "0.00";
+
+            //Recibe los datos de los servicios (separados por comas)
+            var cantidades = params.has('cantidades') ? params.get('cantidades') : "0";
+            var descripciones = params.has('servicios') ? params.get('servicios') : "No hay articulos";
+            var p_units = params.has('p_units') ? params.get('p_units') : "0.00";
+            var p_total = params.has('p_total') ? params.get('p_total') : "0.00";
+            
+            //Formato de 2 decimales
+            total = parseFloat(total).toLocaleString('es-EC', { minimumFractionDigits: 2 });
+            subtotal = parseFloat(subtotal).toLocaleString('es-EC', { minimumFractionDigits: 2 });
+            descuento = parseFloat(descuento).toLocaleString('es-EC', { minimumFractionDigits: 2 });
+            
+            //crea una lista de cada columna a partir de las comas.
+            cantidades = cantidades.split(",");
+            descripciones = descripciones.split(","); 
+            p_units = p_units.split(",");
+            p_total = p_total.split(",");
+
+            //Crea una lista para mostrar en cada fila de la tabla
+            var result = [];
+
+            cantidades.forEach(function(value, id) {
+                result[id] = {
+                    cantidad: cantidades[id],
+                    descripcion: descripciones[id],
+                    precio_units: parseFloat(p_units[id]).toLocaleString('es-EC', { minimumFractionDigits: 2 }),
+                    precio_totals: parseFloat(p_total[id]).toLocaleString('es-EC', { minimumFractionDigits: 2 }),
+                };
+            });
+
+            // Poblar la tabla de productos
+            var tablaBody = document.getElementById("tablaBody");
+            result.forEach(function(row) {
+                var newRow = document.createElement("tr");
+                newRow.className = "table-item";
+
+                newRow.innerHTML = `
+                    <td>${row.cantidad}</td>
+                    <td>${row.descripcion}</td>
+                    <td style="text-align: right;">$ ${row.precio_units}</td>
+                    <td style="text-align: right;">$ ${row.precio_totals}</td>
+                `;
+                tablaBody.appendChild(newRow);
+            });
+
+            // Insertar el resto de los datos en el HTML
+            document.getElementById("venta_id").textContent = venta;
+            document.getElementById("nombre_id").textContent = nombre_cliente;
+            document.getElementById("cedula_id").textContent = cedula_cliente;
+            document.getElementById("direccion_id").textContent = direccion_cliente;
+            document.getElementById("telefono_id").textContent = telefono_cliente;
+            document.getElementById("subtotal_id").textContent = subtotal;
+            document.getElementById("descuento_id").textContent = descuento;
+            document.getElementById("vendedor_id").textContent = vendedor;
+            document.getElementById("total_id").textContent = total;
+            document.getElementById("fechaR").textContent = fecha;
+
+            // Generar el enlace del código de barras
+            var barcodeUrl = `https://barcode.tec-it.com/barcode.ashx?data=${venta}&code=Code128&imagetype=Png`;
+            document.getElementById("barcode").src = barcodeUrl;
+
+            // CAMBIO 3: Llamar a la impresión como último paso, después de que todo se ha cargado.
+            // CAMBIO 3: Llamar a la impresión como último paso, después de que todo se ha cargado.
+setTimeout(function () {
+    window.print();
+}, 700);
+
+        };
+    </script>
+</body>
+</html>

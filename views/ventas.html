@@ -1,0 +1,4076 @@
+<div class="container-full" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px;">
+
+
+    <div style="display: grid; grid-template-columns: 350px 1fr; gap: 20px; height: 100%;">
+
+
+        <div style="overflow-y: auto; padding-right: 10px; height: 100%; scrollbar-width: thin;">
+
+
+            <div class="card" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                <h3 style="margin-bottom: 15px; font-size: 1.1em; color: #666;">
+                    <i class="fas fa-chart-line"></i> Resumen
+                </h3>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Total Ventas</div>
+                    <div id="statsTotal" style="font-size: 1.5em; font-weight: 800; color: #28a745;">$0.00</div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Ganancia</div>
+                    <div id="statsGanancia" style="font-size: 1.3em; font-weight: 700; color: #d4a017;">$0.00</div>
+                </div>
+
+                <div>
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Cantidad</div>
+                    <div id="statsCantidad" style="font-size: 1.1em; font-weight: 600; color: #666;">0 ventas</div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Mes Pasado (Real)</div>
+                    <div id="statsMesPasado" style="font-size: 1.1em; font-weight: 600; color: #666;">$0.00</div>
+                </div>
+
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0; position: relative;">
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="display: flex; align-items: center; gap: 5px;">
+                            <i class="fas fa-chart-line"></i>
+                            Proyección Mes
+                        </span>
+                        <span id="proyeccionCacheIndicator" style="font-size: 0.8em; opacity: 0.6;" title="Indica si la proyección está cacheada o recién calculada"></span>
+                    </div>
+                    <div id="statsProyeccion" style="font-size: 1.3em; font-weight: 700; color: #2196F3;">$0.00</div>
+                    <div id="proyeccionDetalles" style="font-size: 0.75em; color: #999; margin-top: 4px; line-height: 1.3;"></div>
+                    
+                    <button class="btn btn-sm btn-outline" onclick="mostrarDetalleProyeccion()" 
+                        style="width: 100%; margin-top: 8px; padding: 4px; font-size: 0.75em; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                        <i class="fas fa-info-circle"></i> Ver Análisis Detallado
+                    </button>
+                </div>
+            </div>
+
+
+            <div class="card">
+                <h3 style="margin-bottom: 15px; font-size: 1.2em;">
+                    <i class="fas fa-calendar-alt"></i> Filtrar por Fecha
+                </h3>
+
+                <div class="form-group">
+                    <label class="form-label">Día</label>
+                    <select id="diaSelect" class="form-select">
+
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Mes</label>
+                    <select id="mesSelect" class="form-select">
+                        <option value="0">Enero</option>
+                        <option value="1">Febrero</option>
+                        <option value="2">Marzo</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Mayo</option>
+                        <option value="5">Junio</option>
+                        <option value="6">Julio</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Septiembre</option>
+                        <option value="9">Octubre</option>
+                        <option value="10">Noviembre</option>
+                        <option value="11">Diciembre</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Año</label>
+                    <select id="anioSelect" class="form-select">
+
+                    </select>
+                </div>
+
+                <button class="btn btn-accent" onclick="aplicarFiltroFecha()" style="width: 100%;">
+                    <i class="fas fa-filter"></i>
+                    <span>Aplicar Filtro</span>
+                </button>
+
+                <button class="btn btn-secondary" onclick="resetearFiltros()" style="width: 100%; margin-top: 10px;">
+                    <i class="fas fa-redo"></i>
+                    <span>Hoy</span>
+                </button>
+            </div>
+
+
+            <div class="card">
+                <h3 style="margin-bottom: 15px; font-size: 1.2em;">
+                    <i class="fas fa-search"></i> Buscar por Código
+                </h3>
+
+                <div class="form-group">
+                    <label class="form-label">Código de Venta</label>
+                    <input type="text" id="codigoVentaInput" class="form-input" placeholder="Ej: S1730752800000"
+                        autocomplete="off">
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Dejar vacío para ver todas las ventas del día
+                    </small>
+                </div>
+            </div>
+
+            <!-- Botón Dashboard -->
+            <button class="btn btn-primary" onclick="mostrarDashboard()"
+                style="width: 100%; margin-top: 20px; padding: 15px; font-size: 1.1em;">
+                <i class="fas fa-chart-pie"></i>
+                <span>Ver Dashboard Experto</span>
+            </button>
+
+        </div>
+
+
+        <div style="overflow-y: auto; padding-right: 10px; height: 100%; scrollbar-width: thin;">
+
+            <div class="card" id="ventasListView">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 1.3em;">
+                        <i class="fas fa-receipt"></i> Ventas del Día
+                    </h3>
+                    <div id="fechaActual" style="color: #666; font-weight: 600;">
+
+                    </div>
+                </div>
+
+
+                <div id="ventasLoading" class="loading-inline hidden">
+                    <div class="spinner-small"></div>
+                    <span>Cargando ventas...</span>
+                </div>
+
+
+                <div id="ventasGallery" class="ventas-gallery">
+
+                </div>
+
+
+                <div id="noVentas" class="hidden" style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-inbox" style="font-size: 3em; margin-bottom: 15px; opacity: 0.3;"></i>
+                    <p>No hay ventas registradas para esta fecha</p>
+                </div>
+
+            </div>
+
+            <!-- Dashboard View -->
+            <div id="dashboardView" class="card hidden" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 1.3em; display: flex; align-items: center; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="ocultarDashboard()" style="padding: 5px 10px;">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <span><i class="fas fa-chart-pie"></i> Dashboard Experto</span>
+                    </h3>
+
+                    <div class="btn-group" style="display: flex; gap: 5px;">
+                        <button class="btn btn-sm btn-outline" onclick="filtrarDashboard('7d')">7 Días</button>
+                        <button class="btn btn-sm btn-outline" onclick="filtrarDashboard('30d')">30 Días</button>
+                        <button class="btn btn-sm btn-outline" onclick="filtrarDashboard('90d')">90 Días</button>
+                        <!-- <button class="btn btn-sm btn-outline" onclick="filtrarDashboard('custom')">Personalizado</button> -->
+                    </div>
+                </div>
+
+                <div id="dashboardDateRange"
+                    style="text-align: right; color: #666; font-size: 0.9em; margin-top: -15px; margin-bottom: 15px; font-weight: 600;">
+                </div>
+
+                <!-- Stats Cards -->
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div class="stat-card" onclick="mostrarTopProductos('mas-vendidos-cant')"
+                        style="background: #e3f2fd; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s;">
+                        <div style="font-size: 0.8em; color: #1565c0; margin-bottom: 5px;">Producto Más Vendido (Cant)
+                        </div>
+                        <div id="dashProdMasVendidoCant"
+                            style="font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            -</div>
+                        <div id="dashProdMasVendidoCantVal" style="font-size: 0.9em; color: #666;">0 un.</div>
+                    </div>
+                    <div class="stat-card" onclick="mostrarTopProductos('mas-vendidos-total')"
+                        style="background: #e8f5e9; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s;">
+                        <div style="font-size: 0.8em; color: #2e7d32; margin-bottom: 5px;">Producto Más Vendido ($)
+                        </div>
+                        <div id="dashProdMasVendidoTotal"
+                            style="font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            -</div>
+                        <div id="dashProdMasVendidoTotalVal" style="font-size: 0.9em; color: #666;">$0.00</div>
+                    </div>
+                    <div class="stat-card" onclick="mostrarTopProductos('mayor-ganancia')"
+                        style="background: #fff3e0; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s;">
+                        <div style="font-size: 0.8em; color: #ef6c00; margin-bottom: 5px;">Mayor Ganancia</div>
+                        <div id="dashProdMayorGanancia"
+                            style="font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            -</div>
+                        <div id="dashProdMayorGananciaVal" style="font-size: 0.9em; color: #666;">$0.00</div>
+                    </div>
+                    <div class="stat-card" onclick="mostrarTopProductos('menos-vendidos')"
+                        style="background: #ffebee; padding: 15px; border-radius: 8px; cursor: pointer; transition: transform 0.2s;">
+                        <div style="font-size: 0.8em; color: #c62828; margin-bottom: 5px;">Menos Vendido</div>
+                        <div id="dashProdMenosVendido"
+                            style="font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            -</div>
+                        <div id="dashProdMenosVendidoVal" style="font-size: 0.9em; color: #666;">0 un.</div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div style="margin-bottom: 30px;">
+                    <h4 style="margin-bottom: 10px; color: #666;">Ventas por Hora (Promedio 8:00 AM - 8:00 PM)</h4>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="chartHoras"></canvas>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="margin-bottom: 10px; color: #666;">Promedio de Ventas por Día de la Semana</h4>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="chartDias"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="dashboardLoading" class="hidden"
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
+                <div class="spinner-large"
+                    style="width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #2196F3; border-radius: 50%; animation: spin 1s linear infinite;">
+                </div>
+                <p style="margin-top: 15px; color: #666; font-weight: 600;">Analizando datos...</p>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div id="modalDetalleVenta" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="fas fa-file-invoice"></i> Detalle de Venta</h2>
+            <button class="modal-close" onclick="cerrarModalDetalle()">&times;</button>
+        </div>
+        <div id="modalDetalleBody">
+
+        </div>
+    </div>
+</div>
+
+<!-- Overlay de Carga para Procesos Largos -->
+<div id="conversionLoadingOverlay" 
+    style="display: none; z-index: 999999; background: rgba(0,0,0,0.7); flex-direction: column; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;">
+    <div class="spinner-large"
+        style="width: 60px; height: 60px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid #d4a017; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;">
+    </div>
+    <div style="color: white; font-size: 1.2rem; font-weight: 500; text-align: center;">
+        <p id="conversionLoadingText" style="margin: 0;">Convirtiendo recibo a factura...</p>
+        <p style="font-size: 0.9rem; color: #ccc; margin: 5px 0 0 0;">Por favor, espere un momento.</p>
+    </div>
+</div>
+
+<!-- Modal para Selección de Cliente (Convertir a Factura) -->
+<div id="modalSeleccionCliente" class="modal">
+    <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="fas fa-user-plus"></i> Seleccionar Cliente para Factura</h2>
+            <button class="modal-close" onclick="cerrarModalSeleccionCliente()">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+            <!-- Información del Recibo -->
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div>
+                        <label style="font-size: 0.85em; color: #666;">Recibo:</label>
+                        <div id="recibo-id" style="font-weight: 600;"></div>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85em; color: #666;">Total:</label>
+                        <div id="recibo-total" style="font-weight: 600; color: #28a745;"></div>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85em; color: #666;">Fecha original:</label>
+                        <div id="recibo-fecha" style="font-weight: 600;"></div>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85em; color: #666;">Fecha facturación:</label>
+                        <div id="factura-fecha" style="font-weight: 600; color: #d4a017;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Búsqueda de Cliente -->
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Búsqueda de Cliente</label>
+                <input type="text" id="cliente-search-input" class="form-input"
+                    placeholder="Buscar por cédula, RUC o nombre..." autocomplete="off">
+            </div>
+
+            <!-- Resultados de Búsqueda -->
+            <div id="cliente-results-container"
+                style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: #f8f9fa; position: sticky; top: 0;">
+                        <tr>
+                            <th style="padding: 12px; text-align: left; font-size: 0.85em; font-weight: 600;">Cédula/RUC
+                            </th>
+                            <th style="padding: 12px; text-align: left; font-size: 0.85em; font-weight: 600;">
+                                Nombre/Razón Social</th>
+                            <th style="padding: 12px; text-align: left; font-size: 0.85em; font-weight: 600;">Correo
+                            </th>
+                            <th style="padding: 12px; text-align: center; font-size: 0.85em; font-weight: 600;">Acción
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="cliente-results-tbody">
+                        <tr>
+                            <td colspan="4" style="padding: 40px; text-align: center; color: #999;">
+                                Busque un cliente por cédula, RUC o nombre
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Botones -->
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="cerrarModalSeleccionCliente()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Top Productos -->
+<div id="modalTopProductos" class="modal">
+    <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalTopTitle">Top 10 Productos</h2>
+            <button class="modal-close" onclick="cerrarModalTop()">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 20px; overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="background: #f8f9fa; border-bottom: 2px solid #eee;">
+                    <tr>
+                        <th style="padding: 12px; text-align: left; color: #666;">#</th>
+                        <th style="padding: 12px; text-align: left; color: #666;">Producto</th>
+                        <th style="padding: 12px; text-align: right; color: #666;">Cantidad</th>
+                        <th style="padding: 12px; text-align: right; color: #666;">Total Ventas</th>
+                        <th style="padding: 12px; text-align: right; color: #666;">Ganancia</th>
+                    </tr>
+                </thead>
+                <tbody id="modalTopBody">
+                    <!-- Rows will be inserted here -->
+                </tbody>
+            </table>
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn btn-secondary" onclick="cerrarModalTop()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalle Proyección -->
+<div id="modalDetalleProyeccion" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0; padding: 20px;">
+            <h2 class="modal-title" style="margin: 0; font-size: 1.4em;"><i class="fas fa-chart-line"></i> Análisis de Proyección</h2>
+            <button class="modal-close" onclick="cerrarModalProyeccion()" style="color: white; font-size: 1.5em;">&times;</button>
+        </div>
+        <div class="modal-body" id="modalProyeccionBody" style="padding: 25px;">
+            <!-- Contenido dinámico -->
+        </div>
+        <div class="modal-footer" style="padding: 15px 25px; border-top: 1px solid #eee; display: flex; justify-content: space-between; gap: 10px;">
+            <button class="btn" onclick="descargarPDFProyeccion()" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                <i class="fas fa-file-pdf"></i> Descargar Reporte PDF
+            </button>
+            <button class="btn btn-secondary" onclick="cerrarModalProyeccion()" style="padding: 10px 20px; border-radius: 8px;">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .ventas-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .venta-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        border-left-width: 4px;
+    }
+
+    /* Bordes según tipo y estado */
+    .venta-card.recibo {
+        border-left-color: #4fc3f7;
+        /* Azul celeste */
+    }
+
+    .venta-card.factura-pendiente {
+        border-left-color: #ff9800;
+        /* Naranja */
+    }
+
+    .venta-card.factura-rechazado {
+        border-left-color: #f44336;
+        /* Rojo */
+    }
+
+    .venta-card.factura-autorizado {
+        border-left-color: #4caf50;
+        /* Verde */
+    }
+
+    .venta-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: #d4a017;
+        transform: scaleY(0);
+        transition: transform 0.3s ease;
+    }
+
+    .venta-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        border-left-width: 6px;
+    }
+
+    .venta-card:hover::before {
+        transform: scaleY(1);
+    }
+
+    .venta-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .venta-id {
+        font-size: 0.9em;
+        font-weight: 700;
+        color: #666;
+        font-family: 'Courier New', monospace;
+    }
+
+    .venta-tipo {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.75em;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .venta-tipo.recibo {
+        background: #e1f5fe;
+        color: #0277bd;
+        border: 1px solid #4fc3f7;
+    }
+
+    .venta-tipo.factura {
+        background: #fff3e0;
+        color: #e65100;
+        border: 1px solid #ff9800;
+    }
+
+    /* Estados específicos para badges */
+    .estado-badge {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.7em;
+        font-weight: 600;
+        text-transform: uppercase;
+        display: inline-block;
+        margin-left: 8px;
+    }
+
+    .estado-badge.pendiente {
+        background: #fff3e0;
+        color: #e65100;
+        border: 1px solid #ff9800;
+    }
+
+    .estado-badge.rechazado {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #f44336;
+    }
+
+    .estado-badge.autorizado {
+        background: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #4caf50;
+    }
+
+    .venta-card-body {
+        margin-bottom: 12px;
+    }
+
+    .venta-info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 0.9em;
+    }
+
+    .venta-info-label {
+        color: #666;
+        font-weight: 500;
+    }
+
+    .venta-info-value {
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+    .venta-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .venta-hora {
+        font-size: 0.85em;
+        color: #999;
+    }
+
+    .venta-total {
+        font-size: 1.3em;
+        font-weight: 800;
+        color: #28a745;
+    }
+
+    .loading-inline {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 20px;
+        color: #666;
+    }
+
+    .spinner-small {
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #d4a017;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+
+    .detalle-header-info {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .detalle-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .detalle-info-item {
+        padding: 12px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .detalle-info-item label {
+        display: block;
+        font-size: 0.85em;
+        color: #666;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+
+    .detalle-info-item .value {
+        font-size: 1.1em;
+        color: #1a1a1a;
+        font-weight: 600;
+    }
+
+    .detalle-productos {
+        margin-top: 20px;
+    }
+
+    .detalle-productos h4 {
+        margin-bottom: 15px;
+        color: #666;
+        font-size: 1.1em;
+    }
+
+    .producto-detalle-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        margin-bottom: 8px;
+    }
+
+    .producto-detalle-info {
+        flex: 1;
+    }
+
+    .producto-detalle-nombre {
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+    }
+
+    .producto-detalle-datos {
+        font-size: 0.9em;
+        color: #666;
+    }
+
+    .producto-detalle-subtotal {
+        font-size: 1.1em;
+        font-weight: 700;
+        color: #28a745;
+        text-align: right;
+    }
+
+    .detalle-totales {
+        margin-top: 20px;
+        padding: 20px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 8px;
+    }
+
+    .detalle-total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 1.1em;
+    }
+
+    .detalle-total-row.total-final {
+        padding-top: 15px;
+        border-top: 2px solid #d4a017;
+        font-size: 1.4em;
+        font-weight: 800;
+        color: #d4a017;
+    }
+
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        to {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95);
+        }
+    }
+
+    #modalDetalleVenta.active {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    #modalDetalleVenta.active .modal-content {
+        animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    #modalDetalleVenta.closing {
+        animation: fadeIn 0.2s ease-in reverse;
+    }
+
+    #modalDetalleVenta.closing .modal-content {
+        animation: slideUp 0.2s ease-in;
+    }
+
+    /* Asegurar que el modal se centre correctamente */
+    #modalDetalleVenta {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(3px);
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    #modalDetalleVenta.active {
+        display: flex;
+    }
+
+    #modalDetalleVenta .modal-content {
+        max-width: 800px;
+        width: 100%;
+        max-height: 90vh;
+        margin: auto;
+        overflow-y: auto;
+        position: relative;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 0; /* Remove default padding to control it internally */
+    }
+
+    #modalDetalleVenta .modal-header {
+        padding: 20px 25px;
+        border-bottom: 2px solid #f0f0f0;
+        margin-bottom: 0;
+    }
+
+    #modalDetalleVenta .modal-body,
+    #modalDetalleVenta #modalDetalleBody {
+        padding: 20px 25px;
+    }
+
+    /* Responsivo para dispositivos móviles */
+    @media (max-width: 768px) {
+        #modalDetalleVenta {
+            padding: 10px;
+        }
+        
+        #modalDetalleVenta .modal-content {
+            max-width: 100%;
+            width: 100%;
+            max-height: 95vh;
+        }
+        
+        #modalDetalleVenta .modal-header,
+        #modalDetalleVenta .modal-body,
+        #modalDetalleVenta #modalDetalleBody {
+            padding: 15px 20px;
+        }
+    }
+
+    /* Asegurar centrado para modal de proyección */
+    #modalDetalleProyeccion {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(3px);
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    #modalDetalleProyeccion.active {
+        display: flex;
+    }
+
+    #modalDetalleProyeccion .modal-content {
+        max-width: 800px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 0;
+        margin: auto;
+    }
+
+    /* Asegurar centrado para modal de selección de cliente */
+    #modalSeleccionCliente {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(3px);
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    #modalSeleccionCliente.active {
+        display: flex;
+    }
+
+    #modalSeleccionCliente .modal-content {
+        max-width: 900px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 0;
+    }
+
+    /* Asegurar centrado para modal de top productos */
+    #modalTopProductos {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(3px);
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    #modalTopProductos.active {
+        display: flex;
+    }
+
+    #modalTopProductos .modal-content {
+        max-width: 900px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 0;
+    }
+
+    .detalle-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        gap: 20px;
+    }
+
+    .detalle-loading .spinner-large {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #d4a017;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    .detalle-loading-text {
+        color: #666;
+        font-size: 1.1em;
+    }
+
+    /* Botón comprobante de transferencia */
+    .btn-comprobante-transfer {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 10px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .btn-comprobante-transfer:hover {
+        background: linear-gradient(135deg, #138496, #117a8b);
+        transform: scale(1.05);
+    }
+
+    /* Modal comprobante transferencia */
+    .modal-comprobante-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+    }
+
+    .modal-comprobante-overlay.active {
+        display: flex;
+    }
+
+    .modal-comprobante-content {
+        background: white;
+        border-radius: 12px;
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .modal-comprobante-content img {
+        max-width: 100%;
+        max-height: 85vh;
+        object-fit: contain;
+    }
+
+    .modal-comprobante-close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        font-size: 1.2em;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-comprobante-close:hover {
+        background: rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-warning-content {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        max-width: 400px;
+    }
+
+    .modal-warning-content i {
+        font-size: 3em;
+        color: #ffc107;
+        margin-bottom: 15px;
+    }
+
+    .modal-warning-content h3 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .modal-warning-content p {
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+
+    .container>div>div {
+        scrollbar-width: thin;
+        scrollbar-color: #d4a017 #f1f1f1;
+    }
+
+    .container>div>div::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .container>div>div::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .container>div>div::-webkit-scrollbar-thumb {
+        background: #d4a017;
+        border-radius: 10px;
+    }
+
+    .container>div>div::-webkit-scrollbar-thumb:hover {
+        background: #b8860b;
+    }
+</style>
+
+<!-- jsPDF para generación de reportes PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+    (function () {
+        // =====================================================
+        // ESTADO DEL MÓDULO (encapsulado en IIFE)
+        // =====================================================
+
+        const ventasState = {
+            ventas: [],
+            ventaSeleccionada: null,
+            filtroFecha: new Date(),
+            filtroCodigo: '',
+            cargando: false,
+            proyeccionCache: {
+                valor: null,
+                timestamp: null,
+                detalles: null,
+                totalMesPasado: 0,
+                analisis: null,
+                CACHE_DURATION: 30 * 60 * 1000 // 30 minutos en milisegundos
+            }
+        };
+
+        // =====================================================
+        // INICIALIZACIÓN
+        // =====================================================
+
+        async function initVentas() {
+
+            // Validar que los elementos críticos existan
+            const ventasGallery = document.getElementById('ventasGallery');
+            const diaSelect = document.getElementById('diaSelect');
+
+            if (!ventasGallery || !diaSelect) {
+                return;
+            }
+
+            // Inicializar selectores de fecha
+            inicializarSelectoresFecha();
+
+            // Configurar fecha actual en el header
+            actualizarFechaActual();
+
+            // Configurar event listeners
+            setupVentasEventListeners();
+
+            // Cargar ventas del día
+            await cargarVentas();
+
+            // Actualizar contador del navbar
+            actualizarContadorNavbar();
+        }
+
+        function inicializarSelectoresFecha() {
+            const hoy = new Date();
+
+            // Llenar selector de días (1-31)
+            const diaSelect = document.getElementById('diaSelect');
+            for (let i = 1; i <= 31; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                if (i === hoy.getDate()) option.selected = true;
+                diaSelect.appendChild(option);
+            }
+
+            // Seleccionar mes actual
+            document.getElementById('mesSelect').value = hoy.getMonth();
+
+            // Llenar selector de años (últimos 5 años)
+            const anioSelect = document.getElementById('anioSelect');
+            const anioActual = hoy.getFullYear();
+            for (let i = anioActual; i >= anioActual - 5; i--) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                if (i === anioActual) option.selected = true;
+                anioSelect.appendChild(option);
+            }
+        }
+
+        function actualizarFechaActual() {
+            const fechaEl = document.getElementById('fechaActual');
+            if (!fechaEl) return;
+
+            const fecha = ventasState.filtroFecha;
+            const fechaFormateada = fecha.toLocaleDateString('es-EC', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            fechaEl.textContent = fechaFormateada;
+        }
+
+        function setupVentasEventListeners() {
+            // Búsqueda por código
+            const codigoInput = document.getElementById('codigoVentaInput');
+            if (codigoInput) {
+                codigoInput.addEventListener('input', window.app.debounce(async (e) => {
+                    ventasState.filtroCodigo = e.target.value.trim();
+                    await cargarVentas();
+                }, 500));
+            }
+        }
+
+        // =====================================================
+        // CARGA DE DATOS
+        // =====================================================
+
+        async function cargarVentas() {
+            try {
+                ventasState.cargando = true;
+                mostrarLoading(true);
+
+                const db = window.app.db;
+
+                // Construir query base
+                let query = db
+                    .from('ferre_ventas')
+                    .select('*');
+
+                // Si hay filtro por código, buscar en todo el histórico
+                if (ventasState.filtroCodigo) {
+                    query = query
+                        .ilike('id_venta', `%${ventasState.filtroCodigo}%`)
+                        .order('fecha_hora_venta', { ascending: false })
+                        .limit(100); // Limitar a 100 resultados para evitar sobrecarga
+                } else {
+                    // Si no hay filtro de código, aplicar filtro de fecha
+                    const fechaInicio = new Date(ventasState.filtroFecha);
+                    fechaInicio.setHours(0, 0, 0, 0);
+
+                    const fechaFin = new Date(ventasState.filtroFecha);
+                    fechaFin.setHours(23, 59, 59, 999);
+
+                    query = query
+                        .gte('fecha_hora_venta', fechaInicio.toISOString())
+                        .lte('fecha_hora_venta', fechaFin.toISOString())
+                        .order('fecha_hora_venta', { ascending: false });
+                }
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+
+                ventasState.ventas = data || [];
+
+                // Renderizar gallery
+                renderizarVentasGallery();
+
+                // Actualizar estadísticas
+                actualizarEstadisticas();
+
+                // Actualizar contador del navbar
+                actualizarContadorNavbar();
+
+            } catch (error) {
+                window.app.showToast('Error al cargar ventas: ' + error.message, 'danger', 5000);
+            } finally {
+                ventasState.cargando = false;
+                mostrarLoading(false);
+            }
+        }
+
+        // =====================================================
+        // RENDERIZADO
+        // =====================================================
+
+        function renderizarVentasGallery() {
+            const gallery = document.getElementById('ventasGallery');
+            const noVentas = document.getElementById('noVentas');
+
+            // Validar que los elementos existan
+            if (!gallery || !noVentas) {
+                return;
+            }
+
+            if (ventasState.ventas.length === 0) {
+                gallery.innerHTML = '';
+                noVentas.classList.remove('hidden');
+                return;
+            }
+
+            noVentas.classList.add('hidden');
+
+            gallery.innerHTML = ventasState.ventas.map(venta => {
+                const fecha = new Date(venta.fecha_hora_venta);
+                const hora = fecha.toLocaleTimeString('es-EC', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // Determinar clase de card según tipo y estado
+                let cardClass = 'venta-card';
+                if (venta.tipo === 'RECIBO') {
+                    cardClass += ' recibo';
+                } else if (venta.tipo === 'FACTURA') {
+                    const estado = venta.estado.toUpperCase();
+                    if (estado === 'PENDIENTE') {
+                        cardClass += ' factura-pendiente';
+                    } else if (estado === 'RECHAZADO') {
+                        cardClass += ' factura-rechazado';
+                    } else if (estado === 'AUTORIZADO') {
+                        cardClass += ' factura-autorizado';
+                    }
+                }
+
+                // Determinar badge de estado para facturas
+                let estadoBadge = '';
+                if (venta.tipo === 'FACTURA') {
+                    const estado = venta.estado.toUpperCase();
+                    let badgeClass = 'estado-badge';
+                    if (estado === 'PENDIENTE') badgeClass += ' pendiente';
+                    else if (estado === 'RECHAZADO') badgeClass += ' rechazado';
+                    else if (estado === 'AUTORIZADO') badgeClass += ' autorizado';
+                    estadoBadge = `<span class="${badgeClass}">${venta.estado}</span>`;
+                }
+
+                return `
+                <div class="${cardClass}" onclick="verDetalleVenta('${venta.id}')">
+                    <div class="venta-card-header">
+                        <div class="venta-id">${venta.id_venta}</div>
+                        <div>
+                            <span class="venta-tipo ${venta.tipo.toLowerCase()}">${venta.tipo}</span>
+                            ${estadoBadge}
+                        </div>
+                    </div>
+                    <div class="venta-card-body">
+                        <div class="venta-info-row">
+                            <span class="venta-info-label">Cliente:</span>
+                            <span class="venta-info-value">${venta.cliente_id === '9999999999999' ? 'Consumidor Final' : venta.cliente_id}</span>
+                        </div>
+                        <div class="venta-info-row">
+                            <span class="venta-info-label">Estado:</span>
+                            <span class="venta-info-value">${venta.estado}</span>
+                        </div>
+                        ${venta.ganancia ? `
+                        <div class="venta-info-row">
+                            <span class="venta-info-label">Ganancia:</span>
+                            <span class="venta-info-value" style="color: #d4a017;">${window.app.formatCurrency(venta.ganancia)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="venta-card-footer">
+                        <div class="venta-hora"><i class="fas fa-clock"></i> ${hora}</div>
+                        ${(venta.tipo_pago === 'TRANSFERENCIA' || venta.tipo_pago === 'MIXTO') ? `
+                        <button class="btn-comprobante-transfer" onclick="verComprobanteTransferencia('${venta.id_venta}', event)" title="Ver comprobante de transferencia">
+                            <i class="fas fa-file-image"></i>
+                        </button>
+                        ` : ''}
+                        <div class="venta-total">${window.app.formatCurrency(venta.total)}</div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function actualizarEstadisticas() {
+            const total = ventasState.ventas.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+            const ganancia = ventasState.ventas.reduce((sum, v) => sum + parseFloat(v.ganancia || 0), 0);
+            const cantidad = ventasState.ventas.length;
+
+            const statsTotal = document.getElementById('statsTotal');
+            const statsGanancia = document.getElementById('statsGanancia');
+            const statsCantidad = document.getElementById('statsCantidad');
+
+            if (statsTotal) statsTotal.textContent = window.app.formatCurrency(total);
+            if (statsGanancia) statsGanancia.textContent = window.app.formatCurrency(ganancia);
+            if (statsCantidad) statsCantidad.textContent = `${cantidad} venta${cantidad !== 1 ? 's' : ''}`;
+
+            // Calcular proyección de ventas del mes (solo si no hay filtro de código)
+            const proyeccionContainer = document.querySelector('#statsProyeccion').parentElement;
+            if (!ventasState.filtroCodigo) {
+                if (proyeccionContainer) proyeccionContainer.style.display = 'block';
+                calcularProyeccionVentas();
+            } else {
+                // Ocultar proyección cuando hay filtro de código
+                if (proyeccionContainer) proyeccionContainer.style.display = 'none';
+            }
+        }
+
+        // =====================================================
+        // PROYECCIÓN DE VENTAS
+        // =====================================================
+
+        async function calcularProyeccionVentas() {
+            try {
+                // Verificar si hay cache válido
+                const cache = ventasState.proyeccionCache;
+                const ahora = Date.now();
+                
+                if (cache.valor !== null && cache.timestamp !== null) {
+                    const tiempoTranscurrido = ahora - cache.timestamp;
+                    if (tiempoTranscurrido < cache.CACHE_DURATION) {
+                        // Cache válido, usar valor cacheado
+                        const statsMesPasado = document.getElementById('statsMesPasado');
+                        if (statsMesPasado) statsMesPasado.textContent = window.app.formatCurrency(cache.totalMesPasado);
+                        actualizarUIProyeccion(cache.valor, cache.detalles, true);
+                        return;
+                    }
+                }
+
+                // Cache expirado o no existe, calcular nueva proyección
+                const hoy = new Date();
+                const mesActual = hoy.getMonth();
+                const anioActual = hoy.getFullYear();
+                const diaActual = hoy.getDate();
+
+                // Obtener último día del mes actual
+                const ultimoDiaMes = new Date(anioActual, mesActual + 1, 0).getDate();
+                const diasRestantes = ultimoDiaMes - diaActual;
+
+                // Si ya pasó el mes o es el último día, no mostrar proyección
+                if (diasRestantes <= 0) {
+                    actualizarUIProyeccion(0, diasRestantes === 0 ? 'Último día del mes' : 'Mes finalizado', false);
+                    return;
+                }
+
+                // Si es el primer día del mes, mostrar mensaje especial
+                if (diaActual === 1) {
+                    actualizarUIProyeccion(0, 'Primer día del mes - proyección no disponible aún', false);
+                    return;
+                }
+
+                const db = window.app.db;
+
+                // Obtener ventas del mes actual
+                const inicioMesActual = new Date(anioActual, mesActual, 1);
+                inicioMesActual.setHours(0, 0, 0, 0);
+                const finHoy = new Date(hoy);
+                finHoy.setHours(23, 59, 59, 999);
+
+                const { data: ventasMesActual, error: errorActual } = await db
+                    .from('ferre_ventas')
+                    .select('total, fecha_hora_venta, id')
+                    .gte('fecha_hora_venta', inicioMesActual.toISOString())
+                    .lte('fecha_hora_venta', finHoy.toISOString());
+
+                if (errorActual) throw errorActual;
+
+                // Obtener ventas del mes anterior completo
+                const inicioMesAnterior = new Date(anioActual, mesActual - 1, 1);
+                inicioMesAnterior.setHours(0, 0, 0, 0);
+                const finMesAnterior = new Date(anioActual, mesActual, 0);
+                finMesAnterior.setHours(23, 59, 59, 999);
+
+                const { data: ventasMesAnterior, error: errorAnterior } = await db
+                    .from('ferre_ventas')
+                    .select('total, fecha_hora_venta')
+                    .gte('fecha_hora_venta', inicioMesAnterior.toISOString())
+                    .lte('fecha_hora_venta', finMesAnterior.toISOString());
+
+                if (errorAnterior) throw errorAnterior;
+
+                const totalMesAnterior = (ventasMesAnterior || []).reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+                const statsMesPasado = document.getElementById('statsMesPasado');
+                if (statsMesPasado) statsMesPasado.textContent = window.app.formatCurrency(totalMesAnterior);
+
+                // --- Análisis de Inventario y Productos Calientes ---
+                // Obtener ventas de los últimos 15 días CON sus detalles incluidos
+                const hace15Dias = new Date();
+                hace15Dias.setDate(hoy.getDate() - 15);
+
+                const { data: ventasConDetalles, error: errorVentasConDetalles } = await db
+                    .from('ferre_ventas')
+                    .select('id, ventas_detalle:ferre_ventas_detalle(producto_id, cantidad, subtotal, precio)')
+                    .gte('fecha_hora_venta', hace15Dias.toISOString());
+
+                // Extraer y aplanar los detalles de las ventas
+                let detallesRecientes = [];
+                if (!errorVentasConDetalles && ventasConDetalles) {
+                    ventasConDetalles.forEach(venta => {
+                        if (venta.ventas_detalle && Array.isArray(venta.ventas_detalle)) {
+                            // Solo incluir productos con precio > 1 USD
+                            const detallesFiltrados = venta.ventas_detalle.filter(d => 
+                                parseFloat(d.precio || 0) > 1
+                            );
+                            detallesRecientes = detallesRecientes.concat(detallesFiltrados);
+                        }
+                    });
+                }
+
+                // Obtener inventario actual (para análisis complementario)
+                const { data: inventario, error: errorInv } = await db
+                    .from('ferre_inventario')
+                    .select('codigo, producto, stock, stock_minimo');
+
+                // Calcular proyección con algoritmo complejo
+                const proyeccion = calcularProyeccionCompleja(
+                    ventasMesActual || [],
+                    ventasMesAnterior || [],
+                    diaActual,
+                    ultimoDiaMes,
+                    detallesRecientes,
+                    inventario || []
+                );
+
+                // Guardar en cache
+                cache.valor = proyeccion.total;
+                cache.timestamp = ahora;
+                cache.detalles = proyeccion.detalles;
+                cache.totalMesPasado = totalMesAnterior;
+                cache.analisis = proyeccion.analisis;
+
+                // Actualizar UI
+                actualizarUIProyeccion(proyeccion.total, proyeccion.detalles, false);
+
+            } catch (error) {
+                console.error('Error al calcular proyección:', error);
+                actualizarUIProyeccion(0, 'Error al calcular', false);
+            }
+        }
+
+        function calcularProyeccionCompleja(ventasMesActual, ventasMesAnterior, diaActual, ultimoDiaMes, detallesRecientes, inventario) {
+            // Total de ventas mes actual hasta hoy
+            const totalMesActual = ventasMesActual.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+
+            // Días restantes del mes
+            const diasRestantes = ultimoDiaMes - diaActual;
+
+            // Si no hay ventas este mes, proyección es 0
+            if (ventasMesActual.length === 0) {
+                return {
+                    total: 0,
+                    detalles: 'Sin ventas este mes',
+                    analisis: { mensaje: 'No hay datos suficientes este mes.' }
+                };
+            }
+
+            // Análisis del mes anterior
+            const ventasPorDiaMesAnterior = {};
+            const ultimoDiaMesAnterior = new Date(
+                new Date().getFullYear(),
+                new Date().getMonth(),
+                0
+            ).getDate();
+
+            ventasMesAnterior.forEach(venta => {
+                const fecha = new Date(venta.fecha_hora_venta);
+                const dia = fecha.getDate();
+                if (!ventasPorDiaMesAnterior[dia]) {
+                    ventasPorDiaMesAnterior[dia] = 0;
+                }
+                ventasPorDiaMesAnterior[dia] += parseFloat(venta.total || 0);
+            });
+
+            // Calcular patrón de distribución del mes anterior
+            let ventasInicio = 0, ventasMedio = 0, ventasFin = 0;
+            let diasInicio = 0, diasMedio = 0, diasFin = 0;
+
+            for (let dia = 1; dia <= ultimoDiaMesAnterior; dia++) {
+                const ventas = ventasPorDiaMesAnterior[dia] || 0;
+                if (dia <= 10) {
+                    ventasInicio += ventas;
+                    diasInicio++;
+                } else if (dia <= 20) {
+                    ventasMedio += ventas;
+                    diasMedio++;
+                } else {
+                    ventasFin += ventas;
+                    diasFin++;
+                }
+            }
+
+            const promedioInicio = diasInicio > 0 ? ventasInicio / diasInicio : 0;
+            const promedioMedio = diasMedio > 0 ? ventasMedio / diasMedio : 0;
+            const promedioFin = diasFin > 0 ? ventasFin / diasFin : 0;
+
+            let patron = 'equilibrado';
+            let factorAjustePatron = 1.0;
+            
+            if (promedioFin > promedioInicio * 1.2 && promedioFin > promedioMedio * 1.1) {
+                patron = 'Creciente al final';
+                factorAjustePatron = 1.15;
+            } else if (promedioInicio > promedioFin * 1.2) {
+                patron = 'Decreciente';
+                factorAjustePatron = 0.9;
+            } else if (promedioMedio > promedioInicio && promedioMedio > promedioFin) {
+                patron = 'Pico a mitad de mes';
+                factorAjustePatron = 1.0;
+            }
+
+            // Tendencia comparativa
+            const totalMesAnteriorMismoPeriodo = Object.keys(ventasPorDiaMesAnterior)
+                .filter(dia => parseInt(dia) <= diaActual)
+                .reduce((sum, dia) => sum + ventasPorDiaMesAnterior[dia], 0);
+
+            let factorTendencia = 1.0;
+            if (totalMesAnteriorMismoPeriodo > 0) {
+                const ratioComparativo = totalMesActual / totalMesAnteriorMismoPeriodo;
+                if (ratioComparativo > 1.1) factorTendencia = 1.1;
+                else if (ratioComparativo < 0.9) factorTendencia = 0.9;
+            }
+
+            // --- ANÁLISIS DE INVENTARIO Y PRODUCTOS HOT ---
+            const ventasPorProducto = {};
+            detallesRecientes.forEach(d => {
+                if (!ventasPorProducto[d.producto_id]) ventasPorProducto[d.producto_id] = 0;
+                ventasPorProducto[d.producto_id] += parseFloat(d.cantidad || 0);
+            });
+
+            const topProductos = Object.entries(ventasPorProducto)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            const alertasStock = [];
+            let impactoInventario = 1.0;
+
+            const invMap = {};
+            inventario.forEach(i => invMap[i.codigo] = i);
+
+            topProductos.forEach(([id, cant]) => {
+                const prod = invMap[id];
+                if (prod) {
+                    const ventasDiarias = cant / 15;
+                    const diasStockRestante = prod.stock / (ventasDiarias || 1);
+                    
+                    if (diasStockRestante < 5) {
+                        alertasStock.push({
+                            producto: prod.producto,
+                            stock: prod.stock,
+                            ventas15d: cant,
+                            diasEstimados: diasStockRestante.toFixed(1),
+                            recomendacion: `Stockear urgente (se agota en ~${diasStockRestante.toFixed(0)} días)`
+                        });
+                        // Si se agota un top seller, impacta negativamente la proyección de ventas futuras
+                        impactoInventario -= 0.03; // -3% por cada top seller en riesgo
+                    } else if (prod.stock <= prod.stock_minimo) {
+                        alertasStock.push({
+                            producto: prod.producto,
+                            stock: prod.stock,
+                            ventas15d: cant,
+                            diasEstimados: diasStockRestante.toFixed(1),
+                            recomendacion: 'Considerar reabastecimiento pronto'
+                        });
+                    }
+                }
+            });
+
+            // Proyectar
+            const promedioDiarioActual = totalMesActual / diaActual;
+            let proyeccionRestante = 0;
+            for (let dia = diaActual + 1; dia <= ultimoDiaMes; dia++) {
+                let promedioEsperado;
+                if (dia <= 10) promedioEsperado = promedioInicio || promedioDiarioActual;
+                else if (dia <= 20) promedioEsperado = promedioMedio || promedioDiarioActual;
+                else promedioEsperado = promedioFin || promedioDiarioActual;
+                
+                proyeccionRestante += promedioEsperado * factorTendencia * factorAjustePatron * impactoInventario;
+            }
+
+            const proyeccionTotal = totalMesActual + proyeccionRestante;
+            const iconoTendencia = factorTendencia > 1 ? '↗' : factorTendencia < 1 ? '↘' : '→';
+            const porcentajeTendencia = ((factorTendencia - 1) * 100).toFixed(0);
+            const signo = porcentajeTendencia > 0 ? '+' : '';
+            
+            const detalles = `${diasRestantes} días rest. | ${patron} | ${iconoTendencia} ${signo}${porcentajeTendencia}%`;
+
+            return {
+                total: proyeccionTotal,
+                detalles: detalles,
+                analisis: {
+                    totalActual: totalMesActual,
+                    totalMesPasado: totalMesAnteriorMismoPeriodo,
+                    diasRestantes,
+                    patron,
+                    tendencia: porcentajeTendencia,
+                    impactoInventario: ((impactoInventario - 1) * 100).toFixed(1),
+                    alertasStock,
+                    proyeccionRestante,
+                    // Datos de diagnóstico para verificar el análisis
+                    totalDetallesAnalizados: detallesRecientes.length,
+                    totalProductosUnicos: Object.keys(ventasPorProducto).length,
+                    topProductos: topProductos.map(([id, cant]) => {
+                        const prod = invMap[id];
+                        return {
+                            codigo: id,
+                            nombre: prod ? prod.producto : 'No encontrado en inventario',
+                            cantidadVendida: cant,
+                            stockActual: prod ? prod.stock : 'N/A',
+                            stockMinimo: prod ? prod.stock_minimo : 'N/A'
+                        };
+                    })
+                }
+            };
+        }
+
+        function mostrarDetalleProyeccion() {
+            const cache = ventasState.proyeccionCache;
+            if (!cache.analisis) {
+                window.app.showToast('No hay análisis disponible aún', 'info');
+                return;
+            }
+
+            const modal = document.getElementById('modalDetalleProyeccion');
+            const body = document.getElementById('modalProyeccionBody');
+            const data = cache.analisis;
+
+            let alertasHtml = '';
+            if (data.alertasStock && data.alertasStock.length > 0) {
+                alertasHtml = `
+                    <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); border-radius: 12px; border-left: 5px solid #ff9800;">
+                        <h4 style="color: #e65100; margin-bottom: 12px; font-size: 1em;"><i class="fas fa-exclamation-triangle"></i> Alertas de Inventario</h4>
+                        <div style="display: grid; gap: 10px;">
+                            ${data.alertasStock.map(a => `
+                                <div style="background: white; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                                    <i class="fas fa-box" style="color: #ff9800; font-size: 1.2em;"></i>
+                                    <div style="flex: 1;">
+                                        <strong style="color: #333;">${a.producto}</strong>
+                                        <div style="font-size: 0.85em; color: #666;">${a.recomendacion}</div>
+                                        <div style="font-size: 0.8em; color: #888;">Stock: ${a.stock} | Ventas 15d: ${a.ventas15d}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${parseFloat(data.impactoInventario) < 0 ? 
+                            `<div style="margin-top: 12px; padding: 8px; background: #ffebee; border-radius: 6px; text-align: center;">
+                                <i class="fas fa-arrow-down" style="color: #c62828;"></i>
+                                <span style="color: #c62828; font-weight: 600;">Proyección reducida ${Math.abs(data.impactoInventario)}% por riesgo de stock</span>
+                            </div>` : ''}
+                    </div>
+                `;
+            } else {
+                alertasHtml = `
+                    <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 12px; border-left: 5px solid #4caf50;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-check-circle" style="color: #2e7d32; font-size: 1.5em;"></i>
+                            <div>
+                                <h4 style="color: #2e7d32; margin: 0; font-size: 1em;">Stock Saludable</h4>
+                                <p style="font-size: 0.9em; margin: 5px 0 0 0; color: #555;">Los productos más vendidos tienen stock suficiente.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            body.innerHTML = `
+                <!-- Resumen principal -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 12px; color: white; text-align: center;">
+                        <i class="fas fa-dollar-sign" style="font-size: 1.3em; opacity: 0.8;"></i>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">Ventas Este Mes</div>
+                        <div style="font-weight: 700; font-size: 1.1em;">${window.app.formatCurrency(data.totalActual)}</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 15px; border-radius: 12px; color: white; text-align: center;">
+                        <i class="fas fa-history" style="font-size: 1.3em; opacity: 0.8;"></i>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">Mes Anterior (Día ${new Date().getDate()})</div>
+                        <div style="font-weight: 700; font-size: 1.1em;">${window.app.formatCurrency(data.totalMesPasado)}</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); padding: 15px; border-radius: 12px; color: white; text-align: center;">
+                        <i class="fas fa-calendar-alt" style="font-size: 1.3em; opacity: 0.8;"></i>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">Días Restantes</div>
+                        <div style="font-weight: 700; font-size: 1.4em;">${data.diasRestantes}</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, ${parseFloat(data.tendencia) >= 0 ? '#56ab2f, #a8e063' : '#cb2d3e, #ef473a'}); padding: 15px; border-radius: 12px; color: white; text-align: center;">
+                        <i class="fas fa-${parseFloat(data.tendencia) >= 0 ? 'arrow-up' : 'arrow-down'}" style="font-size: 1.3em; opacity: 0.8;"></i>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">Tendencia</div>
+                        <div style="font-weight: 700; font-size: 1.4em;">${data.tendencia > 0 ? '+' : ''}${data.tendencia}%</div>
+                    </div>
+                </div>
+
+                <!-- Indicadores secundarios -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div style="background: #f8f9fa; padding: 12px 15px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
+                        <i class="fas fa-chart-area" style="color: #7c4dff; font-size: 1.3em;"></i>
+                        <div>
+                            <div style="font-size: 0.8em; color: #666;">Patrón Histórico</div>
+                            <div style="font-weight: 600; color: #333;">${data.patron}</div>
+                        </div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 12px 15px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
+                        <i class="fas fa-plus-circle" style="color: #00bcd4; font-size: 1.3em;"></i>
+                        <div>
+                            <div style="font-size: 0.8em; color: #666;">Venta Adicional Estimada</div>
+                            <div style="font-weight: 600; color: #333;">${window.app.formatCurrency(data.proyeccionRestante)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Análisis de productos calientes -->
+                <div style="background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="color: #7b1fa2; margin: 0; font-size: 1em;"><i class="fas fa-fire-alt"></i> Top 5 Productos (Últimos 15 días)</h4>
+                        <div style="display: flex; gap: 8px;">
+                            <span style="background: #e1bee7; padding: 4px 10px; border-radius: 20px; font-size: 0.75em; color: #6a1b9a;">
+                                <i class="fas fa-receipt"></i> ${data.totalDetallesAnalizados || 0} líneas
+                            </span>
+                            <span style="background: #e1bee7; padding: 4px 10px; border-radius: 20px; font-size: 0.75em; color: #6a1b9a;">
+                                <i class="fas fa-tags"></i> ${data.totalProductosUnicos || 0} productos
+                            </span>
+                        </div>
+                    </div>
+                    ${data.topProductos && data.topProductos.length > 0 ? `
+                        <div style="display: grid; gap: 8px;">
+                            ${data.topProductos.map((p, i) => {
+                                const stockNum = parseFloat(p.stockActual) || 0;
+                                const stockMin = parseFloat(p.stockMinimo) || 0;
+                                const ventasDiarias = p.cantidadVendida / 15;
+                                const diasStock = stockNum / (ventasDiarias || 1);
+                                let estadoIcon = 'fa-check-circle';
+                                let estadoColor = '#4caf50';
+                                let estadoBg = '#e8f5e9';
+                                let estadoTexto = 'OK';
+                                if (p.stockActual === 'N/A') {
+                                    estadoIcon = 'fa-question-circle';
+                                    estadoColor = '#ff9800';
+                                    estadoBg = '#fff3e0';
+                                    estadoTexto = 'Sin inv.';
+                                } else if (diasStock < 5) {
+                                    estadoIcon = 'fa-exclamation-circle';
+                                    estadoColor = '#f44336';
+                                    estadoBg = '#ffebee';
+                                    estadoTexto = '~' + diasStock.toFixed(0) + 'd';
+                                } else if (stockNum <= stockMin) {
+                                    estadoIcon = 'fa-minus-circle';
+                                    estadoColor = '#ff9800';
+                                    estadoBg = '#fff3e0';
+                                    estadoTexto = 'Bajo';
+                                }
+                                const medals = ['🥇', '🥈', '🥉', '4°', '5°'];
+                                return `
+                                    <div style="background: white; padding: 10px 12px; border-radius: 8px; display: grid; grid-template-columns: auto 1fr auto auto auto; gap: 12px; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                                        <span style="font-size: 1.2em; width: 28px; text-align: center;">${medals[i]}</span>
+                                        <div style="min-width: 0;">
+                                            <div style="font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.nombre}</div>
+                                            <div style="font-size: 0.75em; color: #888;">${p.codigo}</div>
+                                        </div>
+                                        <div style="text-align: center; min-width: 60px;">
+                                            <div style="font-weight: 700; color: #333;">${p.cantidadVendida}</div>
+                                            <div style="font-size: 0.7em; color: #888;">vendidos</div>
+                                        </div>
+                                        <div style="text-align: center; min-width: 50px;">
+                                            <div style="font-weight: 600; color: #555;">${p.stockActual}</div>
+                                            <div style="font-size: 0.7em; color: #888;">stock</div>
+                                        </div>
+                                        <div style="background: ${estadoBg}; padding: 4px 8px; border-radius: 6px; text-align: center; min-width: 60px;">
+                                            <i class="fas ${estadoIcon}" style="color: ${estadoColor};"></i>
+                                            <span style="font-size: 0.8em; color: ${estadoColor}; font-weight: 600;"> ${estadoTexto}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : `
+                        <div style="text-align: center; padding: 20px; color: #888;">
+                            <i class="fas fa-inbox" style="font-size: 2em; margin-bottom: 10px;"></i>
+                            <p>No se encontraron productos con precio > $1 en los últimos 15 días.</p>
+                        </div>
+                    `}
+                </div>
+
+                ${alertasHtml}
+
+                <!-- Proyección final -->
+                <div style="margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center; color: white;">
+                    <i class="fas fa-bullseye" style="font-size: 1.5em; opacity: 0.8;"></i>
+                    <div style="font-size: 0.9em; opacity: 0.9; margin-top: 8px;">Proyección Final del Mes</div>
+                    <div style="font-size: 2.2em; font-weight: 800; margin-top: 5px;">${window.app.formatCurrency(cache.valor)}</div>
+                    ${parseFloat(data.impactoInventario) < 0 ? 
+                        `<div style="font-size: 0.8em; opacity: 0.8; margin-top: 8px;">
+                            <i class="fas fa-info-circle"></i> Ajustada por riesgo de inventario
+                        </div>` : ''}
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function cerrarModalProyeccion() {
+            document.getElementById('modalDetalleProyeccion').classList.remove('active');
+            document.getElementById('modalDetalleProyeccion').style.display = 'none';
+        }
+
+        // Función para generar PDF detallado de proyección
+        async function descargarPDFProyeccion() {
+            const cache = ventasState.proyeccionCache;
+            if (!cache.analisis) {
+                window.app.showToast('No hay análisis disponible', 'error');
+                return;
+            }
+
+            window.app.showToast('Generando reporte PDF...', 'info');
+
+            const data = cache.analisis;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 15;
+            let y = margin;
+
+            // Colores
+            const primaryColor = [102, 126, 234];
+            const successColor = [76, 175, 80];
+            const warningColor = [255, 152, 0];
+            const dangerColor = [244, 67, 54];
+            const textColor = [51, 51, 51];
+            const lightGray = [248, 249, 250];
+
+            // Función helper para agregar nueva página si es necesario
+            const checkNewPage = (neededHeight) => {
+                if (y + neededHeight > pageHeight - margin) {
+                    doc.addPage();
+                    y = margin;
+                    return true;
+                }
+                return false;
+            };
+
+            // ========== ENCABEZADO ==========
+            doc.setFillColor(...primaryColor);
+            doc.rect(0, 0, pageWidth, 35, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('REPORTE DE PROYECCIÓN DE VENTAS', pageWidth / 2, 15, { align: 'center' });
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            const fechaActual = new Date().toLocaleDateString('es-EC', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
+            doc.text(`Generado: ${fechaActual}`, pageWidth / 2, 23, { align: 'center' });
+            doc.text(`Ferrisoluciones - Sistema POS`, pageWidth / 2, 29, { align: 'center' });
+            
+            y = 45;
+
+            // ========== SECCIÓN 1: RESUMEN EJECUTIVO ==========
+            doc.setTextColor(...primaryColor);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('1. RESUMEN EJECUTIVO', margin, y);
+            y += 8;
+
+            doc.setDrawColor(...primaryColor);
+            doc.setLineWidth(0.5);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 8;
+
+            // Tarjetas de resumen
+            const cardWidth = (pageWidth - margin * 2 - 15) / 4;
+            const cardHeight = 22;
+            const cards = [
+                { label: 'Ventas Mes Actual', value: window.app.formatCurrency(data.totalActual), color: primaryColor },
+                { label: 'Mes Anterior (Mismo Día)', value: window.app.formatCurrency(data.totalMesPasado), color: successColor },
+                { label: 'Días Restantes', value: data.diasRestantes.toString(), color: warningColor },
+                { label: 'Tendencia', value: `${data.tendencia > 0 ? '+' : ''}${data.tendencia}%`, color: parseFloat(data.tendencia) >= 0 ? successColor : dangerColor }
+            ];
+
+            cards.forEach((card, i) => {
+                const x = margin + i * (cardWidth + 5);
+                doc.setFillColor(...card.color);
+                doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(7);
+                doc.setFont('helvetica', 'normal');
+                doc.text(card.label, x + cardWidth / 2, y + 7, { align: 'center' });
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text(card.value, x + cardWidth / 2, y + 16, { align: 'center' });
+            });
+
+            y += cardHeight + 15;
+
+            // ========== SECCIÓN 2: METODOLOGÍA DEL ANÁLISIS ==========
+            checkNewPage(60);
+            doc.setTextColor(...primaryColor);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('2. METODOLOGÍA DEL ANÁLISIS', margin, y);
+            y += 8;
+
+            doc.setDrawColor(...primaryColor);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 8;
+
+            doc.setTextColor(...textColor);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+
+            const metodologia = [
+                '• Período de análisis: Se analizan las ventas de los últimos 15 días para identificar tendencias recientes.',
+                '• Filtro de productos: Solo se consideran productos con precio unitario mayor a $1.00 USD para evitar distorsiones.',
+                '• Patrón histórico: Se compara el comportamiento del mes actual vs. el mes anterior en el mismo período.',
+                '• Factor de tendencia: Se calcula la variación porcentual entre las ventas actuales y las del mes pasado.',
+                '• Análisis de inventario: Se evalúa el stock de los productos más vendidos para ajustar la proyección.',
+                '• Impacto de stock: Si un producto top seller tiene menos de 5 días de stock, reduce la proyección en 3%.'
+            ];
+
+            metodologia.forEach(item => {
+                const lines = doc.splitTextToSize(item, pageWidth - margin * 2);
+                lines.forEach(line => {
+                    doc.text(line, margin, y);
+                    y += 5;
+                });
+            });
+
+            y += 10;
+
+            // ========== SECCIÓN 3: PARÁMETROS CALCULADOS ==========
+            checkNewPage(50);
+            doc.setTextColor(...primaryColor);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('3. PARÁMETROS CALCULADOS', margin, y);
+            y += 8;
+
+            doc.setDrawColor(...primaryColor);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 8;
+
+            const parametros = [
+                ['Patrón Histórico Detectado', data.patron || 'Equilibrado', 'Indica la distribución típica de ventas durante el mes (inicio, medio, fin).'],
+                ['Líneas de Venta Analizadas', (data.totalDetallesAnalizados || 0).toString(), 'Total de items vendidos en los últimos 15 días.'],
+                ['Productos Únicos (>$1)', (data.totalProductosUnicos || 0).toString(), 'Cantidad de productos diferentes vendidos con precio > $1.'],
+                ['Tendencia vs Mes Anterior', `${data.tendencia > 0 ? '+' : ''}${data.tendencia}%`, 'Comparación de ventas actuales contra el mismo período del mes pasado.'],
+                ['Impacto por Inventario', `${data.impactoInventario}%`, 'Ajuste aplicado por riesgo de agotamiento de productos populares.'],
+                ['Venta Adicional Proyectada', window.app.formatCurrency(data.proyeccionRestante), 'Estimación de ventas para los días restantes del mes.']
+            ];
+
+            parametros.forEach(([param, valor, desc]) => {
+                checkNewPage(18);
+                doc.setFillColor(...lightGray);
+                doc.roundedRect(margin, y, pageWidth - margin * 2, 15, 2, 2, 'F');
+                
+                doc.setTextColor(...textColor);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'bold');
+                doc.text(param + ':', margin + 3, y + 5);
+                
+                doc.setTextColor(...primaryColor);
+                doc.setFontSize(10);
+                doc.text(valor, margin + 70, y + 5);
+                
+                doc.setTextColor(100, 100, 100);
+                doc.setFontSize(7);
+                doc.setFont('helvetica', 'normal');
+                const descLines = doc.splitTextToSize(desc, pageWidth - margin * 2 - 6);
+                doc.text(descLines, margin + 3, y + 11);
+                
+                y += 18;
+            });
+
+            y += 5;
+
+            // ========== SECCIÓN 4: TOP PRODUCTOS ==========
+            checkNewPage(40);
+            doc.setTextColor(...primaryColor);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('4. TOP 10 PRODUCTOS MÁS VENDIDOS (15 DÍAS)', margin, y);
+            y += 8;
+
+            doc.setDrawColor(...primaryColor);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 5;
+
+            // Obtener datos de productos para la tabla
+            const db = window.app.db;
+            const hace15Dias = new Date();
+            hace15Dias.setDate(hace15Dias.getDate() - 15);
+
+            let todosLosProductos = [];
+            try {
+                const { data: ventasConDetalles, error: errorVentas } = await db
+                    .from('ferre_ventas')
+                    .select('id, ventas_detalle:ferre_ventas_detalle(producto_id, cantidad, subtotal, precio)')
+                    .gte('fecha_hora_venta', hace15Dias.toISOString());
+
+                if (errorVentas) {
+                    console.error('Error consultando ventas:', errorVentas);
+                }
+
+                const { data: inventario, error: errorInv } = await db
+                    .from('ferre_inventario')
+                    .select('codigo, producto, stock, stock_minimo');
+
+                if (errorInv) {
+                    console.error('Error consultando inventario:', errorInv);
+                }
+
+                const invMap = {};
+                if (inventario && Array.isArray(inventario)) {
+                    inventario.forEach(i => invMap[i.codigo] = i);
+                }
+
+                const ventasPorProducto = {};
+                if (ventasConDetalles && Array.isArray(ventasConDetalles)) {
+                    ventasConDetalles.forEach(v => {
+                        if (v.ventas_detalle && Array.isArray(v.ventas_detalle)) {
+                            v.ventas_detalle.filter(d => parseFloat(d.precio || 0) > 1).forEach(d => {
+                                if (!ventasPorProducto[d.producto_id]) {
+                                    ventasPorProducto[d.producto_id] = { cantidad: 0, total: 0 };
+                                }
+                                ventasPorProducto[d.producto_id].cantidad += parseFloat(d.cantidad || 0);
+                                ventasPorProducto[d.producto_id].total += parseFloat(d.subtotal || 0);
+                            });
+                        }
+                    });
+                }
+
+                todosLosProductos = Object.entries(ventasPorProducto)
+                    .map(([codigo, datos]) => {
+                        const prod = invMap[codigo];
+                        const ventasDiarias = datos.cantidad / 15;
+                        const diasStock = prod ? prod.stock / (ventasDiarias || 1) : 0;
+                        return {
+                            codigo,
+                            nombre: prod ? prod.producto : 'No encontrado',
+                            cantidadVendida: datos.cantidad,
+                            totalVendido: datos.total,
+                            stock: prod ? prod.stock : 'N/A',
+                            stockMinimo: prod ? prod.stock_minimo : 'N/A',
+                            ventasDiarias: ventasDiarias.toFixed(2),
+                            diasStock: diasStock.toFixed(1),
+                            estado: !prod ? 'SIN INV' : diasStock < 5 ? 'CRÍTICO' : (prod.stock <= prod.stock_minimo) ? 'BAJO' : 'OK'
+                        };
+                    })
+                    .sort((a, b) => b.cantidadVendida - a.cantidadVendida);
+            } catch (e) {
+                console.error('Error obteniendo datos para PDF:', e);
+            }
+
+            // Tabla de top 10 productos
+            const top10 = todosLosProductos.slice(0, 10);
+            
+            if (top10.length === 0) {
+                doc.setTextColor(150, 150, 150);
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'italic');
+                doc.text('No se encontraron datos de productos para el período analizado.', margin, y + 10);
+                y += 25;
+            } else {
+                doc.autoTable({
+                    startY: y,
+                    head: [['#', 'Código', 'Producto', 'Uds', 'Total', 'Día', 'Stock', 'Días', 'Estado']],
+                    body: top10.map((p, i) => [
+                        i + 1,
+                        p.codigo.substring(0, 10),
+                        p.nombre.substring(0, 22) + (p.nombre.length > 22 ? '..' : ''),
+                        p.cantidadVendida,
+                        window.app.formatCurrency(p.totalVendido),
+                        p.ventasDiarias,
+                        p.stock,
+                        p.diasStock,
+                        p.estado
+                    ]),
+                    styles: { fontSize: 7, cellPadding: 1.5 },
+                    headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 6 },
+                    alternateRowStyles: { fillColor: lightGray },
+                    margin: { left: margin, right: margin },
+                    tableWidth: 'auto',
+                    columnStyles: {
+                        0: { cellWidth: 7, halign: 'center' },
+                        1: { cellWidth: 18 },
+                        2: { cellWidth: 40 },
+                        3: { cellWidth: 12, halign: 'center' },
+                        4: { cellWidth: 20, halign: 'right' },
+                        5: { cellWidth: 12, halign: 'center' },
+                        6: { cellWidth: 12, halign: 'center' },
+                        7: { cellWidth: 12, halign: 'center' },
+                        8: { cellWidth: 16, halign: 'center' }
+                    },
+                    didParseCell: function(hookData) {
+                        if (hookData.column.index === 8 && hookData.section === 'body') {
+                            const estado = hookData.cell.raw;
+                            if (estado === 'CRÍTICO') hookData.cell.styles.textColor = dangerColor;
+                            else if (estado === 'BAJO') hookData.cell.styles.textColor = warningColor;
+                            else if (estado === 'OK') hookData.cell.styles.textColor = successColor;
+                        }
+                    }
+                });
+
+                y = doc.lastAutoTable.finalY + 10;
+            }
+
+            // ========== SECCIÓN 5: ALERTAS DE STOCK ==========
+            if (data.alertasStock && data.alertasStock.length > 0) {
+                checkNewPage(40);
+                doc.setTextColor(...warningColor);
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('5. ALERTAS DE INVENTARIO', margin, y);
+                y += 8;
+
+                doc.setDrawColor(...warningColor);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 5;
+
+                doc.autoTable({
+                    startY: y,
+                    head: [['Producto', 'Stock', 'Vtas 15d', 'Días Est.', 'Recomendación']],
+                    body: data.alertasStock.map(a => [
+                        (a.producto || '').substring(0, 30),
+                        a.stock,
+                        a.ventas15d,
+                        a.diasEstimados,
+                        (a.recomendacion || '').substring(0, 35)
+                    ]),
+                    styles: { fontSize: 7, cellPadding: 2 },
+                    headStyles: { fillColor: warningColor, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
+                    margin: { left: margin, right: margin },
+                    tableWidth: 'auto',
+                    columnStyles: {
+                        0: { cellWidth: 45 },
+                        1: { cellWidth: 18, halign: 'center' },
+                        2: { cellWidth: 20, halign: 'center' },
+                        3: { cellWidth: 20, halign: 'center' },
+                        4: { cellWidth: 50 }
+                    }
+                });
+
+                y = doc.lastAutoTable.finalY + 10;
+            }
+
+            // ========== SECCIÓN 6: PROYECCIÓN FINAL ==========
+            checkNewPage(50);
+            
+            doc.setFillColor(...primaryColor);
+            doc.roundedRect(margin, y, pageWidth - margin * 2, 35, 5, 5, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text('PROYECCIÓN FINAL ESTIMADA DEL MES', pageWidth / 2, y + 12, { align: 'center' });
+            
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(window.app.formatCurrency(cache.valor), pageWidth / 2, y + 26, { align: 'center' });
+
+            y += 45;
+
+            // ========== SECCIÓN 7: NOTAS PARA ANÁLISIS HUMANO ==========
+            checkNewPage(50);
+            doc.setTextColor(...textColor);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('NOTAS PARA ANÁLISIS HUMANO', margin, y);
+            y += 8;
+
+            doc.setDrawColor(...textColor);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 8;
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+
+            const notas = [
+                'Este reporte es una herramienta de apoyo para la toma de decisiones. Los resultados son estimaciones basadas en datos históricos.',
+                '',
+                'Factores a considerar que pueden afectar la proyección real:',
+                '  • Temporadas o fechas especiales (feriados, promociones, eventos locales)',
+                '  • Cambios en precios o disponibilidad de productos',
+                '  • Nuevos competidores o cambios en el mercado',
+                '  • Condiciones climáticas o económicas',
+                '  • Campañas de marketing o publicidad',
+                '',
+                'Recomendaciones:',
+                '  • Revisar productos con estado CRÍTICO y reabastecer con prioridad',
+                '  • Analizar si el patrón histórico detectado coincide con expectativas',
+                '  • Comparar con reportes anteriores para validar tendencias',
+                '  • Ajustar la proyección manualmente si hay eventos conocidos próximos'
+            ];
+
+            notas.forEach(nota => {
+                checkNewPage(6);
+                doc.text(nota, margin, y);
+                y += 5;
+            });
+
+            // ========== PIE DE PÁGINA ==========
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(
+                    `Página ${i} de ${totalPages} | Ferrisoluciones - Generado el ${new Date().toLocaleString('es-EC')}`,
+                    pageWidth / 2,
+                    pageHeight - 8,
+                    { align: 'center' }
+                );
+            }
+
+            // Guardar el PDF
+            const nombreArchivo = `Proyeccion_Ventas_${new Date().toISOString().slice(0, 10)}.pdf`;
+            doc.save(nombreArchivo);
+            window.app.showToast(`Reporte "${nombreArchivo}" descargado exitosamente`, 'success');
+        }
+
+        // Hacer funciones accesibles globalmente si están dentro de un IIFE
+        window.mostrarDetalleProyeccion = mostrarDetalleProyeccion;
+        window.cerrarModalProyeccion = cerrarModalProyeccion;
+        window.descargarPDFProyeccion = descargarPDFProyeccion;
+        window.aplicarFiltroFecha = aplicarFiltroFecha;
+        window.resetearFiltros = resetearFiltros;
+        window.mostrarDashboard = mostrarDashboard;
+        window.ocultarDashboard = ocultarDashboard;
+        window.filtrarDashboard = filtrarDashboard;
+        window.mostrarTopProductos = mostrarTopProductos;
+        window.cerrarModalTop = cerrarModalTop;
+        window.verDetalleVenta = verDetalleVenta;
+        window.cerrarModalDetalle = cerrarModalDetalle;
+        window.cerrarModalSeleccionCliente = cerrarModalSeleccionCliente;
+
+        function actualizarUIProyeccion(valor, detalles, esCache) {
+            const statsProyeccion = document.getElementById('statsProyeccion');
+            const proyeccionDetalles = document.getElementById('proyeccionDetalles');
+            const cacheIndicator = document.getElementById('proyeccionCacheIndicator');
+
+            if (statsProyeccion) {
+                statsProyeccion.textContent = window.app.formatCurrency(valor);
+            }
+
+            if (proyeccionDetalles) {
+                proyeccionDetalles.textContent = detalles;
+            }
+
+            if (cacheIndicator) {
+                if (esCache) {
+                    const cache = ventasState.proyeccionCache;
+                    const minTranscurridos = Math.floor((Date.now() - cache.timestamp) / 60000);
+                    const tiempoRestante = Math.max(0, 30 - minTranscurridos);
+                    cacheIndicator.innerHTML = `<i class="fas fa-clock"></i> cache ${tiempoRestante}m`;
+                } else {
+                    cacheIndicator.innerHTML = '<i class="fas fa-sync-alt"></i> nuevo';
+                }
+            }
+        }
+
+        function actualizarContadorNavbar() {
+            if (window.app && window.app.updateNavbarCounter) {
+                window.app.updateNavbarCounter('ventas', ventasState.ventas.length);
+            }
+        }
+
+        // =====================================================
+        // DETALLE DE VENTA
+        // =====================================================
+
+        async function verDetalleVenta(ventaId) {
+            try {
+                // Mostrar modal con loading inmediatamente
+                mostrarModalLoading();
+
+                const db = window.app.db;
+
+                // Obtener venta
+                const { data: venta, error: ventaError } = await db
+                    .from('ferre_ventas')
+                    .select('*')
+                    .eq('id', ventaId)
+                    .single();
+
+                if (ventaError) throw ventaError;
+
+                // Obtener detalles de la venta
+                const { data: detalles, error: detallesError } = await db
+                    .from('ferre_ventas_detalle')
+                    .select('*')
+                    .eq('venta_id', ventaId);
+
+                if (detallesError) throw detallesError;
+
+                // Obtener información de productos (con chunks para evitar URLs largas)
+                const productosIds = detalles.map(d => d.producto_id);
+                let productosMap = {};
+                
+                if (productosIds.length > 0) {
+                    const chunkSize = 5; // Reducido a 5 para evitar URLs largas con UUIDs
+                    for (let i = 0; i < productosIds.length; i += chunkSize) {
+                        const chunk = productosIds.slice(i, i + chunkSize);
+                        const { data: productos, error: productosError } = await db
+                            .from('ferre_inventario')
+                            .select('codigo, producto')
+                            .in('codigo', chunk);
+
+                        if (productosError) throw productosError;
+                        
+                        if (productos) {
+                            productos.forEach(p => {
+                                productosMap[p.codigo] = p.producto;
+                            });
+                        }
+                    }
+                }
+
+                // Renderizar modal
+                mostrarModalDetalle(venta, detalles, productosMap);
+
+            } catch (error) {
+                window.app.showToast('Error al cargar detalle de venta', 'danger', 3000);
+            }
+        }
+
+        function mostrarModalDetalle(venta, detalles, productosMap) {
+            const fecha = new Date(venta.fecha_hora_venta);
+            const fechaFormateada = fecha.toLocaleString('es-EC');
+
+            const modalBody = document.getElementById('modalDetalleBody');
+            modalBody.innerHTML = `
+            <div class="detalle-header-info">
+                <h3 style="margin-bottom: 15px; color: #d4a017;">Venta ${venta.id_venta}</h3>
+                
+                <div class="detalle-info-grid">
+                    <div class="detalle-info-item">
+                        <label>Fecha y Hora</label>
+                        <div class="value">${fechaFormateada}</div>
+                    </div>
+                    <div class="detalle-info-item">
+                        <label>Tipo</label>
+                        <div class="value">${venta.tipo}</div>
+                    </div>
+                    <div class="detalle-info-item">
+                        <label>Cliente</label>
+                        <div class="value">${venta.cliente_id === '9999999999999' ? 'Consumidor Final' : venta.cliente_id}</div>
+                    </div>
+                    <div class="detalle-info-item">
+                        <label>Estado</label>
+                        <div class="value">${venta.estado}</div>
+                    </div>
+                    ${venta.usuario_email ? `
+                    <div class="detalle-info-item">
+                        <label>Vendedor</label>
+                        <div class="value">${venta.usuario_email}</div>
+                    </div>
+                    ` : ''}
+                    <div class="detalle-info-item">
+                        <label>Pagado con</label>
+                        <div class="value">${window.app.formatCurrency(venta.pagado_con)}</div>
+                    </div>
+                    <div class="detalle-info-item">
+                        <label>Vuelto</label>
+                        <div class="value">${window.app.formatCurrency(venta.vuelto)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detalle-productos">
+                <h4><i class="fas fa-box"></i> Productos Vendidos</h4>
+                ${detalles.map(detalle => `
+                    <div class="producto-detalle-item">
+                        <div class="producto-detalle-info">
+                            <div class="producto-detalle-nombre">
+                                ${productosMap[detalle.producto_id] || detalle.producto_id}
+                            </div>
+                            <div class="producto-detalle-datos">
+                                ${detalle.cantidad} × ${window.app.formatCurrency(detalle.precio)}
+                                ${detalle.ganancia ? ` | Ganancia: ${window.app.formatCurrency(detalle.ganancia)}` : ''}
+                            </div>
+                        </div>
+                        <div class="producto-detalle-subtotal">
+                            ${window.app.formatCurrency(detalle.subtotal)}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div class="detalle-totales">
+                ${venta.ganancia ? `
+                <div class="detalle-total-row">
+                    <span>Ganancia Total:</span>
+                    <strong style="color: #d4a017;">${window.app.formatCurrency(venta.ganancia)}</strong>
+                </div>
+                ` : ''}
+                <div class="detalle-total-row total-final">
+                    <span>TOTAL:</span>
+                    <strong>${window.app.formatCurrency(venta.total)}</strong>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap;">
+                ${generarBotonesAccion(venta)}
+                <button class="btn btn-secondary" onclick="cerrarModalDetalle()">Cerrar</button>
+            </div>
+        `;
+
+            // Guardar venta actual en variable global para uso de botones
+            window.ventaActual = { venta, detalles, productosMap };
+
+            document.getElementById('modalDetalleVenta').classList.add('active');
+        }
+
+        function generarBotonesAccion(venta) {
+            const tipo = venta.tipo;
+            const estado = venta.estado;
+            let botones = '';
+
+            if (tipo === 'FACTURA') {
+                if (estado === 'AUTORIZADO' || estado === 'COMPLETADO') {
+                    botones = `
+                    <button class="btn btn-primary" onclick="reimprimirFacturaElectronica()">
+                        <i class="fas fa-print"></i> Reimprimir Factura
+                    </button>
+                `;
+                } else if (estado === 'PENDIENTE' || estado === 'FALLIDO' || estado === 'RECHAZADO') {
+                    botones = `
+                    <button class="btn btn-accent" onclick="reenviarAlSRI()">
+                        <i class="fas fa-sync-alt"></i> Reenviar al SRI
+                    </button>
+                `;
+                }
+            } else if (tipo === 'RECIBO') {
+                botones = `
+                <button class="btn btn-primary" onclick="reimprimirRecibo()">
+                    <i class="fas fa-print"></i> Reimprimir Recibo
+                </button>
+                <button class="btn btn-accent" onclick="iniciarConversionAFactura()">
+                    <i class="fas fa-file-invoice"></i> Convertir a Factura
+                </button>
+            `;
+            }
+
+            return botones;
+        }
+
+        function mostrarModalLoading() {
+            const modalBody = document.getElementById('modalDetalleBody');
+            modalBody.innerHTML = `
+            <div class="detalle-loading">
+                <div class="spinner-large"></div>
+                <div class="detalle-loading-text">Cargando detalles...</div>
+            </div>
+        `;
+
+            const modal = document.getElementById('modalDetalleVenta');
+            modal.classList.remove('closing');
+            modal.classList.add('active');
+        }
+
+        function cerrarModalDetalle() {
+            const modal = document.getElementById('modalDetalleVenta');
+            modal.classList.add('closing');
+
+            // Esperar a que termine la animación antes de ocultar
+            setTimeout(() => {
+                modal.classList.remove('active', 'closing');
+            }, 200);
+        }
+
+        // =====================================================
+        // FILTROS
+        // =====================================================
+
+        function aplicarFiltroFecha() {
+            const dia = parseInt(document.getElementById('diaSelect').value);
+            const mes = parseInt(document.getElementById('mesSelect').value);
+            const anio = parseInt(document.getElementById('anioSelect').value);
+
+            ventasState.filtroFecha = new Date(anio, mes, dia);
+            actualizarFechaActual();
+            cargarVentas();
+        }
+
+        function resetearFiltros() {
+            const hoy = new Date();
+            ventasState.filtroFecha = hoy;
+            ventasState.filtroCodigo = '';
+
+            // Resetear selectores
+            document.getElementById('diaSelect').value = hoy.getDate();
+            document.getElementById('mesSelect').value = hoy.getMonth();
+            document.getElementById('anioSelect').value = hoy.getFullYear();
+            document.getElementById('codigoVentaInput').value = '';
+
+            actualizarFechaActual();
+            cargarVentas();
+        }
+
+        // =====================================================
+        // UTILIDADES
+        // =====================================================
+
+        function mostrarLoading(show) {
+            const loading = document.getElementById('ventasLoading');
+            if (loading) {
+                if (show) {
+                    loading.classList.remove('hidden');
+                } else {
+                    loading.classList.add('hidden');
+                }
+            }
+        }
+
+        // =====================================================
+        // REIMPRESIÓN DE DOCUMENTOS
+        // =====================================================
+
+        function reimprimirRecibo() {
+            const { venta, detalles, productosMap } = window.ventaActual;
+
+            try {
+                const cantidades = [];
+                const servicios = [];
+                const p_units = [];
+                const p_total = [];
+
+                detalles.forEach(detalle => {
+                    cantidades.push(detalle.cantidad);
+                    const nombreProducto = (productosMap[detalle.producto_id] || detalle.producto_id).replace(/,/g, ".");
+                    servicios.push(encodeURIComponent(nombreProducto));
+                    p_units.push(detalle.precio.toFixed(2));
+                    p_total.push(detalle.subtotal.toFixed(2));
+                });
+
+                const fecha = new Date(venta.fecha_hora_venta);
+                const formattedDate = fecha.toLocaleString('es-EC', {
+                    timeZone: 'America/Guayaquil',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(/[/]/g, '/').replace(',', '');
+
+                const url = "views/recibo.html" +
+                    "?fecha=" + encodeURIComponent(formattedDate) +
+                    "&venta=" + encodeURIComponent(venta.id_venta) +
+                    "&subtotal=" + encodeURIComponent(venta.total.toFixed(2)) +
+                    "&descuento=0" +
+                    "&vendedor=" + encodeURIComponent(venta.usuario_email || 'SISTEMA') +
+                    "&nombre_cliente=" + encodeURIComponent(venta.cliente_id === '9999999999999' ? 'CONSUMIDOR FINAL' : venta.cliente_id) +
+                    "&cedula_cliente=" + encodeURIComponent(venta.cliente_id) +
+                    "&direccion_cliente=S/N" +
+                    "&telefono_cliente=S/N" +
+                    "&cantidades=" + cantidades.join(',') +
+                    "&servicios=" + servicios.join(',') +
+                    "&p_units=" + p_units.join(',') +
+                    "&total=" + encodeURIComponent(venta.total.toFixed(2)) +
+                    "&p_total=" + p_total.join(',') +
+                    "&tipo_documento=RECIBO";
+
+                window.open(url, '_blank');
+                window.app?.showToast?.('🖨️ Imprimiendo recibo...', 'success', 2000);
+
+            } catch (error) {
+                console.error('Error al reimprimir recibo:', error);
+                window.app?.showToast?.('Error al generar el recibo', 'error', 3000);
+            }
+        }
+
+        async function reimprimirFacturaElectronica() {
+            const { venta, detalles, productosMap } = window.ventaActual;
+
+            try {
+                // Obtener configuraciones
+                const db = window.app.db;
+
+                const { data: configSRI } = await db.from('ferre_facelectronicaconfig').select('*').single();
+                const { data: configServicios } = await db.from('ferre_config_servicios').select('*').single();
+                const { data: clienteData } = await db.from('ferre_clientes').select('*').eq('cedula', venta.cliente_id).single();
+
+                if (!configSRI || !configServicios) {
+                    window.app?.showToast?.('Error: Configuración de facturación no disponible', 'error', 3000);
+                    return;
+                }
+
+                // Preparar productos
+                const productos = detalles.map(detalle => ({
+                    codigo: detalle.producto_id,
+                    cantidad: detalle.cantidad,
+                    nombre: productosMap[detalle.producto_id] || detalle.producto_id,
+                    precio: detalle.precio,
+                    subtotal: detalle.subtotal
+                }));
+
+                // Construir arrays para los parámetros
+                const cantidades = productos.map(prod => prod.cantidad.toFixed(2));
+                const descripciones = productos.map(prod => prod.nombre.replace(/,/g, '.'));
+                const preciosUnitarios = productos.map(prod => prod.precio.toFixed(2));
+                const totalesProducto = productos.map(prod => prod.subtotal.toFixed(2));
+
+                // Fecha de la factura
+                const fechaFactura = new Date(venta.fecha_factura || venta.fecha_hora_venta).toLocaleString('es-EC', {
+                    timeZone: 'America/Guayaquil',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // Ambiente y emisión
+                const ambienteTexto = Number(configSRI.ambiente) === 1 ? 'PRUEBAS' : 'PRODUCCIÓN';
+                const emisionTexto = Number(configSRI.tipo_emision) === 1 ? 'NORMAL' : 'CONTINGENCIA';
+
+                // Cliente
+                const cliente = clienteData || {
+                    razon_social: venta.cliente_id === '9999999999999' ? 'CONSUMIDOR FINAL' : venta.cliente_id,
+                    cedula: venta.cliente_id,
+                    direccion: 'S/N',
+                    telefono: 'S/N',
+                    correo: 'consumidor@final.com'
+                };
+
+                // Construir URL con parámetros
+                const params = new URLSearchParams();
+                params.set('company_name', configServicios.empresa_nombre_comercial || configServicios.empresa_razon_social || '');
+                params.set('company_owner', configServicios.empresa_razon_social || '');
+                params.set('company_ruc', configServicios.empresa_ruc || '');
+                params.set('company_address', configServicios.empresa_dir_establecimiento || '');
+                params.set('company_phone', configServicios.empresa_telefono || '');
+                params.set('logo_url', configServicios.url_logo_factura || '');
+
+                params.set('invoice_number', venta.doc || '');
+                params.set('invoice_date', fechaFactura);
+                params.set('environment', ambienteTexto);
+                params.set('emission', emisionTexto);
+                params.set('auth_number', venta.clave_acceso || '');
+
+                params.set('customer_name', cliente.razon_social || 'CONSUMIDOR FINAL');
+                params.set('customer_id', cliente.cedula || '9999999999999');
+                params.set('customer_address', cliente.direccion || 'S/N');
+                params.set('customer_phone', cliente.telefono || 'S/N');
+                params.set('customer_email', cliente.correo || 'consumidor@final.com');
+
+                params.set('attendant', venta.usuario_email || '---');
+
+                params.set('subtotal', venta.total.toFixed(2));
+                params.set('discount', '0.00');
+                params.set('total', venta.total.toFixed(2));
+
+                params.set('quantities', cantidades.join(','));
+                params.set('descriptions', descripciones.join(','));
+                params.set('unit_prices', preciosUnitarios.join(','));
+                params.set('total_prices', totalesProducto.join(','));
+
+                // Abrir factura en nueva pestaña
+                const facturaUrl = `views/factura.html?${params.toString()}`;
+                window.open(facturaUrl, '_blank');
+
+                window.app?.showToast?.('🖨️ Imprimiendo factura electrónica...', 'success', 2000);
+
+            } catch (error) {
+                console.error('Error al reimprimir factura:', error);
+                window.app?.showToast?.('Error al generar la factura', 'error', 3000);
+            }
+        }
+
+        // =====================================================
+        // CONVERTIR RECIBO A FACTURA
+        // =====================================================
+
+        let clientesBusqueda = [];
+        let debounceTimer = null;
+
+        function iniciarConversionAFactura() {
+            const { venta } = window.ventaActual;
+
+            // Mostrar información del recibo
+            document.getElementById('recibo-id').textContent = venta.id_venta;
+            document.getElementById('recibo-total').textContent = window.app.formatCurrency(venta.total);
+            document.getElementById('recibo-fecha').textContent = new Date(venta.fecha_hora_venta).toLocaleString('es-EC');
+            document.getElementById('factura-fecha').textContent = new Date().toLocaleString('es-EC');
+
+            // Limpiar búsqueda
+            document.getElementById('cliente-search-input').value = '';
+            document.getElementById('cliente-results-tbody').innerHTML = `
+            <tr>
+                <td colspan="4" style="padding: 40px; text-align: center; color: #999;">
+                    Busque un cliente por cédula, RUC o nombre
+                </td>
+            </tr>
+        `;
+
+            // Configurar evento de búsqueda
+            const searchInput = document.getElementById('cliente-search-input');
+            searchInput.oninput = (e) => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => buscarClientes(e.target.value), 300);
+            };
+
+            // Mostrar modal
+            document.getElementById('modalSeleccionCliente').classList.add('active');
+        }
+
+        function cerrarModalSeleccionCliente() {
+            document.getElementById('modalSeleccionCliente').classList.remove('active');
+        }
+
+        async function buscarClientes(query) {
+            if (!query || query.trim().length < 2) {
+                document.getElementById('cliente-results-tbody').innerHTML = `
+                <tr>
+                    <td colspan="4" style="padding: 40px; text-align: center; color: #999;">
+                        Busque un cliente por cédula, RUC o nombre
+                    </td>
+                </tr>
+            `;
+                return;
+            }
+
+            try {
+                const db = window.app.db;
+                const searchTerm = `%${query}%`;
+
+                const { data, error } = await db
+                    .from('ferre_clientes')
+                    .select('*')
+                    .or(`cedula.ilike.${searchTerm},razon_social.ilike.${searchTerm}`)
+                    .limit(20);
+
+                if (error) throw error;
+
+                clientesBusqueda = data || [];
+                mostrarResultadosClientes(clientesBusqueda);
+
+            } catch (error) {
+                console.error('Error buscando clientes:', error);
+                window.app?.showToast?.('Error al buscar clientes', 'error', 2000);
+            }
+        }
+
+        function mostrarResultadosClientes(clientes) {
+            const tbody = document.getElementById('cliente-results-tbody');
+
+            if (!clientes || clientes.length === 0) {
+                tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="padding: 40px; text-align: center; color: #999;">
+                        No se encontraron clientes
+                    </td>
+                </tr>
+            `;
+                return;
+            }
+
+            tbody.innerHTML = clientes.map(cliente => `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px;">${cliente.cedula}</td>
+                <td style="padding: 12px;">${cliente.razon_social}</td>
+                <td style="padding: 12px; font-size: 0.9em; color: #666;">${cliente.correo || 'N/A'}</td>
+                <td style="padding: 12px; text-align: center;">
+                    <button 
+                        class="btn btn-accent" 
+                        style="padding: 6px 12px; font-size: 0.85em;"
+                        onclick='seleccionarClienteParaFactura(${JSON.stringify(cliente).replace(/'/g, "&apos;")})'>
+                        Seleccionar
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        }
+
+        async function seleccionarClienteParaFactura(cliente) {
+            if (!cliente || !cliente.cedula) {
+                window.app?.showToast?.('Cliente inválido', 'error', 2000);
+                return;
+            }
+
+            // Confirmar conversión
+            const confirmed = await window.showCustomConfirm(`¿Convertir recibo a factura para:<br><br><strong>${cliente.razon_social}</strong><br>CI/RUC: ${cliente.cedula}?`);
+            if (!confirmed) {
+                return;
+            }
+
+            const loadingOverlay = document.getElementById('conversionLoadingOverlay');
+            const loadingText = document.getElementById('conversionLoadingText');
+            if (loadingOverlay) {
+                if (loadingText) loadingText.textContent = 'Convirtiendo recibo a factura...';
+                loadingOverlay.style.display = 'flex';
+            }
+
+            try {
+                window.app?.showToast?.('<i class="fas fa-spinner fa-spin"></i> Convirtiendo recibo a factura...', 'info', 3000);
+
+                const { venta, detalles, productosMap } = window.ventaActual;
+                const db = window.app.db;
+
+                // 1. Obtener configuraciones
+                const { data: configSRI } = await db.from('ferre_facelectronicaconfig').select('*').single();
+                const { data: configServicios } = await db.from('ferre_config_servicios').select('*').single();
+
+                if (!configSRI || !configServicios) {
+                    throw new Error('Configuración de facturación no disponible');
+                }
+
+                // 2. Incrementar número de comprobante
+                const nuevoNumero = parseInt(configSRI.comprobante_actual) + 1;
+                const { error: updateError } = await db
+                    .from('ferre_facelectronicaconfig')
+                    .update({ comprobante_actual: nuevoNumero })
+                    .eq('id', configSRI.id);
+
+                if (updateError) throw updateError;
+
+                // 3. Generar número de documento y clave de acceso
+                const docNumber = `${String(configSRI.establecimiento).padStart(3, '0')}-${String(configSRI.punto_emision).padStart(3, '0')}-${String(nuevoNumero).padStart(9, '0')}`;
+
+                const fechaActual = new Date();
+                const fechaFormateada = `${String(fechaActual.getDate()).padStart(2, '0')}${String(fechaActual.getMonth() + 1).padStart(2, '0')}${fechaActual.getFullYear()}`;
+
+                // IMPORTANTE: Usar configSRI.ruc (de facelectronicaconfig) NO empresa_ruc
+                const claveAcceso = generarClaveAcceso(fechaFormateada, {
+                    ruc: configSRI.ruc,  // De tabla facelectronicaconfig
+                    ambiente: configSRI.ambiente,
+                    establecimiento: configSRI.establecimiento,
+                    punto_emision: configSRI.punto_emision,
+                    comprobante_actual: nuevoNumero,
+                    codigo_numerico: configSRI.codigo_numerico,
+                    tipo_emision: configSRI.tipo_emision
+                });
+
+                if (!claveAcceso.success) {
+                    throw new Error('Error generando clave de acceso: ' + claveAcceso.error);
+                }
+
+                // 4. Actualizar venta en BD
+                const { error: ventaUpdateError } = await db
+                    .from('ferre_ventas')
+                    .update({
+                        tipo: 'FACTURA',
+                        cliente_id: cliente.cedula,
+                        doc: docNumber,
+                        clave_acceso: claveAcceso.claveAcceso,
+                        estado: 'PENDIENTE',
+                        fecha_factura: fechaActual.toISOString()
+                    })
+                    .eq('id', venta.id);
+
+                if (ventaUpdateError) throw ventaUpdateError;
+
+                // 5. Preparar y enviar al SRI
+                const productos = detalles.map(detalle => ({
+                    codigo: detalle.producto_id,
+                    cantidad: detalle.cantidad,
+                    nombre: productosMap[detalle.producto_id] || detalle.producto_id,
+                    precio: detalle.precio,
+                    subtotal: detalle.subtotal
+                }));
+
+                const jsonResult = generarJsonFacturacion(
+                    {
+                        productos,
+                        total: venta.total,
+                        cliente,
+                        saleCode: venta.id_venta,
+                        fecha: fechaActual.toISOString()
+                    },
+                    configSRI,
+                    configServicios,
+                    claveAcceso.claveAcceso,
+                    docNumber
+                );
+
+                if (!jsonResult.success) {
+                    throw new Error('Error generando JSON de facturación: ' + jsonResult.message);
+                }
+
+                const jsonPayload = jsonResult.json;
+
+                // 6. Enviar al servicio de firma
+                const urlFirma = configServicios.firma_url;
+                if (urlFirma) {
+                    console.groupCollapsed('%c🔄 CONVERSIÓN RECIBO → FACTURA', 'color:#9C27B0;font-weight:bold;font-size:14px;');
+                    console.log('📄 Recibo original:', venta.id_venta);
+                    console.log('🆕 Número de Factura:', docNumber);
+                    console.log('🔑 Clave Acceso:', claveAcceso.claveAcceso);
+                    console.log('👤 Cliente:', cliente.razon_social);
+                    console.log('📧 Correo:', cliente.correo);
+                    console.log('💰 Total:', venta.total);
+                    console.log('📦 Productos:', productos.length);
+                    console.log('🌐 URL Firma:', urlFirma);
+                    console.group('📋 JSON Generado');
+                    console.log('- Correo:', jsonPayload.correo);
+                    console.log('- Archivo:', jsonPayload.archivo);
+                    console.log('- Clave Acceso:', jsonPayload.claveAcceso);
+                    console.log('- Nombre P12:', jsonPayload.nombrep12);
+                    console.log('- Clave P12:', jsonPayload.clave_12 ? '***' : 'NO CONFIGURADA');
+                    console.log('📋 JSON completo:', JSON.stringify(jsonPayload, null, 2));
+                    console.groupEnd();
+                    console.groupEnd();
+
+                    const resultado = await enviarFacturaAlServicioFirma({
+                        url: urlFirma,
+                        payload: jsonPayload,
+                        maxIntentos: 3,
+                        timeoutMs: 30000
+                    });
+
+                    // LOGGING DETALLADO DE LA RESPUESTA
+                    console.groupCollapsed('%c📥 RESPUESTA DEL SRI (Conversión)', 'color:#4CAF50;font-weight:bold;font-size:14px;');
+                    console.log('✅ Success:', resultado.success);
+                    console.log('📊 Status Code:', resultado.statusCode);
+                    console.log('📄 Data completa:', resultado.data);
+                    console.log('💬 Mensaje:', resultado.data?.message || resultado.message);
+                    console.log('📝 Detalles:', resultado.data?.detalle || resultado.data?.details);
+                    console.log('🔍 Objeto completo resultado:', JSON.stringify(resultado, null, 2));
+
+                    if (resultado.data) {
+                        console.group('🔎 Análisis de data');
+                        console.log('- Status:', resultado.data.status);
+                        console.log('- Message:', resultado.data.message);
+                        console.log('- Detalle:', resultado.data.detalle);
+                        console.log('- ClaveAcceso:', resultado.data.claveAcceso);
+                        console.log('- NumeroAutorizacion:', resultado.data.numeroAutorizacion);
+                        console.log('- FechaAutorizacion:', resultado.data.fechaAutorizacion);
+                        console.log('- Estado:', resultado.data.estado);
+                        console.groupEnd();
+                    }
+
+                    if (resultado.error) {
+                        console.error('❌ Error:', resultado.error);
+                    }
+
+                    console.groupEnd();
+
+                    if (resultado.success) {
+                        await db.from('ferre_ventas').update({ estado: 'AUTORIZADO' }).eq('id', venta.id);
+                        window.app?.showToast?.('✅ Factura convertida y autorizada por el SRI', 'success', 4000);
+                    } else {
+                        console.warn('%c⚠️ FACTURA CONVERTIDA PERO PENDIENTE', 'color:#FF9800;font-weight:bold;font-size:14px;');
+                        console.warn('Motivo:', resultado.data?.message || resultado.message);
+                        console.warn('Respuesta completa:', resultado);
+                        window.app?.showToast?.('⚠️ Factura convertida pero pendiente de autorización SRI', 'warning', 4000);
+                    }
+                }
+
+                // 7. Cerrar modales y recargar
+                cerrarModalSeleccionCliente();
+                cerrarModalDetalle();
+                cargarVentas();
+
+            } catch (error) {
+                console.error('Error convirtiendo recibo:', error);
+                window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
+            } finally {
+                const loadingOverlay = document.getElementById('conversionLoadingOverlay');
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // =====================================================
+        // REENVIAR AL SRI
+        // =====================================================
+
+        async function reenviarAlSRI() {
+            const { venta, detalles, productosMap } = window.ventaActual;
+
+            if (!venta.doc || !venta.clave_acceso) {
+                window.app?.showToast?.('No hay datos suficientes para reenviar', 'error', 3000);
+                return;
+            }
+
+            // Cerrar el modal de detalles antes de mostrar la confirmación
+            cerrarModalDetalle();
+
+            // Pequeño delay para asegurar que el modal se cierre completamente
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            const confirmed = await window.showCustomConfirm(`¿Reenviar factura <strong>${venta.doc}</strong> al SRI?`);
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const loadingOverlay = document.getElementById('conversionLoadingOverlay');
+                const loadingText = document.getElementById('conversionLoadingText');
+                if (loadingOverlay) {
+                    if (loadingText) loadingText.textContent = 'Reenviando comprobante al SRI...';
+                    loadingOverlay.style.display = 'flex';
+                }
+
+                window.app?.showToast?.('<i class="fas fa-sync-alt fa-spin"></i> Reenviando factura al SRI...', 'info', 3000);
+
+                const db = window.app.db;
+
+                // Obtener configuraciones
+                const { data: configSRI } = await db.from('ferre_facelectronicaconfig').select('*').single();
+                const { data: configServicios } = await db.from('ferre_config_servicios').select('*').single();
+                const { data: clienteData } = await db.from('ferre_clientes').select('*').eq('cedula', venta.cliente_id).single();
+
+                if (!configSRI || !configServicios) {
+                    throw new Error('Configuración no disponible');
+                }
+
+                // Preparar productos
+                const productos = detalles.map(detalle => ({
+                    codigo: detalle.producto_id,
+                    cantidad: detalle.cantidad,
+                    nombre: productosMap[detalle.producto_id] || detalle.producto_id,
+                    precio: detalle.precio,
+                    subtotal: detalle.subtotal
+                }));
+
+                // Generar JSON
+                const jsonResult = generarJsonFacturacion(
+                    {
+                        productos,
+                        total: venta.total,
+                        cliente: clienteData || {
+                            cedula: venta.cliente_id,
+                            razon_social: venta.cliente_id,
+                            correo: 'consumidor@final.com',
+                            telefono: '',
+                            direccion: ''
+                        },
+                        saleCode: venta.id_venta,
+                        fecha: venta.fecha_hora_venta
+                    },
+                    configSRI,
+                    configServicios,
+                    venta.clave_acceso,
+                    venta.doc
+                );
+
+                if (!jsonResult.success) {
+                    throw new Error('Error generando JSON: ' + jsonResult.message);
+                }
+
+                const jsonPayload = jsonResult.json;
+
+                // Enviar al SRI
+                const urlFirma = configServicios.firma_url;
+                if (!urlFirma) {
+                    throw new Error('URL del servicio de firma no configurada');
+                }
+
+                console.groupCollapsed('%c🚀 REENVÍO AL SRI', 'color:#2196F3;font-weight:bold;font-size:14px;');
+                console.log('📄 Factura:', venta.doc);
+                console.log('🔑 Clave Acceso:', venta.clave_acceso);
+                console.log('👤 Cliente:', clienteData?.razon_social || venta.cliente_id);
+                console.log('💰 Total:', venta.total);
+                console.log('📦 Productos:', productos.length);
+                console.log('🌐 URL:', urlFirma);
+                console.group('📋 JSON Generado');
+                console.log('- Correo:', jsonPayload.correo);
+                console.log('- Archivo:', jsonPayload.archivo);
+                console.log('- Clave Acceso:', jsonPayload.claveAcceso);
+                console.log('- Nombre P12:', jsonPayload.nombrep12);
+                console.log('- Clave P12:', jsonPayload.clave_12 ? '***' : 'NO CONFIGURADA');
+                console.log('📋 JSON completo:', JSON.stringify(jsonPayload, null, 2));
+                console.groupEnd();
+                console.groupEnd();
+
+                const resultado = await enviarFacturaAlServicioFirma({
+                    url: urlFirma,
+                    payload: jsonPayload,
+                    maxIntentos: 3,
+                    timeoutMs: 30000
+                });
+
+                // Validar si es exitoso (verificar tanto success como el detalle del SRI)
+                const detalleString = resultado.data?.detalle || resultado.data?.data?.detalle || '';
+                const detalleUpper = detalleString.toUpperCase();
+
+                const esExitoso = resultado.success &&
+                    resultado.data &&
+                    (resultado.data.status === 'success' ||
+                        detalleUpper === 'AUTORIZADO' ||
+                        detalleUpper.includes('CLAVE ACCESO REGISTRADA'));
+
+                if (esExitoso) {
+                    // Primero verificar que el registro existe
+                    const { data: checkData, error: checkError } = await db
+                        .from('ferre_ventas')
+                        .select('id, estado, usuario_email')
+                        .eq('id', venta.id)
+                        .single();
+
+                    if (checkError) {
+                        console.error('Error accediendo al registro:', checkError);
+                        window.app?.showToast?.('⚠️ Error: No se puede actualizar el registro. Verifica permisos.', 'error', 4000);
+                        return;
+                    }
+
+                    // Actualizar estado en la base de datos
+                    const { error: updateError } = await db
+                        .from('ferre_ventas')
+                        .update({
+                            estado: 'AUTORIZADO',
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', venta.id);
+
+                    if (updateError) {
+                        console.error('Error actualizando estado:', updateError);
+                        window.app?.showToast?.('⚠️ Factura autorizada pero no se actualizó el estado local', 'warning', 4000);
+                    }
+
+                    window.app?.showToast?.('✅ Factura autorizada por el SRI', 'success', 4000);
+                    cerrarModalDetalle();
+
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    cargarVentas();
+                } else {
+                    const mensaje = resultado.data?.message || resultado.message || 'Error desconocido';
+                    window.app?.showToast?.(`❌ Error SRI: ${mensaje}`, 'error', 5000);
+                }
+
+            } catch (error) {
+                console.error('Error reenviando al SRI:', error);
+                window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
+            } finally {
+                const loadingOverlay = document.getElementById('conversionLoadingOverlay');
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // =====================================================
+        // FUNCIONES AUXILIARES (Copadas de punto-venta.html)
+        // =====================================================
+
+        function padWithZeroes(num, length) {
+            const str = String(num);
+            if (str.length >= length) return str;
+            return '0'.repeat(length - str.length) + str;
+        }
+
+        function calcularDigitoVerificador(cadena) {
+            try {
+                if (!cadena || cadena.length !== 48) {
+                    return { success: false, error: 'Cadena inválida' };
+                }
+
+                const factores = [2, 3, 4, 5, 6, 7];
+                let suma = 0;
+
+                for (let i = 0; i < cadena.length; i++) {
+                    const digito = parseInt(cadena[i]);
+                    const factor = factores[i % 6];
+                    suma += digito * factor;
+                }
+
+                let digitoVerificador = 11 - (suma % 11);
+                if (digitoVerificador === 10) digitoVerificador = 1;
+                if (digitoVerificador === 11) digitoVerificador = 0;
+
+                return {
+                    success: true,
+                    claveAcceso: cadena + digitoVerificador
+                };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        function generarClaveAcceso(fecha, config) {
+            try {
+                console.group('🔑 Generando Clave de Acceso');
+                console.log('📅 Fecha:', fecha);
+                console.log('📋 Config recibida:', config);
+
+                if (!fecha || fecha.length !== 8) {
+                    console.error('❌ Fecha inválida:', fecha, 'longitud:', fecha?.length);
+                    console.groupEnd();
+                    return { success: false, error: 'Fecha inválida (debe tener 8 dígitos: ddMMyyyy)' };
+                }
+
+                const tipoComprobante = "01";
+                const ruc = padWithZeroes(config.ruc, 13);
+                const ambiente = padWithZeroes(config.ambiente, 1);
+                const establecimiento = padWithZeroes(config.establecimiento, 3);
+                const puntoEmision = padWithZeroes(config.punto_emision, 3);
+                const comprobante = padWithZeroes(config.comprobante_actual, 9);
+                const codigoNumerico = padWithZeroes(config.codigo_numerico, 8);
+                const tipoEmision = padWithZeroes(config.tipo_emision, 1);
+
+                console.log('📊 Componentes de la clave:');
+                console.log('  - Fecha:', fecha, '(8)');
+                console.log('  - Tipo Comprobante:', tipoComprobante, '(2)');
+                console.log('  - RUC:', ruc, '(13)');
+                console.log('  - Ambiente:', ambiente, '(1)');
+                console.log('  - Establecimiento:', establecimiento, '(3)');
+                console.log('  - Punto Emisión:', puntoEmision, '(3)');
+                console.log('  - Comprobante:', comprobante, '(9)');
+                console.log('  - Código Numérico:', codigoNumerico, '(8)');
+                console.log('  - Tipo Emisión:', tipoEmision, '(1)');
+
+                const claveAcceso48 = fecha + tipoComprobante + ruc + ambiente + establecimiento + puntoEmision + comprobante + codigoNumerico + tipoEmision;
+
+                console.log('🔢 Clave 48 dígitos:', claveAcceso48);
+                console.log('📏 Longitud:', claveAcceso48.length);
+
+                const resultado = calcularDigitoVerificador(claveAcceso48);
+
+                if (resultado.success) {
+                    console.log('✅ Clave completa (49):', resultado.claveAcceso);
+                } else {
+                    console.error('❌ Error calculando dígito verificador:', resultado.error);
+                }
+
+                console.groupEnd();
+                return resultado;
+            } catch (error) {
+                console.error('❌ Error en generarClaveAcceso:', error);
+                console.groupEnd();
+                return { success: false, error: error.message };
+            }
+        }
+
+        function getTipoIdentificacion(identificacion) {
+            if (!identificacion) return "07"; // Consumidor final
+            const id = String(identificacion).trim();
+            if (id === "9999999999999") return "07"; // Consumidor final
+            if (id.length === 10) return "05"; // Cédula
+            if (id.length === 13) return "04"; // RUC
+            return "06"; // Pasaporte u otro
+        }
+
+        function formatIdentificacion(identificacion) {
+            if (!identificacion) return "9999999999999";
+            let id = String(identificacion).trim();
+
+            // Si es consumidor final
+            if (id === "9999999999999") return id;
+
+            // Si es cédula (10 dígitos)
+            if (id.length <= 10) {
+                return padWithZeroes(id, 10);
+            }
+
+            // Si es RUC (13 dígitos)
+            return id;
+        }
+
+        function formatearTelefonoEcuador(telefono) {
+            if (!telefono) return "S/N";
+            let tel = String(telefono).replace(/\D/g, ''); // Solo dígitos
+            if (tel.length === 0) return "S/N";
+            if (tel.length === 9) tel = '0' + tel; // Agregar 0 al inicio
+            return tel;
+        }
+
+        function generarJsonFacturacion(ventaData, configSRI, configServicios, claveAcceso, docNumber) {
+            try {
+                // Calcular totales
+                let subtotal = 0;
+                const productos = ventaData.productos.map(prod => {
+                    const subtotalProducto = prod.cantidad * prod.precio;
+                    subtotal += subtotalProducto;
+                    return {
+                        codigoPrincipal: prod.codigo || 'PROD',
+                        codigoAuxiliar: prod.codigo || 'PROD',
+                        descripcion: prod.nombre.replace(/,/g, '.'), // Sin comas
+                        cantidad: prod.cantidad.toFixed(2),
+                        precioUnitario: prod.precio.toFixed(2),
+                        subtotalSinIVA: subtotalProducto.toFixed(2),
+                        codigoPorcentaje: "0",
+                        tarifa: "0",
+                        iva: "0.00",
+                        descuento: "0.00"
+                    };
+                });
+
+                // Extraer partes del documento
+                const docParts = docNumber.split('-');
+                const estab = docParts[0];
+                const ptoEmi = docParts[1];
+                const secuencial = docParts[2];
+
+                // Fecha de emisión
+                const now = new Date(ventaData.fecha || Date.now());
+                const fechaEmision = now.toLocaleDateString('es-EC', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+
+                // Datos del cliente
+                const cliente = ventaData.cliente;
+                const identificacionComprador = formatIdentificacion(cliente.cedula);
+                const tipoIdentificacionComprador = getTipoIdentificacion(identificacionComprador);
+                const telefonoCliente = formatearTelefonoEcuador(cliente.telefono);
+
+                // Construir JSON
+                const jsonFactura = {
+                    // WhatsApp config
+                    instance_id: configServicios.whatsapp_instance_id || "",
+                    access_token: configServicios.whatsapp_access_token || "",
+
+                    // Archivos
+                    archivo: `FACTURA-${estab}-${ptoEmi}-${secuencial}.xml`,
+                    facturaPDF: `FACTURA-${estab}-${ptoEmi}-${secuencial}.pdf`,
+
+                    // Correo del cliente
+                    correo: cliente.correo || "consumidor@final.com",
+
+                    // Configuración SRI
+                    ambiente: String(configSRI.ambiente),
+                    razonSocial: configServicios.empresa_razon_social,
+                    nombreComercial: configServicios.empresa_nombre_comercial,
+                    ruc: configServicios.empresa_ruc,
+                    claveAcceso: claveAcceso,
+                    estab: estab,
+                    ptoEmi: ptoEmi,
+                    secuencial: secuencial,
+
+                    // Direcciones
+                    dirMatriz: configServicios.empresa_dir_matriz,
+                    dirEstablecimiento: configServicios.empresa_dir_establecimiento,
+
+                    // Contribuyente
+                    contribuyenteRimpe: configServicios.empresa_contribuyente_rimpe || "",
+                    contribuyenteRIDE: configServicios.empresa_contribuyente_ride || "",
+                    obligadoContabilidad: configServicios.empresa_obligado_contabilidad,
+
+                    // Fecha
+                    fechaEmision: fechaEmision,
+
+                    // Cliente
+                    tipoIdentificacionComprador: tipoIdentificacionComprador,
+                    razonSocialComprador: cliente.razon_social,
+                    identificacionComprador: identificacionComprador,
+                    direccionComprador: cliente.direccion || "S/N",
+                    telefonoCliente: telefonoCliente,
+                    telefonoContribuyente: configServicios.empresa_telefono,
+
+                    // Documento
+                    factura: docNumber,
+                    formaPago: configServicios.factura_forma_pago_defecto || "01",
+                    formaPagoRIDE: configServicios.factura_forma_pago_ride || "01 SIN UTILIZACIÓN DEL SISTEMA FINANCIERO",
+
+                    // Totales
+                    codigoPorcentajeTotales: "0",
+                    baseImponibleTotales: subtotal.toFixed(2),
+                    valorTotales: "0.00",
+                    totalSinImpuestos: subtotal.toFixed(2),
+                    importeTotal: subtotal.toFixed(2),
+                    totalDescuento: "0.00",
+                    valor: "0.00",
+
+                    // Productos (arrays concatenados)
+                    codigoPrincipal: productos.map(p => p.codigoPrincipal).join(' , '),
+                    codigoAuxiliar: productos.map(p => p.codigoAuxiliar).join(' , '),
+                    descripcion: productos.map(p => p.descripcion).join(' , '),
+                    cantidad: productos.map(p => p.cantidad).join(' , '),
+                    precioUnitario: productos.map(p => p.precioUnitario).join('|'),
+                    subtotalSinIVA: productos.map(p => p.subtotalSinIVA).join('|'),
+                    codigoPorcentaje: productos.map(p => p.codigoPorcentaje).join(','),
+                    tarifa: productos.map(p => p.tarifa).join(','),
+                    iva: productos.map(p => p.iva).join('|'),
+                    descuento: productos.map(p => p.descuento).join('|'),
+
+                    // Subtotales IVA
+                    subtotal12: "0.00",
+                    subtotal0: subtotal.toFixed(2),
+                    subtotalNoObjeto: "0.00",
+                    subtotalExento: "0.00",
+
+                    // Campos adicionales
+                    campoAdicional: 'campoAdicional nombre="Correo de cliente"',
+                    codigoArtesano: configServicios.empresa_codigo_artesano || "",
+                    artesanoRide: configServicios.empresa_codigo_artesano ? configServicios.empresa_codigo_artesano : "-",
+
+                    // Firma electrónica (.p12)
+                    clave_12: configServicios.firma_clave_p12 || "",
+
+                    // URLs y logos
+                    urlLogo: configServicios.url_logo_factura || "",
+                    urlLogoPieCorreo: configServicios.url_logo_pie_correo || "",
+
+                    // SMTP
+                    correoRemitente: configServicios.smtp_correo_remitente || "",
+                    clavecorreoRemitente: configServicios.smtp_clave_remitente || "",
+                    hostcorreoRemitente: configServicios.smtp_host || "smtp.gmail.com",
+                    puertocorreoRemitente: String(configServicios.smtp_puerto || "587"),
+
+                    // Nombre del archivo .p12
+                    nombrep12: configServicios.firma_nombre_p12 || "",
+
+                    // Ambiente SRI
+                    ambientesri: configSRI.ambiente === 1 ? "https://celcer.sri.gob.ec" : "https://cel.sri.gob.ec"
+                };
+
+                return {
+                    success: true,
+                    json: jsonFactura
+                };
+
+            } catch (error) {
+                console.error('❌ Error generando JSON de facturación:', error);
+                return {
+                    success: false,
+                    message: error.message
+                };
+            }
+        }
+
+        async function enviarFacturaAlServicioFirma({ url, payload, maxIntentos, timeoutMs }) {
+            console.log(`📡 Iniciando envío al servicio de firma (máx. ${maxIntentos} intentos, timeout: ${timeoutMs}ms)`);
+
+            for (let intento = 1; intento <= maxIntentos; intento++) {
+                console.log(`\n🔄 Intento ${intento}/${maxIntentos}...`);
+
+                try {
+                    const controller = new AbortController();
+                    const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
+
+                    const tiempoInicio = Date.now();
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutHandle);
+
+                    const tiempoTranscurrido = Date.now() - tiempoInicio;
+                    console.log(`⏱️ Tiempo de respuesta: ${tiempoTranscurrido}ms`);
+                    console.log(`📊 Status HTTP: ${response.status} ${response.statusText}`);
+
+                    const text = await response.text();
+                    console.log(`📄 Respuesta raw (${text.length} caracteres):`, text.substring(0, 500));
+
+                    let data = null;
+
+                    try {
+                        data = JSON.parse(text);
+                        console.log('✅ JSON parseado exitosamente:', data);
+                    } catch (e) {
+                        console.warn('⚠️ No se pudo parsear como JSON:', e.message);
+                        data = { message: text };
+                    }
+
+                    if (response.ok) {
+                        console.log(`✅ Intento ${intento} EXITOSO`);
+                        return { success: true, statusCode: response.status, data, intento };
+                    } else {
+                        console.warn(`⚠️ Intento ${intento} falló con status ${response.status}`);
+
+                        if (intento < maxIntentos) {
+                            const esperaMs = 2000 * intento;
+                            console.log(`⏳ Esperando ${esperaMs}ms antes del siguiente intento...`);
+                            await new Promise(resolve => setTimeout(resolve, esperaMs));
+                            continue;
+                        }
+
+                        console.error(`❌ Todos los intentos fallaron`);
+                        return { success: false, statusCode: response.status, data, intento };
+                    }
+                } catch (error) {
+                    console.error(`❌ Error en intento ${intento}:`, error.message);
+
+                    if (error.name === 'AbortError') {
+                        console.error(`⏱️ Timeout después de ${timeoutMs}ms`);
+                    }
+
+                    if (intento < maxIntentos) {
+                        const esperaMs = 3000 * intento;
+                        console.log(`⏳ Esperando ${esperaMs}ms antes del siguiente intento...`);
+                        await new Promise(resolve => setTimeout(resolve, esperaMs));
+                        continue;
+                    }
+
+                    console.error(`❌ Todos los intentos agotados`);
+                    return { success: false, error: error.message, intento };
+                }
+            }
+        }
+
+        // =====================================================
+        // DASHBOARD EXPERTO
+        // =====================================================
+
+        let chartHoras = null;
+        let chartDias = null;
+        let dashboardDataCache = null; // Cache for modal usage
+
+        async function mostrarDashboard() {
+            document.getElementById('ventasListView').classList.add('hidden');
+            document.getElementById('ventasListView').style.display = 'none';
+            document.getElementById('dashboardView').classList.remove('hidden');
+            document.getElementById('dashboardView').style.display = 'block';
+
+            await loadChartJs();
+            filtrarDashboard('7d'); // Default filter
+        }
+
+        function ocultarDashboard() {
+            document.getElementById('dashboardView').classList.add('hidden');
+            document.getElementById('dashboardView').style.display = 'none';
+            document.getElementById('ventasListView').classList.remove('hidden');
+            document.getElementById('ventasListView').style.display = 'block';
+        }
+
+        async function filtrarDashboard(periodo) {
+            // Update active button state
+            const buttons = document.querySelectorAll('#dashboardView .btn-group button');
+            buttons.forEach(btn => btn.classList.remove('active', 'btn-primary'));
+            // Find the button that was clicked (this is a bit hacky without passing the element)
+            // For now, just load data
+
+            // Logic: End date is yesterday. Start date is yesterday - X days.
+            let hoy = new Date();
+            let ayer = new Date(hoy);
+            ayer.setDate(hoy.getDate() - 1);
+            ayer.setHours(23, 59, 59, 999); // End of yesterday
+
+            let fechaFin = ayer;
+            let fechaInicio = new Date(ayer);
+            fechaInicio.setHours(0, 0, 0, 0); // Start of the day
+
+            if (periodo === '7d') {
+                fechaInicio.setDate(fechaFin.getDate() - 6); // 7 days inclusive
+            } else if (periodo === '30d') {
+                fechaInicio.setDate(fechaFin.getDate() - 29);
+            } else if (periodo === '90d') {
+                fechaInicio.setDate(fechaFin.getDate() - 89);
+            } else if (periodo === 'custom') {
+                // TODO: Implement custom date picker
+                return;
+            }
+
+            await cargarDatosDashboard(fechaInicio, fechaFin);
+        }
+
+        async function cargarDatosDashboard(fechaInicio, fechaFin) {
+            try {
+                // Show loading overlay
+                const loadingOverlay = document.getElementById('dashboardLoading');
+                if (loadingOverlay) {
+                    loadingOverlay.classList.remove('hidden');
+                    loadingOverlay.style.display = 'flex';
+                }
+
+                const db = window.app.db;
+
+                // Fetch sales
+                const { data: ventas, error } = await db
+                    .from('ferre_ventas')
+                    .select('*')
+                    .gte('fecha_hora_venta', fechaInicio.toISOString())
+                    .lte('fecha_hora_venta', fechaFin.toISOString());
+
+                if (error) throw error;
+
+                // Fetch details for product stats
+                const ventaIds = ventas.map(v => v.id);
+
+                // Fetch in chunks to avoid URL length limits
+                let detalles = [];
+                if (ventaIds.length > 0) {
+                    const chunkSize = 5; // Reducido a 5 para evitar URLs largas con UUIDs
+                    for (let i = 0; i < ventaIds.length; i += chunkSize) {
+                        const chunk = ventaIds.slice(i, i + chunkSize);
+                        const { data: det, error: detError } = await db
+                            .from('ferre_ventas_detalle')
+                            .select('producto_id, cantidad, subtotal, ganancia')
+                            .in('venta_id', chunk);
+
+                        if (detError) {
+                            console.error('Error fetching chunk details:', detError);
+                            continue;
+                        }
+                        if (det) detalles = detalles.concat(det);
+                    }
+                }
+
+                // Fetch product names in chunks
+                const productoIds = [...new Set(detalles.map(d => d.producto_id))];
+                let productosMap = {};
+
+                if (productoIds.length > 0) {
+                    const chunkSize = 5; // Reducido a 5 para evitar URLs largas con UUIDs
+                    for (let i = 0; i < productoIds.length; i += chunkSize) {
+                        const chunk = productoIds.slice(i, i + chunkSize);
+                        const { data: prods, error: prodError } = await db
+                            .from('ferre_inventario')
+                            .select('codigo, producto')
+                            .in('codigo', chunk);
+
+                        if (!prodError && prods) {
+                            prods.forEach(p => productosMap[p.codigo] = p.producto);
+                        }
+                    }
+                }
+
+                // Calculate days difference for averages
+                const daysDiff = Math.max(1, Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)));
+
+                // Update date range text
+                const options = { day: 'numeric', month: 'short', year: 'numeric' };
+                const rangeText = `Del ${fechaInicio.toLocaleDateString('es-EC', options)} al ${fechaFin.toLocaleDateString('es-EC', options)}`;
+                const rangeEl = document.getElementById('dashboardDateRange');
+                if (rangeEl) rangeEl.textContent = rangeText;
+
+                // Process data
+                procesarDatosDashboard(ventas, detalles, productosMap, daysDiff, fechaInicio, fechaFin);
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                window.app.showToast('Error cargando dashboard', 'error', 3000);
+            } finally {
+                // Hide loading overlay
+                const loadingOverlay = document.getElementById('dashboardLoading');
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.style.display = 'none';
+                }
+            }
+        }
+
+        function procesarDatosDashboard(ventas, detalles, productosMap, numDays, fechaInicio, fechaFin) {
+            // 1. Product Stats
+            const prodStats = {};
+
+            detalles.forEach(d => {
+                if (!prodStats[d.producto_id]) {
+                    prodStats[d.producto_id] = {
+                        id: d.producto_id,
+                        nombre: productosMap[d.producto_id] || d.producto_id,
+                        cantidad: 0,
+                        total: 0,
+                        ganancia: 0
+                    };
+                }
+                prodStats[d.producto_id].cantidad += parseFloat(d.cantidad);
+                prodStats[d.producto_id].total += parseFloat(d.subtotal);
+                prodStats[d.producto_id].ganancia += parseFloat(d.ganancia || 0);
+            });
+
+            // Store for modal usage
+            dashboardDataCache = {
+                prodStats: Object.values(prodStats)
+            };
+
+            const sortedByCant = Object.values(prodStats).sort((a, b) => b.cantidad - a.cantidad);
+            const sortedByTotal = Object.values(prodStats).sort((a, b) => b.total - a.total);
+            const sortedByGanancia = Object.values(prodStats).sort((a, b) => b.ganancia - a.ganancia);
+
+            // Update UI Stats
+            if (sortedByCant.length > 0) {
+                document.getElementById('dashProdMasVendidoCant').textContent = sortedByCant[0].nombre;
+                document.getElementById('dashProdMasVendidoCantVal').textContent = `${sortedByCant[0].cantidad.toFixed(2)} un.`;
+
+                document.getElementById('dashProdMasVendidoTotal').textContent = sortedByTotal[0].nombre;
+                document.getElementById('dashProdMasVendidoTotalVal').textContent = window.app.formatCurrency(sortedByTotal[0].total);
+
+                document.getElementById('dashProdMayorGanancia').textContent = sortedByGanancia[0].nombre;
+                document.getElementById('dashProdMayorGananciaVal').textContent = window.app.formatCurrency(sortedByGanancia[0].ganancia);
+
+                const leastSold = sortedByCant[sortedByCant.length - 1];
+                document.getElementById('dashProdMenosVendido').textContent = leastSold.nombre;
+                document.getElementById('dashProdMenosVendidoVal').textContent = `${leastSold.cantidad.toFixed(2)} un.`;
+            } else {
+                document.getElementById('dashProdMasVendidoCant').textContent = '-';
+                document.getElementById('dashProdMasVendidoCantVal').textContent = '0 un.';
+                document.getElementById('dashProdMasVendidoTotal').textContent = '-';
+                document.getElementById('dashProdMasVendidoTotalVal').textContent = '$0.00';
+                document.getElementById('dashProdMayorGanancia').textContent = '-';
+                document.getElementById('dashProdMayorGananciaVal').textContent = '$0.00';
+                document.getElementById('dashProdMenosVendido').textContent = '-';
+                document.getElementById('dashProdMenosVendidoVal').textContent = '0 un.';
+            }
+
+            // 2. Hourly Chart Data (Average 8:00 AM - 8:00 PM)
+            const hours = [];
+            for (let i = 8; i <= 20; i++) hours.push(i); // 8 to 20 (8pm)
+
+            const hourlyData = new Array(hours.length).fill(0);
+
+            ventas.forEach(v => {
+                const date = new Date(v.fecha_hora_venta);
+                const hour = date.getHours();
+                const minute = date.getMinutes();
+                const timeInMins = hour * 60 + minute;
+
+                // Filter 8:00 AM to 8:00 PM
+                // 8:00 = 8 * 60 = 480 mins
+                // 20:00 = 20 * 60 = 1200 mins
+                if (timeInMins >= 480 && timeInMins <= 1200) {
+                    const index = hour - 8;
+                    if (index >= 0 && index < hourlyData.length) {
+                        hourlyData[index] += parseFloat(v.total);
+                    }
+                }
+            });
+
+            // Calculate average per day
+            const hourlyAverages = hourlyData.map(total => total / numDays);
+
+            // 3. Daily Chart Data (Average per Day of Week)
+            // Initialize counters for each day of week (0=Sun, 1=Mon, ..., 6=Sat)
+            const dayOfWeekTotals = [0, 0, 0, 0, 0, 0, 0];
+            const dayOfWeekCounts = [0, 0, 0, 0, 0, 0, 0];
+            const dayOfWeekDetails = [[], [], [], [], [], [], []]; // 0=Sun, 1=Mon...
+
+            // Count how many of each day exist in the range
+            let currentDate = new Date(fechaInicio);
+            const endDate = new Date(fechaFin);
+
+            while (currentDate <= endDate) {
+                dayOfWeekCounts[currentDate.getDay()]++;
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // Group sales by date first to get daily totals
+            const salesByDate = {};
+            ventas.forEach(v => {
+                const dateObj = new Date(v.fecha_hora_venta);
+                // Use local date string to group by day
+                const dateKey = dateObj.toLocaleDateString('es-EC');
+
+                if (!salesByDate[dateKey]) {
+                    salesByDate[dateKey] = {
+                        dateObj: dateObj,
+                        total: 0,
+                        dayIndex: dateObj.getDay()
+                    };
+                }
+                salesByDate[dateKey].total += parseFloat(v.total);
+            });
+
+            // Populate totals and details
+            Object.values(salesByDate).forEach(item => {
+                dayOfWeekTotals[item.dayIndex] += item.total;
+                dayOfWeekDetails[item.dayIndex].push({
+                    date: item.dateObj.toLocaleDateString('es-EC', { day: 'numeric', month: 'short' }),
+                    total: item.total
+                });
+            });
+
+            // Calculate averages
+            const dayOfWeekAverages = dayOfWeekTotals.map((total, index) => {
+                const count = dayOfWeekCounts[index];
+                return count > 0 ? total / count : 0;
+            });
+
+            // Reorder to start from Monday (1) to Sunday (0)
+            const orderedLabels = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+            const orderedData = [
+                dayOfWeekAverages[1], // Mon
+                dayOfWeekAverages[2], // Tue
+                dayOfWeekAverages[3], // Wed
+                dayOfWeekAverages[4], // Thu
+                dayOfWeekAverages[5], // Fri
+                dayOfWeekAverages[6], // Sat
+                dayOfWeekAverages[0]  // Sun
+            ];
+
+            const orderedDetails = [
+                dayOfWeekDetails[1],
+                dayOfWeekDetails[2],
+                dayOfWeekDetails[3],
+                dayOfWeekDetails[4],
+                dayOfWeekDetails[5],
+                dayOfWeekDetails[6],
+                dayOfWeekDetails[0]
+            ];
+
+            renderCharts(hours.map(h => `${h}:00`), hourlyAverages, orderedLabels, orderedData, orderedDetails);
+        }
+
+        function renderCharts(hourlyLabels, hourlyData, dailyLabels, dailyData, dailyDetails) {
+            const ctxHoras = document.getElementById('chartHoras').getContext('2d');
+            const ctxDias = document.getElementById('chartDias').getContext('2d');
+
+            if (chartHoras) chartHoras.destroy();
+            if (chartDias) chartDias.destroy();
+
+            chartHoras = new Chart(ctxHoras, {
+                type: 'line',
+                data: {
+                    labels: hourlyLabels,
+                    datasets: [{
+                        label: 'Promedio Ventas por Hora ($)',
+                        data: hourlyData,
+                        borderColor: '#4fc3f7',
+                        backgroundColor: 'rgba(79, 195, 247, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                    }
+                }
+            });
+
+            chartDias = new Chart(ctxDias, {
+                type: 'bar', // Changed to bar for better visualization of daily averages
+                data: {
+                    labels: dailyLabels,
+                    datasets: [{
+                        label: 'Promedio Ventas por Día ($)',
+                        data: dailyData,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(255, 206, 86, 0.5)',
+                            'rgba(75, 192, 192, 0.5)',
+                            'rgba(153, 102, 255, 0.5)',
+                            'rgba(255, 159, 64, 0.5)',
+                            'rgba(201, 203, 207, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgb(255, 99, 132)',
+                            'rgb(54, 162, 235)',
+                            'rgb(255, 206, 86)',
+                            'rgb(75, 192, 192)',
+                            'rgb(153, 102, 255)',
+                            'rgb(255, 159, 64)',
+                            'rgb(201, 203, 207)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function (context) {
+                                    if (!dailyDetails) return [];
+                                    const index = context[0].dataIndex;
+                                    const details = dailyDetails[index];
+                                    if (!details || details.length === 0) return [];
+                                    return details.map(d => `${d.date}: $${d.total.toFixed(2)}`);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // =====================================================
+        // MODAL TOP PRODUCTOS
+        // =====================================================
+
+        function mostrarTopProductos(tipo) {
+            if (!dashboardDataCache || !dashboardDataCache.prodStats) return;
+
+            const stats = [...dashboardDataCache.prodStats];
+            let sortedStats = [];
+            let title = '';
+
+            switch (tipo) {
+                case 'mas-vendidos-cant':
+                    sortedStats = stats.sort((a, b) => b.cantidad - a.cantidad);
+                    title = 'Top 10 Productos Más Vendidos (Cantidad)';
+                    break;
+                case 'mas-vendidos-total':
+                    sortedStats = stats.sort((a, b) => b.total - a.total);
+                    title = 'Top 10 Productos Más Vendidos (Total $)';
+                    break;
+                case 'mayor-ganancia':
+                    sortedStats = stats.sort((a, b) => b.ganancia - a.ganancia);
+                    title = 'Top 10 Productos con Mayor Ganancia';
+                    break;
+                case 'menos-vendidos':
+                    sortedStats = stats.sort((a, b) => a.cantidad - b.cantidad);
+                    title = 'Top 10 Productos Menos Vendidos';
+                    break;
+            }
+
+            const top10 = sortedStats.slice(0, 10);
+
+            document.getElementById('modalTopTitle').textContent = title;
+            const tbody = document.getElementById('modalTopBody');
+            tbody.innerHTML = top10.map((item, index) => `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px; font-weight: bold; color: #666;">${index + 1}</td>
+                <td style="padding: 12px; font-weight: 600;">${item.nombre}</td>
+                <td style="padding: 12px; text-align: right;">${item.cantidad.toFixed(2)}</td>
+                <td style="padding: 12px; text-align: right; color: #28a745;">${window.app.formatCurrency(item.total)}</td>
+                <td style="padding: 12px; text-align: right; color: #d4a017;">${window.app.formatCurrency(item.ganancia)}</td>
+            </tr>
+        `).join('');
+
+            document.getElementById('modalTopProductos').classList.add('active');
+        }
+
+        function cerrarModalTop() {
+            document.getElementById('modalTopProductos').classList.remove('active');
+        }
+
+        function loadChartJs() {
+            return new Promise((resolve, reject) => {
+                if (window.Chart) return resolve();
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // =====================================================
+        // COMPROBANTE DE TRANSFERENCIA
+        // =====================================================
+
+        async function verComprobanteTransferencia(idVenta, event) {
+            if (event) event.stopPropagation(); // Evitar que se abra el detalle de la venta
+
+            try {
+                const db = window.app.db;
+
+                // Buscar en transferencias por id_venta
+                const { data, error } = await db
+                    .from('ferre_transferencias')
+                    .select('fotografia')
+                    .eq('id_venta', idVenta)
+                    .maybeSingle();
+
+                if (error) {
+                    console.error('Error buscando comprobante:', error);
+                    mostrarModalSinComprobante();
+                    return;
+                }
+
+                if (!data || !data.fotografia) {
+                    mostrarModalSinComprobante();
+                } else {
+                    mostrarModalComprobante(data.fotografia);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                mostrarModalSinComprobante();
+            }
+        }
+
+        function mostrarModalComprobante(urlImagen) {
+            // Crear o reutilizar modal
+            let modal = document.getElementById('modalComprobanteTransfer');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'modalComprobanteTransfer';
+                modal.className = 'modal-comprobante-overlay';
+                modal.innerHTML = `
+                    <div class="modal-comprobante-content">
+                        <button class="modal-comprobante-close" onclick="cerrarModalComprobante()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <img id="imgComprobanteTransfer" src="" alt="Comprobante de transferencia">
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                // Cerrar al hacer clic fuera
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) cerrarModalComprobante();
+                });
+            }
+
+            document.getElementById('imgComprobanteTransfer').src = urlImagen;
+            modal.classList.add('active');
+        }
+
+        function mostrarModalSinComprobante() {
+            let modal = document.getElementById('modalSinComprobante');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'modalSinComprobante';
+                modal.className = 'modal-comprobante-overlay';
+                modal.innerHTML = `
+                    <div class="modal-warning-content">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Comprobante no disponible</h3>
+                        <p>Venta con transferencia no actualizada, por favor actualízala.</p>
+                        <button class="btn btn-primary" onclick="cerrarModalSinComprobante()">Entendido</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) cerrarModalSinComprobante();
+                });
+            }
+
+            modal.classList.add('active');
+        }
+
+        function cerrarModalComprobante() {
+            const modal = document.getElementById('modalComprobanteTransfer');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function cerrarModalSinComprobante() {
+            const modal = document.getElementById('modalSinComprobante');
+            if (modal) modal.classList.remove('active');
+        }
+
+        // =====================================================
+        // EXPORTAR FUNCIONES GLOBALES
+        // =====================================================
+
+        window.initVentas = initVentas;
+        window.verDetalleVenta = verDetalleVenta;
+        window.cerrarModalDetalle = cerrarModalDetalle;
+        window.aplicarFiltroFecha = aplicarFiltroFecha;
+        window.resetearFiltros = resetearFiltros;
+        window.mostrarModalLoading = mostrarModalLoading;
+        window.reimprimirRecibo = reimprimirRecibo;
+        window.reimprimirFacturaElectronica = reimprimirFacturaElectronica;
+        window.iniciarConversionAFactura = iniciarConversionAFactura;
+        window.cerrarModalSeleccionCliente = cerrarModalSeleccionCliente;
+        window.seleccionarClienteParaFactura = seleccionarClienteParaFactura;
+        window.reenviarAlSRI = reenviarAlSRI;
+        window.mostrarDashboard = mostrarDashboard;
+        window.ocultarDashboard = ocultarDashboard;
+        window.filtrarDashboard = filtrarDashboard;
+        window.mostrarTopProductos = mostrarTopProductos;
+        window.cerrarModalTop = cerrarModalTop;
+        window.verComprobanteTransferencia = verComprobanteTransferencia;
+        window.mostrarModalComprobante = mostrarModalComprobante;
+        window.mostrarModalSinComprobante = mostrarModalSinComprobante;
+        window.cerrarModalComprobante = cerrarModalComprobante;
+        window.cerrarModalSinComprobante = cerrarModalSinComprobante;
+
+    })(); // Fin del IIFE
+
+</script>
