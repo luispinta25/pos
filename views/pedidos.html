@@ -623,6 +623,55 @@
         color: #28a745;
     }
 
+    /* Estilos para el valor estimado */
+    .carrito-total-estimado {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px dashed #ddd;
+        margin-bottom: 15px;
+    }
+
+    .estimado-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .total-final-label {
+        font-weight: 800;
+        color: #d4a017;
+        font-size: 0.9rem;
+    }
+
+    .total-final-value {
+        font-weight: 800;
+        color: #d4a017;
+        font-size: 1.4rem;
+    }
+
+    .carrito-item-subtotal {
+        font-size: 0.8rem;
+        color: #666;
+        font-weight: bold;
+        margin-left: auto;
+        margin-right: 15px;
+    }
+
+    .producto-precio-badge {
+        font-size: 0.75rem;
+        background: #fdf6e3;
+        color: #b8860b;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid #f9ebc8;
+        margin-top: 4px;
+    }
+
     .btn-generar-pedido {
         width: 100%;
         background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
@@ -1276,6 +1325,12 @@
                                 <span class="carrito-total-label">Total productos:</span>
                                 <span class="carrito-total-value" id="carritoTotal">0</span>
                             </div>
+                            <div class="carrito-total-estimado" id="containerTotalEstimado" style="display: none;">
+                                <div class="estimado-row total-final-row" style="border-top: none; margin-top: 0; padding-top: 0;">
+                                    <span class="total-final-label">TOTAL ESTIMADO:</span>
+                                    <span class="total-final-value" id="carritoTotalEstimado">$0.00</span>
+                                </div>
+                            </div>
                             <button class="btn-generar-pedido" id="btnGenerarPedido" disabled
                                 onclick="window.pedidosGenerarPedido()">
                                 <i class="fas fa-clipboard-check"></i>
@@ -1310,7 +1365,11 @@
             <div class="modal-cantidad-input-group">
                 <label for="modalCantidadInput">Cantidad a pedir:</label>
                 <input type="number" id="modalCantidadInput" class="modal-cantidad-input" placeholder="0" min="1"
-                    step="1" onfocus="this.select()" autofocus>
+                    step="1" onfocus="this.select()" autofocus oninput="window.pedidosActualizarSubtotalModal()">
+            </div>
+            <div id="modalCantidadSubtotalContainer" style="margin-top: 15px; padding: 10px; background: #fdf6e3; border-radius: 8px; border: 1px solid #f9ebc8; display: none; text-align: center;">
+                <div style="font-size: 0.85rem; color: #666; margin-bottom: 2px;">Subtotal Estimado</div>
+                <div id="modalCantidadSubtotalValue" style="font-size: 1.25rem; font-weight: 800; color: #b8860b;">$0.00</div>
             </div>
         </div>
         <div class="modal-cantidad-footer">
@@ -2013,6 +2072,12 @@
                         <span class="producto-codigo">${producto.codigo || 'Sin código'}</span>
                         ${producto.es_alternativo ? '<span style="font-size: 0.65rem; color: #17a2b8; font-weight: bold; background: #e0f7fa; padding: 2px 5px; border-radius: 4px;">Proveedor Alt.</span>' : ''}
                     </div>
+                    ${producto.precio_proveedor ? `
+                        <div class="producto-precio-badge">
+                            <i class="fas fa-tag"></i> 
+                            $${parseFloat(producto.precio_proveedor).toFixed(2)}
+                        </div>
+                    ` : ''}
                     ${markupPrioridad}
                 </div>
                 <div class="producto-stock">
@@ -2096,6 +2161,9 @@
             // Mostrar modal
             document.getElementById('modalCantidadPedido').classList.add('active');
 
+            // Actualizar subtotal si hay cantidad
+            actualizarSubtotalModal();
+
             // Enfocar input
             setTimeout(() => inputCantidad.focus(), 100);
 
@@ -2108,6 +2176,29 @@
             };
         }
 
+        function actualizarSubtotalModal() {
+            const input = document.getElementById('modalCantidadInput');
+            const container = document.getElementById('modalCantidadSubtotalContainer');
+            const display = document.getElementById('modalCantidadSubtotalValue');
+            
+            if (!productoSeleccionado || !productoSeleccionado.precio_proveedor) {
+                container.style.display = 'none';
+                return;
+            }
+
+            const cantidad = parseInt(input.value) || 0;
+            if (cantidad > 0) {
+                const subtotal = cantidad * parseFloat(productoSeleccionado.precio_proveedor);
+                const totalConIva = subtotal * 1.15;
+                display.innerHTML = `
+                    <div style="font-size: 1.2rem;">Total (+IVA): $${totalConIva.toFixed(2)}</div>
+                `;
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
         function cerrarModalCantidad() {
             document.getElementById('modalCantidadPedido').classList.remove('active');
             productoSeleccionado = null;
@@ -2117,19 +2208,27 @@
             const anotacion = anotaciones.find(a => String(a.id) === String(anotacionId));
             if (!anotacion) return;
 
+            // Intentar buscar precio en inventario si tiene código
+            let precio_proveedor = 0;
+            if (anotacion.codigo_producto) {
+                const prodInv = inventario.find(p => p.codigo === anotacion.codigo_producto);
+                if (prodInv) precio_proveedor = prodInv.precio_proveedor;
+            }
+
             productoSeleccionado = {
                 producto: anotacion.producto_nombre,
-                codigo: `NUEVO_ANOT_${anotacion.id}`,
+                codigo: anotacion.codigo_producto || `NUEVO_ANOT_${anotacion.id}`,
                 stock: 0,
                 stock_minimo: 0,
                 anotacion_id: anotacion.id,
                 esNuevoAnotado: true,
-                cantidad_sugerida: anotacion.cantidad_sugerida
+                cantidad_sugerida: anotacion.cantidad_sugerida,
+                precio_proveedor: precio_proveedor
             };
 
             // Reutilizar modal de cantidad normal
             document.getElementById('modalCantidadProductoNombre').textContent = productoSeleccionado.producto;
-            document.getElementById('modalCantidadProductoCodigo').textContent = 'Producto sin código (Nuevo)';
+            document.getElementById('modalCantidadProductoCodigo').textContent = anotacion.codigo_producto ? `Código: ${anotacion.codigo_producto}` : 'Producto sin código (Nuevo)';
             document.getElementById('modalCantidadStockActual').textContent = '0';
             document.getElementById('modalCantidadStockMinimo').textContent = '0';
 
@@ -2143,6 +2242,10 @@
             }
 
             document.getElementById('modalCantidadPedido').classList.add('active');
+
+            // Actualizar subtotal
+            actualizarSubtotalModal();
+
             setTimeout(() => inputCantidad.focus(), 100);
         }
 
@@ -2247,7 +2350,8 @@
                     stock_minimo: parseFloat(productoSeleccionado.stock_minimo) || 0,
                     anotacion_id: productoSeleccionado.anotacion_id || null,
                     es_alternativo: productoSeleccionado.es_alternativo || false,
-                    esNuevoAnotado: productoSeleccionado.esNuevoAnotado || false
+                    esNuevoAnotado: productoSeleccionado.esNuevoAnotado || false,
+                    precio_proveedor: parseFloat(productoSeleccionado.precio_proveedor) || 0
                 });
             }
 
@@ -2286,23 +2390,41 @@
             // Calcular totales
             const totalUnidades = carritoPedido.reduce((sum, item) => sum + item.cantidad, 0);
             const totalProductosDiferentes = carritoPedido.length;
+            const subtotalEstimado = carritoPedido.reduce((sum, item) => sum + (item.cantidad * (item.precio_proveedor || 0)), 0);
+            const ivaEstimado = subtotalEstimado * 0.15;
+            const totalEstimado = subtotalEstimado + ivaEstimado;
 
             // Items = total de unidades sumadas
             carritoCount.textContent = `${totalUnidades} unids`;
             // Total productos = cantidad de productos diferentes
             carritoTotal.textContent = totalProductosDiferentes;
+            
+            // Mostrar total estimado si es mayor a 0
+            const containerEstimado = document.getElementById('containerTotalEstimado');
+            const displayTotal = document.getElementById('carritoTotalEstimado');
+            
+            if (subtotalEstimado > 0) {
+                displayTotal.textContent = `$${totalEstimado.toFixed(2)}`;
+                containerEstimado.style.display = 'flex';
+            } else {
+                containerEstimado.style.display = 'none';
+            }
+            
             btnGenerar.disabled = false;
 
             // Renderizar items (limpiando nombres de productos)
             // El último item tendrá la clase para animación
             carritoItems.innerHTML = carritoPedido.map((item, index) => {
                 const esUltimo = index === carritoPedido.length - 1;
+                const totalItemConIva = (item.cantidad * (item.precio_proveedor || 0)) * 1.15;
+                
                 return `
                 <div class="carrito-item ${esUltimo ? 'recien-agregado' : ''}" data-codigo="${item.codigo}">
                     <div class="carrito-item-info">
                         <div class="carrito-item-nombre">${limpiarNombreProducto(item.producto)}</div>
                         <div class="carrito-item-codigo">${item.codigo}</div>
                     </div>
+                    ${totalItemConIva > 0 ? `<div class="carrito-item-subtotal" title="Total con IVA">$${totalItemConIva.toFixed(2)}</div>` : ''}
                     <span class="carrito-item-cantidad">${item.cantidad}</span>
                     <button class="carrito-item-eliminar" onclick="window.pedidosEliminarDelCarrito('${item.codigo}')" title="Eliminar">
                         <i class="fas fa-trash"></i>
@@ -2373,84 +2495,160 @@
                 const fecha = new Date().toLocaleDateString('es-ES');
                 const hora = new Date().toLocaleTimeString('es-ES');
 
-                // --- ENCABEZADO ---
-                doc.setFontSize(22);
-                doc.setTextColor(40, 167, 69); // Verde Ferrisoluciones
-                doc.text('FERRISOLUCIONES', 105, 20, { align: 'center' });
+                // --- COLORES SISTEMA ---
+                const colorOro = [212, 160, 23];
+                const colorOscuro = [26, 26, 26];
 
-                doc.setFontSize(14);
-                doc.setTextColor(50, 50, 50);
-                doc.text('ORDEN DE PEDIDO', 105, 30, { align: 'center' });
+                // --- ENCABEZADO ESTILIZADO ---
+                doc.setFillColor(...colorOscuro);
+                doc.rect(0, 0, 210, 45, 'F'); // Fondo negro arriba
 
-                // Datos del Proveedor
-                doc.setFontSize(10);
-                doc.setTextColor(0, 0, 0);
+                // Intentar agregar logo
+                try {
+                    // El logo es icon-512.png en la carpeta img
+                    doc.addImage('img/icon-512.png', 'PNG', 15, 8, 28, 28);
+                } catch (e) {
+                    console.warn('No se pudo cargar el logo en el PDF', e);
+                }
 
-                doc.setFillColor(240, 240, 240);
-                doc.rect(14, 40, 182, 25, 'F');
-
+                doc.setFontSize(24);
                 doc.setFont(undefined, 'bold');
-                doc.text('DATOS DEL PROVEEDOR:', 20, 50);
+                doc.setTextColor(...colorOro);
+                doc.text('FERRISOLUCIONES', 50, 22);
+                
+                doc.setFontSize(10);
                 doc.setFont(undefined, 'normal');
-                doc.text(`${proveedor.empresa || 'Proveedor Desconocido'}`, 20, 58);
+                doc.setTextColor(255, 255, 255);
+                doc.text('Soluciones Ferreteras Integrales', 50, 28);
+
+                doc.setFontSize(16);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(255, 255, 255);
+                doc.text('ORDEN DE PEDIDO', 195, 25, { align: 'right' });
+
+                // --- DATOS DEL PROVEEDOR ---
+                doc.setFillColor(245, 245, 245);
+                doc.rect(14, 55, 182, 30, 'F');
+                doc.setDrawColor(...colorOro);
+                doc.setLineWidth(0.5);
+                doc.line(14, 55, 14, 85); // Línea decorativa lateral
+
+                doc.setFontSize(10);
+                doc.setTextColor(...colorOscuro);
+                doc.setFont(undefined, 'bold');
+                doc.text('PROVEEDOR:', 20, 65);
+                doc.setFont(undefined, 'normal');
+                doc.text(`${proveedor.empresa || 'Proveedor Desconocido'}`, 20, 72);
+                
                 if (proveedor.rango_visita) {
-                    doc.text(`Visita: ${proveedor.rango_visita}`, 100, 58);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('VISITA:', 110, 65);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(`${proveedor.rango_visita}`, 110, 72);
                 }
 
                 doc.setFont(undefined, 'bold');
-                doc.text('FECHA:', 140, 50);
+                doc.text('EMISIÓN:', 160, 65);
                 doc.setFont(undefined, 'normal');
-                doc.text(`${fecha} ${hora}`, 140, 58);
+                doc.text(`${fecha}`, 160, 72);
+                doc.text(`${hora}`, 160, 77);
 
                 // --- TABLA DE PRODUCTOS ---
-                const tableBody = items.map(item => [
-                    item.cantidad.toString(),
-                    item.producto,
-                    item.codigo
-                ]);
+                const tableBody = items.map(item => {
+                    const precio = parseFloat(item.precio_proveedor) || 0;
+                    const subtotal = item.cantidad * precio;
+                    
+                    return [
+                        item.cantidad.toString(),
+                        item.producto,
+                        item.codigo || 'S/N',
+                        precio > 0 ? `$${precio.toFixed(2)}` : '-',
+                        subtotal > 0 ? `$${(subtotal * 1.15).toFixed(2)}` : '-'
+                    ];
+                });
 
                 doc.autoTable({
-                    startY: 75,
-                    head: [['CANT', 'DESCRIPCIÓN', 'CÓDIGO']],
+                    startY: 95,
+                    head: [['CANT', 'DESCRIPCIÓN', 'CÓDIGO', 'P. UNIT', 'TOTAL (+IVA)']],
                     body: tableBody,
                     theme: 'grid',
                     headStyles: {
-                        fillColor: [40, 167, 69],
-                        textColor: 255,
-                        fontStyle: 'bold'
+                        fillColor: colorOscuro,
+                        textColor: colorOro,
+                        fontStyle: 'bold',
+                        lineWidth: 0.1,
+                        lineColor: colorOro
                     },
                     columnStyles: {
                         0: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
                         1: { cellWidth: 'auto' },
-                        2: { cellWidth: 40, halign: 'center', fontSize: 8 }
+                        2: { cellWidth: 30, halign: 'center', fontSize: 8 },
+                        3: { cellWidth: 25, halign: 'right' },
+                        4: { cellWidth: 32, halign: 'right', fontStyle: 'bold' }
                     },
                     styles: {
-                        fontSize: 10,
-                        cellPadding: 3
+                        fontSize: 9,
+                        cellPadding: 4,
+                        lineColor: [220, 220, 220]
                     },
-                    foot: [['', 'TOTAL ITEMS', items.length]],
-                    footStyles: {
-                        fillColor: [240, 240, 240],
-                        textColor: 0,
-                        fontStyle: 'bold'
+                    alternateRowStyles: {
+                        fillColor: [252, 252, 252]
                     }
                 });
 
-                // Pie de página con totales
+                // --- RESUMEN DE TOTALES ---
                 const finalY = doc.lastAutoTable.finalY + 10;
                 const totalUnidades = items.reduce((sum, item) => sum + item.cantidad, 0);
+                const subtotalFinal = items.reduce((sum, item) => sum + (item.cantidad * (item.precio_proveedor || 0)), 0);
+                const iva15 = subtotalFinal * 0.15;
+                const totalFinal = subtotalFinal + iva15;
 
-                doc.setFontSize(11);
-                doc.setFont(undefined, 'bold');
-                doc.text(`Total Unidades: ${totalUnidades}`, 140, finalY);
+                // Línea divisoria antes de totales
+                doc.setDrawColor(...colorOro);
+                doc.setLineWidth(0.8);
+                doc.line(155, finalY - 5, 196, finalY - 5);
 
-                // Firma / Notas
-                doc.setFontSize(9);
-                doc.setFont(undefined, 'normal');
+                doc.setFontSize(10);
                 doc.setTextColor(100);
-                doc.text('Generado automáticamente por Sistema Ferrisoluciones', 105, 280, { align: 'center' });
+                doc.setFont(undefined, 'normal');
+                doc.text(`Total Unidades Pedidas: ${totalUnidades}`, 14, finalY);
 
-                // Generar Base64 limpio (sin el prefijo data:...)
+                if (subtotalFinal > 0) {
+                    doc.setTextColor(...colorOscuro);
+                    doc.setFontSize(10);
+                    doc.text(`Subtotal:`, 165, finalY, { align: 'right' });
+                    doc.text(`$${subtotalFinal.toFixed(2)}`, 196, finalY, { align: 'right' });
+                    
+                    doc.text(`IVA (15%):`, 165, finalY + 7, { align: 'right' });
+                    doc.text(`$${iva15.toFixed(2)}`, 196, finalY + 7, { align: 'right' });
+                    
+                    // Cuadro para el Total
+                    doc.setFillColor(...colorOscuro);
+                    const rectWidth = 85; 
+                    const rectX = 200 - rectWidth - 4; // Alineado a la derecha con margen
+                    doc.rect(rectX, finalY + 12, rectWidth, 14, 'F');
+                    
+                    doc.setFontSize(11);
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(...colorOro);
+                    doc.text(`TOTAL ESTIMADO:`, rectX + 5, finalY + 21, { align: 'left' });
+                    
+                    doc.setFontSize(13);
+                    doc.text(`$${totalFinal.toFixed(2)}`, 196 - 4, finalY + 21, { align: 'right' });
+                }
+
+                // --- PIE DE PÁGINA ---
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(150);
+                    doc.setFont(undefined, 'italic');
+                    doc.text(`Página ${i} de ${pageCount}`, 105, 285, { align: 'center' });
+                    doc.text('Este documento es una orden de pedido interna generada por el sistema Ferrisoluciones.', 105, 290, { align: 'center' });
+                }
+
+                // Generar Base64 limpio
                 const dataUri = doc.output('datauristring');
                 return dataUri.split(',')[1];
             } catch (error) {
@@ -2466,15 +2664,19 @@
             const nombreArchivo = `Pedido_${(proveedor.empresa || 'Prov').replace(/[^a-zA-Z0-9]/g, '_')}_${fechaArchivo}.pdf`;
 
             try {
-                // Mimetype explícito y estructura estándar para Evolution API v1/v2
-                const payload = {
-                    number: ferredatos.number,
-                    media: pdfBase64,
-                    mediatype: "document",
-                    mimetype: "application/pdf",
-                    fileName: nombreArchivo,
-                    caption: `📋 *NUEVO PEDIDO GENERADO*\n\n*Proveedor:* ${proveedor.empresa}\n*Fecha:* ${new Date().toLocaleString()}\n*Items:* ${carritoPedido.length}`
-                };
+            // Mimetype explícito y estructura estándar para Evolution API v1/v2
+            const subtotal = carritoPedido.reduce((sum, item) => sum + (item.cantidad * (item.precio_proveedor || 0)), 0);
+            const total = subtotal * 1.15;
+            const valorTexto = subtotal > 0 ? `\n*Valor Estimado (+IVA):* $${total.toFixed(2)}` : '';
+
+            const payload = {
+                number: ferredatos.number,
+                media: pdfBase64,
+                mediatype: "document",
+                mimetype: "application/pdf",
+                fileName: nombreArchivo,
+                caption: `📋 *NUEVO PEDIDO GENERADO*\n\n*Proveedor:* ${proveedor.empresa}\n*Fecha:* ${new Date().toLocaleString()}\n*Items:* ${carritoPedido.length}${valorTexto}`
+            };
 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -2971,6 +3173,7 @@
         // Modal y Carrito
         window.pedidosAbrirModal = abrirModalCantidad;
         window.pedidosCerrarModal = cerrarModalCantidad;
+        window.pedidosActualizarSubtotalModal = actualizarSubtotalModal;
         window.pedidosAgregarAlCarrito = agregarAlCarrito;
         window.pedidosEliminarDelCarrito = eliminarDelCarrito;
         window.pedidosToggleCarrito = toggleCarritoMobile;
