@@ -2,7 +2,7 @@
 // MÓDULO: INGRESO DE FACTURAS DE PROVEEDORES
 // =====================================================
 
-let ingresoFacturaState = {
+var ingresoFacturaState = ingresoFacturaState || {
     pasoActual: 1,
     proveedorSeleccionado: null,
     metodoPago: null,
@@ -13,10 +13,10 @@ let ingresoFacturaState = {
 };
 
 // Índice del producto para cambiar zona desde el modal
-let productoIndexParaZona = -1;
+var productoIndexParaZona = (typeof productoIndexParaZona !== 'undefined') ? productoIndexParaZona : -1;
 
 // Porcentajes usados para los botones de ganancia
-const PORCENTAJES_GANANCIA = [10, 20, 30, 38, 45, 48];
+var PORCENTAJES_GANANCIA = [10, 20, 30, 38, 45, 48];
 // Utilidad: normaliza valores de fecha para asignar a inputs type=date (YYYY-MM-DD)
 function normalizeDateForInput(value) {
     if (!value) return '';
@@ -2033,26 +2033,30 @@ async function mostrarModalNuevoProductoIngreso(initialCode = null) {
                 // data puede venir como cadena o como objeto; soportar ambos
                 let codigo = (typeof data === 'string') ? data : (data.codigo || JSON.stringify(data));
 
-                // Si el código sugerido es numérico (posiblemente con padding) y corto (<=4),
-                // ajustar según códigos ya presentes en la factura/inventario
+                // Ajustar código si es numérico siguiendo la lógica de códigos manuales (1001-9999)
                 const numericMatch = codigo.match(/^0*(\d+)$/);
                 if (numericMatch) {
                     const suggestedNum = parseInt(numericMatch[1], 10);
-                    const padWidth = codigo.length; // conservar padding del sugerido
 
-                    // Buscar códigos numéricos de 1-4 dígitos en productosEnFactura e inventario
+                    // Buscar códigos numéricos manuales (1001-9999) en productosEnFactura e inventario
                     const tableCodes = (ingresoFacturaState.productosEnFactura || []).map(p => (p.codigo || '').toString());
                     const invCodes = (ingresoFacturaState.inventarioCompleto || []).map(p => (p.codigo || '').toString());
                     const combined = tableCodes.concat(invCodes);
-                    const numsInTable = combined
-                        .filter(c => /^\d{1,4}$/.test(c))
-                        .map(c => parseInt(c, 10));
+                    
+                    const numsManuales = combined
+                        .filter(c => /^\d+$/.test(c))
+                        .map(c => parseInt(c, 10))
+                        .filter(n => n >= 1001 && n <= 9999);
 
-                    if (numsInTable.length > 0) {
-                        const maxInTable = Math.max(...numsInTable);
-                        if (maxInTable >= suggestedNum) {
-                            const next = Math.min(maxInTable + 1, 9999);
-                            codigo = String(next).padStart(padWidth, '0');
+                    if (numsManuales.length > 0) {
+                        const maxManual = Math.max(...numsManuales);
+                        const next = Math.min(maxManual + 1, 9999);
+                        codigo = String(next);
+                    } else {
+                        // Si no hay códigos manuales previos y el sugerido es menor a 1001,
+                        // iniciamos el rango manual en 1001
+                        if (suggestedNum < 1001) {
+                            codigo = '1001';
                         }
                     }
                 }

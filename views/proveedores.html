@@ -1626,17 +1626,24 @@ async function cargarModuloIngresoFactura() {
             container.innerHTML = html;
             
             // Cargar el JavaScript del módulo
-            const script = document.createElement('script');
-            script.src = 'js/ingreso-factura.js';
-            script.onload = () => {
+            if (!document.querySelector('script[src="js/ingreso-factura.js"]')) {
+                const script = document.createElement('script');
+                script.src = 'js/ingreso-factura.js';
+                script.onload = () => {
+                    if (typeof initIngresoFactura === 'function') {
+                        initIngresoFactura(proveedoresData.proveedores);
+                    }
+                };
+                script.onerror = () => {
+                    container.innerHTML = '<div class="empty-state"><p>Error al cargar el módulo de ingreso</p></div>';
+                };
+                document.body.appendChild(script);
+            } else {
+                // Si el script ya existe, solo reinicializar si es necesario
                 if (typeof initIngresoFactura === 'function') {
                     initIngresoFactura(proveedoresData.proveedores);
                 }
-            };
-            script.onerror = () => {
-                container.innerHTML = '<div class="empty-state"><p>Error al cargar el módulo de ingreso</p></div>';
-            };
-            document.body.appendChild(script);
+            }
             
         } catch (error) {
             container.innerHTML = '<div class="empty-state"><p>Error al cargar el módulo</p></div>';
