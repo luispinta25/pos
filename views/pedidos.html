@@ -501,6 +501,174 @@
         min-height: 0;
     }
 
+    /* =====================================================
+       BOTÓN FLOTANTE JSON (VENTAS 21 DÍAS)
+       ===================================================== */
+    .json-floating-btn {
+        display: none !important; /* Eliminado */
+    }
+
+    /* Botón Flotante Ver Análisis IA */
+    .btn-ver-analisis-ia {
+        position: fixed;
+        bottom: 110px; /* Más arriba del botón anotar */
+        right: 30px;
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 25px;
+        font-weight: 700;
+        box-shadow: 0 10px 25px rgba(40, 167, 69, 0.4);
+        cursor: pointer;
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        animation: slideInRight 0.5s ease-out;
+    }
+
+    .btn-ver-analisis-ia:hover {
+        transform: scale(1.05) translateY(-3px);
+        box-shadow: 0 15px 30px rgba(40, 167,  green, 0.5);
+    }
+
+    @keyframes slideInRight {
+        from { transform: translateX(100px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Estilos para el visor elegante de la IA */
+    .ia-result-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.85);
+        z-index: 100000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+    }
+
+    .ia-result-card {
+        background: #fff;
+        width: 90%;
+        max-width: 900px;
+        max-height: 85vh;
+        border-radius: 20px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    }
+
+    .ia-result-header {
+        background: linear-gradient(135deg, #1a1a1a 0%, #333333 100%);
+        padding: 20px 30px;
+        color: #d4a017;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 3px solid #d4a017;
+    }
+
+    .ia-result-body {
+        padding: 30px;
+        overflow-y: auto;
+        color: #333;
+        line-height: 1.6;
+    }
+
+    .ia-markdown-content h3 {
+        color: #1a1a1a;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 8px;
+        margin-top: 25px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ia-markdown-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        font-size: 0.9rem;
+    }
+
+    .ia-markdown-content th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .ia-markdown-content td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .ia-markdown-content tr:nth-child(even) {
+        background-color: #fcfcfc;
+    }
+
+    .ia-markdown-content blockquote {
+        margin: 0;
+        padding: 15px;
+        background: #fff9e6;
+        border-left: 5px solid #d4a017;
+        font-style: italic;
+    }
+
+    .ia-loading-stepper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        padding: 40px;
+    }
+
+    .json-floating-btn i {
+        font-size: 1.2rem;
+    }
+
+    /* Estilos para el modal de ventas */
+    .ventas-recientes-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    .ventas-recientes-table th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: left;
+        font-size: 0.85rem;
+        color: #666;
+        border-bottom: 2px solid #eee;
+    }
+
+    .ventas-recientes-table td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        font-size: 0.9rem;
+    }
+
+    .ventas-recientes-table tr:hover {
+        background: #fcfcfc;
+    }
+
+    .ventas-recientes-vacio {
+        padding: 40px;
+        text-align: center;
+        color: #999;
+    }
+
     .carrito-empty {
         text-align: center;
         color: #999;
@@ -1243,6 +1411,242 @@
         margin-bottom: 15px;
         opacity: 0.3;
     }
+    /* =====================================================
+       ESTILOS ANÁLISIS IA (LUXURY THEME)
+       ===================================================== */
+    .ia-loading-overlay, .ia-result-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 2000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .ia-loading-card {
+        background: #1a1a1a;
+        padding: 40px;
+        border-radius: 20px;
+        border: 2px solid #d4a017;
+        text-align: center;
+        max-width: 450px;
+        width: 100%;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .ia-loading-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid rgba(212, 160, 23, 0.1);
+        border-left-color: #d4a017;
+        border-radius: 50%;
+        margin: 0 auto 25px;
+        animation: spin 1s linear infinite;
+    }
+
+    .ia-loading-steps {
+        text-align: left;
+        margin-top: 20px;
+    }
+
+    .step-item {
+        color: #666;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+    }
+
+    .step-item i { font-size: 1.1rem; opacity: 0.3; }
+    .step-item.active { color: #d4a017; font-weight: bold; transform: translateX(5px); }
+    .step-item.active i { opacity: 1; animation: pulse-gold 1.5s infinite; }
+    .step-item.completed { color: #28a745; }
+    .step-item.completed i { opacity: 1; color: #28a745; }
+
+    @keyframes pulse-gold {
+        0% { transform: scale(1); text-shadow: 0 0 0 rgba(212, 160, 23, 0); }
+        50% { transform: scale(1.1); text-shadow: 0 0 10px rgba(212, 160, 23, 0.5); }
+        100% { transform: scale(1); text-shadow: 0 0 0 rgba(212, 160, 23, 0); }
+    }
+
+    .ia-floating-result-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 230px;
+        background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+        color: #d4a017;
+        padding: 15px 25px;
+        border-radius: 30px;
+        border: 2px solid #d4a017;
+        font-weight: 800;
+        cursor: pointer;
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* Estado: Analizando */
+    .ia-floating-result-btn.analyzing {
+        display: flex;
+        background: #1a1a1a;
+        color: #d4a017;
+        border-style: dashed;
+        animation: ia-pulse 2s infinite;
+        pointer-events: none;
+    }
+
+    .ia-floating-result-btn.analyzing i {
+        animation: spin 1s linear infinite;
+    }
+
+    /* Estado: Listo */
+    .ia-floating-result-btn.ready {
+        display: flex;
+        background: linear-gradient(135deg, #d4a017 0%, #b8860b 100%);
+        color: black;
+        border-style: solid;
+        animation: ia-bounce 0.5s ease-out;
+    }
+
+    @keyframes ia-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(212, 160, 23, 0.7); }
+        70% { box-shadow: 0 0 0 15px rgba(212, 160, 23, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(212, 160, 23, 0); }
+    }
+
+    @keyframes ia-bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-15px); }
+        60% { transform: translateY(-7px); }
+    }
+
+    .ia-result-card {
+        background: #1a1a1a;
+        width: 95%;
+        max-width: 1400px;
+        max-height: 90vh;
+        border-radius: 20px;
+        border: 1px solid #333;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+    }
+
+    .ia-result-header {
+        background: #252525;
+        padding: 20px 30px;
+        border-bottom: 1px solid #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .ia-result-header div {
+        color: #d4a017;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        letter-spacing: 1px;
+    }
+
+    .ia-result-close {
+        background: none;
+        border: none;
+        color: #888;
+        font-size: 1.8rem;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .ia-result-close:hover { color: #fff; }
+
+    .ia-result-body {
+        padding: 30px;
+        overflow-y: auto;
+        flex: 1;
+        background: #111;
+        color: #ddd;
+        line-height: 1.6;
+    }
+
+    .ia-markdown-content h3 { color: #d4a017; margin-top: 25px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+    .ia-markdown-content p { margin-bottom: 15px; }
+    .ia-markdown-content ul { margin-bottom: 15px; padding-left: 20px; }
+    .ia-markdown-content li { margin-bottom: 8px; }
+    .ia-markdown-content strong { color: #fff; }
+
+    /* Estilos para Tablas sugeridas por IA */
+    .ia-table-container {
+        width: 100%;
+        overflow-x: auto;
+        margin: 20px 0;
+        border-radius: 12px;
+        border: 1px solid #333;
+    }
+
+    .ia-table {
+        width: 100%;
+        border-collapse: collapse;
+        color: #eee;
+        font-size: 0.9rem;
+    }
+
+    .ia-table th {
+        background: #252525;
+        color: #d4a017;
+        padding: 12px 15px;
+        text-align: left;
+        font-weight: 700;
+        border-bottom: 2px solid #d4a017;
+    }
+
+    .ia-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #222;
+        background: #111;
+    }
+
+    .ia-table tr:hover td {
+        background: #1a1a1a;
+    }
+
+    .urgencia-critica { color: #ff4757; font-weight: bold; }
+    .urgencia-alta { color: #ffa502; font-weight: bold; }
+    .urgencia-media { color: #2ed573; font-weight: bold; }
+
+    /* Estado: Producto ya pedido desde IA */
+    .ia-row-completada {
+        background: rgba(40, 167, 69, 0.15) !important;
+        opacity: 0.8;
+    }
+    .btn-pedir-ia.completado {
+        background: #6c757d !important;
+        pointer-events: none;
+    }
+
+    .ia-result-footer {
+        padding: 20px 30px;
+        background: #1a1a1a;
+        border-top: 1px solid #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .ia-result-footer p { font-size: 0.8rem; color: #666; margin: 0; }
 </style>
 
 <!-- Sin altura fija en wrapper para permitir scroll natural de la página -->
@@ -1285,10 +1689,15 @@
                         <span id="proveedorSeleccionadoCodigo">Código</span>
                     </div>
                 </div>
-                <button class="btn-volver-proveedores" onclick="window.pedidosVolverAProveedores()">
-                    <i class="fas fa-arrow-left"></i>
-                    Volver
-                </button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="btnAnalisisIA" class="btn" style="background: #1a1a1a; color: #d4a017; border: 2px solid #d4a017; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;" onclick="window.pedidosDispararAnalisisIA()">
+                        <i class="fas fa-brain"></i> Análisis IA
+                    </button>
+                    <button class="btn-volver-proveedores" onclick="window.pedidosVolverAProveedores()">
+                        <i class="fas fa-arrow-left"></i>
+                        Volver
+                    </button>
+                </div>
             </div>
 
             <!-- Layout: Productos + Carrito - Altura ajustada para ver header del carrito -->
@@ -1496,6 +1905,72 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botón Flotante para ver resultado de IA (se muestra cuando hay respuesta) -->
+<button class="ia-floating-result-btn" id="btnVerResultadoIA" onclick="window.pedidosMostrarResultadoIA()">
+    <i class="fas fa-magic"></i> Ver Análisis IA
+</button>
+
+<!-- Overlay de Carga IA -->
+<div id="iaLoadingOverlay" class="ia-loading-overlay" style="display: none;">
+    <div class="ia-loading-card">
+        <div class="ia-loading-spinner"></div>
+        <h3 style="color: #d4a017; margin-bottom: 20px;">Analizando Estrategia</h3>
+        <div class="ia-loading-steps">
+            <div class="step-item">
+                <i class="fas fa-check-circle"></i> 📊 Recopilando datos de ventas y stock
+            </div>
+            <div class="step-item">
+                <i class="fas fa-check-circle"></i> 🧠 Consultando cerebro estratégico IA
+            </div>
+            <div class="step-item">
+                <i class="fas fa-check-circle"></i> 🎯 Organizando estrategia de pedido
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay de Resultado IA -->
+<div id="iaResultOverlay" class="ia-result-overlay" style="display: none;">
+    <div class="ia-result-card">
+        <div class="ia-result-header">
+            <div>
+                <i class="fas fa-robot"></i>
+                <span>IA ESTRATÉGICA</span>
+            </div>
+            <button class="ia-result-close" onclick="window.pedidosCerrarResultadoIA()">&times;</button>
+        </div>
+        <div class="ia-result-body">
+            <div id="iaResultMarkdown" class="ia-markdown-content">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </div>
+        <div class="ia-result-footer">
+            <p><i class="fas fa-info-circle"></i> Esta es una sugerencia basada en tendencias. Valide antes de pedir.</p>
+            <button class="btn" style="background: #d4a017; color: black; font-weight: bold;" onclick="window.pedidosCerrarResultadoIA()">ENTENDIDO</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ventas Recientes -->
+<div id="modalVentas21" class="modal-cantidad-pedido">
+    <div class="modal-cantidad-content" style="max-width: 800px; width: 90%;">
+        <div class="modal-cantidad-header" style="background: linear-gradient(135deg, #1a1a1a 0%, #333333 100%);">
+            <h3><i class="fas fa-chart-line"></i> Ventas últimos 21 días</h3>
+            <p id="modalVentas21Proveedor">Proveedor</p>
+        </div>
+        <div class="modal-cantidad-body" style="padding: 0; max-height: 60vh; overflow-y: auto;">
+            <div id="modalVentas21Content">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </div>
+        <div class="modal-cantidad-footer">
+            <button class="btn btn-secondary" onclick="window.pedidosCerrarModalVentas21()">
+                <i class="fas fa-times"></i> Cerrar
+            </button>
         </div>
     </div>
 </div>
@@ -1728,7 +2203,7 @@
 
                 const { data, error } = await db
                     .from('ferre_inventario')
-                    .select('codigo, producto, stock, stock_minimo, proveedor_id, precio_proveedor')
+                    .select('codigo, producto, stock, stock_minimo, proveedor_id, precio_proveedor, unidad_paquete, precio')
                     .order('producto', { ascending: true });
 
                 if (error) throw error;
@@ -1831,6 +2306,11 @@
             document.getElementById('proveedorSeleccionadoNombre').textContent = proveedorActual.empresa;
             document.getElementById('proveedorSeleccionadoCodigo').textContent = proveedorActual.codigo || 'Sin código';
 
+            // Resetear botón de IA y resultado previo
+            window.ultimoResultadoIA = null;
+            const btnVerIA = document.getElementById('btnVerResultadoIA');
+            if (btnVerIA) btnVerIA.classList.remove('visible');
+
             // Cambiar vista
             document.getElementById('seleccionProveedorView').style.display = 'none';
             document.getElementById('productosProveedorView').classList.add('active');
@@ -1847,8 +2327,585 @@
             document.getElementById('seleccionProveedorView').style.display = 'block';
             document.getElementById('productosProveedorView').classList.remove('active');
 
+            // Ocultar botón flotante IA
+            const btnVerIA = document.getElementById('btnVerResultadoIA');
+            if (btnVerIA) btnVerIA.classList.remove('visible');
+
             // Limpiar estado guardado
             localStorage.removeItem(PEDIDO_CACHE_KEY);
+        }
+
+        // =====================================================
+        // VENTAS ÚLTIMOS 21 DÍAS
+        // =====================================================
+        // =====================================================
+        // ANÁLISIS IA (SMART ORDERS)
+        // =====================================================
+        async function dispararAnalisisIA() {
+            if (!proveedorActual) return;
+            
+            const btnFlotante = document.getElementById('btnVerResultadoIA');
+            
+            // Estado 1: Analizando (Background)
+            btnFlotante.className = 'ia-floating-result-btn analyzing';
+            btnFlotante.innerHTML = '<i class="fas fa-brain"></i> Analizando Estrategia...';
+            btnFlotante.style.display = 'flex';
+
+            try {
+                // Generar dataset
+                const dataset = await generarDatasetParaIA();
+                if (!dataset) throw new Error('No hay productos para analizar');
+
+                // Consultar Webhook (Background) - NUEVA URL
+                const response = await fetch('https://lpn8nwebhook.luispintasolutions.com/webhook/1267489c-1ca8-4043-98b7-a8223e41ab85', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataset)
+                });
+
+                if (!response.ok) throw new Error('Error en el cerebro de IA');
+                const data = await response.json();
+
+                // Guardar resultado
+                window.ultimoResultadoIA = data;
+
+                // Estado 2: Listo!
+                btnFlotante.className = 'ia-floating-result-btn ready';
+                btnFlotante.innerHTML = '<i class="fas fa-check-circle"></i> ¡Lo tengo! Ver Análisis';
+                
+                window.app?.showToast?.('Análisis estratégico listo', 'success');
+
+            } catch (error) {
+                console.error('Error en Análisis IA:', error);
+                btnFlotante.style.display = 'none';
+                window.app?.showToast?.('Error en análisis IA: ' + error.message, 'danger');
+            }
+        }
+
+        async function generarDatasetParaIA() {
+            const db = window.app.db;
+            const hace21Dias = new Date();
+            hace21Dias.setDate(hace21Dias.getDate() - 21);
+
+            const codigosProductosProv = inventario
+                .filter(p => p.proveedor_id === proveedorActual.id)
+                .map(p => p.codigo);
+
+            if (codigosProductosProv.length === 0) return null;
+
+            const { data: ventasDetalle } = await db
+                .from('ferre_ventas_detalle')
+                .select(`producto_id, cantidad, subtotal, ferre_ventas!inner (fecha_hora_venta)`)
+                .in('producto_id', codigosProductosProv)
+                .gte('ferre_ventas.fecha_hora_venta', hace21Dias.toISOString());
+
+            const resumen = {};
+            (ventasDetalle || []).forEach(det => {
+                const cod = det.producto_id;
+                if (!resumen[cod]) {
+                    const pInv = inventario.find(p => p.codigo === cod);
+                    resumen[cod] = { codigo: cod, nombre: pInv ? pInv.producto : cod, cantidad: 0 };
+                }
+                resumen[cod].cantidad += parseFloat(det.cantidad || 0);
+            });
+
+            const jsonVentas = Object.values(resumen).map(item => ({
+                "codigo": item.codigo,
+                "nombre": limpiarNombreProducto(item.nombre),
+                "unidades_vendidas_21d": item.cantidad,
+                "promedio_diario": parseFloat((item.cantidad / 21).toFixed(2))
+            }));
+
+            const productosDelProveedor = inventario.filter(p => p.proveedor_id === proveedorActual.id);
+            const stockRelevante = productosDelProveedor.filter(p => {
+                const esCritico = p.stock <= 0;
+                const esBajo = p.stock < p.stock_minimo;
+                const esCerca = p.stock <= p.stock_minimo * 1.30;
+                const tieneAnotacion = anotaciones.some(a => a.codigo_producto === p.codigo && (a.proveedor_principal_id === proveedorActual.id || a.proveedor_alternativo_id === proveedorActual.id));
+                return esCritico || esBajo || esCerca || tieneAnotacion;
+            });
+
+            const jsonStock = stockRelevante.map(p => {
+                let clasificacion = 'NORMAL';
+                const tieneAnotacion = anotaciones.some(a => a.codigo_producto === p.codigo && (a.proveedor_principal_id === proveedorActual.id || a.proveedor_alternativo_id === proveedorActual.id));
+                if (tieneAnotacion) clasificacion = 'PRIORITARIO';
+                else if (p.stock <= 0) clasificacion = 'CRITICO';
+                else if (p.stock < p.stock_minimo) clasificacion = 'BAJO';
+                else if (p.stock <= p.stock_minimo * 1.30) clasificacion = 'CERCA';
+                return { "codigo": p.codigo, "stock_actual": p.stock || 0, "clasificacion": clasificacion };
+            });
+
+            const codigosInteres = new Set([...jsonVentas.map(v => v.codigo), ...jsonStock.map(s => s.codigo)]);
+            const jsonCatalogo = Array.from(codigosInteres).map(cod => {
+                const p = inventario.find(i => i.codigo === cod);
+                if (!p) return null;
+                return {
+                    "codigo": p.codigo,
+                    "nombre": limpiarNombreProducto(p.producto),
+                    "unidad": p.unidad_paquete || 'ud',
+                    "p_costo": p.precio_proveedor || 0,
+                    "p_venta": p.precio || 0,
+                    "stock_minimo": p.stock_minimo || 0,
+                    "stock_objetivo": Math.ceil((p.stock_minimo || 1) * 2.5)
+                };
+            }).filter(Boolean);
+
+            return {
+                "INFO_PEDIDO": { "proveedor": proveedorActual.empresa, "fecha_exportacion": new Date().toISOString(), "periodo_analisis_dias": 21 },
+                "VENTAS_21D": jsonVentas, "ESTADO_STOCK": jsonStock, "CATALOGO": jsonCatalogo
+            };
+        }
+
+        function mostrarResultadoIA() {
+            if (!window.ultimoResultadoIA) return;
+
+            const overlay = document.getElementById('iaResultOverlay');
+            const content = document.getElementById('iaResultMarkdown');
+            
+            // Congelar scroll de fondo
+            document.body.style.overflow = 'hidden';
+            
+            let rawText = "";
+            // Extraer la propiedad 'output' si viene envuelta en un array u objeto (como en tu captura)
+            const data = window.ultimoResultadoIA;
+            if (Array.isArray(data) && data[0] && data[0].output) {
+                rawText = data[0].output;
+            } else if (data.output) {
+                rawText = data.output;
+            } else {
+                rawText = typeof data === 'string' ? data : JSON.stringify(data);
+            }
+
+            // --- PARSER ELEGANTE (Tablas y Secciones) ---
+            let html = rawText;
+
+            // 1. Detectar y renderizar Tablas de Markdown
+            if (html.includes('|')) {
+                const lines = html.split('\n');
+                let result = [];
+                let inTable = false;
+                let tableRows = [];
+
+                lines.forEach(line => {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith('|')) {
+                        if (!inTable) inTable = true;
+                        
+                        // Ignorar líneas de separación |---|
+                        if (trimmedLine.includes('---')) return;
+
+                        const cells = trimmedLine.split('|')
+                            .map(c => c.trim())
+                            .filter((c, i, a) => !(i === 0 && c === '') && !(i === a.length-1 && c === ''));
+
+                        tableRows.push(cells);
+                    } else {
+                        if (inTable) {
+                            // Renderizar la tabla acumulada
+                            let tableHtml = '<div class="ia-table-container"><table class="ia-table">';
+                            
+                            // Detectar posición de la columna Código
+                            const headerRow = tableRows[0];
+                            const codIdx = headerRow.findIndex(h => h.toLowerCase().includes('código') || h.toLowerCase().includes('codigo'));
+
+                        tableRows.forEach((row, idx) => {
+                                const isHeader = idx === 0;
+                                const tag = isHeader ? 'th' : 'td';
+                                
+                                const codigo = !isHeader && codIdx !== -1 ? row[codIdx].replace(/\*\*/g, '').trim() : null;
+                                const yaEnCarrito = !isHeader && codigo && carritoPedido.some(item => item.codigo === codigo);
+                                const rowClass = yaEnCarrito ? ' class="ia-row-completada"' : '';
+
+                                tableHtml += `<tr${rowClass}>`;
+                                row.forEach((c, cIdx) => {
+                                    let cellStyle = '';
+                                    const lowerC = c.toLowerCase();
+                                    if (lowerC.includes('crítica')) cellStyle = ' class="urgencia-critica"';
+                                    else if (lowerC.includes('alta')) cellStyle = ' class="urgencia-alta"';
+                                    else if (lowerC.includes('media')) cellStyle = ' class="urgencia-media"';
+                                    
+                                    tableHtml += `<${tag}${cellStyle}>${c.replace(/\*\*/g, '')}</${tag}>`;
+                                });
+
+                                // Añadir columna de acción
+                                if (isHeader) {
+                                    tableHtml += '<th>Acción</th>';
+                                } else {
+                                    const codigo = codIdx !== -1 ? row[codIdx].replace(/\*\*/g, '').trim() : null;
+                                    const rowId = `ia-row-${codigo}-${idx}`;
+                                    
+                                    // Verificar si el producto ya está en el carrito para mantener el estado al reabrir
+                                    const yaEnCarrito = codigo && carritoPedido.some(item => item.codigo === codigo);
+                                    
+                                    if (codigo && codigo !== '-') {
+                                        if (yaEnCarrito) {
+                                            tableHtml += `<td id="${rowId}"><button class="btn btn-sm btn-pedir-ia completado" style="background:#6c757d; color:white; border:none; padding:5px 10px; border-radius:4px; pointer-events:none;"><i class="fas fa-check"></i> Pedido</button></td>`;
+                                        } else {
+                                            tableHtml += `<td id="${rowId}"><button class="btn btn-sm btn-pedir-ia" style="background:#28a745; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="window.pedidosAbrirModalSobreIA('${codigo}', '${rowId}')"><i class="fas fa-plus"></i> Pedir</button></td>`;
+                                        }
+                                    } else {
+                                        tableHtml += '<td>-</td>';
+                                    }
+                                }
+                                tableHtml += '</tr>';
+                            });
+                            tableHtml += '</table></div>';
+                            result.push(tableHtml);
+                            tableRows = [];
+                            inTable = false;
+                        }
+                        result.push(line);
+                    }
+                });
+                
+                if (inTable) { // Por si la tabla es lo último
+                    let tableHtml = '<div class="ia-table-container"><table class="ia-table">';
+                    tableRows.forEach((row, idx) => {
+                        const tag = idx === 0 ? 'th' : 'td';
+                        tableHtml += '<tr>' + row.map(c => `<${tag}>${c}</${tag}>`).join('') + '</tr>';
+                    });
+                    tableHtml += '</table></div>';
+                    result.push(tableHtml);
+                }
+                html = result.join('\n');
+            }
+
+            // 2. Formatear el resto (Heads, Lists, Bold)
+            html = html
+                .replace(/^### (.*$)/gim, '<h3 style="color:#d4a017; border-bottom:1px solid #333; padding-bottom:10px; margin-top:30px;">$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2 style="color:#d4a017; margin-top:40px;">$1</h2>')
+                .replace(/^\* (.*$)/gim, '<li style="margin-left:20px; color:#eee; margin-bottom:8px;">$1</li>')
+                .replace(/\*\*(.*)\*\*/gim, '<strong style="color:#d4a017;">$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            content.innerHTML = html;
+            overlay.style.display = 'flex';
+        }
+
+        function cerrarResultadoIA() {
+            document.getElementById('iaResultOverlay').style.display = 'none';
+            document.body.style.overflow = ''; // Restaurar scroll
+        }
+
+        // --- Nueva funcionalidad para pedir sobre el modal de IA ---
+        function abrirModalSobreIA(codigo, cellId) {
+            // Guardamos la referencia de qué celda/producto estamos pidiendo
+            window.lastIARowRequested = cellId;
+            
+            // Simplemente abrimos el modal de cantidad original
+            // El CSS del modal original (z-index) debe estar por encima o ser suficiente
+            abrirModalCantidad(codigo);
+            
+            // Aseguramos que el modal de cantidad tenga un z-index superior al del overlay de IA
+            const modalPedido = document.getElementById('modalCantidadPedido');
+            if (modalPedido) {
+                modalPedido.style.zIndex = "3000";
+            }
+        }
+
+        // Modificamos ligeramente la función de agregar al carrito para marcar en la tabla de IA
+        const originalAgregarAlCarrito = agregarAlCarrito;
+        agregarAlCarrito = function() {
+            // Ejecutar lógica original
+            originalAgregarAlCarrito();
+            
+            // Si venimos de un clic en la tabla IA, marcamos la fila
+            if (window.lastIARowRequested) {
+                const td = document.getElementById(window.lastIARowRequested);
+                if (td) {
+                    const tr = td.parentElement;
+                    tr.classList.add('ia-row-completada');
+                    const btn = td.querySelector('button');
+                    if (btn) {
+                        btn.innerHTML = '<i class="fas fa-check"></i> Pedido';
+                        btn.classList.add('completado');
+                    }
+                }
+                window.lastIARowRequested = null;
+            }
+        };
+
+        function abrirModalVentas21() {
+            if (!proveedorActual) return;
+
+            document.getElementById('modalVentas21Proveedor').textContent = proveedorActual.empresa;
+            document.getElementById('modalVentas21').classList.add('active');
+
+            consultarVentasRecientes();
+        }
+
+        function cerrarModalVentas21() {
+            document.getElementById('modalVentas21').classList.remove('active');
+        }
+
+        function copiarJSONLiteral() {
+            const textarea = document.getElementById('jsonTempText');
+            if (textarea) {
+                textarea.select();
+                document.execCommand('copy');
+                window.app?.showToast?.('¡JSON copiado al portapapeles!', 'success');
+            }
+        }
+
+        async function enviarAWebhookIA(payload) {
+            const btn = document.getElementById('btnEnviarIA');
+            const originalText = btn.innerHTML;
+            const iaContainer = document.getElementById('iaResponseContainer');
+            const iaRawContent = document.getElementById('iaRawResponse');
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESANDO...';
+                
+                const response = await fetch('https://lpn8n.luispintasolutions.com/webhook-test/1267489c-1ca8-4043-98b7-a8223e41ab85', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('Error en el servidor de IA');
+
+                const data = await response.json();
+                
+                // Mostrar respuesta cruda
+                iaRawContent.textContent = JSON.stringify(data, null, 2);
+                iaContainer.style.display = 'block';
+                
+                // Scroll al contenedor de respuesta
+                iaContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                
+                window.app?.showToast?.('Respuesta de IA recibida', 'success');
+
+            } catch (error) {
+                console.error('Error enviando a IA:', error);
+                window.app?.showToast?.('Error: ' + error.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function consultarVentasRecientes() {
+            const container = document.getElementById('modalVentas21Content');
+            if (!container || !proveedorActual) return;
+
+            container.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: #d4a017;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 15px;"></i>
+                    <p>Consultando ventas de los últimos 21 días...</p>
+                </div>
+            `;
+
+            try {
+                const db = window.app.db;
+                const hace21Dias = new Date();
+                hace21Dias.setDate(hace21Dias.getDate() - 21);
+
+                // 1. Obtener los códigos de productos de este proveedor
+                const codigosProductosProv = inventario
+                    .filter(p => p.proveedor_id === proveedorActual.id)
+                    .map(p => p.codigo);
+
+                if (codigosProductosProv.length === 0) {
+                    container.innerHTML = `
+                        <div class="ventas-recientes-vacio">
+                            <i class="fas fa-info-circle"></i>
+                            <p>Este proveedor no tiene productos asignados en el inventario.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // 2. Consultar detalles de ventas en el rango de fecha
+                const { data: ventasDetalle, error } = await db
+                    .from('ferre_ventas_detalle')
+                    .select(`
+                        producto_id, 
+                        cantidad, 
+                        subtotal,
+                        ferre_ventas!inner (
+                            fecha_hora_venta
+                        )
+                    `)
+                    .in('producto_id', codigosProductosProv)
+                    .gte('ferre_ventas.fecha_hora_venta', hace21Dias.toISOString());
+
+                if (error) throw error;
+
+                if (!ventasDetalle || ventasDetalle.length === 0) {
+                    container.innerHTML = `
+                        <div class="ventas-recientes-vacio">
+                            <i class="fas fa-shopping-basket"></i>
+                            <p>No se encontraron ventas de este proveedor en los últimos 21 días.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // 3. Agrupar y procesar
+                const resumen = {};
+                ventasDetalle.forEach(det => {
+                    const cod = det.producto_id;
+                    if (!resumen[cod]) {
+                        const pInv = inventario.find(p => p.codigo === cod);
+                        resumen[cod] = {
+                            codigo: cod,
+                            nombre: pInv ? pInv.producto : cod,
+                            cantidad: 0,
+                            total: 0
+                        };
+                    }
+                    resumen[cod].cantidad += parseFloat(det.cantidad || 0);
+                    resumen[cod].total += parseFloat(det.subtotal || 0);
+                });
+
+                const lista = Object.values(resumen).sort((a, b) => b.cantidad - a.cantidad);
+
+                // --- ESTRUCTURA AVANZADA PARA IA (PEDIDO INTELIGENTE) ---
+
+                // 1. Bloque de VENTAS (Últimos 21 días)
+                const jsonVentas = lista.map(item => ({
+                    "codigo": item.codigo,
+                    "nombre": limpiarNombreProducto(item.nombre),
+                    "unidades_vendidas_21d": item.cantidad,
+                    "promedio_diario": parseFloat((item.cantidad / 21).toFixed(2))
+                }));
+
+                // 2. Bloque de STOCK (Relevantes para el pedido)
+                const productosDelProveedor = inventario.filter(p => p.proveedor_id === proveedorActual.id);
+                const stockRelevante = productosDelProveedor.filter(p => {
+                    const esCritico = p.stock <= 0;
+                    const esBajo = p.stock < p.stock_minimo;
+                    const esCerca = p.stock <= p.stock_minimo * 1.30;
+                    const tieneAnotacion = anotaciones.some(a => 
+                        a.codigo_producto === p.codigo && 
+                        (a.proveedor_principal_id === proveedorActual.id || a.proveedor_alternativo_id === proveedorActual.id)
+                    );
+                    return esCritico || esBajo || esCerca || tieneAnotacion;
+                });
+
+                const jsonStock = stockRelevante.map(p => {
+                    let clasificacion = 'NORMAL';
+                    const tieneAnotacion = anotaciones.some(a => a.codigo_producto === p.codigo && (a.proveedor_principal_id === proveedorActual.id || a.proveedor_alternativo_id === proveedorActual.id));
+                    if (tieneAnotacion) clasificacion = 'PRIORITARIO';
+                    else if (p.stock <= 0) clasificacion = 'CRITICO';
+                    else if (p.stock < p.stock_minimo) clasificacion = 'BAJO';
+                    else if (p.stock <= p.stock_minimo * 1.30) clasificacion = 'CERCA';
+
+                    return {
+                        "codigo": p.codigo,
+                        "stock_actual": p.stock || 0,
+                        "clasificacion": clasificacion
+                    };
+                });
+
+                // 3. Bloque de CATALOGO (Metadatos enriquecidos)
+                const codigosInteres = new Set([...jsonVentas.map(v => v.codigo), ...jsonStock.map(s => s.codigo)]);
+                const jsonCatalogo = Array.from(codigosInteres).map(cod => {
+                    const p = inventario.find(i => i.codigo === cod);
+                    if (!p) return null;
+                    return {
+                        "codigo": p.codigo,
+                        "nombre": limpiarNombreProducto(p.producto),
+                        "unidad": p.unidad_paquete || 'ud',
+                        "p_costo": p.precio_proveedor || 0,
+                        "p_venta": p.precio || 0,
+                        "stock_minimo": p.stock_minimo || 0,
+                        "stock_objetivo": Math.ceil((p.stock_minimo || 1) * 2.5) // Sugerencia dinámica
+                    };
+                }).filter(Boolean);
+
+                const dataFinalExport = {
+                    "INFO_PEDIDO": {
+                        "proveedor": proveedorActual.empresa,
+                        "fecha_exportacion": new Date().toISOString(),
+                        "periodo_analisis_dias": 21
+                    },
+                    "VENTAS_21D": jsonVentas,
+                    "ESTADO_STOCK": jsonStock,
+                    "CATALOGO": jsonCatalogo
+                };
+
+                // 4. Renderizar
+                let html = `
+                    <div style="background: #1e1e1e; border-bottom: 2px solid #d4a017; padding: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #d4a017; font-family: 'Consolas', monospace; font-size: 0.9rem; font-weight: bold;">
+                                <i class="fas fa-brain"></i> DATASET_INTELIGENTE.json
+                            </span>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-sm btn-accent" onclick="window.pedidosCopiarJSONLiteral()">
+                                    <i class="fas fa-copy"></i> Copiar
+                                </button>
+                                <button id="btnEnviarIA" class="btn btn-sm" style="background: #28a745; color: white; border: none;" onclick="window.pedidosEnviarAWebhookIA(${JSON.stringify(dataFinalExport).replace(/"/g, '&quot;')})">
+                                    <i class="fas fa-paper-plane"></i> Enviar a IA
+                                </button>
+                            </div>
+                        </div>
+                        <div id="jsonContenedor" style="background: #000; padding: 10px; border-radius: 4px; border: 1px solid #333; max-height: 280px; overflow-y: auto;">
+                            <pre id="jsonPreContent" style="color: #569cd6; font-size: 0.75rem; margin: 0; white-space: pre-wrap; font-family: 'Consolas', monospace;">${JSON.stringify(dataFinalExport, null, 2)}</pre>
+                        </div>
+                        <div id="iaResponseContainer" style="display: none; margin-top: 15px; padding: 15px; background: #2d2d2d; border-radius: 8px; border-left: 4px solid #28a745;">
+                            <div style="color: #28a745; font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                                <span><i class="fas fa-robot"></i> RESPUESTA IA:</span>
+                                <button class="btn btn-sm" onclick="this.parentElement.parentElement.style.display='none'" style="background: none; color: #888; border: none; padding: 0;">&times;</button>
+                            </div>
+                            <pre id="iaRawResponse" style="color: #eee; font-size: 0.8rem; margin: 0; white-space: pre-wrap; font-family: 'Consolas', monospace;"></pre>
+                        </div>
+                        <textarea id="jsonTempText" style="position: absolute; left: -9999px;">${JSON.stringify(dataFinalExport, null, 2)}</textarea>
+                        <div style="margin-top: 10px; font-size: 0.75rem; color: #888;">
+                            <i class="fas fa-info-circle"></i> Envia este JSON a tu IA para obtener recomendaciones de compra precisas.
+                        </div>
+                    </div>
+
+                    <table class="ventas-recientes-table">
+                        <thead>
+                            <tr>
+                                <th>Producto / Código</th>
+                                <th style="text-align: center;">Vendido (21d)</th>
+                                <th style="text-align: right;">Total ($)</th>
+                                <th style="text-align: center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                lista.forEach(item => {
+                    html += `
+                        <tr>
+                            <td>
+                                <div style="font-weight: 600; color: #333;">${limpiarNombreProducto(item.nombre)}</div>
+                                <div style="font-size: 0.75rem; color: #888; font-family: monospace;">${item.codigo}</div>
+                            </td>
+                            <td style="text-align: center;">
+                                <span style="background: #e1f5fe; color: #0277bd; padding: 4px 10px; border-radius: 15px; font-weight: 800; font-size: 1rem;">
+                                    ${item.cantidad}
+                                </span>
+                            </td>
+                            <td style="text-align: right; font-weight: 600;">$${item.total.toFixed(2)}</td>
+                            <td style="text-align: center;">
+                                <button class="btn btn-sm btn-accent" style="padding: 5px 10px;" 
+                                    onclick="window.pedidosCerrarModalVentas21(); window.pedidosAbrirModal('${item.codigo}')"
+                                    title="Agregar al pedido">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = `
+                    <div class="ventas-recientes-vacio" style="color: #dc3545;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Error al obtener datos: ${error.message || 'Error desconocido'}</p>
+                    </div>
+                `;
+            }
         }
 
         // =====================================================
@@ -3191,6 +4248,17 @@
         window.pedidosPrepararProductoNuevo = prepararProductoNuevo;
         window.pedidosGuardarAnotacion = guardarAnotacion;
         window.pedidosAbrirModalFulfillment = abrirModalFulfillment;
+
+        // Ventas 21 días
+        window.pedidosDispararAnalisisIA = dispararAnalisisIA;
+        window.pedidosMostrarResultadoIA = mostrarResultadoIA;
+        window.pedidosCerrarResultadoIA = cerrarResultadoIA;
+        window.pedidosAbrirModalSobreIA = abrirModalSobreIA;
+
+        window.pedidosAbrirModalVentas21 = abrirModalVentas21;
+        window.pedidosCerrarModalVentas21 = cerrarModalVentas21;
+        window.pedidosCopiarJSONLiteral = copiarJSONLiteral;
+        window.pedidosEnviarAWebhookIA = enviarAWebhookIA;
 
         // Auto-inicializar
         if (document.readyState === 'loading') {
