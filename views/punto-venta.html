@@ -3180,7 +3180,8 @@
             clienteSeleccionadoIndex: -1,
             // Modal de actualización de cliente
             clienteTemporal: null,
-            clienteAnterior: null
+            clienteAnterior: null,
+            procesando: false
         };
 
         // Cargar desde localStorage si existe
@@ -6062,6 +6063,8 @@ _Sistema de Gestión Ferrisoluciones_`;
     }
 
     async function confirmarCreditoVenta() {
+        if (ventaState.procesando) return;
+
         const cliente = ventaState.clienteSeleccionado;
 
         if (ventaState.carrito.length === 0) {
@@ -6129,6 +6132,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         const usuario = obtenerUsuarioActual();
         const botonTextoOriginal = confirmarBtn ? confirmarBtn.innerHTML : '';
         try {
+            ventaState.procesando = true;
             if (confirmarBtn) {
                 confirmarBtn.disabled = true;
                 confirmarBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
@@ -6304,6 +6308,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             console.error('Stack trace:', error.stack);
             window.app.showToast('No se pudo registrar el crédito: ' + (error.message || error), 'danger', 6000);
         } finally {
+            ventaState.procesando = false;
             if (confirmarBtn) {
                 confirmarBtn.disabled = false;
                 confirmarBtn.innerHTML = botonTextoOriginal || '<i class="fas fa-hand-holding-usd"></i> Guardar crédito';
@@ -7613,6 +7618,8 @@ _Sistema de Gestión Ferrisoluciones_`;
     }
 
     async function procesarVentaConValidacion() {
+        if (ventaState.procesando) return;
+
         // Validar que el carrito no esté vacío
         if (ventaState.carrito.length === 0) {
             window.app.showToast('<i class="fas fa-exclamation-triangle"></i> El carrito está vacío. Agrega productos para continuar.', 'warning', 3000);
@@ -9449,7 +9456,22 @@ _Sistema de Gestión Ferrisoluciones_`;
     }
 
     async function confirmarVenta() {
+        if (ventaState.procesando) {
+            console.warn('⚠️ Intento de venta duplicada bloqueado');
+            return;
+        }
+
+        const btnConfirmar = document.getElementById('btnConfirmarVenta');
+        const originalText = btnConfirmar ? btnConfirmar.innerHTML : '<i class="fas fa-check"></i> Confirmar Venta';
+
         try {
+            ventaState.procesando = true;
+            if (btnConfirmar) {
+                btnConfirmar.disabled = true;
+                btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESANDO...';
+                btnConfirmar.style.opacity = '0.7';
+            }
+
             // Validar pago con redondeo a 2 decimales para evitar problemas de precisión
             const totalConIva = Math.round(ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0) * 100) / 100;
             const pagadoCon = Math.round((parseFloat(document.getElementById('pagadoCon').value) || 0) * 100) / 100;
@@ -9784,6 +9806,15 @@ _Sistema de Gestión Ferrisoluciones_`;
         } catch (error) {
             console.error('❌ Error procesando venta:', error);
             window.app.showToast('Error al procesar la venta: ' + error.message, 'danger', 5000);
+
+            // Reestablecer botón en caso de error
+            if (btnConfirmar) {
+                btnConfirmar.disabled = false;
+                btnConfirmar.innerHTML = originalText;
+                btnConfirmar.style.opacity = '1';
+            }
+        } finally {
+            ventaState.procesando = false;
         }
     }
 
