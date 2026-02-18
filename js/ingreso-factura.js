@@ -1542,7 +1542,7 @@ async function enviarNotificacionWhatsAppLocal(transferencia, ferredatos) {
 
         const mensaje = `${emoji} *Nueva Transferencia Registrada*\n\n*DETALLES DEL MOVIMIENTO*\n\n\n📅 *Fecha:* ${fechaFormateada}\n🕐 *Hora:* ${horaFormateada}\n\n${transferencia.caso === 'ingreso' ? '✅' : '❌'} *Tipo:* ${tipoMovimiento}\n💵 *Monto:* $${montoFormateado}\n\n📝 *Motivo:*\n${transferencia.motivo}\n\n👤 *Registrado por:*\n${transferencia.subido_por_nombre || transferencia.subido_por || 'N/A'}\n\n📸 *Comprobante adjunto*\n\n_Sistema de Gestión Ferrisoluciones_\n_Powered by Ferrisoluciones Tech_`;
 
-        const url = `https://api.ferrisoluciones.com/message/sendMedia/${ferredatos.instance}`;
+        const url = `https://api.luispintasolutions.com/message/sendMedia/${ferredatos.instance}`;
 
         // Detectar si el media es un data URL (base64) y ajustar mimetype/extension
         let mediaValue = transferencia.foto_url || transferencia.fotografia || '';

@@ -1018,7 +1018,7 @@ ${nombreCompleto}
 _Sistema de Gestión Ferrisoluciones_
 _Powered by Ferrisoluciones Tech_`;
 
-            const url = `https://api.ferrisoluciones.com/message/sendText/${ferredatos.instance}`;
+            const url = `https://api.luispintasolutions.com/message/sendText/${ferredatos.instance}`;
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -1137,7 +1137,7 @@ _Powered by Ferrisoluciones Tech_`;
                 return;
             }
 
-            const url = `https://api.ferrisoluciones.com/chat/deleteMessageForEveryone/${ferredatos.instance}`;
+            const url = `https://api.luispintasolutions.com/chat/deleteMessageForEveryone/${ferredatos.instance}`;
 
             await fetch(url, {
                 method: 'DELETE',

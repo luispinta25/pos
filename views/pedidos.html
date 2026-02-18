@@ -3715,7 +3715,7 @@
         }
 
         async function enviarWebhookPedido(pdfBase64, ferredatos, proveedor) {
-            const url = `https://api.ferrisoluciones.com/message/sendMedia/${ferredatos.instance}`;
+            const url = `https://api.luispintasolutions.com/message/sendMedia/${ferredatos.instance}`;
 
             const fechaArchivo = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
             const nombreArchivo = `Pedido_${(proveedor.empresa || 'Prov').replace(/[^a-zA-Z0-9]/g, '_')}_${fechaArchivo}.pdf`;
