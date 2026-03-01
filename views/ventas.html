@@ -116,8 +116,14 @@
             </div>
 
             <!-- Botón Dashboard -->
+            <button class="btn btn-outline" onclick="revisarStockComprometido()"
+                style="width: 100%; margin-top: 20px; padding: 12px; font-size: 1em;">
+                <i class="fas fa-box-open"></i>
+                <span>Revisar Stock Comprometido</span>
+            </button>
+
             <button class="btn btn-primary" onclick="mostrarDashboard()"
-                style="width: 100%; margin-top: 20px; padding: 15px; font-size: 1.1em;">
+                style="width: 100%; margin-top: 10px; padding: 15px; font-size: 1.1em;">
                 <i class="fas fa-chart-pie"></i>
                 <span>Ver Dashboard Experto</span>
             </button>
@@ -378,14 +384,14 @@
 <div id="modalDetalleProyeccion" class="modal">
     <div class="modal-content" style="max-width: 800px;">
         <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0; padding: 20px;">
-            <h2 class="modal-title" style="margin: 0; font-size: 1.4em;"><i class="fas fa-chart-line"></i> Análisis de Proyección</h2>
+            <h2 id="modalProyeccionTitle" class="modal-title" style="margin: 0; font-size: 1.4em;"><i class="fas fa-chart-line"></i> Análisis de Proyección</h2>
             <button class="modal-close" onclick="cerrarModalProyeccion()" style="color: white; font-size: 1.5em;">&times;</button>
         </div>
         <div class="modal-body" id="modalProyeccionBody" style="padding: 25px;">
             <!-- Contenido dinámico -->
         </div>
         <div class="modal-footer" style="padding: 15px 25px; border-top: 1px solid #eee; display: flex; justify-content: space-between; gap: 10px;">
-            <button class="btn" onclick="descargarPDFProyeccion()" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+            <button id="btnDescargarProyeccionPdf" class="btn" onclick="descargarPDFProyeccion()" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
                 <i class="fas fa-file-pdf"></i> Descargar Reporte PDF
             </button>
             <button class="btn btn-secondary" onclick="cerrarModalProyeccion()" style="padding: 10px 20px; border-radius: 8px;">Cerrar</button>
@@ -1642,6 +1648,242 @@
             };
         }
 
+        function configurarModalProyeccion(titulo, icono, mostrarBotonPdf) {
+            const tituloModal = document.getElementById('modalProyeccionTitle');
+            const botonPdf = document.getElementById('btnDescargarProyeccionPdf');
+
+            if (tituloModal) {
+                tituloModal.innerHTML = `<i class="fas ${icono}"></i> ${titulo}`;
+            }
+
+            if (botonPdf) {
+                botonPdf.style.display = mostrarBotonPdf ? 'inline-flex' : 'none';
+            }
+        }
+
+        async function obtenerAnalisisStockComprometido() {
+            const db = window.app.db;
+            const hoy = new Date();
+            const hace15Dias = new Date(hoy);
+            hace15Dias.setDate(hoy.getDate() - 15);
+
+            const { data: ventasConDetalles, error: errorVentasConDetalles } = await db
+                .from('ferre_ventas')
+                .select('id, ventas_detalle:ferre_ventas_detalle(producto_id, cantidad, precio)')
+                .gte('fecha_hora_venta', hace15Dias.toISOString());
+
+            if (errorVentasConDetalles) throw errorVentasConDetalles;
+
+            let detallesRecientes = [];
+            (ventasConDetalles || []).forEach(venta => {
+                if (venta.ventas_detalle && Array.isArray(venta.ventas_detalle)) {
+                    const detallesFiltrados = venta.ventas_detalle.filter(d => parseFloat(d.precio || 0) > 1);
+                    detallesRecientes = detallesRecientes.concat(detallesFiltrados);
+                }
+            });
+
+            const { data: inventario, error: errorInv } = await db
+                .from('ferre_inventario')
+                .select('codigo, producto, stock, stock_minimo');
+
+            if (errorInv) throw errorInv;
+
+            const ventasPorProducto = {};
+            detallesRecientes.forEach(d => {
+                if (!ventasPorProducto[d.producto_id]) ventasPorProducto[d.producto_id] = 0;
+                ventasPorProducto[d.producto_id] += parseFloat(d.cantidad || 0);
+            });
+
+            const topProductosRaw = Object.entries(ventasPorProducto)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 15);
+
+            const invMap = {};
+            (inventario || []).forEach(i => invMap[i.codigo] = i);
+
+            const alertasStock = [];
+            let impactoInventario = 1.0;
+
+            const topProductos = topProductosRaw.map(([id, cant]) => {
+                const prod = invMap[id];
+                const ventasDiarias = cant / 15;
+                const stockActual = prod ? parseFloat(prod.stock || 0) : null;
+                const stockMinimo = prod ? parseFloat(prod.stock_minimo || 0) : null;
+                const diasAgotamiento = (!prod || ventasDiarias <= 0)
+                    ? null
+                    : stockActual / ventasDiarias;
+
+                let estado = 'OK';
+                if (!prod) estado = 'SIN INV';
+                else if (diasAgotamiento !== null && diasAgotamiento < 5) estado = 'CRÍTICO';
+                else if (stockActual <= stockMinimo) estado = 'BAJO';
+
+                return {
+                    codigo: id,
+                    nombre: prod ? prod.producto : 'No encontrado en inventario',
+                    cantidadVendida: cant,
+                    stockActual: prod ? prod.stock : 'N/A',
+                    stockMinimo: prod ? prod.stock_minimo : 'N/A',
+                    ventasDiarias: ventasDiarias.toFixed(2),
+                    diasAgotamiento: diasAgotamiento === null ? 'N/A' : diasAgotamiento.toFixed(1),
+                    estado
+                };
+            });
+
+            topProductos.forEach(p => {
+                if (p.stockActual === 'N/A') return;
+
+                const diasStockRestante = parseFloat(p.diasAgotamiento);
+
+                if (diasStockRestante < 5) {
+                    alertasStock.push({
+                        producto: p.nombre,
+                        stock: p.stockActual,
+                        ventas15d: p.cantidadVendida,
+                        diasEstimados: diasStockRestante.toFixed(1),
+                        recomendacion: `Stockear urgente (se agota en ~${diasStockRestante.toFixed(0)} días)`
+                    });
+                    impactoInventario -= 0.03;
+                } else if (parseFloat(p.stockActual || 0) <= parseFloat(p.stockMinimo || 0)) {
+                    alertasStock.push({
+                        producto: p.nombre,
+                        stock: p.stockActual,
+                        ventas15d: p.cantidadVendida,
+                        diasEstimados: diasStockRestante.toFixed(1),
+                        recomendacion: 'Considerar reabastecimiento pronto'
+                    });
+                }
+            });
+
+            return {
+                impactoInventario: ((impactoInventario - 1) * 100).toFixed(1),
+                alertasStock,
+                totalDetallesAnalizados: detallesRecientes.length,
+                totalProductosUnicos: Object.keys(ventasPorProducto).length,
+                topProductos
+            };
+        }
+
+        async function revisarStockComprometido() {
+            let data;
+            try {
+                data = await obtenerAnalisisStockComprometido();
+            } catch (error) {
+                console.error('Error al revisar stock comprometido:', error);
+                window.app.showToast('No se pudo cargar el análisis de stock', 'error');
+                return;
+            }
+
+            const modal = document.getElementById('modalDetalleProyeccion');
+            const body = document.getElementById('modalProyeccionBody');
+            configurarModalProyeccion('Revisión de Stock Comprometido', 'fa-box-open', false);
+
+            let contenidoAlertas = '';
+            if (data.alertasStock && data.alertasStock.length > 0) {
+                contenidoAlertas = `
+                    <div style="display: grid; gap: 10px; margin-top: 15px;">
+                        ${data.alertasStock.map((a, idx) => `
+                            <div style="background: white; padding: 12px; border-radius: 10px; border-left: 4px solid #ff9800; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                                <div style="display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 6px;">
+                                    <strong style="color: #333;">${idx + 1}. ${a.producto}</strong>
+                                    <span style="background: #fff3e0; color: #e65100; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: 600;">${a.diasEstimados} días</span>
+                                </div>
+                                <div style="font-size: 0.85em; color: #666; margin-bottom: 6px;">${a.recomendacion}</div>
+                                <div style="font-size: 0.8em; color: #777;">Stock: ${a.stock} | Ventas 15d: ${a.ventas15d}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                contenidoAlertas = `
+                    <div style="margin-top: 15px; padding: 15px; border-radius: 10px; background: #e8f5e9; color: #2e7d32; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-check-circle" style="font-size: 1.3em;"></i>
+                        <div>
+                            <div style="font-weight: 600;">Stock saludable</div>
+                            <div style="font-size: 0.9em;">Los productos de mayor rotación no muestran riesgo de compromiso.</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const productosTopHtml = (data.topProductos && data.topProductos.length > 0)
+                ? `
+                    <div style="margin-top: 15px; background: white; border-radius: 10px; border: 1px solid #e8e8e8; overflow: hidden;">
+                        <div style="padding: 10px 12px; background: #f7f7f7; font-size: 0.85em; color: #666; font-weight: 600;">
+                            Top 15 productos por rotación (15 días)
+                        </div>
+                        <div style="max-height: 420px; overflow: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.84em;">
+                                <thead style="position: sticky; top: 0; background: #fafafa; z-index: 1;">
+                                    <tr>
+                                        <th style="text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee;">#</th>
+                                        <th style="text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee;">Producto</th>
+                                        <th style="text-align: right; padding: 8px 10px; border-bottom: 1px solid #eee;">Vtas 15d</th>
+                                        <th style="text-align: right; padding: 8px 10px; border-bottom: 1px solid #eee;">Stock</th>
+                                        <th style="text-align: right; padding: 8px 10px; border-bottom: 1px solid #eee;">Vta/Día</th>
+                                        <th style="text-align: right; padding: 8px 10px; border-bottom: 1px solid #eee;">Agota en</th>
+                                        <th style="text-align: center; padding: 8px 10px; border-bottom: 1px solid #eee;">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.topProductos.map((p, i) => {
+                                        const colorEstado = p.estado === 'CRÍTICO' ? '#c62828' : p.estado === 'BAJO' ? '#ef6c00' : p.estado === 'SIN INV' ? '#6d4c41' : '#2e7d32';
+                                        const fondoEstado = p.estado === 'CRÍTICO' ? '#ffebee' : p.estado === 'BAJO' ? '#fff3e0' : p.estado === 'SIN INV' ? '#efebe9' : '#e8f5e9';
+                                        return `
+                                            <tr style="border-bottom: 1px solid #f2f2f2;">
+                                                <td style="padding: 8px 10px; color: #777;">${i + 1}</td>
+                                                <td style="padding: 8px 10px; min-width: 220px;">
+                                                    <div style="font-weight: 600; color: #333;">${p.nombre}</div>
+                                                    <div style="font-size: 0.75em; color: #888;">${p.codigo}</div>
+                                                </td>
+                                                <td style="padding: 8px 10px; text-align: right;">${p.cantidadVendida}</td>
+                                                <td style="padding: 8px 10px; text-align: right;">${p.stockActual}</td>
+                                                <td style="padding: 8px 10px; text-align: right;">${p.ventasDiarias}</td>
+                                                <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${p.diasAgotamiento === 'N/A' ? 'N/A' : `${p.diasAgotamiento} días`}</td>
+                                                <td style="padding: 8px 10px; text-align: center;">
+                                                    <span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: 700; color: ${colorEstado}; background: ${fondoEstado};">${p.estado}</span>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `
+                : `
+                    <div style="margin-top: 15px; padding: 14px; border-radius: 10px; background: #fafafa; color: #777; text-align: center;">
+                        No hay suficientes ventas recientes para generar un top 15.
+                    </div>
+                `;
+
+            body.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                    <div style="background: #f5f5f5; padding: 12px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 0.8em; color: #666;">Top productos analizados</div>
+                        <div style="font-size: 1.5em; font-weight: 700; color: #333;">${(data.topProductos || []).length}</div>
+                    </div>
+                    <div style="background: #fff3e0; padding: 12px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 0.8em; color: #666;">Alertas activas</div>
+                        <div style="font-size: 1.5em; font-weight: 700; color: #e65100;">${(data.alertasStock || []).length}</div>
+                    </div>
+                    <div style="background: ${parseFloat(data.impactoInventario) < 0 ? '#ffebee' : '#e8f5e9'}; padding: 12px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 0.8em; color: #666;">Impacto por inventario</div>
+                        <div style="font-size: 1.5em; font-weight: 700; color: ${parseFloat(data.impactoInventario) < 0 ? '#c62828' : '#2e7d32'};">${data.impactoInventario}%</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; padding: 14px; border-radius: 12px; background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%);">
+                    <h4 style="margin: 0 0 8px 0; color: #444;"><i class="fas fa-fire"></i> Productos con mayor rotación y su disponibilidad</h4>
+                    <div style="font-size: 0.85em; color: #666;">Análisis basado en los últimos 15 días de ventas de productos con precio mayor a $1. Se proyecta el agotamiento asumiendo que no hay reabastecimiento y el ritmo de venta se mantiene.</div>
+                    ${contenidoAlertas}
+                    ${productosTopHtml}
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
         function mostrarDetalleProyeccion() {
             const cache = ventasState.proyeccionCache;
             if (!cache.analisis) {
@@ -1652,6 +1894,7 @@
             const modal = document.getElementById('modalDetalleProyeccion');
             const body = document.getElementById('modalProyeccionBody');
             const data = cache.analisis;
+            configurarModalProyeccion('Análisis de Proyección', 'fa-chart-line', true);
 
             let alertasHtml = '';
             if (data.alertasStock && data.alertasStock.length > 0) {
@@ -2249,6 +2492,7 @@
 
         // Hacer funciones accesibles globalmente si están dentro de un IIFE
         window.mostrarDetalleProyeccion = mostrarDetalleProyeccion;
+        window.revisarStockComprometido = revisarStockComprometido;
         window.cerrarModalProyeccion = cerrarModalProyeccion;
         window.descargarPDFProyeccion = descargarPDFProyeccion;
         window.aplicarFiltroFecha = aplicarFiltroFecha;

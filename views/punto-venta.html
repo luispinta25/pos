@@ -3215,6 +3215,19 @@
         ventaState.cajaInicialEsperada = null;
     }
 
+    function logProcesandoVenta(evento, detalle = {}) {
+        console.log(`🧭 [venta.procesando] ${evento}`, {
+            timestamp: new Date().toISOString(),
+            procesando: !!ventaState.procesando,
+            ...detalle
+        });
+    }
+
+    function setEstadoProcesandoVenta(valor, origen) {
+        ventaState.procesando = !!valor;
+        logProcesandoVenta(valor ? 'ACTIVADO' : 'LIBERADO', { origen });
+    }
+
     // =====================================================
     // SISTEMA DE CACHÉ DE INVENTARIO
     // =====================================================
@@ -6063,7 +6076,10 @@ _Sistema de Gestión Ferrisoluciones_`;
     }
 
     async function confirmarCreditoVenta() {
-        if (ventaState.procesando) return;
+        if (ventaState.procesando) {
+            logProcesandoVenta('BLOQUEADO confirmarCreditoVenta', { motivo: 'ya estaba en procesamiento' });
+            return;
+        }
 
         const cliente = ventaState.clienteSeleccionado;
 
@@ -6132,7 +6148,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         const usuario = obtenerUsuarioActual();
         const botonTextoOriginal = confirmarBtn ? confirmarBtn.innerHTML : '';
         try {
-            ventaState.procesando = true;
+            setEstadoProcesandoVenta(true, 'confirmarCreditoVenta:inicio');
             if (confirmarBtn) {
                 confirmarBtn.disabled = true;
                 confirmarBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
@@ -6308,7 +6324,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             console.error('Stack trace:', error.stack);
             window.app.showToast('No se pudo registrar el crédito: ' + (error.message || error), 'danger', 6000);
         } finally {
-            ventaState.procesando = false;
+            setEstadoProcesandoVenta(false, 'confirmarCreditoVenta:finally');
             if (confirmarBtn) {
                 confirmarBtn.disabled = false;
                 confirmarBtn.innerHTML = botonTextoOriginal || '<i class="fas fa-hand-holding-usd"></i> Guardar crédito';
@@ -9458,19 +9474,22 @@ _Sistema de Gestión Ferrisoluciones_`;
     async function confirmarVenta() {
         if (ventaState.procesando) {
             console.warn('⚠️ Intento de venta duplicada bloqueado');
+            logProcesandoVenta('BLOQUEADO confirmarVenta', { motivo: 'ya estaba en procesamiento' });
             return;
         }
 
         const btnConfirmar = document.getElementById('btnConfirmarVenta');
         const originalText = btnConfirmar ? btnConfirmar.innerHTML : '<i class="fas fa-check"></i> Confirmar Venta';
+        const traceId = `venta-${Date.now()}`;
 
         try {
-            ventaState.procesando = true;
+            setEstadoProcesandoVenta(true, `confirmarVenta:inicio:${traceId}`);
             if (btnConfirmar) {
                 btnConfirmar.disabled = true;
                 btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESANDO...';
                 btnConfirmar.style.opacity = '0.7';
             }
+            logProcesandoVenta('Paso 1: validaciones y preparación', { traceId });
 
             // Validar pago con redondeo a 2 decimales para evitar problemas de precisión
             const totalConIva = Math.round(ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0) * 100) / 100;
@@ -9513,6 +9532,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             // Si es FACTURA, generar datos de facturación electrónica
             if (tipoDocumento === 'FACTURA') {
+                logProcesandoVenta('Paso 2: preparando datos de factura electrónica', { traceId });
 
                 // Obtener configuración
                 const configResult = await obtenerConfiguracionFacturacion();
@@ -9631,6 +9651,12 @@ _Sistema de Gestión Ferrisoluciones_`;
                 .select()
                 .single();
 
+            logProcesandoVenta('Paso 3: venta principal insertada', {
+                traceId,
+                ventaUUID: ventaInsertada ? ventaInsertada.id : null,
+                ventaCodigo: ventaIdText
+            });
+
             if (ventaError) {
                 console.error('Error insertando venta:', ventaError);
                 throw new Error(`Error al registrar venta: ${ventaError.message}`);
@@ -9655,6 +9681,11 @@ _Sistema de Gestión Ferrisoluciones_`;
                 .insert(detalles)
                 .select();
 
+            logProcesandoVenta('Paso 4: detalles insertados', {
+                traceId,
+                totalDetalles: detallesInsertados ? detallesInsertados.length : 0
+            });
+
             if (detalleError) {
                 console.error('Error insertando detalles:', detalleError);
                 // Intentar revertir la venta si fallan los detalles
@@ -9668,6 +9699,11 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             // ÉXITO
             cerrarModalVenta();
+            logProcesandoVenta('Paso 5: venta exitosa y modal cerrado', {
+                traceId,
+                tipoDocumento,
+                tipoPago
+            });
 
             // NUEVO: Enviar Webhook si NO es efectivo (Transferencia o Mixto)
             if (tipoPago !== 'EFECTIVO') {
@@ -9829,15 +9865,16 @@ _Sistema de Gestión Ferrisoluciones_`;
         } catch (error) {
             console.error('❌ Error procesando venta:', error);
             window.app.showToast('Error al procesar la venta: ' + error.message, 'danger', 5000);
-
-            // Reestablecer botón en caso de error
+            logProcesandoVenta('ERROR en confirmarVenta', { traceId, mensaje: error.message || String(error) });
+        } finally {
+            setEstadoProcesandoVenta(false, `confirmarVenta:finally:${traceId}`);
             if (btnConfirmar) {
                 btnConfirmar.disabled = false;
                 btnConfirmar.innerHTML = originalText;
                 btnConfirmar.style.opacity = '1';
+                btnConfirmar.style.cursor = 'pointer';
+                btnConfirmar.title = 'Confirmar venta';
             }
-        } finally {
-            ventaState.procesando = false;
         }
     }
 
