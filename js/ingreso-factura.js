@@ -776,7 +776,9 @@ function renderizarTablaProductos() {
         rows="2"
         wrap="soft"
         class="input-nombre-producto"
-        oninput="this.value = this.value.toUpperCase(); autoResizeNombreProducto(this); actualizarProducto(${index}, 'nombre', this.value)"
+        oninput="this.value = this.value.toUpperCase(); autoResizeNombreProducto(this)"
+        onchange="actualizarProducto(${index}, 'nombre', this.value)"
+        onblur="actualizarProducto(${index}, 'nombre', this.value)"
     >${p.nombre || ''}</textarea>
 </td>
             <td>
