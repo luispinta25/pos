@@ -771,10 +771,13 @@ function renderizarTablaProductos() {
         return `
         <tr class="${p.es_producto_nuevo ? 'producto-nuevo' : ''}">
             <td>${p.codigo || ''}</td>
-            <td>
-                <input type="text" value="${p.nombre || ''}" oninput="this.value = this.value.toUpperCase()"
-                       onchange="actualizarProducto(${index}, 'nombre', this.value)">
-            </td>
+<td class="col-nombre-producto">
+    <textarea
+        rows="2"
+        class="input-nombre-producto"
+        oninput="this.value = this.value.toUpperCase(); autoResizeNombreProducto(this); actualizarProducto(${index}, 'nombre', this.value)"
+    >${p.nombre || ''}</textarea>
+</td>
             <td>
                 <input type="number" value="${p.cantidad}" min="1" step="1"
                        onchange="actualizarProducto(${index}, 'cantidad', this.value)">
@@ -810,6 +813,11 @@ function renderizarTablaProductos() {
     
     // Ajustar altura inicial de inputs/areas si es necesario (compat)
     // Recalcular totales
+        setTimeout(() => {
+        document.querySelectorAll('.input-nombre-producto').forEach(el => {
+            autoResizeNombreProducto(el);
+        });
+    }, 0);
     calcularTotal();
 
     // Actualizar botones de navegación
@@ -817,6 +825,12 @@ function renderizarTablaProductos() {
         actualizarBotonesNavegacion(ingresoFacturaState.pasoActual);
     } catch (err) {
     }
+}
+
+function autoResizeNombreProducto(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
 // Acción: calcular precio sugerido (38%) para la fila
