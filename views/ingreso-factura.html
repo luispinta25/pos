@@ -258,31 +258,41 @@
             
             
             <div class="productos-tabla-container">
-                <table class="productos-tabla" id="tablaProductosIngreso">
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Nombre</th>
-                            <th>Cant.</th>
-                            <th>P. Proveedor</th>
-                            <th>% Ganancia</th>
-                            <th>P. Venta</th>
-                            <th>Subtotal</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productosIngresoCuerpo">
-                        <tr class="empty-row">
-                            <td colspan="8">
-                                <div class="empty-state">
-                                    <i class="fas fa-box-open"></i>
-                                    <p>No hay productos agregados</p>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+    <table class="productos-tabla" id="tablaProductosIngreso">
+        <colgroup>
+            <col style="width: 10%;">
+            <col style="width: 32%;">
+            <col style="width: 5%;">
+            <col style="width: 7%;">
+            <col style="width: 11%;">
+            <col style="width: 10%;">
+            <col style="width: 12%;">
+            <col style="width: 13%;">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Cant.</th>
+                <th>P. Proveedor</th>
+                <th>% Ganancia</th>
+                <th>P. Venta</th>
+                <th>Subtotal</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="productosIngresoCuerpo">
+            <tr class="empty-row">
+                <td colspan="8">
+                    <div class="empty-state">
+                        <i class="fas fa-box-open"></i>
+                        <p>No hay productos agregados</p>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
     </div>
 
     
@@ -1486,6 +1496,65 @@
             grid-template-columns: 1fr 1fr;
         }
     }
+
+    /* ================================
+   AJUSTE DE ANCHOS TABLA PRODUCTOS
+   ================================ */
+
+.productos-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.productos-tabla th:nth-child(2),
+.productos-tabla td:nth-child(2) {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.productos-tabla th:nth-child(3),
+.productos-tabla td:nth-child(3),
+.productos-tabla th:nth-child(4),
+.productos-tabla td:nth-child(4) {
+    text-align: center;
+}
+
+/* Inputs generales dentro de tabla */
+.productos-tabla td input[type="number"],
+.productos-tabla td input[type="text"],
+.productos-tabla td textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Columna NOMBRE más amplia y multilinea */
+.productos-tabla td:nth-child(2) textarea,
+.productos-tabla td:nth-child(2) input[type="text"] {
+    min-height: 68px;
+    line-height: 1.35;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+/* Si conviertes nombre a textarea, este estilo lo deja bien */
+.productos-tabla td textarea {
+    resize: vertical;
+    padding: 10px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: var(--border-radius-sm);
+    transition: all var(--transition-fast);
+    background: white;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.productos-tabla td textarea:focus {
+    border-color: var(--color-accent);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
+}
 </style>
 
 
