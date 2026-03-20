@@ -1423,14 +1423,77 @@
         }
     }
 
-/* ===== AJUSTE REAL TABLA PRODUCTOS ===== */
+/* =========================================
+   TABLA DE PRODUCTOS - COMPLETA Y AJUSTADA
+   ========================================= */
+
+.productos-tabla-container {
+    overflow-x: auto;
+    margin: 20px 0;
+    border-radius: var(--border-radius-md);
+    border: 1px solid #e8e8e8;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
 
 .productos-tabla {
     width: 100%;
+    min-width: 1120px;
     table-layout: fixed;
-    min-width: 1080px;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
+/* ---------- Encabezado ---------- */
+.productos-tabla thead {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.productos-tabla th {
+    padding: 13px 8px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-bottom: 3px solid var(--color-accent);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1.15;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    background: transparent;
+}
+
+/* ---------- Celdas ---------- */
+.productos-tabla td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+    background: #fff;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.productos-tabla tbody tr {
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.productos-tabla tbody tr:hover td {
+    background: linear-gradient(135deg, #fffef7 0%, #fff9e6 100%);
+}
+
+.productos-tabla tbody tr.producto-nuevo td {
+    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+}
+
+.productos-tabla tbody tr.producto-nuevo:hover td {
+    background: linear-gradient(135deg, #dff1e1 0%, #ebf5df 100%);
+}
+
+/* ---------- Anchos por columna ---------- */
 .productos-tabla th:nth-child(1),
 .productos-tabla td:nth-child(1) {
     width: 8%;
@@ -1438,17 +1501,17 @@
 
 .productos-tabla th:nth-child(2),
 .productos-tabla td:nth-child(2) {
-    width: 42%;
+    width: 30%;
 }
 
 .productos-tabla th:nth-child(3),
 .productos-tabla td:nth-child(3) {
-    width: 5%;
+    width: 6%;
 }
 
 .productos-tabla th:nth-child(4),
 .productos-tabla td:nth-child(4) {
-    width: 7%;
+    width: 9%;
 }
 
 .productos-tabla th:nth-child(5),
@@ -1463,61 +1526,125 @@
 
 .productos-tabla th:nth-child(7),
 .productos-tabla td:nth-child(7) {
-    width: 9%;
+    width: 10%;
 }
 
 .productos-tabla th:nth-child(8),
 .productos-tabla td:nth-child(8) {
-    width: 10%;
+    width: 18%;
 }
 
-.productos-tabla th {
-    white-space: normal;
-    word-break: break-word;
-    font-size: 0.88rem;
-    line-height: 1.15;
-}
-
-.productos-tabla td {
-    vertical-align: middle;
-}
-
-.productos-tabla .col-nombre-producto {
-    white-space: normal;
-    overflow: visible;
-}
-
-.productos-tabla .input-nombre-producto {
+/* ---------- Inputs generales ---------- */
+.productos-tabla input[type="number"],
+.productos-tabla input[type="text"],
+.productos-tabla textarea {
     width: 100%;
-    min-height: 58px;
-    max-height: 120px;
-    resize: none;
-    overflow-y: auto;
     box-sizing: border-box;
     border: 1.8px solid #d6d6d6;
     border-radius: 10px;
-    background: #fff;
-    padding: 10px 12px;
-    line-height: 1.25;
+    background: #ffffff;
+    padding: 9px 10px;
     font-size: 0.94rem;
     font-family: inherit;
-    text-transform: uppercase;
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow-wrap: anywhere;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
-.productos-tabla .input-nombre-producto:focus {
+.productos-tabla input[type="number"]:focus,
+.productos-tabla input[type="text"]:focus,
+.productos-tabla textarea:focus {
     border-color: var(--color-accent);
     outline: none;
     box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.12);
     background: #fffefb;
 }
 
+/* ---------- Código ---------- */
+.productos-tabla td:nth-child(1) {
+    font-weight: 600;
+    color: #4b5563;
+    white-space: nowrap;
+}
+
+/* ---------- Nombre del producto ---------- */
+.productos-tabla .col-nombre-producto,
+.productos-tabla td:nth-child(2) {
+    white-space: normal;
+    overflow: hidden;
+}
+
+.productos-tabla .input-nombre-producto,
+.productos-tabla td:nth-child(2) textarea {
+    width: 100%;
+    min-height: 60px;
+    max-height: 110px;
+    resize: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    border: 1.8px solid #d6d6d6;
+    border-radius: 10px;
+    background: #fff;
+    padding: 10px 12px;
+    line-height: 1.2;
+    font-size: 0.93rem;
+    font-family: inherit;
+    text-transform: uppercase;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.productos-tabla .input-nombre-producto:focus,
+.productos-tabla td:nth-child(2) textarea:focus {
+    border-color: var(--color-accent);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.12);
+    background: #fffefb;
+}
+
+/* Si por alguna razón sigue existiendo input en nombre */
+.productos-tabla td:nth-child(2) input[type="text"] {
+    min-height: 42px;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* ---------- Cantidad ---------- */
+.productos-tabla th:nth-child(3),
+.productos-tabla td:nth-child(3) {
+    text-align: center;
+}
+
 .productos-tabla td:nth-child(3) input[type="number"] {
     text-align: center;
-    padding-left: 6px;
-    padding-right: 6px;
+    padding-left: 4px;
+    padding-right: 4px;
+    min-width: 0;
+    height: 36px;
+}
+
+/* ---------- Precio proveedor ---------- */
+.productos-tabla th:nth-child(4),
+.productos-tabla td:nth-child(4) {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.productos-tabla td:nth-child(4) .currency-input,
+.productos-tabla td:nth-child(6) .currency-input {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.productos-tabla td:nth-child(4) .currency-input span,
+.productos-tabla td:nth-child(6) .currency-input span {
+    flex: 0 0 auto;
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
 }
 
 .productos-tabla td:nth-child(4) input,
@@ -1525,17 +1652,174 @@
     min-width: 0;
 }
 
-.productos-tabla td:nth-child(7) {
-    white-space: nowrap;
+/* ---------- % ganancia ---------- */
+.productos-tabla th:nth-child(5),
+.productos-tabla td:nth-child(5) {
+    text-align: center;
+}
+
+.productos-tabla td:nth-child(5) {
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.productos-tabla td:nth-child(5) > div,
+.productos-tabla td:nth-child(5) .ganancia-grid,
+.productos-tabla td:nth-child(5) .percentage-buttons,
+.productos-tabla td:nth-child(5) .flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+}
+
+.percentage-button {
+    padding: 4px 7px;
+    min-width: 38px;
+    border-radius: 7px;
+    border: 1px solid #d1d5db;
+    background: #e5e7eb;
+    color: #374151;
+    font-size: 0.74rem;
+    line-height: 1.1;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.percentage-button:hover {
+    transform: translateY(-1px);
+    background: #dbe1e8;
+}
+
+.percentage-button.active {
+    background: #1e40af;
+    color: #ffffff;
+    border-color: #1e3a8a;
     font-weight: 700;
 }
 
-.productos-tabla td:nth-child(8) > div {
+/* ---------- Precio venta ---------- */
+.productos-tabla th:nth-child(6),
+.productos-tabla td:nth-child(6) {
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* ---------- Subtotal ---------- */
+.productos-tabla th:nth-child(7),
+.productos-tabla td:nth-child(7) {
+    white-space: nowrap;
+}
+
+.productos-tabla td:nth-child(7) {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #374151;
+}
+
+/* ---------- Acciones ---------- */
+.productos-tabla th:nth-child(8),
+.productos-tabla td:nth-child(8) {
+    text-align: center;
+}
+
+.productos-tabla td:nth-child(8) > div,
+.productos-tabla td:nth-child(8) .acciones-producto {
     display: flex;
-    gap: 6px;
     justify-content: center;
     align-items: center;
+    gap: 6px;
     flex-wrap: nowrap;
+}
+
+.productos-tabla td:nth-child(8) button,
+.productos-tabla td:nth-child(8) .btn-action,
+.productos-tabla td:nth-child(8) .btn-eliminar-producto {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    flex: 0 0 auto;
+}
+
+.btn-action {
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-action:hover {
+    transform: translateY(-1px);
+}
+
+.btn-eliminar-producto {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+    transition: all 0.15s ease;
+}
+
+.btn-eliminar-producto:hover {
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+}
+
+/* ---------- Empty state ---------- */
+.productos-tabla .empty-row td {
+    padding: 0;
+}
+
+.productos-tabla .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 0;
+    border: none;
+}
+
+.productos-tabla .empty-state i {
+    font-size: 3em;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1280px) {
+    .productos-tabla {
+        min-width: 1080px;
+    }
+}
+
+@media (max-width: 900px) {
+    .productos-tabla {
+        min-width: 980px;
+    }
+
+    .productos-tabla th,
+    .productos-tabla td {
+        padding: 8px 6px;
+    }
+
+    .productos-tabla .input-nombre-producto,
+    .productos-tabla td:nth-child(2) textarea {
+        min-height: 58px;
+        font-size: 0.9rem;
+    }
+
+    .percentage-button {
+        min-width: 34px;
+        font-size: 0.7rem;
+        padding: 4px 6px;
+    }
 }
 </style>
 
