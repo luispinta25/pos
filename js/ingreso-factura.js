@@ -952,36 +952,35 @@ function calcularTotal() {
 
 function actualizarProducto(index, campo, valor) {
     const producto = ingresoFacturaState.productosEnFactura[index];
-    
+    if (!producto) return;
+
     if (campo === 'cantidad' || campo === 'precio_proveedor' || campo === 'precio_venta') {
         valor = parseFloat(valor) || 0;
     }
+
     if (campo === 'nombre') {
-        // forzar mayúsculas
         valor = (valor || '').toString().trim().toUpperCase();
+        producto[campo] = valor;
+        guardarCacheIngreso();
+        return;
     }
-    
+
     producto[campo] = valor;
-    
-    // Recalcular subtotal
+
     producto.subtotal = producto.cantidad * producto.precio_proveedor;
-    
-    // Recalcular porcentaje de ganancia
+
     if (campo === 'precio_proveedor') {
-        // Si ya tenía un porcentaje activo, reaplicarlo con el nuevo precio de compra
         if (producto.porcentaje_ganancia) {
             aplicarPorcentaje(index, producto.porcentaje_ganancia);
-            // aplicarPorcentaje ya llama a renderizarTablaProductos y guardar
             return;
         } else {
-            // Si no tenía % activo, sugerir un precio de venta
             producto.precio_venta = calcularPrecioVentaSugeridoCompra(producto.precio_proveedor);
             producto.porcentaje_ganancia = encontrarPorcentajeMasCercano(producto.precio_proveedor, producto.precio_venta);
         }
     } else if (campo === 'precio_venta') {
         producto.porcentaje_ganancia = encontrarPorcentajeMasCercano(producto.precio_proveedor, producto.precio_venta);
     }
-    
+
     renderizarTablaProductos();
     guardarCacheIngreso();
 }
