@@ -2706,6 +2706,7 @@ function abrirModalActualizarInventarioIngreso(producto) {
     document.getElementById('ingresoProductoCodigoInfo').textContent = `Código: ${producto.codigo}`;
     document.getElementById('ingresoProductoNombreInfo').textContent = producto.producto;
     document.getElementById('ingresoStockActualDisplay').value = `${producto.stock} ${producto.unidad_paquete || 'und'}`;
+    document.getElementById('ingresoCalculosCantidadInput').value = 1;
     document.getElementById('ingresoNuevoStockInput').value = producto.stock || 0;
     document.getElementById('ingresoNuevaZonaInput').value = producto.zona || '';
     document.getElementById('ingresoNuevoStockMinimoInput').value = producto.stock_minimo || '';
@@ -2729,10 +2730,10 @@ function abrirModalActualizarInventarioIngreso(producto) {
     const modal = document.getElementById('modalActualizarInventarioIngreso');
     modal.classList.add('active');
 
-    // Enfocar el input de nuevo stock
+    // Enfocar el input de cantidad
     setTimeout(() => {
-        document.getElementById('ingresoNuevoStockInput').focus();
-        document.getElementById('ingresoNuevoStockInput').select();
+        document.getElementById('ingresoCalculosCantidadInput').focus();
+        document.getElementById('ingresoCalculosCantidadInput').select();
     }, 150);
 }
 
@@ -2747,6 +2748,7 @@ function confirmarActualizacionInventarioIngreso() {
     const producto = ingresoModalState.productoSeleccionado;
     if (!producto) return;
 
+    const cantidadFactura = parseFloat(document.getElementById('ingresoCalculosCantidadInput').value) || 1;
     const nuevoStock = parseFloat(document.getElementById('ingresoNuevoStockInput').value) || 0;
     const nuevaZona = document.getElementById('ingresoNuevaZonaInput').value.trim();
     const nuevoStockMinimo = parseFloat(document.getElementById('ingresoNuevoStockMinimoInput').value) || 0;
@@ -2762,15 +2764,16 @@ function confirmarActualizacionInventarioIngreso() {
         // Si no hay cambios, simplemente agregar a tabla sin actualizar
         cerrarModalActualizarInventarioIngreso();
         if (productoParaAgregarATabla) {
-            agregarProductoATablaDirecto(productoParaAgregarATabla);
+            agregarProductoATablaDirecto(productoParaAgregarATabla, cantidadFactura);
         }
         return;
     }
 
-    // Guardar datos pendientes
+    // Guardar datos pendientes (incluyendo cantidad)
     ingresoModalState.pendienteActualizacion = {
         codigo: producto.codigo,
         producto: producto.producto,
+        cantidadFactura: cantidadFactura,
         cambios: {
             stock: stockCambio ? { anterior: producto.stock, nuevo: nuevoStock } : null,
             zona: zonaCambio ? { anterior: producto.zona || '-', nuevo: nuevaZona || '-' } : null,
@@ -2924,9 +2927,10 @@ async function ejecutarActualizacionInventarioIngreso() {
             window.app.showToast('<i class="fas fa-check-circle"></i> Inventario actualizado correctamente', 'success', 3000);
         }
 
-        // Agregar el producto a la tabla
+        // Agregar el producto a la tabla con la cantidad ingresada
         if (productoParaAgregarATabla) {
-            agregarProductoATablaDirecto(productoParaAgregarATabla);
+            const cantidad = pendiente.cantidadFactura || 1;
+            agregarProductoATablaDirecto(productoParaAgregarATabla, cantidad);
         }
 
         // Limpiar estado
@@ -2956,12 +2960,12 @@ function ocultarScreenBlockerIngreso() {
 }
 
 // Función para agregar producto a tabla sin el modal (si no hay cambios)
-function agregarProductoATablaDirecto(producto) {
+function agregarProductoATablaDirecto(producto, cantidad = 1) {
     // Verificar si ya existe
     const existeIndex = ingresoFacturaState.productosEnFactura.findIndex(p => p.codigo === producto.codigo);
     if (existeIndex !== -1) {
         // Si ya existe, incrementar cantidad y mover al inicio
-        ingresoFacturaState.productosEnFactura[existeIndex].cantidad += 1;
+        ingresoFacturaState.productosEnFactura[existeIndex].cantidad += cantidad;
         ingresoFacturaState.productosEnFactura[existeIndex].subtotal = ingresoFacturaState.productosEnFactura[existeIndex].cantidad * ingresoFacturaState.productosEnFactura[existeIndex].precio_proveedor;
         // Mover elemento al inicio
         const [item] = ingresoFacturaState.productosEnFactura.splice(existeIndex, 1);
@@ -2976,13 +2980,13 @@ function agregarProductoATablaDirecto(producto) {
         producto_id: producto.id,
         codigo: producto.codigo,
         nombre: producto.producto,
-        cantidad: 1,
+        cantidad: cantidad,
         precio_proveedor: parseFloat(producto.precio_proveedor) || 0,
         precio_venta: parseFloat(producto.precio) || calcularPrecioVentaSugeridoCompra(parseFloat(producto.precio_proveedor) || 0),
         porcentaje_ganancia: encontrarPorcentajeMasCercano(parseFloat(producto.precio_proveedor) || 0, parseFloat(producto.precio) || calcularPrecioVentaSugeridoCompra(parseFloat(producto.precio_proveedor) || 0)),
         zona: producto.zona ? producto.zona.toString() : '',
         es_producto_nuevo: false,
-        subtotal: parseFloat(producto.precio_proveedor) || 0
+        subtotal: cantidad * (parseFloat(producto.precio_proveedor) || 0)
     });
     
     // Limpiar búsqueda
