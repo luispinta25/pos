@@ -574,6 +574,110 @@
     </div>
 </div>
 
+<!-- Modal de Actualizar Inventario para Ingreso de Factura -->
+<div id="modalActualizarInventarioIngreso" class="ingreso-actualizar-modal-overlay">
+    <div class="ingreso-actualizar-modal-container" style="max-width: 500px;">
+        <div class="ingreso-actualizar-modal-header">
+            <h2><i class="fas fa-edit"></i> Ajustar Inventario</h2>
+            <button class="ingreso-actualizar-modal-close" onclick="cerrarModalActualizarInventarioIngreso()">&times;</button>
+        </div>
+        <div class="ingreso-actualizar-modal-content">
+            <!-- Info del producto -->
+            <div class="ingreso-producto-info-card" id="ingresoProductoInfoCard">
+                <div class="ingreso-producto-info-header">
+                    <div class="ingreso-producto-codigo" id="ingresoProductoCodigoInfo">-</div>
+                    <div class="ingreso-producto-nombre" id="ingresoProductoNombreInfo">-</div>
+                </div>
+            </div>
+
+            <!-- Campos editables -->
+            <div class="ingreso-actualizar-form">
+                <div class="ingreso-form-row">
+                    <div class="ingreso-form-group">
+                        <label class="ingreso-form-label">
+                            <i class="fas fa-boxes"></i> Stock Actual
+                        </label>
+                        <input type="text" id="ingresoStockActualDisplay" class="ingreso-form-input readonly-input" readonly>
+                    </div>
+                    <div class="ingreso-form-group">
+                        <label class="ingreso-form-label">
+                            <i class="fas fa-arrow-right"></i> Nuevo Stock
+                        </label>
+                        <input type="number" id="ingresoNuevoStockInput" class="ingreso-form-input" 
+                            placeholder="0.00" step="0.01" min="0">
+                    </div>
+                </div>
+
+                <div class="ingreso-form-row">
+                    <div class="ingreso-form-group">
+                        <label class="ingreso-form-label">
+                            <i class="fas fa-map-marker-alt"></i> Zona
+                        </label>
+                        <input type="text" id="ingresoNuevaZonaInput" class="ingreso-form-input" 
+                            placeholder="Ej: A1, B2, Bodega...">
+                    </div>
+                    <div class="ingreso-form-group">
+                        <label class="ingreso-form-label">
+                            <i class="fas fa-exclamation-triangle"></i> Stock Mínimo
+                        </label>
+                        <input type="number" id="ingresoNuevoStockMinimoInput" class="ingreso-form-input" 
+                            placeholder="0" step="0.01" min="0">
+                    </div>
+                </div>
+
+                <div class="ingreso-form-group" style="margin-top: 15px;">
+                    <label class="ingreso-form-label">
+                        <i class="fas fa-truck"></i> Proveedor
+                    </label>
+                    <select id="ingresoNuevoProveedorIdInput" class="ingreso-form-input">
+                        <option value="">Sin Proveedor</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="ingreso-actualizar-modal-actions">
+                <button class="btn-ingreso-actualizar-cancelar" onclick="cerrarModalActualizarInventarioIngreso()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="btn-ingreso-actualizar-confirmar" onclick="confirmarActualizacionInventarioIngreso()">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Actualizar Inventario en Ingreso -->
+<div id="ingresoConfirmModalInventario" class="ingreso-actualizar-modal-overlay">
+    <div class="ingreso-actualizar-modal-container ingreso-confirm-modal" style="max-width: 450px;">
+        <div class="ingreso-actualizar-modal-header confirm-header">
+            <h2><i class="fas fa-question-circle"></i> Confirmar Actualización</h2>
+        </div>
+        <div class="ingreso-actualizar-modal-content">
+            <div class="ingreso-confirm-message" id="ingresoConfirmMessage">
+                <!-- Contenido dinámico -->
+            </div>
+            <div class="ingreso-actualizar-modal-actions">
+                <button class="btn-ingreso-actualizar-cancelar" onclick="cancelarConfirmacionInventarioIngreso()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="btn-ingreso-actualizar-confirmar" id="btnEjecutarActualizacionIngreso" onclick="ejecutarActualizacionInventarioIngreso()">
+                    <i class="fas fa-check"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Screen Blocker para operaciones en Ingreso -->
+<div id="ingresoScreenBlocker" class="ingreso-screen-blocker">
+    <div class="ingreso-blocker-content">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p id="ingresoBlockerText">Procesando...</p>
+    </div>
+</div>
+
 <style>
     
     .modal-alerta .alert-details-table{ max-height:320px; overflow:auto; margin-top:8px; }
@@ -1819,6 +1923,318 @@
         min-width: 34px;
         font-size: 0.7rem;
         padding: 4px 6px;
+    }
+}
+
+/* =====================================================
+   ESTILOS MODALES ACTUALIZAR INVENTARIO - INGRESO
+   ===================================================== */
+
+.ingreso-screen-blocker {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999;
+}
+
+.ingreso-screen-blocker.active {
+    display: flex;
+}
+
+.ingreso-blocker-content {
+    text-align: center;
+    color: white;
+}
+
+.ingreso-blocker-content i {
+    font-size: 3em;
+    color: #d4a017;
+    margin-bottom: 20px;
+}
+
+.ingreso-blocker-content p {
+    font-size: 1.2em;
+    margin: 0;
+}
+
+.ingreso-actualizar-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 99998;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#ingresoConfirmModalInventario {
+    z-index: 99999;
+}
+
+.ingreso-actualizar-modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.ingreso-actualizar-modal-container {
+    background: white;
+    border-radius: 20px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.ingreso-actualizar-modal-overlay.active .ingreso-actualizar-modal-container {
+    transform: scale(1);
+}
+
+.ingreso-actualizar-modal-header {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: white;
+    padding: 20px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ingreso-actualizar-modal-header h2 {
+    margin: 0;
+    font-size: 1.3em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ingreso-actualizar-modal-header h2 i {
+    color: #d4a017;
+}
+
+.ingreso-actualizar-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2em;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.ingreso-actualizar-modal-close:hover {
+    color: #d4a017;
+    transform: scale(1.1);
+}
+
+.ingreso-actualizar-modal-content {
+    padding: 25px;
+    max-height: calc(90vh - 80px);
+    overflow-y: auto;
+}
+
+.ingreso-producto-info-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 20px;
+    color: white;
+    margin-bottom: 25px;
+}
+
+.ingreso-producto-info-header {
+    text-align: center;
+}
+
+.ingreso-producto-codigo {
+    font-size: 0.9em;
+    opacity: 0.9;
+    margin-bottom: 5px;
+}
+
+.ingreso-producto-nombre {
+    font-size: 1.3em;
+    font-weight: 600;
+}
+
+.ingreso-actualizar-form {
+    margin-bottom: 20px;
+}
+
+.ingreso-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.ingreso-form-group {
+    margin-bottom: 0;
+}
+
+.ingreso-form-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.ingreso-form-label i {
+    color: #d4a017;
+}
+
+.ingreso-form-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 1em;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.ingreso-form-input:focus {
+    outline: none;
+    border-color: #d4a017;
+    box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.1);
+}
+
+.readonly-input {
+    background: #f5f5f5;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.ingreso-actualizar-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.btn-ingreso-actualizar-cancelar,
+.btn-ingreso-actualizar-confirmar {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-ingreso-actualizar-cancelar {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-ingreso-actualizar-cancelar:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.btn-ingreso-actualizar-confirmar {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.btn-ingreso-actualizar-confirmar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+}
+
+.confirm-header {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%) !important;
+}
+
+.ingreso-confirm-message {
+    background: #fff8e1;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 10px;
+}
+
+.ingreso-confirm-message h4 {
+    margin: 0 0 15px 0;
+    color: #e65100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ingreso-confirm-changes {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ingreso-confirm-changes li {
+    padding: 10px 15px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ingreso-confirm-changes li:last-child {
+    margin-bottom: 0;
+}
+
+.ingreso-change-label {
+    font-weight: 500;
+    color: #666;
+}
+
+.ingreso-change-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ingreso-old-value {
+    color: #dc3545;
+    text-decoration: line-through;
+    font-size: 0.9em;
+}
+
+.ingreso-new-value {
+    color: #28a745;
+    font-weight: 600;
+}
+
+@media (max-width: 600px) {
+    .ingreso-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .ingreso-actualizar-modal-actions {
+        flex-direction: column;
+    }
+
+    .btn-ingreso-actualizar-cancelar,
+    .btn-ingreso-actualizar-confirmar {
+        width: 100%;
+        justify-content: center;
     }
 }
 </style>

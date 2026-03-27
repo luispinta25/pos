@@ -55,6 +55,9 @@ async function initIngresoFactura(proveedores) {
     // Cargar proveedores en el paso 1 inmediatamente
     cargarProveedoresIngreso();
     
+    // Cargar lista de proveedores para el modal de actualizar inventario
+    cargarListaProveedoresIngreso();
+    
     // Configurar event listeners
     setupEventListenersIngreso();
     
@@ -656,11 +659,22 @@ function buscarProductoIngreso(event) {
         // For numeric lengths of 2 or 3, fall through to search behavior below.
     }
 
-    // Buscar por término en código o nombre
-    const productosFiltrados = ingresoFacturaState.inventarioCompleto.filter(p => 
-        (p.codigo || '').toString().toLowerCase().includes(terminoLower) || 
-        (p.producto || '').toString().toLowerCase().includes(terminoLower)
-    ).slice(0, 10);
+    // Búsqueda flexible por palabras no necesariamente seguidas
+    // Permite buscar "candado viro" y encontrar "CANDADO 30MM BARRIL VIRO"
+    const palabras = terminoLower.split(/\s+/).filter(p => p.length > 0);
+    
+    const productosFiltrados = ingresoFacturaState.inventarioCompleto.filter(p => {
+        const codigo = (p.codigo || '').toString().toLowerCase();
+        const nombre = (p.producto || '').toString().toLowerCase();
+        
+        // Búsqueda por código: debe incluir el término completo
+        const codigoMatch = codigo.includes(terminoLower);
+        
+        // Búsqueda por nombre: TODAS las palabras deben estar presentes (en cualquier orden)
+        const nombreMatch = palabras.every(palabra => nombre.includes(palabra));
+        
+        return codigoMatch || nombreMatch;
+    }).slice(0, 15);
 
     if (productosFiltrados.length === 0) {
         resultados.innerHTML = `
@@ -703,35 +717,20 @@ function agregarProductoDesdeInventario(producto) {
         ingresoFacturaState.productosEnFactura.unshift(item);
         renderizarTablaProductos();
         guardarCacheIngreso();
+        
+        // Mostrar notificación
+        if (window.app && window.app.showToast) {
+            window.app.showToast('<i class="fas fa-info-circle"></i> Cantidad incrementada', 'info', 2000);
+        }
         return;
     }
 
-    // Agregar nuevo producto al inicio
-    ingresoFacturaState.productosEnFactura.unshift({
-        producto_id: producto.id,
-        codigo: producto.codigo,
-        nombre: producto.producto,
-        cantidad: 1,
-        precio_proveedor: parseFloat(producto.precio_proveedor) || 0,
-        precio_venta: parseFloat(producto.precio) || calcularPrecioVentaSugeridoCompra(parseFloat(producto.precio_proveedor) || 0),
-        porcentaje_ganancia: encontrarPorcentajeMasCercano(parseFloat(producto.precio_proveedor) || 0, parseFloat(producto.precio) || calcularPrecioVentaSugeridoCompra(parseFloat(producto.precio_proveedor) || 0)),
-        zona: producto.zona ? producto.zona.toString() : '',
-        es_producto_nuevo: false,
-        subtotal: parseFloat(producto.precio_proveedor) || 0
-    });
+    // Para productos nuevos, mostrar modal de actualizar inventario
+    abrirModalActualizarInventarioIngreso(producto);
     
     // Limpiar búsqueda
     document.getElementById('busquedaProductoIngreso').value = '';
     document.getElementById('resultadosBusquedaIngreso').innerHTML = '';
-    
-    renderizarTablaProductos();
-    guardarCacheIngreso();
-    
-    // Actualizar botones de navegación
-    try {
-        actualizarBotonesNavegacion(ingresoFacturaState.pasoActual);
-    } catch (err) {
-    }
 }
 
 function renderizarTablaProductos() {
@@ -2665,6 +2664,341 @@ function volverAFacturas() {
 // GUARDAR CON CACHÉ AUTOMÁTICO
 // =====================================================
 
+// =====================================================
+// MODAL ACTUALIZAR INVENTARIO - INGRESO FACTURA
+// =====================================================
+
+// Estado para el modal de actualizar inventario en ingreso
+var ingresoModalState = {
+    productoSeleccionado: null,
+    pendienteActualizacion: null,
+    listaProveedores: []
+};
+
+// Variables auxiliares
+var productoParaAgregarATabla = null;
+
+// Cargar lista de proveedores para el select
+async function cargarListaProveedoresIngreso() {
+    try {
+        const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : (window.supabaseClient || null));
+        if (!db) return;
+
+        const { data, error } = await db
+            .from('ferre_proveedores')
+            .select('id, empresa')
+            .order('empresa');
+
+        if (error) throw error;
+        ingresoModalState.listaProveedores = data || [];
+    } catch (error) {
+        console.error('Error al cargar proveedores para ingreso:', error);
+    }
+}
+
+// Abrir modal de actualizar inventario cuando se selecciona un producto
+function abrirModalActualizarInventarioIngreso(producto) {
+    // Guardar el producto seleccionado
+    ingresoModalState.productoSeleccionado = producto;
+    productoParaAgregarATabla = producto;
+
+    // Llenar datos en el modal de actualización
+    document.getElementById('ingresoProductoCodigoInfo').textContent = `Código: ${producto.codigo}`;
+    document.getElementById('ingresoProductoNombreInfo').textContent = producto.producto;
+    document.getElementById('ingresoStockActualDisplay').value = `${producto.stock} ${producto.unidad_paquete || 'und'}`;
+    document.getElementById('ingresoNuevoStockInput').value = producto.stock || 0;
+    document.getElementById('ingresoNuevaZonaInput').value = producto.zona || '';
+    document.getElementById('ingresoNuevoStockMinimoInput').value = producto.stock_minimo || '';
+
+    // Poblar select de proveedores
+    const provSelect = document.getElementById('ingresoNuevoProveedorIdInput');
+    if (provSelect) {
+        provSelect.innerHTML = '<option value="">Sin Proveedor</option>';
+        if (ingresoModalState.listaProveedores) {
+            ingresoModalState.listaProveedores.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.empresa;
+                if (p.id === producto.proveedor_id) opt.selected = true;
+                provSelect.appendChild(opt);
+            });
+        }
+    }
+
+    // Mostrar modal de actualización
+    const modal = document.getElementById('modalActualizarInventarioIngreso');
+    modal.classList.add('active');
+
+    // Enfocar el input de nuevo stock
+    setTimeout(() => {
+        document.getElementById('ingresoNuevoStockInput').focus();
+        document.getElementById('ingresoNuevoStockInput').select();
+    }, 150);
+}
+
+function cerrarModalActualizarInventarioIngreso() {
+    document.getElementById('modalActualizarInventarioIngreso').classList.remove('active');
+    ingresoModalState.productoSeleccionado = null;
+    productoParaAgregarATabla = null;
+}
+
+// Confirmar actualización del inventario
+function confirmarActualizacionInventarioIngreso() {
+    const producto = ingresoModalState.productoSeleccionado;
+    if (!producto) return;
+
+    const nuevoStock = parseFloat(document.getElementById('ingresoNuevoStockInput').value) || 0;
+    const nuevaZona = document.getElementById('ingresoNuevaZonaInput').value.trim();
+    const nuevoStockMinimo = parseFloat(document.getElementById('ingresoNuevoStockMinimoInput').value) || 0;
+    const nuevoProvId = document.getElementById('ingresoNuevoProveedorIdInput').value;
+
+    // Validar que hay al menos un cambio
+    const stockCambio = nuevoStock !== producto.stock;
+    const zonaCambio = nuevaZona !== (producto.zona || '');
+    const stockMinimoCambio = nuevoStockMinimo !== (producto.stock_minimo || 0);
+    const provCambio = nuevoProvId !== (producto.proveedor_id ? producto.proveedor_id.toString() : '');
+
+    if (!stockCambio && !zonaCambio && !stockMinimoCambio && !provCambio) {
+        // Si no hay cambios, simplemente agregar a tabla sin actualizar
+        cerrarModalActualizarInventarioIngreso();
+        if (productoParaAgregarATabla) {
+            agregarProductoATablaDirecto(productoParaAgregarATabla);
+        }
+        return;
+    }
+
+    // Guardar datos pendientes
+    ingresoModalState.pendienteActualizacion = {
+        codigo: producto.codigo,
+        producto: producto.producto,
+        cambios: {
+            stock: stockCambio ? { anterior: producto.stock, nuevo: nuevoStock } : null,
+            zona: zonaCambio ? { anterior: producto.zona || '-', nuevo: nuevaZona || '-' } : null,
+            stock_minimo: stockMinimoCambio ? { anterior: producto.stock_minimo || 0, nuevo: nuevoStockMinimo } : null,
+            proveedor_id: provCambio ? { anterior: producto.proveedor_id, nuevo: nuevoProvId || null } : null
+        }
+    };
+
+    // Construir mensaje de confirmación
+    let changesHtml = `
+        <h4><i class="fas fa-info-circle"></i> Se actualizará: ${producto.producto}</h4>
+        <ul class="ingreso-confirm-changes">
+    `;
+
+    if (stockCambio) {
+        changesHtml += `
+            <li>
+                <span class="ingreso-change-label">Stock</span>
+                <span class="ingreso-change-value">
+                    <span class="ingreso-old-value">${producto.stock}</span>
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="ingreso-new-value">${nuevoStock}</span>
+                </span>
+            </li>
+        `;
+    }
+
+    if (zonaCambio) {
+        changesHtml += `
+            <li>
+                <span class="ingreso-change-label">Zona</span>
+                <span class="ingreso-change-value">
+                    <span class="ingreso-old-value">${producto.zona || '-'}</span>
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="ingreso-new-value">${nuevaZona || '-'}</span>
+                </span>
+            </li>
+        `;
+    }
+
+    if (stockMinimoCambio) {
+        changesHtml += `
+            <li>
+                <span class="ingreso-change-label">Stock Mínimo</span>
+                <span class="ingreso-change-value">
+                    <span class="ingreso-old-value">${producto.stock_minimo || 0}</span>
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="ingreso-new-value">${nuevoStockMinimo}</span>
+                </span>
+            </li>
+        `;
+    }
+
+    if (provCambio) {
+        const oldProv = ingresoModalState.listaProveedores.find(p => p.id == producto.proveedor_id)?.empresa || 'Sin Proveedor';
+        const newProv = ingresoModalState.listaProveedores.find(p => p.id == nuevoProvId)?.empresa || 'Sin Proveedor';
+        changesHtml += `
+            <li>
+                <span class="ingreso-change-label">Proveedor</span>
+                <span class="ingreso-change-value">
+                    <span class="ingreso-old-value">${oldProv}</span>
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="ingreso-new-value">${newProv}</span>
+                </span>
+            </li>
+        `;
+    }
+
+    changesHtml += '</ul>';
+
+    document.getElementById('ingresoConfirmMessage').innerHTML = changesHtml;
+    document.getElementById('btnEjecutarActualizacionIngreso').onclick = ejecutarActualizacionInventarioIngreso;
+    
+    // Mostrar modal de confirmación
+    document.getElementById('ingresoConfirmModalInventario').classList.add('active');
+}
+
+function cancelarConfirmacionInventarioIngreso() {
+    document.getElementById('ingresoConfirmModalInventario').classList.remove('active');
+    ingresoModalState.pendienteActualizacion = null;
+}
+
+// Ejecutar actualización en la BD
+async function ejecutarActualizacionInventarioIngreso() {
+    const pendiente = ingresoModalState.pendienteActualizacion;
+    if (!pendiente) return;
+
+    // Cerrar modal de confirmación
+    document.getElementById('ingresoConfirmModalInventario').classList.remove('active');
+
+    // Mostrar screen blocker
+    mostrarScreenBlockerIngreso('Actualizando inventario...');
+
+    try {
+        const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
+        
+        if (!db) {
+            throw new Error('Base de datos no disponible');
+        }
+
+        // Construir objeto de actualización
+        const updateData = {};
+        
+        if (pendiente.cambios.stock) {
+            updateData.stock = pendiente.cambios.stock.nuevo;
+        }
+        if (pendiente.cambios.zona) {
+            updateData.zona = pendiente.cambios.zona.nuevo === '-' ? null : pendiente.cambios.zona.nuevo;
+        }
+        if (pendiente.cambios.stock_minimo) {
+            updateData.stock_minimo = pendiente.cambios.stock_minimo.nuevo;
+        }
+        if (pendiente.cambios.proveedor_id) {
+            updateData.proveedor_id = pendiente.cambios.proveedor_id.nuevo;
+        }
+
+        // Ejecutar actualización
+        const { data, error } = await db
+            .from('ferre_inventario')
+            .update(updateData)
+            .eq('codigo', pendiente.codigo)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // Actualizar caché si existe
+        if (window.inventarioCache && window.inventarioCache.productos) {
+            const index = window.inventarioCache.productos.findIndex(p => p.codigo === pendiente.codigo);
+            if (index !== -1) {
+                window.inventarioCache.productos[index] = { ...window.inventarioCache.productos[index], ...updateData };
+            }
+        }
+
+        // Actualizar en el estado local también
+        if (ingresoFacturaState.inventarioCompleto) {
+            const index = ingresoFacturaState.inventarioCompleto.findIndex(p => p.codigo === pendiente.codigo);
+            if (index !== -1) {
+                ingresoFacturaState.inventarioCompleto[index] = { ...ingresoFacturaState.inventarioCompleto[index], ...updateData };
+            }
+        }
+
+        // Ocultar screen blocker
+        ocultarScreenBlockerIngreso();
+
+        // Cerrar modal de actualización
+        cerrarModalActualizarInventarioIngreso();
+
+        // Mostrar mensaje de éxito
+        if (window.app && window.app.showToast) {
+            window.app.showToast('<i class="fas fa-check-circle"></i> Inventario actualizado correctamente', 'success', 3000);
+        }
+
+        // Agregar el producto a la tabla
+        if (productoParaAgregarATabla) {
+            agregarProductoATablaDirecto(productoParaAgregarATabla);
+        }
+
+        // Limpiar estado
+        ingresoModalState.pendienteActualizacion = null;
+
+    } catch (error) {
+        console.error('Error al actualizar inventario:', error);
+        ocultarScreenBlockerIngreso();
+        
+        if (window.app && window.app.showToast) {
+            window.app.showToast('<i class="fas fa-exclamation-triangle"></i> Error al actualizar: ' + error.message, 'danger', 5000);
+        }
+    }
+}
+
+// Funciones de utilidad para screen blocker
+function mostrarScreenBlockerIngreso(mensaje = 'Procesando...') {
+    const blocker = document.getElementById('ingresoScreenBlocker');
+    const text = document.getElementById('ingresoBlockerText');
+    if (text) text.textContent = mensaje;
+    if (blocker) blocker.classList.add('active');
+}
+
+function ocultarScreenBlockerIngreso() {
+    const blocker = document.getElementById('ingresoScreenBlocker');
+    if (blocker) blocker.classList.remove('active');
+}
+
+// Función para agregar producto a tabla sin el modal (si no hay cambios)
+function agregarProductoATablaDirecto(producto) {
+    // Verificar si ya existe
+    const existeIndex = ingresoFacturaState.productosEnFactura.findIndex(p => p.codigo === producto.codigo);
+    if (existeIndex !== -1) {
+        // Si ya existe, incrementar cantidad y mover al inicio
+        ingresoFacturaState.productosEnFactura[existeIndex].cantidad += 1;
+        ingresoFacturaState.productosEnFactura[existeIndex].subtotal = ingresoFacturaState.productosEnFactura[existeIndex].cantidad * ingresoFacturaState.productosEnFactura[existeIndex].precio_proveedor;
+        // Mover elemento al inicio
+        const [item] = ingresoFacturaState.productosEnFactura.splice(existeIndex, 1);
+        ingresoFacturaState.productosEnFactura.unshift(item);
+        renderizarTablaProductos();
+        guardarCacheIngreso();
+        return;
+    }
+
+    // Agregar nuevo producto al inicio
+    ingresoFacturaState.productosEnFactura.unshift({
+        producto_id: producto.id,
+        codigo: producto.codigo,
+        nombre: producto.producto,
+        cantidad: 1,
+        precio_proveedor: parseFloat(producto.precio_proveedor) || 0,
+        precio_venta: parseFloat(producto.precio) || calcularPrecioVentaSugeridoCompra(parseFloat(producto.precio_proveedor) || 0),
+        porcentaje_ganancia: encontrarPorcentajeMasCercano(parseFloat(producto.precio_proveedor) || 0, parseFloat(producto.precio) || calcularPrecioVentaSugeridoCompra(parseFloat(producto.precio_proveedor) || 0)),
+        zona: producto.zona ? producto.zona.toString() : '',
+        es_producto_nuevo: false,
+        subtotal: parseFloat(producto.precio_proveedor) || 0
+    });
+    
+    // Limpiar búsqueda
+    document.getElementById('busquedaProductoIngreso').value = '';
+    document.getElementById('resultadosBusquedaIngreso').innerHTML = '';
+    
+    renderizarTablaProductos();
+    guardarCacheIngreso();
+    
+    // Actualizar botones de navegación
+    try {
+        actualizarBotonesNavegacion(ingresoFacturaState.pasoActual);
+    } catch (err) {
+    }
+}
+
 // Agregar listeners a campos de formulario para guardar caché
 setTimeout(() => {
     const campos = ['numeroFacturaIngreso', 'fechaEmisionIngreso', 'fechaVencimientoIngreso', 'notasFacturaIngreso'];
@@ -2688,6 +3022,13 @@ window.guardarCacheIngreso = guardarCacheIngreso;
 window.cargarCacheIngreso = cargarCacheIngreso;
 window.limpiarCacheIngreso = limpiarCacheIngreso;
 window.actualizarDescuento = actualizarDescuento;
-
+// Nuevas funciones para modal de actualizar inventario
+window.abrirModalActualizarInventarioIngreso = abrirModalActualizarInventarioIngreso;
+window.cerrarModalActualizarInventarioIngreso = cerrarModalActualizarInventarioIngreso;
+window.confirmarActualizacionInventarioIngreso = confirmarActualizacionInventarioIngreso;
+window.cancelarConfirmacionInventarioIngreso = cancelarConfirmacionInventarioIngreso;
+window.ejecutarActualizacionInventarioIngreso = ejecutarActualizacionInventarioIngreso;
+window.cargarListaProveedoresIngreso = cargarListaProveedoresIngreso;
+window.agregarProductoATablaDirecto = agregarProductoATablaDirecto;
 
 
