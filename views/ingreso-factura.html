@@ -601,17 +601,7 @@
                     </div>
                     <div class="ingreso-form-group">
                         <label class="ingreso-form-label">
-                            <i class="fas fa-shopping-cart"></i> Cantidad Factura
-                        </label>
-                        <input type="number" id="ingresoCalculosCantidadInput" class="ingreso-form-input" 
-                            placeholder="0.00" step="0.01" min="0.01" value="1">
-                    </div>
-                </div>
-
-                <div class="ingreso-form-row">
-                    <div class="ingreso-form-group">
-                        <label class="ingreso-form-label">
-                            <i class="fas fa-arrow-right"></i> Nuevo Stock
+                            <i class="fas fa-arrow-right"></i> Stock Verificado
                         </label>
                         <input type="number" id="ingresoNuevoStockInput" class="ingreso-form-input" 
                             placeholder="0.00" step="0.01" min="0">
@@ -642,6 +632,14 @@
                     <select id="ingresoNuevoProveedorIdInput" class="ingreso-form-input">
                         <option value="">Sin Proveedor</option>
                     </select>
+                </div>
+
+                <div class="ingreso-form-group" style="margin-top: 15px;">
+                    <label class="ingreso-form-label">
+                        <i class="fas fa-shopping-cart"></i> Cantidad en esta Factura
+                    </label>
+                    <input type="number" id="ingresoCalculosCantidadInput" class="ingreso-form-input" 
+                        placeholder="0.00" step="0.01" min="0.01" value="1">
                 </div>
             </div>
 

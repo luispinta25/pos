@@ -579,7 +579,7 @@ async function cargarInventarioCompleto() {
         const client = window.app?.db || window.supabaseClient;
         const { data, error } = await client
             .from('ferre_inventario')
-            .select('id, codigo, producto, precio_proveedor, precio, zona, stock')
+            .select('*')
             .order('producto', { ascending: true });
         
         if (error) throw error;
@@ -2720,7 +2720,13 @@ function abrirModalActualizarInventarioIngreso(producto) {
                 const opt = document.createElement('option');
                 opt.value = p.id;
                 opt.textContent = p.empresa;
-                if (p.id === producto.proveedor_id) opt.selected = true;
+                // Autoseleccionar el proveedor del ingreso actual
+                if (ingresoFacturaState.proveedorSeleccionado && p.id === ingresoFacturaState.proveedorSeleccionado.id) {
+                    opt.selected = true;
+                } else if (p.id === producto.proveedor_id) {
+                    // Si no hay proveedor de ingreso, usar el del producto
+                    opt.selected = true;
+                }
                 provSelect.appendChild(opt);
             });
         }
@@ -2791,7 +2797,7 @@ function confirmarActualizacionInventarioIngreso() {
     if (stockCambio) {
         changesHtml += `
             <li>
-                <span class="ingreso-change-label">Stock</span>
+                <span class="ingreso-change-label">Stock Verificado</span>
                 <span class="ingreso-change-value">
                     <span class="ingreso-old-value">${producto.stock}</span>
                     <i class="fas fa-arrow-right"></i>
@@ -2861,6 +2867,9 @@ async function ejecutarActualizacionInventarioIngreso() {
     const pendiente = ingresoModalState.pendienteActualizacion;
     if (!pendiente) return;
 
+    // Guardar producto antes de cerrar modalS
+    const productoAgregar = productoParaAgregarATabla;
+
     // Cerrar modal de confirmación
     document.getElementById('ingresoConfirmModalInventario').classList.remove('active');
 
@@ -2928,9 +2937,9 @@ async function ejecutarActualizacionInventarioIngreso() {
         }
 
         // Agregar el producto a la tabla con la cantidad ingresada
-        if (productoParaAgregarATabla) {
+        if (productoAgregar) {
             const cantidad = pendiente.cantidadFactura || 1;
-            agregarProductoATablaDirecto(productoParaAgregarATabla, cantidad);
+            agregarProductoATablaDirecto(productoAgregar, cantidad);
         }
 
         // Limpiar estado

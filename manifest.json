@@ -2,7 +2,7 @@
   "name": "Ferrisoluciones - Punto de Venta",
   "short_name": "POS Ferrisoluciones",
   "description": "Sistema de Punto de Venta para Ferrisoluciones",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a1a1a",
