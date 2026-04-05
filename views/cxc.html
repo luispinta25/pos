@@ -658,6 +658,7 @@
 
     let deudorActivoFormulario = null;
     let cuentaSeleccionada = null;
+    let procesandoPago = false;  // Bandera global para evitar duplicados
     let pagoSeleccionado = null;
 
     function formatCurrency(value) {
@@ -1038,6 +1039,25 @@
             }
 
             state.cuentas = data || [];
+            
+            // Recalcular saldo pendiente basándose en los pagos
+            state.cuentas.forEach(cuenta => {
+                if (!cuenta) return;
+                const pagosDelaCuenta = state.pagos.filter(p => p.cuenta_id === cuenta.id);
+                const totalPagos = pagosDelaCuenta.reduce((sum, p) => sum + cleanNumber(p.monto_pago), 0);
+                const saldoCalculado = cleanNumber(cuenta.monto) - totalPagos;
+                
+                // Actualizar el saldo con el cálculo local
+                cuenta.saldo_pendiente = saldoCalculado > 0 ? saldoCalculado : 0;
+                
+                // Actualizar estado basándose en el saldo
+                if (saldoCalculado <= 0) {
+                    cuenta.estado = 'PAGADO';
+                } else if (totalPagos > 0) {
+                    cuenta.estado = 'PARCIAL';
+                }
+            });
+            
             recalculateMetrics();
             renderCuentas();
             populateReimpresionCuentas();
@@ -1656,6 +1676,13 @@
 
     async function registrarPago(event) {
         event.preventDefault();
+        
+        // Evitar duplicados por clicks múltiples
+        if (procesandoPago) {
+            showToast('Por favor espera, se está procesando el pago...', 'warning');
+            return;
+        }
+        
         if (!cuentaSeleccionada) {
             showToast('Selecciona una cuenta primero', 'warning');
             return;
@@ -1678,6 +1705,17 @@
         }
 
         try {
+            // Bloquear interfaz
+            procesandoPago = true;
+            const btnSubmit = selectors.formularios.pago.querySelector('button[type="submit"]');
+            const btnCancel = selectors.formularios.pago.querySelector('button[data-close]');
+            
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+            }
+            if (btnCancel) btnCancel.disabled = true;
+            
             const usuario = obtenerUsuarioActual();
             const db = getDB();
             const payload = {
@@ -1699,16 +1737,52 @@
                 throw error;
             }
 
-            await Promise.all([fetchCuentas(), fetchPagos(), fetchDeudores()]);
-            closeModal(selectors.modals.pago);
-            showToast('Pago registrado correctamente', 'success');
-
+            // Esperar explícitamente a que se completen todas las actualizaciones
+            await Promise.all([fetchPagos(), fetchDeudores()]);
+            await fetchCuentas();  // Esto debe ir después para que pueda recalcular con los pagos
+            
+            // Pequeño delay para asegurar que los datos se actualicen en la BD
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Obtener datos actualizado
             const cuentaActualizada = obtenerCuentaPorId(cuenta.id);
             const deudor = obtenerDeudorPorId(cuenta.deudor_id);
+            
+            // Actualizar la variable de cuenta seleccionada con datos frescos
+            if (cuentaActualizada) {
+                cuentaSeleccionada = cuentaActualizada;
+            }
+            
+            // Cerrar modales
+            closeModal(selectors.modals.pago);
+            closeModal(selectors.modals.detalle);
+            
+            // Mostrar notificación
+            showToast('Pago registrado correctamente', 'success');
+            
+            // Recargar el detalle con datos actualizados para que se vea el cambio
+            if (cuentaActualizada) {
+                setTimeout(() => {
+                    mostrarDetalleCuenta(cuentaActualizada.id);
+                }, 300);
+            }
+            
+            // Abrir ticket
             abrirTicketPago(pago, cuentaActualizada || cuenta, deudor);
         } catch (error) {
             console.error('Error registrando pago:', error);
             showToast('No se pudo registrar el pago: ' + (error.message || error), 'danger', 6000);
+        } finally {
+            // Desbloquear interfaz
+            procesandoPago = false;
+            const btnSubmit = selectors.formularios.pago.querySelector('button[type="submit"]');
+            const btnCancel = selectors.formularios.pago.querySelector('button[data-close]');
+            
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<i class="fas fa-save"></i> Registrar pago';
+            }
+            if (btnCancel) btnCancel.disabled = false;
         }
     }
 
@@ -1921,6 +1995,10 @@
         selectors.botones.recargarPagos?.addEventListener('click', fetchPagos);
 
         selectors.botones.registroPago.addEventListener('click', () => {
+            if (procesandoPago) {
+                showToast('Ya se está procesando un pago, por favor espera...', 'warning');
+                return;
+            }
             if (!state.seleccion.cuentaId) {
                 showToast('Selecciona una cuenta', 'warning');
                 return;
@@ -1975,10 +2053,17 @@
         });
 
         selectors.detalle.btnAbonar.addEventListener('click', () => {
+            if (procesandoPago) {
+                showToast('Ya se está procesando un pago, por favor espera...', 'warning');
+                return;
+            }
             if (!cuentaSeleccionada) return;
+            // Obtener datos actualizados del state
+            const cuentaActualizada = obtenerCuentaPorId(cuentaSeleccionada.id);
+            if (!cuentaActualizada) return;
             closeModal(selectors.modals.detalle);
             setTimeout(() => {
-                prepararFormularioPago(cuentaSeleccionada);
+                prepararFormularioPago(cuentaActualizada);
                 openModal(selectors.modals.pago);
             }, 100);
         });
