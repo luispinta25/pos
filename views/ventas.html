@@ -1116,9 +1116,13 @@
 
         function inicializarSelectoresFecha() {
             const hoy = new Date();
-            document.getElementById('mesSelect').value = hoy.getMonth();
+            const mesSelect = document.getElementById('mesSelect');
             const anioSelect = document.getElementById('anioSelect');
+            const mesActual = hoy.getMonth();
             const anioActual = hoy.getFullYear();
+            
+            mesSelect.value = mesActual;
+            
             for (let i = anioActual; i >= anioActual - 2; i--) {
                 const option = document.createElement('option');
                 option.value = i;
@@ -1126,12 +1130,15 @@
                 if (i === anioActual) option.selected = true;
                 anioSelect.appendChild(option);
             }
+            
+            anioSelect.value = anioActual;
+            ventasState.filtroFecha = new Date(anioActual, mesActual, hoy.getDate());
             actualizarCalendario();
         }
 
         function actualizarCalendario() {
-            const mes = parseInt(document.getElementById('mesSelect').value);
-            const anio = parseInt(document.getElementById('anioSelect').value);
+            const mes = parseInt(document.getElementById('mesSelect').value) || new Date().getMonth();
+            const anio = parseInt(document.getElementById('anioSelect').value) || new Date().getFullYear();
             const diasContenedor = document.getElementById('diasCalendario');
             diasContenedor.innerHTML = '';
             const primmerDia = new Date(anio, mes, 1);
