@@ -52,20 +52,13 @@
 
 
             <div class="card">
-                <h3 style="margin-bottom: 15px; font-size: 1.2em;">
+                <h3 style="margin-bottom: 20px; font-size: 1.2em;">
                     <i class="fas fa-calendar-alt"></i> Filtrar por Fecha
                 </h3>
 
                 <div class="form-group">
-                    <label class="form-label">Día</label>
-                    <select id="diaSelect" class="form-select">
-
-                    </select>
-                </div>
-
-                <div class="form-group">
                     <label class="form-label">Mes</label>
-                    <select id="mesSelect" class="form-select">
+                    <select id="mesSelect" class="form-select" onchange="actualizarCalendario()">
                         <option value="0">Enero</option>
                         <option value="1">Febrero</option>
                         <option value="2">Marzo</option>
@@ -81,19 +74,27 @@
                     </select>
                 </div>
 
+                <div id="calendarioContenedor" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center;">
+                        <div style="font-weight: 600; color: #666; font-size: 0.85em;">L</div>
+                        <div style="font-weight: 600; color: #666; font-size: 0.85em;">M</div>
+                        <div style="font-weight: 600; color: #666; font-size: 0.85em;">X</div>
+                        <div style="font-weight: 600; color: #666; font-size: 0.85em;">J</div>
+                        <div style="font-weight: 600; color: #666; font-size: 0.85em;">V</div>
+                        <div style="font-weight: 600; color: #d4a017; font-size: 0.85em; font-weight: 700;">S</div>
+                        <div style="font-weight: 600; color: #d4a017; font-size: 0.85em; font-weight: 700;">D</div>
+                        <div id="diasCalendario" style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;"></div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label class="form-label">Año</label>
-                    <select id="anioSelect" class="form-select">
+                    <select id="anioSelect" class="form-select" onchange="actualizarCalendario()">
 
                     </select>
                 </div>
 
-                <button class="btn btn-accent" onclick="aplicarFiltroFecha()" style="width: 100%;">
-                    <i class="fas fa-filter"></i>
-                    <span>Aplicar Filtro</span>
-                </button>
-
-                <button class="btn btn-secondary" onclick="resetearFiltros()" style="width: 100%; margin-top: 10px;">
+                <button class="btn btn-secondary" onclick="irAlHoy()" style="width: 100%;">
                     <i class="fas fa-redo"></i>
                     <span>Hoy</span>
                 </button>
@@ -1115,30 +1116,70 @@
 
         function inicializarSelectoresFecha() {
             const hoy = new Date();
-
-            // Llenar selector de días (1-31)
-            const diaSelect = document.getElementById('diaSelect');
-            for (let i = 1; i <= 31; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = i;
-                if (i === hoy.getDate()) option.selected = true;
-                diaSelect.appendChild(option);
-            }
-
-            // Seleccionar mes actual
             document.getElementById('mesSelect').value = hoy.getMonth();
-
-            // Llenar selector de años (últimos 5 años)
             const anioSelect = document.getElementById('anioSelect');
             const anioActual = hoy.getFullYear();
-            for (let i = anioActual; i >= anioActual - 5; i--) {
+            for (let i = anioActual; i >= anioActual - 2; i--) {
                 const option = document.createElement('option');
                 option.value = i;
                 option.textContent = i;
                 if (i === anioActual) option.selected = true;
                 anioSelect.appendChild(option);
             }
+            actualizarCalendario();
+        }
+
+        function actualizarCalendario() {
+            const mes = parseInt(document.getElementById('mesSelect').value);
+            const anio = parseInt(document.getElementById('anioSelect').value);
+            const diasContenedor = document.getElementById('diasCalendario');
+            diasContenedor.innerHTML = '';
+            const primmerDia = new Date(anio, mes, 1);
+            const ultimoDia = new Date(anio, mes + 1, 0);
+            const diasMes = ultimoDia.getDate();
+            const inicioSemana = primmerDia.getDay() || 7;
+            const hoy = new Date();
+            for (let i = 1; i < inicioSemana; i++) {
+                const espacioVacio = document.createElement('div');
+                diasContenedor.appendChild(espacioVacio);
+            }
+            for (let dia = 1; dia <= diasMes; dia++) {
+                const botonDia = document.createElement('button');
+                botonDia.type = 'button';
+                botonDia.textContent = dia;
+                botonDia.style.cssText = 'padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; transition: all 0.2s;';
+                const esHoy = dia === hoy.getDate() && mes === hoy.getMonth() && anio === hoy.getFullYear();
+                const esSeleccionado = dia === ventasState.filtroFecha.getDate() && mes === ventasState.filtroFecha.getMonth() && anio === ventasState.filtroFecha.getFullYear();
+                if (esHoy) {
+                    botonDia.style.cssText += 'font-weight: 700; color: #d4a017; border-color: #d4a017; background: rgba(212, 160, 23, 0.1);';
+                }
+                if (esSeleccionado) {
+                    botonDia.style.cssText += 'background: #d4a017; color: white; font-weight: 700;';
+                }
+                botonDia.onmouseover = () => { botonDia.style.background = '#e8d4a0'; };
+                botonDia.onmouseout = () => {
+                    if (!esSeleccionado) botonDia.style.background = esHoy ? 'rgba(212, 160, 23, 0.1)' : 'white';
+                };
+                botonDia.onclick = () => seleccionarDiaCalendario(dia, mes, anio);
+                diasContenedor.appendChild(botonDia);
+            }
+        }
+
+        function seleccionarDiaCalendario(dia, mes, anio) {
+            ventasState.filtroFecha = new Date(anio, mes, dia);
+            actualizarFechaActual();
+            actualizarCalendario();
+            cargarVentas();
+        }
+
+        function irAlHoy() {
+            const hoy = new Date();
+            document.getElementById('mesSelect').value = hoy.getMonth();
+            document.getElementById('anioSelect').value = hoy.getFullYear();
+            ventasState.filtroFecha = hoy;
+            actualizarCalendario();
+            actualizarFechaActual();
+            cargarVentas();
         }
 
         function actualizarFechaActual() {
@@ -2497,6 +2538,9 @@
         window.descargarPDFProyeccion = descargarPDFProyeccion;
         window.aplicarFiltroFecha = aplicarFiltroFecha;
         window.resetearFiltros = resetearFiltros;
+        window.actualizarCalendario = actualizarCalendario;
+        window.irAlHoy = irAlHoy;
+        window.seleccionarDiaCalendario = seleccionarDiaCalendario;
         window.mostrarDashboard = mostrarDashboard;
         window.ocultarDashboard = ocultarDashboard;
         window.filtrarDashboard = filtrarDashboard;
@@ -2746,11 +2790,9 @@
         // =====================================================
 
         function aplicarFiltroFecha() {
-            const dia = parseInt(document.getElementById('diaSelect').value);
             const mes = parseInt(document.getElementById('mesSelect').value);
             const anio = parseInt(document.getElementById('anioSelect').value);
-
-            ventasState.filtroFecha = new Date(anio, mes, dia);
+            ventasState.filtroFecha = new Date(anio, mes, 1);
             actualizarFechaActual();
             cargarVentas();
         }
@@ -2759,14 +2801,11 @@
             const hoy = new Date();
             ventasState.filtroFecha = hoy;
             ventasState.filtroCodigo = '';
-
-            // Resetear selectores
-            document.getElementById('diaSelect').value = hoy.getDate();
             document.getElementById('mesSelect').value = hoy.getMonth();
             document.getElementById('anioSelect').value = hoy.getFullYear();
             document.getElementById('codigoVentaInput').value = '';
-
             actualizarFechaActual();
+            actualizarCalendario();
             cargarVentas();
         }
 
