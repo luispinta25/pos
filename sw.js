@@ -1,6 +1,6 @@
 // =====================================================
 // SERVICE WORKER - FERRISOLUCIONES POS
-// Version: 2.0.8
+// Version: 2.1.0
 // Strategy: Network First
 // =====================================================
 
@@ -176,7 +176,7 @@ self.addEventListener('message', (event) => {
                     event.ports[0].postMessage({ 
                         success: true, 
                         size: requests.length,
-                        version: '2.0.8'
+                        version: '2.1.0'
                     });
                 });
             });

@@ -880,10 +880,10 @@
             <i class="fas fa-search"></i> Consultando Identificación
         </h3>
         <p style="color: #666; margin: 0; font-size: 1em;">
-            Obteniendo datos desde webservices.ec...
+            <span id="consultaServicio">Servidor: ---</span>
         </p>
         <p style="color: #999; margin-top: 10px; font-size: 0.9em;">
-            Por favor espere un momento
+            <span id="consultaTimer">00:00</span> segundos
         </p>
     </div>
 </div>
@@ -3251,8 +3251,9 @@
         };
     }
 
-    // Tokens API para webservices
     let API_TOKENS = {};
+    let consultaTimerInterval = null;
+    let consultaInicio = 0;
 
     // =====================================================
     // VALIDACIÓN DE CORREO ELECTRÓNICO
@@ -4321,60 +4322,221 @@
         }
     }
 
-    // Consultar cédula en API externa
-    async function consultarCedula(cedula) {
+    async function obtenerServicios() {
+        try {
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            if (!db) return null;
+
+            const { data, error } = await db
+                .from('servicios')
+                .select('nombre, base_url, endpoint')
+                .eq('activo', true);
+
+            if (error) throw error;
+            return data ? data.reduce((acc, srv) => { acc[srv.nombre] = srv; return acc; }, {}) : {};
+        } catch (error) {
+            console.error('Error cargando servicios:', error);
+            return {};
+        }
+    }
+
+    function normalizarRespuestaCedula(data, origen) {
+        if (origen === 'nuevo') {
+            return {
+                data: {
+                    response: {
+                        nombreCompleto: data.resultado.nombre
+                    }
+                }
+            };
+        }
+        return data;
+    }
+
+    function normalizarRespuestaRuc(data, origen) {
+        if (origen === 'nuevo') {
+            const contrib = data.resultado.contribuyente[0];
+            const establos = data.resultado.establecimientos;
+            return {
+                data: {
+                    main: [{ razonSocial: contrib.razonSocial }],
+                    addit: establos
+                }
+            };
+        }
+        return data;
+    }
+
+    function iniciarTimerConsulta() {
+        consultaInicio = Date.now();
+        if (consultaTimerInterval) clearInterval(consultaTimerInterval);
+        consultaTimerInterval = setInterval(() => {
+            const ms = Date.now() - consultaInicio;
+            const seg = Math.floor(ms / 1000);
+            const min = Math.floor(seg / 60);
+            document.getElementById('consultaTimer').textContent = `${String(min).padStart(2, '0')}:${String(seg % 60).padStart(2, '0')}`;
+        }, 100);
+    }
+
+    function detenerTimerConsulta() {
+        if (consultaTimerInterval) {
+            clearInterval(consultaTimerInterval);
+            consultaTimerInterval = null;
+        }
+    }
+
+    function actualizarServicioConsulta(nombreServicio) {
+        document.getElementById('consultaServicio').textContent = `Servidor: ${nombreServicio}`;
+    }
+
+    function crearTimeoutAbort(ms) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), ms);
+        return { controller, timeoutId };
+    }
+
+    async function consultarCedulaNuevo(cedula, servicios) {
+        try {
+            const srv = servicios?.consulta_cedula;
+            if (!srv) return { tipo: 'no-disponible' };
+            const url = `${srv.base_url}${srv.endpoint.replace('{cedula}', cedula)}`;
+            actualizarServicioConsulta('Propio');
+            const { controller, timeoutId } = crearTimeoutAbort(15000);
+            try {
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                const data = await res.json();
+                if (data.ok) return { tipo: 'exito', data, origen: 'nuevo' };
+                const error = data.error ? data.error.toLowerCase() : '';
+                if (error.includes('no encontrado')) return { tipo: 'no-encontrado', data };
+                return { tipo: 'error', data };
+            } catch (e) {
+                clearTimeout(timeoutId);
+                throw e;
+            }
+        } catch (error) {
+            console.warn('Nuevo servicio cédula:', error.message);
+            return { tipo: 'timeout' };
+        }
+    }
+
+    async function consultarRucNuevo(ruc, servicios) {
+        try {
+            const srv = servicios?.consulta_ruc;
+            if (!srv) return { tipo: 'no-disponible' };
+            const url = `${srv.base_url}${srv.endpoint.replace('{ruc}', ruc)}`;
+            actualizarServicioConsulta('Propio');
+            const { controller, timeoutId } = crearTimeoutAbort(15000);
+            try {
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                const data = await res.json();
+                if (data.ok) return { tipo: 'exito', data, origen: 'nuevo' };
+                const error = data.error ? data.error.toLowerCase() : '';
+                if (error.includes('no encontrado')) return { tipo: 'no-encontrado', data };
+                return { tipo: 'error', data };
+            } catch (e) {
+                clearTimeout(timeoutId);
+                throw e;
+            }
+        } catch (error) {
+            console.warn('Nuevo servicio RUC:', error.message);
+            return { tipo: 'timeout' };
+        }
+    }
+
+    async function consultarCedulaFallback(cedula) {
         try {
             const url = `https://webservices.ec/api/cedula/${cedula}`;
             const token = API_TOKENS['webservices_cedula'];
-
-            if (!token) {
-                throw new Error('Token de cédula no configurado');
+            if (!token) return null;
+            actualizarServicioConsulta('Fallback');
+            const { controller, timeoutId } = crearTimeoutAbort(15000);
+            try {
+                const res = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (!res.ok) return null;
+                return { tipo: 'exito', data: await res.json(), origen: 'fallback' };
+            } catch (e) {
+                clearTimeout(timeoutId);
+                throw e;
             }
-
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-
-            return await response.json();
         } catch (error) {
-            console.error('Error consultando cédula:', error);
+            console.warn('Fallback cédula:', error.message);
             return null;
         }
     }
 
-    // Consultar RUC en API externa
-    async function consultarRuc(ruc) {
+    async function consultarRucFallback(ruc) {
         try {
             const url = `https://webservices.ec/api/ruc/${ruc}`;
             const token = API_TOKENS['webservices_ruc'];
-
-            if (!token) {
-                throw new Error('Token de RUC no configurado');
+            if (!token) return null;
+            actualizarServicioConsulta('Fallback');
+            const { controller, timeoutId } = crearTimeoutAbort(15000);
+            try {
+                const res = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (!res.ok) return null;
+                return { tipo: 'exito', data: await res.json(), origen: 'fallback' };
+            } catch (e) {
+                clearTimeout(timeoutId);
+                throw e;
             }
-
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-
-            return await response.json();
         } catch (error) {
-            console.error('Error consultando RUC:', error);
+            console.warn('Fallback RUC:', error.message);
             return null;
         }
+    }
+
+    async function consultarCedula(cedula) {
+        iniciarTimerConsulta();
+        const servicios = await obtenerServicios();
+        const resultado = await consultarCedulaNuevo(cedula, servicios);
+        let respuesta = null;
+
+        if (resultado.tipo === 'exito') {
+            respuesta = { origen: resultado.origen, data: resultado.data };
+        } else if (resultado.tipo !== 'no-encontrado') {
+            const fallback = await consultarCedulaFallback(cedula);
+            if (fallback?.tipo === 'exito') {
+                respuesta = { origen: fallback.origen, data: fallback.data };
+            }
+        }
+
+        detenerTimerConsulta();
+        return respuesta ? normalizarRespuestaCedula(respuesta.data, respuesta.origen) : null;
+    }
+
+    async function consultarRuc(ruc) {
+        iniciarTimerConsulta();
+        const servicios = await obtenerServicios();
+        const resultado = await consultarRucNuevo(ruc, servicios);
+        let respuesta = null;
+
+        if (resultado.tipo === 'exito') {
+            respuesta = { origen: resultado.origen, data: resultado.data };
+        } else if (resultado.tipo !== 'no-encontrado') {
+            const fallback = await consultarRucFallback(ruc);
+            if (fallback?.tipo === 'exito') {
+                respuesta = { origen: fallback.origen, data: fallback.data };
+            }
+        }
+
+        detenerTimerConsulta();
+        return respuesta ? normalizarRespuestaRuc(respuesta.data, respuesta.origen) : null;
     }
 
     // Cargar inventario completo al inicializar
