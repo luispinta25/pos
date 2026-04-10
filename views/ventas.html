@@ -27,6 +27,15 @@
                     <div id="statsCantidad" style="font-size: 1.1em; font-weight: 600; color: #666;">0 ventas</div>
                 </div>
 
+                <div style="margin-bottom: 12px; padding: 10px; background: #f0f8ff; border-radius: 6px; border-left: 3px solid #2196F3;">
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
+                        <i class="fas fa-arrow-trending-up"></i>
+                        <span>vs. Ayer (Hora Actual)</span>
+                    </div>
+                    <div id="statsComparacion" style="font-size: 1.2em; font-weight: 700; color: #2196F3;">-</div>
+                    <div id="statsComparacionDetalle" style="font-size: 0.75em; color: #666; margin-top: 4px;"></div>
+                </div>
+
                 <div style="margin-bottom: 12px;">
                     <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">Mes Pasado (Real)</div>
                     <div id="statsMesPasado" style="font-size: 1.1em; font-weight: 600; color: #666;">$0.00</div>
@@ -89,7 +98,7 @@
 
                 <div class="form-group">
                     <label class="form-label">Año</label>
-                    <select id="anioSelect" class="form-select" onchange="actualizarCalendario()">
+                    <select id="anioSelect" class="form-select" onchange="actualizarMesesDisponibles(); actualizarCalendario();">
 
                     </select>
                 </div>
@@ -1092,13 +1101,12 @@
 
             // Validar que los elementos críticos existan
             const ventasGallery = document.getElementById('ventasGallery');
-            const diaSelect = document.getElementById('diaSelect');
+            const mesSelect = document.getElementById('mesSelect');
 
-            if (!ventasGallery || !diaSelect) {
+            if (!ventasGallery || !mesSelect) {
                 return;
             }
 
-            // Inicializar selectores de fecha
             inicializarSelectoresFecha();
 
             // Configurar fecha actual en el header
@@ -1121,53 +1129,102 @@
             const mesActual = hoy.getMonth();
             const anioActual = hoy.getFullYear();
             
-            mesSelect.value = mesActual;
+            if (!mesSelect || !anioSelect) {
+                console.error('Selectores no encontrados', { mesSelect, anioSelect });
+                return;
+            }
             
+            // Llenar años
             for (let i = anioActual; i >= anioActual - 2; i--) {
                 const option = document.createElement('option');
-                option.value = i;
+                option.value = String(i);
                 option.textContent = i;
                 if (i === anioActual) option.selected = true;
                 anioSelect.appendChild(option);
             }
             
-            anioSelect.value = anioActual;
+            anioSelect.value = String(anioActual);
+            
+            // Deshabilitar meses futuros en el año actual
+            actualizarMesesDisponibles();
+            
+            mesSelect.value = String(mesActual);
             ventasState.filtroFecha = new Date(anioActual, mesActual, hoy.getDate());
             actualizarCalendario();
         }
+        
+        function actualizarMesesDisponibles() {
+            const mesSelect = document.getElementById('mesSelect');
+            const anioSelect = document.getElementById('anioSelect');
+            const anioSeleccionado = parseInt(anioSelect.value);
+            const hoy = new Date();
+            const anioActual = hoy.getFullYear();
+            const mesActual = hoy.getMonth();
+            
+            const options = mesSelect.querySelectorAll('option');
+            options.forEach((option, index) => {
+                if (anioSeleccionado === anioActual && index > mesActual) {
+                    option.disabled = true;
+                    option.style.color = '#ccc';
+                } else {
+                    option.disabled = false;
+                    option.style.color = '#000';
+                }
+            });
+        }
 
         function actualizarCalendario() {
-            const mes = parseInt(document.getElementById('mesSelect').value) || new Date().getMonth();
-            const anio = parseInt(document.getElementById('anioSelect').value) || new Date().getFullYear();
+            const mesVal = document.getElementById('mesSelect').value;
+            const anioVal = document.getElementById('anioSelect').value;
+            const mes = mesVal ? parseInt(mesVal) : new Date().getMonth();
+            const anio = anioVal ? parseInt(anioVal) : new Date().getFullYear();
             const diasContenedor = document.getElementById('diasCalendario');
+            if (!diasContenedor) {
+                console.error('diasCalendario no encontrado');
+                return;
+            }
             diasContenedor.innerHTML = '';
             const primmerDia = new Date(anio, mes, 1);
             const ultimoDia = new Date(anio, mes + 1, 0);
             const diasMes = ultimoDia.getDate();
             const inicioSemana = primmerDia.getDay() || 7;
             const hoy = new Date();
+            const diaActual = hoy.getDate();
+            const mesActual = hoy.getMonth();
+            const anioActual = hoy.getFullYear();
+            const esMesActualDelAnioActual = mes === mesActual && anio === anioActual;
+            
             for (let i = 1; i < inicioSemana; i++) {
                 const espacioVacio = document.createElement('div');
                 diasContenedor.appendChild(espacioVacio);
             }
+            
             for (let dia = 1; dia <= diasMes; dia++) {
                 const botonDia = document.createElement('button');
                 botonDia.type = 'button';
                 botonDia.textContent = dia;
                 botonDia.style.cssText = 'padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; transition: all 0.2s;';
-                const esHoy = dia === hoy.getDate() && mes === hoy.getMonth() && anio === hoy.getFullYear();
+                
+                const esHoy = dia === diaActual && mes === mesActual && anio === anioActual;
                 const esSeleccionado = dia === ventasState.filtroFecha.getDate() && mes === ventasState.filtroFecha.getMonth() && anio === ventasState.filtroFecha.getFullYear();
-                if (esHoy) {
-                    botonDia.style.cssText += 'font-weight: 700; color: #d4a017; border-color: #d4a017; background: rgba(212, 160, 23, 0.1);';
+                const esFuturo = esMesActualDelAnioActual && dia > diaActual;
+                
+                if (esFuturo) {
+                    botonDia.disabled = true;
+                    botonDia.style.cssText += 'color: #ccc; cursor: not-allowed; opacity: 0.5;';
+                } else {
+                    if (esHoy) {
+                        botonDia.style.cssText += 'font-weight: 700; color: #d4a017; border-color: #d4a017; background: rgba(212, 160, 23, 0.1);';
+                    }
+                    if (esSeleccionado) {
+                        botonDia.style.cssText += 'background: #d4a017; color: white; font-weight: 700;';
+                    }
+                    botonDia.onmouseover = () => { if (!esFuturo) botonDia.style.background = '#e8d4a0'; };
+                    botonDia.onmouseout = () => {
+                        if (!esSeleccionado && !esFuturo) botonDia.style.background = esHoy ? 'rgba(212, 160, 23, 0.1)' : 'white';
+                    };
+                    botonDia.onclick = () => seleccionarDiaCalendario(dia, mes, anio);
                 }
-                if (esSeleccionado) {
-                    botonDia.style.cssText += 'background: #d4a017; color: white; font-weight: 700;';
-                }
-                botonDia.onmouseover = () => { botonDia.style.background = '#e8d4a0'; };
-                botonDia.onmouseout = () => {
-                    if (!esSeleccionado) botonDia.style.background = esHoy ? 'rgba(212, 160, 23, 0.1)' : 'white';
-                };
-                botonDia.onclick = () => seleccionarDiaCalendario(dia, mes, anio);
                 diasContenedor.appendChild(botonDia);
             }
         }
@@ -1379,6 +1436,19 @@
             if (statsGanancia) statsGanancia.textContent = window.app.formatCurrency(ganancia);
             if (statsCantidad) statsCantidad.textContent = `${cantidad} venta${cantidad !== 1 ? 's' : ''}`;
 
+            // Comparar con el mismo horario del día anterior (solo si estamos viendo hoy)
+            const hoy = new Date();
+            const filtroEs = new Date(ventasState.filtroFecha);
+            if (filtroEs.toDateString() === hoy.toDateString() && !ventasState.filtroCodigo) {
+                compararConDiaAnterior();
+            } else {
+                // Ocultar comparación si no es hoy
+                const statsComparacion = document.getElementById('statsComparacion');
+                const statsComparacionDetalle = document.getElementById('statsComparacionDetalle');
+                if (statsComparacion) statsComparacion.textContent = '-';
+                if (statsComparacionDetalle) statsComparacionDetalle.textContent = '';
+            }
+
             // Calcular proyección de ventas del mes (solo si no hay filtro de código)
             const proyeccionContainer = document.querySelector('#statsProyeccion').parentElement;
             if (!ventasState.filtroCodigo) {
@@ -1387,6 +1457,123 @@
             } else {
                 // Ocultar proyección cuando hay filtro de código
                 if (proyeccionContainer) proyeccionContainer.style.display = 'none';
+            }
+        }
+
+        // =====================================================
+        // COMPARACIÓN CON DÍA ANTERIOR
+        // =====================================================
+
+        async function compararConDiaAnterior() {
+            try {
+                const db = window.app.db;
+                const ahora = new Date();
+                const horaActual = ahora.getHours();
+                const minutoActual = ahora.getMinutes();
+                const horaFormato = `${String(horaActual).padStart(2, '0')}:${String(minutoActual).padStart(2, '0')}`;
+
+                // Calcular rango de fecha y hora para HOY
+                const inicioHoy = new Date(ahora);
+                inicioHoy.setHours(0, 0, 0, 0);
+
+                const finHoy = new Date(ahora);
+                finHoy.setHours(horaActual, minutoActual, 59, 999);
+
+                // Calcular rango de fecha y hora para AYER (misma hora)
+                const ayer = new Date(ahora);
+                ayer.setDate(ayer.getDate() - 1);
+
+                const inicioAyer = new Date(ayer);
+                inicioAyer.setHours(0, 0, 0, 0);
+
+                const finAyer = new Date(ayer);
+                finAyer.setHours(horaActual, minutoActual, 59, 999);
+
+                // Traer ventas de hoy hasta ahora
+                const { data: ventasHoy, error: errorHoy } = await db
+                    .from('ferre_ventas')
+                    .select('total')
+                    .gte('fecha_hora_venta', inicioHoy.toISOString())
+                    .lte('fecha_hora_venta', finHoy.toISOString());
+
+                if (errorHoy) throw errorHoy;
+
+                // Traer ventas de ayer hasta la misma hora
+                const { data: ventasAyer, error: errorAyer } = await db
+                    .from('ferre_ventas')
+                    .select('total')
+                    .gte('fecha_hora_venta', inicioAyer.toISOString())
+                    .lte('fecha_hora_venta', finAyer.toISOString());
+
+                if (errorAyer) throw errorAyer;
+
+                // Calcular totales
+                const totalHoy = (ventasHoy || []).reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+                const totalAyer = (ventasAyer || []).reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+
+                // Calcular diferencia
+                const diferencia = totalHoy - totalAyer;
+                const porcentaje = totalAyer > 0 ? ((diferencia / totalAyer) * 100).toFixed(1) : (totalHoy > 0 ? 100 : 0);
+
+                // Determinar icono y color
+                let icono = '⚪';
+                let color = '#666';
+                let estado = 'igual';
+
+                if (diferencia > 0) {
+                    icono = '📈';
+                    color = '#28a745'; // Verde - mejor
+                    estado = 'mejor';
+                } else if (diferencia < 0) {
+                    icono = '📉';
+                    color = '#dc3545'; // Rojo - peor
+                    estado = 'peor';
+                }
+
+                // Actualizar UI
+                const statsComparacion = document.getElementById('statsComparacion');
+                const statsComparacionDetalle = document.getElementById('statsComparacionDetalle');
+
+                if (statsComparacion) {
+                    statsComparacion.style.color = color;
+                    statsComparacion.innerHTML = `
+                        ${icono} 
+                        <span style="font-size: 1.1em;">
+                            ${Math.abs(porcentaje)}%
+                            <span style="font-size: 0.8em; font-weight: 500;">${estado === 'mejor' ? '↑' : estado === 'peor' ? '↓' : '-'}</span>
+                        </span>
+                    `;
+                }
+
+                if (statsComparacionDetalle) {
+                    const textoEstado = estado === 'mejor' 
+                        ? `¡Vas mejor! <strong>${window.app.formatCurrency(Math.abs(diferencia))}</strong> más`
+                        : estado === 'peor'
+                        ? `<strong>${window.app.formatCurrency(Math.abs(diferencia))}</strong> menos`
+                        : `Igual`;
+                    
+                    statsComparacionDetalle.innerHTML = `
+                        <div style="font-size: 0.8em; color: #999; margin-bottom: 6px;">Análisis hasta las <strong>${horaFormato}</strong></div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 6px; font-size: 0.8em;">
+                            <div>
+                                <div style="color: #999; margin-bottom: 2px;">Hoy</div>
+                                <div style="font-weight: 600; color: #28a745;">${window.app.formatCurrency(totalHoy)}</div>
+                            </div>
+                            <div>
+                                <div style="color: #999; margin-bottom: 2px;">Ayer</div>
+                                <div style="font-weight: 600; color: #666;">${window.app.formatCurrency(totalAyer)}</div>
+                            </div>
+                        </div>
+                        <div style="padding-top: 6px; border-top: 1px solid #ddd;">
+                            ${textoEstado}
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                console.error('Error al comparar con día anterior:', error);
+                const statsComparacion = document.getElementById('statsComparacion');
+                if (statsComparacion) statsComparacion.textContent = 'Error';
             }
         }
 
@@ -2546,6 +2733,7 @@
         window.aplicarFiltroFecha = aplicarFiltroFecha;
         window.resetearFiltros = resetearFiltros;
         window.actualizarCalendario = actualizarCalendario;
+        window.actualizarMesesDisponibles = actualizarMesesDisponibles;
         window.irAlHoy = irAlHoy;
         window.seleccionarDiaCalendario = seleccionarDiaCalendario;
         window.mostrarDashboard = mostrarDashboard;
