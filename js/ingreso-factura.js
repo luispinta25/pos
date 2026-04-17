@@ -107,6 +107,14 @@ function setupEventListenersIngreso() {
     
     // Listeners para cálculos automáticos
     document.getElementById('precioProveedorNuevoProducto')?.addEventListener('input', calcularPrecioVentaSugerido);
+
+    // Asegurar mayúsculas en el campo nombre del modal de nuevo producto
+    const nombreProductoInput = document.getElementById('nombreNuevoProducto');
+    if (nombreProductoInput) {
+        nombreProductoInput.addEventListener('blur', (e) => {
+            e.target.value = (e.target.value || '').toString().trim().toUpperCase();
+        });
+    }
     
     // Listeners para navegación directa desde la barra superior
     document.querySelectorAll('.paso-nav-item').forEach((item, index) => {
@@ -775,7 +783,7 @@ function renderizarTablaProductos() {
         rows="2"
         wrap="soft"
         class="input-nombre-producto"
-        oninput="this.value = this.value.toUpperCase(); autoResizeNombreProducto(this)"
+        oninput="autoResizeNombreProducto(this)"
         onchange="actualizarProducto(${index}, 'nombre', this.value)"
         onblur="actualizarProducto(${index}, 'nombre', this.value)"
     >${p.nombre || ''}</textarea>
@@ -2148,26 +2156,6 @@ async function mostrarModalNuevoProductoIngreso(initialCode = null) {
                 const name = document.getElementById('nombreNuevoProducto');
                 if (name) name.focus();
             }, 120);
-            // Forzar mayúsculas mientras el usuario escribe en el modal
-            setTimeout(() => {
-                try {
-                    const nameInput = document.getElementById('nombreNuevoProducto');
-                    if (nameInput) {
-                        // transformar en mayúsculas en cada entrada
-                        nameInput.addEventListener('input', (e) => {
-                            const el = e.target;
-                            const pos = el.selectionStart;
-                            el.value = el.value.toUpperCase();
-                            // mantener caret
-                            el.setSelectionRange(pos, pos);
-                        });
-                        // limpiar y asegurar mayúsculas en blur
-                        nameInput.addEventListener('blur', (e) => {
-                            e.target.value = (e.target.value || '').toString().trim().toUpperCase();
-                        });
-                    }
-                } catch (errUpper) {  }
-            }, 200);
         } catch (innerErr) {
             modal.classList.add('active');
         }
