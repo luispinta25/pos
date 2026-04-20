@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ferrisoluciones - POS Móvil</title>
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="icon" href="../pc/img/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <script>
+        (function () {
+            var ua = navigator.userAgent || '';
+            var mobileUA = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+            var largeScreen = window.innerWidth > 768;
+            if (!mobileUA && largeScreen) { window.location.replace('../pc/index.html'); }
+        })();
+    </script>
+</head>
+<body>
+
+<!-- Contenedor de vistas - se carga dinámicamente -->
+<div id="viewsContainer"></div>
+
+<!-- ── NAV DRAWER ── -->
+<div id="navOverlay" class="nav-overlay"></div>
+<nav id="navDrawer" class="nav-drawer">
+    <div class="nav-drawer-header">
+        <img src="https://i.ibb.co/8gLPXfjh/FERRISOLUCIONES-1.png" alt="Logo" class="nav-drawer-logo" onerror="this.style.display='none'">
+        <div>
+            <div class="nav-drawer-title">Ferrisoluciones</div>
+            <div class="nav-drawer-sub">POS Móvil</div>
+        </div>
+    </div>
+    <button class="nav-item active" data-screen="pos">
+        <i class="fas fa-cash-register"></i> Punto de Venta
+    </button>
+    <button class="nav-item" data-screen="hist">
+        <i class="fas fa-history"></i> Historial de Ventas
+    </button>
+    <button class="nav-item" data-screen="gastos">
+        <i class="fas fa-money-bill-wave"></i> Gastos
+    </button>
+    <button class="nav-item" data-screen="utilidades">
+        <i class="fas fa-tools"></i> Utilidades
+    </button>
+    <button class="nav-item" data-screen="transferencias">
+        <i class="fas fa-university"></i> Caja Virtual
+    </button>
+    <div class="nav-drawer-footer">Powered by LP Solutions</div>
+</nav>
+
+<!-- ── MODAL PAGO ── -->
+<div id="paymentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-cash-register"></i> Cobrar</h2>
+            <button class="modal-close" onclick="hideModal('paymentModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="total-pagar"><small>Total a Pagar</small><span id="paymentTotal">$0.00</span></div>
+            <label class="label-form">Forma de pago</label>
+            <div class="payment-types">
+                <div class="payment-type-btn active" id="btnTipoEfectivo" onclick="setTipoPago('EFECTIVO')">
+                    <i class="fas fa-money-bill-alt"></i> Efectivo
+                </div>
+                <div class="payment-type-btn" id="btnTipoTransf" onclick="setTipoPago('TRANSFERENCIA')">
+                    <i class="fas fa-university"></i> Transferencia
+                </div>
+                <div class="payment-type-btn" id="btnTipoMixto" onclick="setTipoPago('MIXTO')">
+                    <i class="fas fa-coins"></i> Mixto
+                </div>
+            </div>
+            <div id="efectivoSection">
+                <label class="label-form">Monto recibido</label>
+                <input type="number" id="montoRecibido" placeholder="0.00" inputmode="decimal" step="0.01" min="0">
+                <div class="cambio-display"><span>Cambio: </span><strong id="cambioDisplay">$0.00</strong></div>
+            </div>
+            <div id="transferenciaSection" class="hidden">
+                <div class="cambio-display" style="color:var(--info);"><span>Monto a transferir: </span><strong id="montoTransfDisplay">$0.00</strong></div>
+            </div>
+            <div id="mixtoSection" class="hidden">
+                <label class="label-form">Monto en efectivo</label>
+                <input type="number" id="montoEfectivoMixto" placeholder="0.00" inputmode="decimal" step="0.01" min="0.01" oninput="calcularMixto()">
+                <div class="cambio-display" style="color:var(--info);"><span>Por transferencia: </span><strong id="montoTransfMixto">$0.00</strong></div>
+            </div>
+            <div id="postSaveSection" class="hidden">
+                <div class="venta-exito">
+                    <div class="check-icon"><i class="fas fa-check-circle"></i></div>
+                    <h3 id="ventaExitoMsg">Venta registrada</h3>
+                    <p id="ventaExitoSub"></p>
+                </div>
+                <div style="text-align:center;">
+                    <button class="btn-cerrar-venta" onclick="closePaymentAndReset()"><i class="fas fa-check"></i> Listo</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" id="paymentFooter">
+            <button class="btn-cancel" onclick="hideModal('paymentModal')">Cancelar</button>
+            <button class="btn-confirm" id="btnConfirmarVenta"><i class="fas fa-check"></i> Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL CLIENTE ── -->
+<div id="clientModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-user"></i> Cliente</h2>
+            <button class="modal-close" onclick="hideModal('clientModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="cliente-actual"><i class="fas fa-user-circle"></i> <strong id="modalClienteActual">CONSUMIDOR FINAL</strong></div>
+            <label class="label-form">Buscar por cédula/RUC o nombre</label>
+            <input type="text" id="clientSearchInput" placeholder="Ej: 1712345678 o Juan..." autocomplete="off">
+            <div id="clientSearchResults"></div>
+            <div id="registerClientForm" class="hidden">
+                <h3><i class="fas fa-user-plus"></i> Nuevo Cliente</h3>
+                <input type="text" id="newClientCedula" placeholder="Cédula / RUC *" readonly>
+                <input type="text" id="newClientNombre" placeholder="Nombre / Razón Social *">
+                <input type="text" id="newClientDireccion" placeholder="Dirección *">
+                <input type="text" id="newClientTelefono" placeholder="Teléfono">
+                <input type="email" id="newClientCorreo" placeholder="Correo *" autocapitalize="none">
+                <button class="btn-confirm" id="btnGuardarCliente" style="width:100%;margin-top:4px;"><i class="fas fa-save"></i> Guardar</button>
+            </div>
+        </div>
+        <div style="padding:.9rem 1.5rem; border-top:1px solid var(--border);">
+            <button class="btn-usar-cf" onclick="resetToConsumidorFinal()"><i class="fas fa-user-times"></i> Usar Consumidor Final</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL CANTIDAD ── -->
+<div id="addQuantityModal" class="modal center">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Añadir Cantidad</h2>
+            <button class="modal-close" onclick="hideModal('addQuantityModal')">×</button>
+        </div>
+        <div style="text-align:center;">
+            <span class="modal-product-name" id="qtyProductName"></span>
+            <span class="modal-stock-info" id="qtyStockInfo"></span>
+            <input type="number" id="quantityInput" class="modal-input-big" placeholder="0" inputmode="numeric" min="1">
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="hideModal('addQuantityModal')">Cancelar</button>
+            <button class="btn-confirm" id="btnConfirmarCantidad">Añadir</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL EDITAR ITEM ── -->
+<div id="editItemModal" class="modal center">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="editItemTitle">Editar</h2>
+            <button class="modal-close" onclick="hideModal('editItemModal')">×</button>
+        </div>
+        <div style="text-align:center;">
+            <span class="modal-product-name" id="editItemName"></span>
+            <label class="label-form" id="editItemLabel" style="margin-bottom:.5rem;"></label>
+            <input type="number" id="editItemInput" class="modal-input-big" step="0.01" min="0.01">
+            <span class="modal-stock-info" id="editItemInfo"></span>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="hideModal('editItemModal')">Cancelar</button>
+            <button class="btn-confirm" id="btnConfirmarEdicion">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── CONFIRM DIALOG ── -->
+<div id="confirmDialog" class="modal center">
+    <div class="modal-content" style="max-width:310px;">
+        <p id="confirmMessage" style="padding:1rem 0;font-size:.92rem;color:var(--text);text-align:center;"></p>
+        <div class="modal-footer" style="justify-content:center;gap:12px;">
+            <button class="btn-cancel" id="confirmCancelBtn" style="min-width:80px;">No</button>
+            <button class="btn-confirm" id="confirmYesBtn" style="min-width:80px;">Sí</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL CAMBIO DE DINERO ── -->
+<div id="cambioDineroModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-exchange-alt" style="color:#9f7aea;"></i> Cambio de Dinero</h2>
+            <button class="modal-close" onclick="hideModal('cambioDineroModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <label class="label-form">Tipo de operación *</label>
+            <div class="payment-types" style="margin-bottom:.8rem;">
+                <div class="payment-type-btn active" id="btnCambioIngreso">
+                    <i class="fas fa-arrow-up" style="color:#38a169;"></i>
+                    <strong>Deposita a la cuenta</strong>
+                    <small style="display:block;font-size:.85em;opacity:.9;font-weight:400;"><u>COJE</u> de caja</small>
+                </div>
+                <div class="payment-type-btn" id="btnCambioEgreso">
+                    <i class="fas fa-arrow-down" style="color:#e53e3e;"></i>
+                    <strong>Retira de la cuenta</strong>
+                    <small style="display:block;font-size:.85em;opacity:.9;font-weight:400;"><u>DEJA</u> en caja</small>
+                </div>
+            </div>
+            <label class="label-form">Nombre del solicitante *</label>
+            <input type="text" id="cambioSolicitanteInput" placeholder="Quien solicita el movimiento" autocomplete="off">
+            <label class="label-form">Nombre del realizador *</label>
+            <input type="text" id="cambioRealizadorInput" placeholder="Quien realiza la transacción" autocomplete="off">
+            <label class="label-form">Motivo *</label>
+            <input type="text" id="cambioMotivoInput" placeholder="Descripción del movimiento" autocomplete="off">
+            <label class="label-form">Monto ($) *</label>
+            <input type="number" id="cambioMontoInput" class="modal-input-big" placeholder="0.00" inputmode="decimal" step="0.01" min="0.01" style="font-size:1.3rem;text-align:center;">
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="hideModal('cambioDineroModal')">Cancelar</button>
+            <button class="btn-confirm" id="btnGuardarCambio" style="background:#9f7aea;"><i class="fas fa-save"></i> Registrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL DETALLE TRANSFERENCIA ── -->
+<div id="verificarAdminModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-shield-alt" style="color:#805ad5;"></i> Verificación Admin</h2>
+            <button class="modal-close" id="btnVerifPinClose">×</button>
+        </div>
+        <div class="modal-body">
+            <p id="verifyPinStatus" style="font-size:.88rem;color:var(--text-muted);margin-bottom:1rem;min-height:1.2em;"></p>
+            <label class="label-form">Código PIN de 6 dígitos</label>
+            <input type="text" id="verifyPinInput" class="modal-input-big" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="off" style="font-size:1.8rem;text-align:center;letter-spacing:.4rem;font-family:monospace;">
+            <p id="verifyPinError" style="color:var(--danger);font-size:.82rem;margin-top:.4rem;min-height:1em;"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" id="btnVerifPinCancel">Cancelar</button>
+            <button class="btn-confirm" id="btnVerifPinConfirm" style="background:#805ad5;"><i class="fas fa-shield-alt"></i> Verificar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL DETALLE TRANSFERENCIA (original) ── -->
+<div id="transfDetalleModal" class="modal">
+    <div class="modal-content" style="max-height:88dvh;">
+        <div class="modal-header">
+            <h2><i class="fas fa-university" style="color:#3182ce;"></i> Caja Virtual - Detalle</h2>
+            <button class="modal-close" onclick="hideModal('transfDetalleModal')">×</button>
+        </div>
+        <div id="transfDetalleBody" style="padding:.2rem 0;"></div>
+    </div>
+</div>
+
+<!-- ── MODAL DETALLE VENTA ── -->
+<div id="histDetalleModal" class="modal">
+    <div class="modal-content" style="max-height:88dvh;">
+        <div class="modal-header">
+            <h2><i class="fas fa-receipt"></i> Detalle de Venta</h2>
+            <button class="modal-close" onclick="hideModal('histDetalleModal')">×</button>
+        </div>
+        <div id="histDetalleBody" style="padding:.2rem 0;"></div>
+    </div>
+</div>
+
+<!-- ── MODAL NUEVO GASTO ── -->
+<div id="nuevoGastoModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-plus-circle" style="color:var(--danger);"></i> Nuevo Gasto</h2>
+            <button class="modal-close" onclick="hideModal('nuevoGastoModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <label class="label-form">Monto ($) *</label>
+            <input type="number" id="gastoMontoInput" class="modal-input-big" placeholder="0.00" inputmode="decimal" step="0.01" min="0.01" style="font-size:1.4rem;text-align:center;">
+            <label class="label-form" style="margin-top:.5rem;">Motivo / Descripción *</label>
+            <textarea id="gastoMotivoInput" rows="3" placeholder="Ej: Compra de materiales, pago de servicio…" style="resize:none;"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="hideModal('nuevoGastoModal')">Cancelar</button>
+            <button class="btn-confirm" id="btnGuardarGasto" style="background:var(--danger);"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL BUSCAR PRODUCTO (utilidades) ── -->
+<div id="utilBuscarProdModal" class="modal">
+    <div class="modal-content" style="max-height:85dvh;">
+        <div class="modal-header">
+            <h2><i class="fas fa-search"></i> Buscar Producto</h2>
+            <button class="modal-close" onclick="hideModal('utilBuscarProdModal')">×</button>
+        </div>
+        <div class="search-input-wrap" style="margin-bottom:.5rem;">
+            <input type="text" id="utilProdSearchInput" placeholder="Código o nombre…" autocomplete="off" autocapitalize="none" spellcheck="false" style="margin-bottom:0;">
+            <button id="utilScanBtn" title="Escanear código de barras" style="position:absolute;right:5px;top:50%;transform:translateY(-50%);width:32px;height:32px;min-width:32px;padding:0;border-radius:50%;background:var(--info);color:white;border:none;display:flex;align-items:center;justify-content:center;font-size:.88rem;cursor:pointer;"><i class="fas fa-barcode"></i></button>
+        </div>
+        <div id="utilProdSearchResults" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;max-height:220px;overflow-y:auto;"></div>
+    </div>
+</div>
+
+<!-- ── MODAL EDITAR PRODUCTO (utilidades) ── -->
+<div id="utilEditProdModal" class="modal">
+    <div class="modal-content" style="max-height:92dvh;">
+        <div class="modal-header">
+            <h2><i class="fas fa-warehouse"></i> Actualizar Producto</h2>
+            <button class="modal-close" onclick="hideModal('utilEditProdModal')">×</button>
+        </div>
+        <div id="utilEditProdInfo" style="background:var(--bg3);border-radius:8px;padding:.65rem .9rem;margin-bottom:.9rem;">
+            <div id="utilEditProdNombre" style="font-size:.92rem;font-weight:700;color:var(--text);"></div>
+            <div id="utilEditProdCodigo" style="font-size:.75rem;color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+        <div class="util-field-group">
+            <label>Stock actual</label>
+            <div class="util-field-current" id="utilEditStockActual">—</div>
+            <label>Nuevo stock</label>
+            <input type="number" id="utilEditStockInput" placeholder="0" inputmode="decimal" step="0.01" min="0" style="margin-bottom:0;">
+        </div>
+        <div class="util-field-group">
+            <label>Zona</label>
+            <input type="text" id="utilEditZonaInput" placeholder="Ej: A1, B2 (dejar vacío para quitar)" autocapitalize="characters" style="margin-bottom:0;">
+        </div>
+        <div class="util-field-group">
+            <label>Stock mínimo</label>
+            <input type="number" id="utilEditStockMinInput" placeholder="0" inputmode="decimal" min="0" style="margin-bottom:0;">
+        </div>
+        <div class="util-field-group">
+            <label>Proveedor</label>
+            <select id="utilEditProveedorSelect" style="margin-bottom:0;">
+                <option value="">Sin Proveedor</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="hideModal('utilEditProdModal')">Cancelar</button>
+            <button class="btn-confirm" id="btnGuardarInventario" style="background:var(--info);"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL BUSCAR PROVEEDOR (utilidades) ── -->
+<div id="utilBuscarProvModal" class="modal">
+    <div class="modal-content" style="max-height:85dvh;">
+        <div class="modal-header">
+            <h2><i class="fas fa-search"></i> Buscar Proveedor</h2>
+            <button class="modal-close" onclick="hideModal('utilBuscarProvModal')">×</button>
+        </div>
+        <input type="text" id="utilProvSearchInput" placeholder="Nombre del proveedor…" autocomplete="off" autocapitalize="none" spellcheck="false" style="margin-bottom:.5rem;">
+        <div id="utilProvSearchResults" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;max-height:220px;overflow-y:auto;"></div>
+    </div>
+</div>
+
+<!-- ── MODAL EDITAR PROVEEDOR (utilidades) ── -->
+<div id="utilEditProvModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-truck"></i> Actualizar Proveedor</h2>
+            <button class="modal-close" onclick="hideModal('utilEditProvModal')">×</button>
+        </div>
+        <div id="utilEditProvInfo" style="background:var(--bg3);border-radius:8px;padding:.65rem .9rem;margin-bottom:.9rem;font-size:.9rem;font-weight:700;color:var(--text);"></div>
+        <div class="util-field-group">
+            <label>Vendedor</label>
+            <input type="text" id="utilEditVendedorInput" placeholder="Nombre del vendedor" style="margin-bottom:0;">
+        </div>
+        <div class="util-field-group">
+            <label>Contacto / Teléfono</label>
+            <input type="text" id="utilEditContactoInput" placeholder="Número o correo" inputmode="tel" style="margin-bottom:0;">
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="hideModal('utilEditProvModal')">Cancelar</button>
+            <button class="btn-confirm" id="btnGuardarProveedor" style="background:var(--info);"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>
+</div>
+
+<div id="toastContainer"></div>
+<div id="screenBlocker"><div class="loader"></div></div>
+
+<!-- ── ALERTA TRANSFERENCIAS PENDIENTES ── -->
+<div id="transfAlertOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
+    <div style="background:#fff;border-radius:18px;max-width:480px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+        <div style="background:linear-gradient(135deg,#e53e3e,#c53030);padding:20px 22px 16px;border-radius:18px 18px 0 0;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:42px;height:42px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-exclamation-triangle" style="color:#fff;font-size:1.2rem;"></i></div>
+                <div>
+                    <div style="color:#fff;font-size:1rem;font-weight:700;">Verificación Pendiente</div>
+                    <div style="color:rgba(255,255,255,.85);font-size:.78rem;margin-top:2px;">Por favor verifica con comprobante o pídele al Administrador que verifique</div>
+                </div>
+            </div>
+        </div>
+        <div id="transfAlertBody" style="padding:18px 20px;"></div>
+        <div style="padding:0 20px 20px;">
+            <button id="transfAlertAceptar" style="width:100%;padding:13px;background:#e53e3e;color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;"><i class="fas fa-check"></i> Aceptar</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/pos.js"></script>
+<script src="js/historial.js"></script>
+<script src="js/gastos.js"></script>
+<script src="js/utilidades.js"></script>
+<script src="js/transferencias.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!-- ── GASTOS SCREEN ── -->
+<div id="gastosScreen" class="hidden">
+    <header class="gastos-header">
+        <button class="hist-back-btn" id="gastosBackBtn"><i class="fas fa-chevron-left"></i></button>
+        <span class="gastos-header-title"><i class="fas fa-money-bill-wave" style="color:var(--danger);margin-right:6px;"></i>Gastos</span>
+        <button class="hist-refresh-btn" id="gastosRefreshBtn"><i class="fas fa-sync-alt"></i></button>
+    </header>
+    <div class="gastos-filters">
+        <input type="date" id="gastosDateFilter">
+    </div>
+    <div class="gastos-content">
+        <div id="gastosSummary" class="gastos-summary hidden">
+            <span class="sum-count" id="gastosSummaryCount"></span>
+            <span class="sum-total" id="gastosSummaryTotal"></span>
+        </div>
+        <div id="gastosList">
+            <div class="gastos-empty"><i class="fas fa-spinner fa-spin"></i>Cargando…</div>
+        </div>
+    </div>
+    <button class="gastos-fab" id="nuevoGastoFab" title="Nuevo gasto"><i class="fas fa-plus"></i></button>
+</div>

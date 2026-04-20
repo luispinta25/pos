@@ -1,0 +1,22 @@
+<!-- ── HISTORIAL SCREEN ── -->
+<div id="historialScreen" class="hidden">
+    <header class="hist-header">
+        <button class="hist-back-btn" id="histBackBtn"><i class="fas fa-chevron-left"></i></button>
+        <span class="hist-header-title"><i class="fas fa-history" style="color:var(--primary);margin-right:6px;"></i>Historial de Ventas</span>
+        <button class="hist-refresh-btn" id="histRefreshBtn"><i class="fas fa-sync-alt"></i></button>
+    </header>
+    <div class="hist-filters">
+        <input type="date" id="histDateFilter">
+        <input type="text" id="histSearchInput" placeholder="Buscar por código o cliente…" autocomplete="off" autocapitalize="none" spellcheck="false">
+        <button class="hist-search-btn" id="histSearchBtn"><i class="fas fa-search"></i></button>
+    </div>
+    <div class="hist-content">
+        <div id="histSummary" class="hist-summary hidden">
+            <span class="sum-count" id="histSummaryCount"></span>
+            <span class="sum-total" id="histSummaryTotal"></span>
+        </div>
+        <div id="histList">
+            <div class="hist-empty"><i class="fas fa-receipt"></i>Selecciona una fecha para ver ventas</div>
+        </div>
+    </div>
+</div>

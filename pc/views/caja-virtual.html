@@ -1,0 +1,564 @@
+
+<div class="container-full" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px;">
+
+    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; height: 100%;">
+
+        <!-- Panel izquierdo: Resumen -->
+        <div style="overflow-y: auto; padding-right: 6px; height: 100%; scrollbar-width: thin;">
+            <div class="card" style="margin-bottom: 16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h3 style="font-size: 1.1em; margin:0;">
+                        <i class="fas fa-university" style="color:#3182ce;"></i> Caja Virtual
+                    </h3>
+                    <div style="display:flex;gap:6px;">
+                        <button id="cvCambioBtn" class="btn btn-sm" title="Cambio de dinero" style="background:#9f7aea;color:#fff;border:none;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:.82em;">
+                            <i class="fas fa-exchange-alt"></i> Cambio
+                        </button>
+                        <button id="cvRefreshBtn" class="btn btn-sm btn-outline" title="Actualizar">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div style="font-size:.82em; color:#888; text-align:center;" id="cvFechaLabel"></div>
+            </div>
+
+            <div class="card" id="cvResumenCard" style="display:none;">
+                <h4 style="margin-bottom: 14px; font-size: .9em; color: #888; text-transform: uppercase; letter-spacing: .5px;">
+                    <i class="fas fa-chart-bar"></i> Resumen del dia
+                </h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:rgba(56,161,105,.1); border:1px solid rgba(56,161,105,.3); border-radius:8px;">
+                        <span style="font-size:.85em; color:#38a169;"><i class="fas fa-arrow-down"></i> Ingresos</span>
+                        <strong id="cvTotalIngresos" style="color:#38a169; font-size:1.05em;">$0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:rgba(229,62,62,.08); border:1px solid rgba(229,62,62,.25); border-radius:8px;">
+                        <span style="font-size:.85em; color:#e53e3e;"><i class="fas fa-arrow-up"></i> Egresos</span>
+                        <strong id="cvTotalEgresos" style="color:#e53e3e; font-size:1.05em;">$0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:rgba(49,130,206,.1); border:1px solid rgba(49,130,206,.3); border-radius:8px;">
+                        <span style="font-size:.85em; color:#3182ce;"><i class="fas fa-exchange-alt"></i> Total movimiento</span>
+                        <strong id="cvTotalMovimiento" style="color:#3182ce; font-size:1.05em;">$0.00</strong>
+                    </div>
+                    <div style="font-size:.8em; color:#888; text-align:center; margin-top:2px;" id="cvConteo"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel derecho: listado -->
+        <div style="overflow-y: auto; height: 100%; scrollbar-width: thin;">
+            <div class="card" style="height:100%; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-shrink:0;">
+                    <h3 style="font-size:1.2em; margin:0;"><i class="fas fa-list"></i> Movimientos de hoy</h3>
+                    <div id="cvPendienteBadge" style="display:none; background:rgba(229,62,62,.12); color:#e53e3e; border:1px solid rgba(229,62,62,.3); border-radius:20px; padding:3px 12px; font-size:.8em; font-weight:700; align-items:center; gap:5px;">
+                        <i class="fas fa-clock"></i> <span id="cvPendienteCount">0</span> sin comprobante
+                    </div>
+                </div>
+                <div id="cvListContainer" style="flex:1; overflow-y:auto;">
+                    <div style="text-align:center; padding:60px 20px; color:#888;">
+                        <i class="fas fa-spinner fa-spin" style="font-size:2rem; display:block; margin-bottom:12px;"></i>
+                        Cargando...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal cambio de dinero -->
+    <div id="cvCambioModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:16px; padding:28px; max-width:460px; width:92%; position:relative;">
+            <button id="cvCambioCloseBtn" style="position:absolute; top:14px; right:16px; background:none; border:none; font-size:1.3rem; color:#888; cursor:pointer;">×</button>
+            <h3 style="margin:0 0 18px; font-size:1.1em;"><i class="fas fa-exchange-alt" style="color:#9f7aea;"></i> Cambio de Dinero</h3>
+
+            <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:8px;">Tipo de operación *</label>
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+                <button id="cvCambioTipoIngreso" style="flex:1;padding:10px 8px;border-radius:8px;border:2px solid #9f7aea;background:#9f7aea;color:#fff;cursor:pointer;font-weight:600;text-align:center;">
+                    <div style="font-size:.9em;"><i class="fas fa-arrow-up"></i> Deposita a la cuenta</div>
+                    <div style="font-size:.82em;opacity:.9;font-weight:400;margin-top:3px;"><u>COJE</u> de caja</div>
+                </button>
+                <button id="cvCambioTipoEgreso" style="flex:1;padding:10px 8px;border-radius:8px;border:2px solid #e2e8f0;background:#fff;color:#555;cursor:pointer;font-weight:600;text-align:center;">
+                    <div style="font-size:.9em;"><i class="fas fa-arrow-down"></i> Retira de la cuenta</div>
+                    <div style="font-size:.82em;opacity:.9;font-weight:400;margin-top:3px;"><u>DEJA</u> en caja</div>
+                </button>
+            </div>
+
+            <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Nombre del solicitante *</label>
+            <input id="cvCambioSolicitante" type="text" placeholder="Quien solicita el movimiento" autocomplete="off" style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.92em;margin-bottom:12px;box-sizing:border-box;">
+
+            <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Nombre del realizador *</label>
+            <input id="cvCambioRealizador" type="text" placeholder="Quien realiza la transacción" autocomplete="off" style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.92em;margin-bottom:12px;box-sizing:border-box;">
+
+            <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Motivo *</label>
+            <input id="cvCambioMotivo" type="text" placeholder="Descripción del movimiento" autocomplete="off" style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.92em;margin-bottom:12px;box-sizing:border-box;">
+
+            <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Monto ($) *</label>
+            <input id="cvCambioMonto" type="number" placeholder="0.00" step="0.01" min="0.01" style="width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:8px;font-size:1.3em;text-align:center;margin-bottom:20px;box-sizing:border-box;">
+
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button id="cvCambioCancelBtn" style="padding:9px 20px;border:1px solid #e2e8f0;background:#fff;border-radius:8px;cursor:pointer;font-size:.9em;">Cancelar</button>
+                <button id="cvCambioSaveBtn" style="padding:9px 20px;background:#9f7aea;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.9em;font-weight:600;"><i class="fas fa-save"></i> Registrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal detalle -->
+    <div id="cvDetalleModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:16px; padding:28px; max-width:520px; width:92%; max-height:88vh; overflow-y:auto; position:relative;">
+            <button id="cvDetalleCloseBtn" style="position:absolute; top:14px; right:16px; background:none; border:none; font-size:1.3rem; color:#888; cursor:pointer;">x</button>
+            <div id="cvDetalleBody"></div>
+        </div>
+    </div>
+
+    <!-- Modal verificar admin -->
+    <div id="cvVerifyModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1001; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:16px; padding:28px; max-width:400px; width:92%; position:relative;">
+            <button id="cvVerifyCloseBtn" style="position:absolute; top:14px; right:16px; background:none; border:none; font-size:1.3rem; color:#888; cursor:pointer;">×</button>
+            <h3 style="margin:0 0 16px; color:#553c9a; font-size:1rem;"><i class="fas fa-shield-alt"></i> Verificación Admin</h3>
+            <p id="cvVerifyStatus" style="font-size:.88em; color:#718096; margin:0 0 14px; min-height:1.2em;"></p>
+            <label style="font-size:.78em; font-weight:700; color:#4a5568; display:block; margin-bottom:6px; text-transform:uppercase;">Código PIN de 6 dígitos</label>
+            <input type="text" id="cvVerifyPinInput" maxlength="6" inputmode="numeric" autocomplete="off"
+                style="width:100%; box-sizing:border-box; border:2px solid #e2e8f0; border-radius:10px; padding:12px; font-size:1.8rem; text-align:center; letter-spacing:.5rem; font-family:monospace; outline:none;">
+            <p id="cvVerifyError" style="color:#e53e3e; font-size:.82em; margin:6px 0 0; min-height:1.2em;"></p>
+            <div style="display:flex; gap:10px; margin-top:16px;">
+                <button id="cvVerifyCancelBtn" style="flex:1; padding:10px; border:1px solid #e2e8f0; border-radius:8px; background:#fff; cursor:pointer; font-size:.9em;">Cancelar</button>
+                <button id="cvVerifyConfirmBtn" style="flex:2; padding:10px; border:none; border-radius:8px; background:#805ad5; color:#fff; cursor:pointer; font-size:.9em; font-weight:600;"><i class="fas fa-shield-alt"></i> Verificar</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+var cvCambioTipo = 'ingreso';
+var cvVerifyPinExpected = null, cvVerifyItemTarget = null;
+
+function initCajaVirtual() {
+    var hoy = new Date();
+    document.getElementById('cvFechaLabel').textContent =
+        hoy.toLocaleDateString('es-EC', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+
+    document.getElementById('cvRefreshBtn').addEventListener('click', cvLoad);
+    document.getElementById('cvCambioBtn').addEventListener('click', cvOpenCambio);
+
+    document.getElementById('cvDetalleCloseBtn').addEventListener('click', cvCloseDetalle);
+    document.getElementById('cvDetalleModal').addEventListener('click', function(e) {
+        if (e.target === this) cvCloseDetalle();
+    });
+
+    document.getElementById('cvCambioCloseBtn').addEventListener('click', cvCloseCambio);
+    document.getElementById('cvCambioCancelBtn').addEventListener('click', cvCloseCambio);
+    document.getElementById('cvCambioModal').addEventListener('click', function(e) {
+        if (e.target === this) cvCloseCambio();
+    });
+
+    document.getElementById('cvCambioTipoIngreso').addEventListener('click', function() {
+        cvCambioTipo = 'ingreso';
+        this.style.background = '#9f7aea'; this.style.color = '#fff'; this.style.borderColor = '#9f7aea';
+        var eg = document.getElementById('cvCambioTipoEgreso');
+        eg.style.background = '#fff'; eg.style.color = '#555'; eg.style.borderColor = '#e2e8f0';
+    });
+    document.getElementById('cvCambioTipoEgreso').addEventListener('click', function() {
+        cvCambioTipo = 'egreso';
+        this.style.background = '#9f7aea'; this.style.color = '#fff'; this.style.borderColor = '#9f7aea';
+        var ing = document.getElementById('cvCambioTipoIngreso');
+        ing.style.background = '#fff'; ing.style.color = '#555'; ing.style.borderColor = '#e2e8f0';
+    });
+
+    document.getElementById('cvCambioSaveBtn').addEventListener('click', cvGuardarCambio);
+
+    document.getElementById('cvVerifyCloseBtn').addEventListener('click', cvCloseVerificar);
+    document.getElementById('cvVerifyCancelBtn').addEventListener('click', cvCloseVerificar);
+    document.getElementById('cvVerifyConfirmBtn').addEventListener('click', cvConfirmarVerificacion);
+    document.getElementById('cvVerifyModal').addEventListener('click', function(e) {
+        if (e.target === this) cvCloseVerificar();
+    });
+    document.getElementById('cvVerifyPinInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') cvConfirmarVerificacion();
+    });
+
+    cvLoad();
+}
+
+function cvOpenCambio() {
+    cvCambioTipo = 'ingreso';
+    var ing = document.getElementById('cvCambioTipoIngreso');
+    var eg  = document.getElementById('cvCambioTipoEgreso');
+    ing.style.background = '#9f7aea'; ing.style.color = '#fff'; ing.style.borderColor = '#9f7aea';
+    eg.style.background  = '#fff';    eg.style.color  = '#555'; eg.style.borderColor  = '#e2e8f0';
+    document.getElementById('cvCambioSolicitante').value = '';
+    document.getElementById('cvCambioRealizador').value  = localStorage.getItem('userNombres') || '';
+    document.getElementById('cvCambioMotivo').value      = '';
+    document.getElementById('cvCambioMonto').value       = '';
+    document.getElementById('cvCambioModal').style.display = 'flex';
+}
+
+function cvCloseCambio() {
+    document.getElementById('cvCambioModal').style.display = 'none';
+}
+
+async function cvGenCodigoCambio() {
+    var res = await db.from('ferre_transferencias')
+        .select('id_venta')
+        .like('id_venta', 'C%')
+        .order('id_venta', { ascending: false })
+        .limit(1);
+    var num = 1;
+    if (res.data && res.data.length && res.data[0].id_venta) {
+        var parsed = parseInt(res.data[0].id_venta.slice(1), 10);
+        if (!isNaN(parsed)) num = parsed + 1;
+    }
+    return 'C' + String(num).padStart(5, '0');
+}
+
+async function cvGuardarCambio() {
+    var solicitante = document.getElementById('cvCambioSolicitante').value.trim();
+    var realizador  = document.getElementById('cvCambioRealizador').value.trim();
+    var motivo      = document.getElementById('cvCambioMotivo').value.trim();
+    var monto       = parseFloat(document.getElementById('cvCambioMonto').value);
+
+    if (!solicitante) { alert('Ingresa el nombre del solicitante'); return; }
+    if (!realizador)  { alert('Ingresa el nombre del realizador'); return; }
+    if (!motivo)      { alert('Ingresa el motivo'); return; }
+    if (!monto || monto <= 0) { alert('Ingresa un monto válido'); return; }
+
+    var btn = document.getElementById('cvCambioSaveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+    try {
+        var codigo = await cvGenCodigoCambio();
+        var ahora  = new Date();
+        var hora   = ahora.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        var fecha  = ahora.toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' });
+        var tipoLabel = cvCambioTipo === 'ingreso'
+            ? 'Deposita a la cuenta (efectivo sale de caja, entra al banco)'
+            : 'Retira de la cuenta (dinero sale del banco, entra a caja física)';
+        var motivoFinal = tipoLabel + ', solicita ' + solicitante + ', realiza ' + realizador + ' a las ' + hora + ' el ' + fecha + ', por motivo: ' + motivo;
+
+        var ins = await db.from('ferre_transferencias').insert({
+            fechahora:  ahora.toISOString(),
+            caso:       cvCambioTipo,
+            monto:      monto,
+            motivo:     motivoFinal,
+            id_venta:   codigo,
+            subido_por: realizador,
+            fotografia: null
+        });
+        if (ins.error) throw ins.error;
+
+        // Webhook WhatsApp — no bloqueante
+        var tipoEmoji  = cvCambioTipo === 'ingreso' ? '📤' : '📥';
+        var cajaAccion = cvCambioTipo === 'ingreso' ? '_COJE de caja_' : '_DEJA en caja_';
+        fetch('https://lpn8nwebhook.luispintasolutions.com/webhook/Mensaje_General', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mensaje: [
+                    '🔔 *Notificación de Cambio de Dinero*',
+                    '━━━━━━━━━━━━━━━━',
+                    '🔑 *Código:* ' + codigo,
+                    tipoEmoji + ' *Operación:* ' + (cvCambioTipo === 'ingreso' ? 'Deposita a la cuenta' : 'Retira de la cuenta'),
+                    '📌 ' + cajaAccion,
+                    '💵 *Monto:* $' + monto.toFixed(2),
+                    '👤 *Solicita:* ' + solicitante,
+                    '👷 *Realiza:* ' + realizador,
+                    '📝 *Motivo:* ' + motivo,
+                    '🕐 *Fecha y hora:* ' + hora + ' · ' + fecha,
+                    '',
+                    '🔴 ⚠️ *VERIFICAR ESTE MOVIMIENTO CON COMPROBANTE O NO SE PODRÁ HACER EL CIERRE DE CAJA DIARIO*'
+                ]
+            })
+        })
+        .then(function(r){ return r.json(); })
+        .then(async function(data) {
+            var idMessage = (data && data.length > 0 && data[0].data && data[0].data.key)
+                ? data[0].data.key.id : null;
+            if (idMessage) {
+                await db.from('ferre_transferencias')
+                    .update({ id_message: idMessage })
+                    .eq('id_venta', codigo);
+            }
+        })
+        .catch(function(err){ console.error('Error webhook cambio', err); });
+
+        cvCloseCambio();
+        cvLoad();
+    } catch (err) {
+        alert('Error: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Registrar';
+    }
+}
+
+async function cvLoad() {
+    document.getElementById('cvListContainer').innerHTML =
+        '<div style="text-align:center;padding:60px 20px;color:#888;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;display:block;margin-bottom:12px;"></i>Cargando...</div>';
+    document.getElementById('cvResumenCard').style.display = 'none';
+
+    try {
+        var hoy = new Date();
+        var inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0).toISOString();
+        var fin    = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999).toISOString();
+
+        var res = await db.from('ferre_transferencias')
+            .select('*')
+            .gte('fechahora', inicio)
+            .lte('fechahora', fin)
+            .order('fechahora', { ascending: false });
+        if (res.error) throw res.error;
+        cvRender(res.data || []);
+    } catch (err) {
+        document.getElementById('cvListContainer').innerHTML =
+            '<div style="color:#e53e3e;text-align:center;padding:40px;"><i class="fas fa-exclamation-triangle"></i> ' + cvEsc(err.message) + '</div>';
+    }
+}
+
+function cvRender(items) {
+    var pendientes = items.filter(function(t){ return !t.fotografia || t.fotografia.trim() === ''; });
+
+    var totalIngresos  = items.filter(function(t){ return (t.caso||'').toLowerCase() === 'ingreso'; }).reduce(function(s,t){ return s+(parseFloat(t.monto)||0); }, 0);
+    var totalEgresos   = items.filter(function(t){ return (t.caso||'').toLowerCase() === 'egreso';  }).reduce(function(s,t){ return s+(parseFloat(t.monto)||0); }, 0);
+    var totalMov       = items.reduce(function(s,t){ return s+(parseFloat(t.monto)||0); }, 0);
+
+    document.getElementById('cvTotalIngresos').textContent   = formatCurrency(totalIngresos);
+    document.getElementById('cvTotalEgresos').textContent    = formatCurrency(totalEgresos);
+    document.getElementById('cvTotalMovimiento').textContent = formatCurrency(totalMov);
+    document.getElementById('cvConteo').textContent = items.length + ' movimiento' + (items.length !== 1 ? 's' : '');
+    document.getElementById('cvResumenCard').style.display = 'block';
+
+    var badge = document.getElementById('cvPendienteBadge');
+    if (pendientes.length) {
+        badge.style.display = 'inline-flex';
+        document.getElementById('cvPendienteCount').textContent = pendientes.length;
+    } else {
+        badge.style.display = 'none';
+    }
+
+    if (!items.length) {
+        document.getElementById('cvListContainer').innerHTML =
+            '<div style="text-align:center;padding:60px 20px;color:#888;"><i class="fas fa-inbox" style="font-size:2.2rem;opacity:.25;display:block;margin-bottom:12px;"></i>Sin movimientos hoy</div>';
+        return;
+    }
+
+    // Categorizar: cambios = id_venta empieza con C, ventas = todo lo demás
+    var ventas  = items.filter(function(t){ return !(t.id_venta||'').toUpperCase().startsWith('C'); });
+    var cambios = items.filter(function(t){ return  (t.id_venta||'').toUpperCase().startsWith('C'); });
+
+    var container = document.getElementById('cvListContainer');
+    container.innerHTML = '';
+
+    if (ventas.length) {
+        container.appendChild(cvCategoryHeader('💳 Ventas', '#3182ce', ventas));
+        var vPend = ventas.filter(function(t){ return !t.fotografia || t.fotografia.trim() === ''; });
+        var vFoto = ventas.filter(function(t){ return  t.fotografia && t.fotografia.trim() !== ''; });
+        vPend.concat(vFoto).forEach(function(t){ container.appendChild(cvSection(t)); });
+    }
+
+    if (cambios.length) {
+        container.appendChild(cvCategoryHeader('🔄 Cambios de Dinero', '#9f7aea', cambios));
+        var cPend = cambios.filter(function(t){ return !t.fotografia || t.fotografia.trim() === ''; });
+        var cFoto = cambios.filter(function(t){ return  t.fotografia && t.fotografia.trim() !== ''; });
+        cPend.concat(cFoto).forEach(function(t){ container.appendChild(cvSection(t)); });
+    }
+}
+
+function cvCategoryHeader(titulo, color, items) {
+    var pend = items.filter(function(t){ return !t.fotografia || t.fotografia.trim() === ''; }).length;
+    var div  = document.createElement('div');
+    div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:' + color + '12;border-left:3px solid ' + color + ';border-radius:0 6px 6px 0;margin-bottom:8px;margin-top:4px;';
+    div.innerHTML = '<span style="font-size:.8em;font-weight:700;color:' + color + ';">' + titulo + ' (' + items.length + ')</span>'
+        + (pend ? '<span style="font-size:.72em;color:#e53e3e;"><i class="fas fa-clock"></i> ' + pend + ' sin comprobante</span>' : '');
+    return div;
+}
+
+function cvSection(t) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:6px;border-radius:10px;overflow:hidden;';
+    var tieneFoto = t.fotografia && t.fotografia.trim() !== '';
+    var isAdmin = localStorage.getItem('userRole') === 'admin';
+    var hora = new Date(t.fechahora).toLocaleTimeString('es-EC', { hour:'2-digit', minute:'2-digit' });
+    var esCaso = (t.caso||'').toLowerCase();
+    var mc = esCaso === 'egreso' ? '#e53e3e' : '#38a169';
+    var metaExtra = '';
+    if (t.subido_por) metaExtra += ' &middot; ' + cvEsc(t.subido_por.split('@')[0]);
+    if (t.id_venta)   metaExtra += ' &middot; <span style="color:#3182ce;font-family:monospace;">' + cvEsc(t.id_venta) + '</span>';
+    var estadoHtml = tieneFoto
+        ? '<span style="color:#38a169;"><i class="fas fa-image"></i> Comprobante</span>'
+        : '<span style="color:#e53e3e;"><i class="fas fa-clock"></i> Pendiente</span>';
+
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid ' + (tieneFoto ? '#e2e8f0' : 'rgba(229,62,62,.3)') + ';' + (tieneFoto || !isAdmin ? 'border-radius:10px;' : 'border-radius:10px 10px 0 0;border-bottom:none;') + 'cursor:pointer;transition:background .12s;';
+    row.innerHTML = '<div style="width:36px;height:36px;border-radius:50%;background:' + mc + '18;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-arrow-' + (esCaso === 'egreso' ? 'up' : 'down') + '" style="color:' + mc + ';font-size:.85rem;"></i></div>'
+        + '<div style="flex:1;min-width:0;"><div style="font-size:.88em;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cvEsc(t.motivo||'') + '</div>'
+        + '<div style="font-size:.75em;color:#888;margin-top:1px;">' + hora + metaExtra + '</div></div>'
+        + '<div style="text-align:right;flex-shrink:0;"><div style="font-size:.98em;font-weight:700;color:' + mc + ';">' + formatCurrency(t.monto) + '</div>'
+        + '<div style="font-size:.7em;margin-top:2px;">' + estadoHtml + '</div></div>';
+    row.addEventListener('mouseenter', function(){ row.style.background = '#f7fafc'; });
+    row.addEventListener('mouseleave', function(){ row.style.background = ''; });
+    row.addEventListener('click', function(){ cvOpenDetalle(t); });
+    wrap.appendChild(row);
+
+    if (!tieneFoto && isAdmin) {
+        var verBtn = document.createElement('button');
+        verBtn.style.cssText = 'display:block;width:100%;padding:7px 12px;background:rgba(128,90,213,.08);color:#805ad5;border:none;border:1px solid rgba(128,90,213,.25);border-top:none;border-radius:0 0 10px 10px;cursor:pointer;font-size:.78em;font-weight:600;';
+        verBtn.innerHTML = '<i class="fas fa-shield-alt"></i> Verificar (Admin)';
+        verBtn.addEventListener('click', function(){ cvOpenVerificar(t); });
+        wrap.appendChild(verBtn);
+    }
+
+    return wrap;
+}
+
+async function cvOpenDetalle(t) {
+    var modal = document.getElementById('cvDetalleModal');
+    var body  = document.getElementById('cvDetalleBody');
+    modal.style.display = 'flex';
+
+    var fecha = new Date(t.fechahora).toLocaleString('es-EC', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    var tieneFoto = t.fotografia && t.fotografia.trim() !== '';
+    var esCaso = (t.caso||'').toLowerCase();
+    var mc = esCaso === 'egreso' ? '#e53e3e' : '#38a169';
+
+    var fotoHtml = tieneFoto
+        ? '<div style="text-align:center;"><img src="' + cvEsc(t.fotografia) + '" style="max-width:100%;border-radius:10px;border:1px solid #e2e8f0;max-height:280px;object-fit:contain;" onerror="this.style.display=\'none\'"></div>'
+        : '<div style="text-align:center;padding:24px;color:#bbb;"><i class="fas fa-image" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin comprobante adjunto</div>';
+    var subidoRow = t.subido_por ? '<tr><td style="padding:6px 0;color:#888;">Subido por</td><td style="font-weight:600;">' + cvEsc(t.subido_por) + '</td></tr>' : '';
+    var ventaRow  = t.id_venta   ? '<tr><td style="padding:6px 0;color:#888;">Venta</td><td style="font-family:monospace;color:#3182ce;font-weight:700;">' + cvEsc(t.id_venta) + '</td></tr>' : '';
+    var ventaDetalle = t.id_venta ? '<div id="cvDetVentaDetalle" style="margin-top:16px;border-top:1px solid #eee;padding-top:14px;"><p style="color:#888;text-align:center;"><i class="fas fa-spinner fa-spin"></i> Cargando detalle de venta...</p></div>' : '';
+
+    body.innerHTML = '<div style="text-align:center;margin-bottom:20px;"><div style="font-size:2rem;font-weight:800;color:' + mc + ';">' + formatCurrency(t.monto) + '</div><div style="color:#888;font-size:.9em;margin-top:4px;">' + cvEsc(t.motivo||'') + '</div></div>'
+        + '<table style="width:100%;border-collapse:collapse;font-size:.88em;margin-bottom:16px;"><tr><td style="padding:6px 0;color:#888;width:110px;">Fecha</td><td style="font-weight:600;">' + fecha + '</td></tr><tr><td style="padding:6px 0;color:#888;">Caso</td><td><span style="background:' + mc + '18;color:' + mc + ';padding:2px 8px;border-radius:6px;font-weight:700;">' + cvEsc(t.caso||'') + '</span></td></tr>' + subidoRow + ventaRow + '</table>'
+        + fotoHtml + ventaDetalle;
+
+    if (!t.id_venta) return;
+
+    try {
+        var res1 = await db.from('ferre_ventas').select('id,cliente_id,total,tipo_pago').eq('id_venta', t.id_venta).limit(1);
+        if (res1.error) throw res1.error;
+        if (!res1.data || !res1.data.length) {
+            document.getElementById('cvDetVentaDetalle').innerHTML = '<p style="color:#888;text-align:center;font-size:.85em;">Venta no encontrada.</p>';
+            return;
+        }
+        var venta = res1.data[0];
+        var res2 = await db.from('ferre_ventas_detalle').select('*').eq('venta_id', venta.id);
+        if (res2.error) throw res2.error;
+        var detalles = res2.data || [];
+
+        var prodMap = {};
+        var ids = [...new Set(detalles.map(function(d){ return d.producto_id; }))];
+        for (var i = 0; i < ids.length; i += 10) {
+            var res3 = await db.from('ferre_inventario').select('codigo,producto').in('codigo', ids.slice(i, i+10));
+            if (res3.data) res3.data.forEach(function(p){ prodMap[p.codigo] = p.producto; });
+        }
+        var clienteLabel = venta.cliente_id === '9999999999999' ? 'Consumidor Final' : (venta.cliente_id||'--');
+        var rowsHtml = detalles.map(function(d) {
+            var sub = parseFloat(d.cantidad) * parseFloat(d.precio);
+            return '<tr><td style="padding:5px 0;">' + cvEsc(prodMap[d.producto_id]||d.producto_id) + '</td><td style="text-align:center;color:#888;">x' + d.cantidad + '</td><td style="text-align:right;color:#888;">' + formatCurrency(d.precio) + '</td><td style="text-align:right;font-weight:600;">' + formatCurrency(sub) + '</td></tr>';
+        }).join('');
+
+        var el = document.getElementById('cvDetVentaDetalle');
+        if (el) el.innerHTML = '<div style="font-size:.78em;font-weight:700;color:#3182ce;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;"><i class="fas fa-receipt"></i> Productos &middot; ' + cvEsc(clienteLabel) + '</div><table style="width:100%;border-collapse:collapse;font-size:.83em;"><thead><tr style="color:#888;border-bottom:1px solid #eee;"><th style="text-align:left;padding-bottom:5px;">Producto</th><th>Cant.</th><th style="text-align:right;">P.Unit</th><th style="text-align:right;">Sub.</th></tr></thead><tbody>' + rowsHtml + '</tbody><tfoot><tr style="border-top:1px solid #eee;"><td colspan="3" style="padding-top:6px;font-weight:700;">Total venta</td><td style="padding-top:6px;font-weight:800;color:#d4a017;text-align:right;">' + formatCurrency(venta.total) + '</td></tr></tfoot></table>';
+    } catch (err) {
+        var el2 = document.getElementById('cvDetVentaDetalle');
+        if (el2) el2.innerHTML = '<p style="color:#e53e3e;text-align:center;font-size:.85em;">' + cvEsc(err.message) + '</p>';
+    }
+}
+
+function cvCloseDetalle() {
+    document.getElementById('cvDetalleModal').style.display = 'none';
+}
+
+async function cvOpenVerificar(t) {
+    cvVerifyItemTarget = t;
+    cvVerifyPinExpected = null;
+    var statusEl   = document.getElementById('cvVerifyStatus');
+    var inputEl    = document.getElementById('cvVerifyPinInput');
+    var errorEl    = document.getElementById('cvVerifyError');
+    var confirmBtn = document.getElementById('cvVerifyConfirmBtn');
+    inputEl.value = '';
+    errorEl.textContent = '';
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = '<i class="fas fa-shield-alt"></i> Verificar';
+    statusEl.textContent = 'Enviando código PIN…';
+    statusEl.style.color = '#718096';
+    document.getElementById('cvVerifyModal').style.display = 'flex';
+    var pin = String(Math.floor(100000 + Math.random() * 900000));
+    try {
+        await fetch('https://lpn8nwebhook.luispintasolutions.com/webhook/4948e0c5-cb6d-48c1-a7d8-04a664a07e64', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id_venta: t.id_venta || '',
+                monto: t.monto,
+                motivo: t.motivo || '',
+                subido_por: t.subido_por || '',
+                pin: pin
+            })
+        });
+        cvVerifyPinExpected = pin;
+        statusEl.textContent = 'PIN enviado. Ingresa el código recibido:';
+        statusEl.style.color = '#38a169';
+        inputEl.focus();
+    } catch (err) {
+        statusEl.textContent = 'Error al enviar PIN: ' + cvEsc(err.message);
+        statusEl.style.color = '#e53e3e';
+    }
+}
+
+async function cvConfirmarVerificacion() {
+    var inputEl    = document.getElementById('cvVerifyPinInput');
+    var errorEl    = document.getElementById('cvVerifyError');
+    var confirmBtn = document.getElementById('cvVerifyConfirmBtn');
+    var enteredPin = (inputEl.value || '').trim();
+    if (!cvVerifyPinExpected) { errorEl.textContent = 'Primero espera que se genere el PIN.'; return; }
+    if (!enteredPin)          { errorEl.textContent = 'Ingresa el código PIN.'; return; }
+    if (enteredPin !== cvVerifyPinExpected) {
+        errorEl.textContent = 'Código incorrecto. Verifica el PIN recibido.';
+        inputEl.value = ''; inputEl.focus(); return;
+    }
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    try {
+        var ADMIN_FOTO = 'https://lpsupabase.luispintasolutions.com/storage/v1/object/public/utilidades/Imagenes%20de%20apoyo/Verificado%20por%20el%20admin.png';
+        var result = await db.from('ferre_transferencias')
+            .update({ fotografia: ADMIN_FOTO })
+            .eq('id', cvVerifyItemTarget.id);
+        if (result.error) throw result.error;
+        // Obtener id_message fresco (puede haberse guardado después del render)
+        var freshRes = await db.from('ferre_transferencias')
+            .select('id_message')
+            .eq('id', cvVerifyItemTarget.id)
+            .maybeSingle();
+        var idMsgFresh = (freshRes.data && freshRes.data.id_message) || cvVerifyItemTarget.id_message || '';
+        // Notificación de verificación (no-blocking)
+        fetch('https://lpn8nwebhook.luispintasolutions.com/webhook/a93e51ea-2752-4a11-9190-49460bb0745f', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: ADMIN_FOTO,
+                caption: (cvVerifyItemTarget.id_venta || '').startsWith('S')
+                    ? 'Se ha verificado que el dinero de esta venta ha ingresado a la cuenta, muchas gracias'
+                    : 'Se ha verificado correctamente este cambio de dinero, muchas gracias',
+                id_message_original: idMsgFresh
+            })
+        }).catch(function(e){ console.warn('Webhook verificación:', e); });
+        cvCloseVerificar();
+        cvVerifyPinExpected = null;
+        cvVerifyItemTarget = null;
+        cvLoad();
+    } catch (err) {
+        errorEl.textContent = 'Error: ' + cvEsc(err.message);
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fas fa-shield-alt"></i> Verificar';
+    }
+}
+
+function cvCloseVerificar() {
+    document.getElementById('cvVerifyModal').style.display = 'none';
+}
+
+function cvEsc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>

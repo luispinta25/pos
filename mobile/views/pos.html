@@ -1,0 +1,49 @@
+<!-- ── POS / APP SCREEN ── -->
+<div id="appScreen" class="hidden">
+    <header class="app-header">
+        <div class="header-left">
+            <button class="hamburger-btn" id="hamburgerBtn" title="Menú"><i class="fas fa-bars"></i></button>
+            <img src="https://i.ibb.co/8gLPXfjh/FERRISOLUCIONES-1.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+            <div>
+                <div class="header-title">Ferrisoluciones</div>
+                <div class="header-sub" id="headerUser">Móvil</div>
+            </div>
+        </div>
+        <div id="totalDisplay">$0.00</div>
+    </header>
+
+    <div class="search-bar">
+        <div class="search-input-wrap">
+            <input type="text" id="searchInput" placeholder="Código o nombre del producto..." autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+            <button id="scanBtn" title="Escanear código de barras"><i class="fas fa-barcode"></i></button>
+        </div>
+        <button class="icon-btn" id="addByCodeBtn" disabled title="Añadir por código"><i class="fas fa-plus"></i></button>
+    </div>
+
+    <main class="main-content">
+        <ul id="searchResults"></ul>
+        <div id="cartHeader" class="cart-header hidden">
+            <i class="fas fa-shopping-cart"></i> Carrito
+            <span class="cart-count" id="cartCount">0 items</span>
+        </div>
+        <div id="cartContainer">
+            <p class="cart-empty-msg">El carrito está vacío.</p>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <button class="footer-btn" id="clientBtn">
+            <i class="fas fa-user"></i>
+            <span id="clientBtnLabel">Cliente</span>
+        </button>
+        <button class="footer-btn cobrar-btn" id="cobrarBtn">Cobrar</button>
+        <button class="footer-btn" id="clearCartBtn">
+            <i class="fas fa-trash-alt"></i>
+            <span>Limpiar</span>
+        </button>
+        <button class="footer-btn" id="logoutBtn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Salir</span>
+        </button>
+    </footer>
+</div>

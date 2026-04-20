@@ -1,0 +1,44 @@
+<!-- ── CAJA VIRTUAL SCREEN ── -->
+<div id="transferenciasScreen" class="hidden">
+    <header class="transf-header">
+        <button class="hist-back-btn" id="transfBackBtn"><i class="fas fa-chevron-left"></i></button>
+        <span class="transf-header-title"><i class="fas fa-university" style="color:#3182ce;margin-right:6px;"></i>Caja Virtual</span>
+        <div style="display:flex;gap:6px;">
+            <button class="hist-refresh-btn" id="transfCambioBtn" title="Cambio de dinero" style="background:rgba(159,122,234,.15);color:#9f7aea;border:1px solid rgba(159,122,234,.35);"><i class="fas fa-exchange-alt"></i></button>
+            <button class="hist-refresh-btn" id="transfRefreshBtn"><i class="fas fa-sync-alt"></i></button>
+        </div>
+    </header>
+    <div class="transf-content">
+        <!-- Pendientes de días anteriores -->
+        <div id="transfPendientesSection" class="hidden">
+            <div class="transf-section-label transf-section-pending">
+                <i class="fas fa-clock"></i> Pendientes de comprobante
+            </div>
+            <div id="transfPendientesList"></div>
+        </div>
+        <!-- Hoy -->
+        <div class="transf-section-label transf-section-today">
+            <i class="fas fa-calendar-day"></i> Hoy
+        </div>
+        <div id="transfSummary" class="transf-summary hidden">
+            <span class="sum-count" id="transfSummaryCount"></span>
+            <div class="transf-summary-grid">
+                <div class="transf-sum-item transf-sum-ingreso">
+                    <span><i class="fas fa-arrow-down"></i> Ingresos</span>
+                    <strong id="transfSummaryIngreso">$0.00</strong>
+                </div>
+                <div class="transf-sum-item transf-sum-egreso">
+                    <span><i class="fas fa-arrow-up"></i> Egresos</span>
+                    <strong id="transfSummaryEgreso">$0.00</strong>
+                </div>
+                <div class="transf-sum-item transf-sum-total">
+                    <span><i class="fas fa-exchange-alt"></i> Total</span>
+                    <strong id="transfSummaryTotal">$0.00</strong>
+                </div>
+            </div>
+        </div>
+        <div id="transfList">
+            <div class="transf-empty"><i class="fas fa-spinner fa-spin"></i>Cargando…</div>
+        </div>
+    </div>
+</div>
