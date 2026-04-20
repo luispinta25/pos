@@ -1,23 +1,25 @@
 // =====================================================
 // SERVICE WORKER - FERRISOLUCIONES POS
-// Version: 2.1.2
+// Version: 3.0.0
 // Strategy: Network First
 // =====================================================
 
-const CACHE_NAME = 'ferrisoluciones-pos-v2-0-8';
-const RUNTIME_CACHE = 'ferrisoluciones-runtime-v2-0-8';
+const CACHE_NAME = 'ferrisoluciones-pos-v3-0-0';
+const RUNTIME_CACHE = 'ferrisoluciones-runtime-v3-0-0';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
-    '/manifest.json',
-    '/css/styles.css',
-    '/css/cxc-styles.css',
-    '/css/print.css',
-    '/js/app.js',
-    '/js/auth.js',
-    '/js/config.js',
-    '/js/ingreso-factura.js',
-    '/img/favicon.ico',
+    '/pc/index.html',
+    '/pc/manifest.json',
+    '/pc/css/styles.css',
+    '/pc/css/cxc-styles.css',
+    '/pc/css/print.css',
+    '/pc/js/app.js',
+    '/pc/js/auth.js',
+    '/pc/js/config.js',
+    '/pc/js/ingreso-factura.js',
+    '/pc/img/favicon.ico',
+    '/mobile/index.html',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
@@ -26,7 +28,7 @@ const STATIC_ASSETS = [
 // =====================================================
 
 self.addEventListener('install', (event) => {
-    console.log('🔧 [SW] Installing Service Worker v2.0.8...');
+    console.log('🔧 [SW] Installing Service Worker v3.0.0...');
     
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -54,7 +56,7 @@ self.addEventListener('install', (event) => {
 // =====================================================
 
 self.addEventListener('activate', (event) => {
-    console.log('🚀 [SW] Activating Service Worker v2.0.8...');
+    console.log('🚀 [SW] Activating Service Worker v3.0.0...');
     
     event.waitUntil(
         caches.keys()
@@ -176,11 +178,11 @@ self.addEventListener('message', (event) => {
                     event.ports[0].postMessage({ 
                         success: true, 
                         size: requests.length,
-                        version: '2.1.0'
+                        version: '3.0.0'
                     });
                 });
             });
     }
 });
 
-console.log('✅ Service Worker v2.0.8 loaded (Network First Strategy)');
+console.log('✅ Service Worker v3.0.0 loaded (Network First Strategy)');
