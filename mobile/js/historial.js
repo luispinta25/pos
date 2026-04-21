@@ -128,6 +128,13 @@ async function verDetalleVenta(ventaId, v) {
                 <span class="detalle-prod-sub">${fmt(subtotal)}</span>
             </div>`;
         }).join('');
+        const estadoVenta = (v.estado || '').toUpperCase();
+        const puedeDevolver = ['COMPLETADO', 'AUTORIZADO', 'CAMBIADO'].includes(estadoVenta);
+        const btnDevolucion = puedeDevolver
+            ? `<button class="btn-gestionar-dev" onclick="hideModal('histDetalleModal');abrirDevolucion('${v.id}', ${JSON.stringify(v).replace(/</g,'\\u003c')})">
+                <i class="fas fa-undo-alt"></i> Gestionar Devolución / Cambio
+               </button>`
+            : '';
         $('histDetalleBody').innerHTML = `
             <div class="detalle-info-row"><label>Código</label><span style="font-family:monospace;">${escHtml(v.id_venta || '')}</span></div>
             <div class="detalle-info-row"><label>Fecha</label><span>${fecha.toLocaleString('es-EC')}</span></div>
@@ -135,7 +142,8 @@ async function verDetalleVenta(ventaId, v) {
             <div class="detalle-info-row"><label>Pago</label><span><span class="badge ${bc}">${escHtml(tp)}</span></span></div>
             <div class="detalle-info-row"><label>Total</label><span style="color:var(--primary);font-size:1.05rem;">${fmt(v.total)}</span></div>
             <p class="detalle-section-title">PRODUCTOS (${(detalles || []).length})</p>
-            ${detHtml || '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0;">Sin productos registrados</p>'}`;
+            ${detHtml || '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0;">Sin productos registrados</p>'}
+            ${btnDevolucion}`;
     } catch (err) {
         $('histDetalleBody').innerHTML = `<p style="color:var(--danger);text-align:center;padding:1rem;">${escHtml(err.message)}</p>`;
     }

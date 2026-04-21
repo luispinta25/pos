@@ -312,3 +312,84 @@ input::placeholder { color: var(--text-muted); }
 .transf-foto-img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); max-height: 260px; object-fit: contain; }
 .transf-no-foto { text-align: center; padding: 1.5rem; color: var(--text-muted); }
 .transf-no-foto i { font-size: 2rem; display: block; margin-bottom: .5rem; opacity: .4; }
+
+/* ── Devoluciones screen ── */
+#devolucionesScreen { display: flex; flex-direction: column; height: 100dvh; }
+
+/* Info cabecera de venta */
+.dev-venta-info { background: var(--bg3); border-radius: 8px; padding: .6rem .9rem; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; font-size: .8rem; }
+.dev-venta-id { font-family: monospace; color: var(--text-muted); }
+.dev-venta-fecha { color: var(--text-muted); }
+.dev-venta-sep { color: var(--border); }
+.dev-venta-cliente { font-weight: 700; color: var(--text); }
+
+/* Step 1 – ítems a devolver */
+.dev-item-row { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: .7rem .85rem; margin-bottom: .5rem; }
+.dev-item-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 8px; }
+.dev-item-name { font-size: .88rem; font-weight: 600; color: var(--text); flex: 1; }
+.dev-item-precio { font-size: .85rem; font-weight: 700; color: var(--primary); white-space: nowrap; }
+.dev-item-bot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.dev-item-info { font-size: .75rem; color: var(--text-muted); }
+.dev-parcial-badge { background: rgba(212,160,23,.15); color: var(--primary); border: 1px solid rgba(212,160,23,.3); font-size: .65rem; padding: 1px 5px; border-radius: 6px; font-weight: 700; margin-left: 3px; }
+.dev-qty-control { display: flex; align-items: center; gap: 4px; }
+.dev-qty-btn { background: var(--bg2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: .9rem; padding: 0; font-weight: 700; flex-shrink: 0; }
+.dev-qty-btn-plus { background: rgba(56,161,105,.15); color: var(--success); border-color: rgba(56,161,105,.3); }
+.dev-qty-btn-all { background: rgba(212,160,23,.15); color: var(--primary); border-color: rgba(212,160,23,.3); font-size: .62rem; width: auto; padding: 0 6px; letter-spacing: .3px; }
+.dev-qty-input { width: 58px; text-align: center; padding: .3rem .4rem; font-size: .88rem; margin: 0; border-radius: 6px; background: var(--bg2); border: 1px solid var(--border); color: var(--text); -moz-appearance: textfield; }
+.dev-qty-input::-webkit-outer-spin-button, .dev-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.dev-totales-bar { background: rgba(212,160,23,.08); border: 1px solid rgba(212,160,23,.2); border-radius: 8px; padding: .55rem .85rem; font-size: .83rem; color: var(--text); }
+
+/* Selección de tipo */
+.dev-tipo-btn { display: flex; align-items: center; gap: 14px; padding: 1rem 1.2rem; border: 2px solid var(--border); border-radius: 12px; background: var(--bg3); color: var(--text); font-size: .88rem; text-align: left; transition: all .15s; width: 100%; }
+.dev-tipo-btn i { font-size: 1.4rem; flex-shrink: 0; }
+.dev-tipo-btn div { flex: 1; }
+.dev-tipo-btn strong { display: block; font-size: .92rem; margin-bottom: 2px; }
+.dev-tipo-btn small { color: var(--text-muted); font-size: .78rem; font-weight: 400; }
+.dev-tipo-devolucion { border-color: var(--success); }
+.dev-tipo-devolucion i { color: var(--success); }
+.dev-tipo-devolucion:active { background: rgba(56,161,105,.1); }
+.dev-tipo-cambio { border-color: #e67e22; }
+.dev-tipo-cambio i { color: #e67e22; }
+.dev-tipo-cambio:active { background: rgba(230,126,34,.1); }
+
+/* Step 2 – búsqueda de cambio */
+.dev-search-bar { margin-bottom: .5rem; }
+.dev-search-bar input { margin: 0; }
+.dev-search-results { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; max-height: 190px; overflow-y: auto; margin-bottom: .5rem; }
+.dev-search-empty { text-align: center; padding: .8rem; font-size: .8rem; color: var(--text-muted); }
+.dev-search-result-item { display: flex; justify-content: space-between; align-items: center; padding: .65rem .85rem; border-bottom: 1px solid var(--border); cursor: pointer; gap: 8px; transition: background .1s; }
+.dev-search-result-item:last-child { border-bottom: none; }
+.dev-search-result-item:active { background: var(--bg2); }
+.dev-search-result-name { font-size: .85rem; font-weight: 600; color: var(--text); }
+.dev-search-result-sub { font-size: .72rem; color: var(--text-muted); margin-top: 2px; }
+.dev-search-result-price { font-size: .88rem; font-weight: 700; color: var(--primary); white-space: nowrap; flex-shrink: 0; }
+.dev-cambio-item { display: flex; justify-content: space-between; align-items: center; padding: .5rem .6rem; border-bottom: 1px solid var(--border); gap: 8px; }
+.dev-cambio-item:last-child { border-bottom: none; }
+.dev-cambio-item-name { font-size: .82rem; color: var(--text); flex: 1; }
+.dev-cambio-item-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.dev-cambio-item-qty { font-size: .78rem; color: var(--text-muted); }
+.dev-cambio-del-btn { background: rgba(229,62,62,.12); color: var(--danger); border: 1px solid rgba(229,62,62,.25); border-radius: 6px; padding: 3px 7px; font-size: .78rem; }
+
+/* Step 3 – resumen */
+.dev-tipo-badge { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+.dev-tipo-badge-devolucion { background: rgba(56,161,105,.15); color: var(--success); border: 1px solid rgba(56,161,105,.3); }
+.dev-tipo-badge-cambio { background: rgba(230,126,34,.15); color: #e67e22; border: 1px solid rgba(230,126,34,.3); }
+.dev-resumen-row { display: flex; justify-content: space-between; align-items: center; padding: .38rem 0; border-bottom: 1px solid var(--border); font-size: .82rem; gap: 8px; }
+.dev-resumen-row:last-child { border-bottom: none; }
+.dev-resumen-row span { color: var(--text); flex: 1; }
+.dev-resumen-totales { background: var(--bg3); border-radius: 8px; padding: .6rem .9rem; margin-top: .6rem; }
+.dev-resumen-total-row { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; padding: .2rem 0; }
+.dev-resumen-total-row span { color: var(--text-muted); }
+.dev-diferencia-box { display: flex; align-items: center; gap: 8px; padding: .65rem .9rem; border-radius: 8px; font-size: .88rem; margin-top: .6rem; }
+.dev-diferencia-cobrar { background: rgba(229,62,62,.1); color: var(--danger); border: 1px solid rgba(229,62,62,.3); }
+.dev-diferencia-dar { background: rgba(56,161,105,.1); color: var(--success); border: 1px solid rgba(56,161,105,.3); }
+.dev-btn-confirmar { background: #e67e22 !important; }
+
+/* Botón acción en detalle historial */
+.btn-gestionar-dev { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 1rem; padding: .75rem; background: rgba(230,126,34,.12); color: #e67e22; border: 1px solid rgba(230,126,34,.35); border-radius: 10px; font-size: .9rem; font-weight: 700; }
+.btn-gestionar-dev:active { background: rgba(230,126,34,.22); }
+
+/* Estado badges en lista devoluciones */
+.badge-dev-estado { font-size: .65rem; padding: 2px 6px; border-radius: 8px; font-weight: 700; }
+.badge-cambiado { background: rgba(230,126,34,.15); color: #e67e22; border: 1px solid rgba(230,126,34,.3); }
+.badge-devuelto { background: rgba(56,161,105,.15); color: var(--success); border: 1px solid rgba(56,161,105,.3); }

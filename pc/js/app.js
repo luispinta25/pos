@@ -73,6 +73,11 @@ function updateNavbarCounter(moduleName, value = null) {
             totalAmount.textContent = '';
             break;
 
+        case 'devoluciones':
+            totalLabel.textContent = 'Devoluciones:';
+            totalAmount.textContent = '';
+            break;
+
         case 'caja-virtual':
             totalLabel.textContent = 'Caja Virtual:';
             totalAmount.textContent = '';

@@ -71,6 +71,7 @@ function navigateTo(screen) {
     $('gastosScreen').classList.toggle('hidden', screen !== 'gastos');
     $('utilidadesScreen').classList.toggle('hidden', screen !== 'utilidades');
     $('transferenciasScreen').classList.toggle('hidden', screen !== 'transferencias');
+    $('devolucionesScreen').classList.toggle('hidden', screen !== 'devoluciones');
     currentScreen = screen;
     document.querySelectorAll('.nav-item[data-screen]').forEach(el => {
         el.classList.toggle('active', el.dataset.screen === screen);
@@ -78,6 +79,7 @@ function navigateTo(screen) {
     if (screen === 'hist') { initHistorialDate(); loadHistorial(); }
     if (screen === 'gastos') { initGastosDate(); loadGastos(); }
     if (screen === 'transferencias') { loadTransferencias(); }
+    if (screen === 'devoluciones') { initDevolucionesDate(); loadDevoluciones(); }
 }
 
 // ── Event listeners globales ───────────────────────────
@@ -106,6 +108,7 @@ function initApp_eventListeners() {
         $('gastosScreen').classList.add('hidden');
         $('utilidadesScreen').classList.add('hidden');
         $('transferenciasScreen').classList.add('hidden');
+        $('devolucionesScreen').classList.add('hidden');
         $('loginScreen').style.display = 'flex';
         currentScreen = 'pos';
         cart = []; currentClient = defaultClient(); allProducts = []; saveCartToStorage();
@@ -122,7 +125,7 @@ function initApp_eventListeners() {
 // ── Bootstrap: carga views → registra listeners → sesión ─
 async function bootstrap() {
     showLoader();
-    const views = ['login', 'pos', 'historial', 'gastos', 'utilidades', 'transferencias'];
+    const views = ['login', 'pos', 'historial', 'gastos', 'utilidades', 'transferencias', 'devoluciones'];
     const container = $('viewsContainer');
     for (const view of views) {
         try {
@@ -138,6 +141,7 @@ async function bootstrap() {
     initGastos_eventListeners();
     initUtilidades_eventListeners();
     initTransferencias_eventListeners();
+    initDevoluciones_eventListeners();
     initApp_eventListeners();
     // Verificar sesión (muestra login o inicia app)
     await checkSession();

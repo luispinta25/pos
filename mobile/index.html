@@ -47,6 +47,9 @@
     <button class="nav-item" data-screen="transferencias">
         <i class="fas fa-university"></i> Caja Virtual
     </button>
+    <button class="nav-item" data-screen="devoluciones">
+        <i class="fas fa-undo-alt"></i> Devoluciones
+    </button>
     <div class="nav-drawer-footer">Powered by LP Solutions</div>
 </nav>
 
@@ -367,6 +370,18 @@
     </div>
 </div>
 
+<!-- ── MODAL GESTIÓN DEVOLUCIÓN / CAMBIO ── -->
+<div id="devGestionModal" class="modal">
+    <div class="modal-content" style="max-height:88dvh;">
+        <div class="modal-header">
+            <h2><i class="fas fa-undo-alt" style="color:#e67e22;"></i> Devolución / Cambio</h2>
+            <button class="modal-close" onclick="hideModal('devGestionModal')">×</button>
+        </div>
+        <div id="devGestionBody" style="padding:.2rem 0;"></div>
+        <div class="modal-footer" id="devGestionFooter" style="gap:8px;"></div>
+    </div>
+</div>
+
 <div id="toastContainer"></div>
 <div id="screenBlocker"><div class="loader"></div></div>
 
@@ -396,6 +411,7 @@
 <script src="js/gastos.js"></script>
 <script src="js/utilidades.js"></script>
 <script src="js/transferencias.js"></script>
+<script src="js/devoluciones.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

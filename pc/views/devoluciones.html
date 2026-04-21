@@ -1,0 +1,936 @@
+<div class="container-full" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px;">
+
+    <div style="display: grid; grid-template-columns: 380px 1fr; gap: 20px; height: 100%;">
+
+        <!-- ══ PANEL IZQUIERDO: búsqueda y lista de ventas ══ -->
+        <div style="display: flex; flex-direction: column; gap: 12px; height: 100%; overflow: hidden;">
+
+            <div class="card" style="flex-shrink: 0; padding: 20px; margin-bottom: 0;">
+                <h3 style="margin-bottom: 14px; font-size: 1.1em; color: #333;">
+                    <i class="fas fa-undo-alt" style="color: #e67e22;"></i> Devoluciones y Cambios
+                </h3>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label class="form-label">Filtrar por fecha</label>
+                    <input type="date" id="devFecha" class="form-input" style="margin-bottom: 0;">
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label class="form-label">Buscar por código de venta</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="devBusqueda" class="form-input" placeholder="Ej: S176877456…"
+                            style="margin-bottom: 0;" autocomplete="off">
+                        <button class="btn btn-accent" id="devBuscarBtn" style="flex-shrink: 0; padding: 8px 14px;">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="devResumenBar" class="dev-resumen-bar hidden"></div>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; scrollbar-width: thin; padding-right: 4px;">
+                <div id="devVentasList">
+                    <div class="dev-empty-state">
+                        <i class="fas fa-undo-alt"></i>
+                        <p>Selecciona una fecha o busca una venta</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ PANEL DERECHO: gestión ══ -->
+        <div style="overflow-y: auto; scrollbar-width: thin; height: 100%;">
+            <div id="devGestionPanel">
+                <div class="dev-panel-placeholder">
+                    <i class="fas fa-hand-point-left"></i>
+                    <h3>Selecciona una venta</h3>
+                    <p>Haz clic en una venta de la lista para gestionar su devolución o cambio</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══ ESTILOS ═══════════════════════════════════════════════════════════════════ -->
+<style>
+    /* Panel derecho placeholder */
+    .dev-panel-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 60vh;
+        color: #bbb;
+        text-align: center;
+        gap: 12px;
+    }
+    .dev-panel-placeholder i { font-size: 3rem; opacity: .3; }
+    .dev-panel-placeholder h3 { font-size: 1.1rem; font-weight: 600; color: #999; }
+    .dev-panel-placeholder p  { font-size: .9rem; color: #bbb; max-width: 300px; }
+
+    /* Lista ventas */
+    .dev-venta-card {
+        background: #fff;
+        border: 1.5px solid #e8e8e8;
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all .15s ease;
+    }
+    .dev-venta-card:hover { border-color: #e67e22; box-shadow: 0 3px 10px rgba(230,126,34,.12); }
+    .dev-venta-card.activa { border-color: #e67e22; background: rgba(230,126,34,.04); }
+    .dev-venta-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+    .dev-venta-id { font-family: monospace; font-size: .8rem; color: #888; }
+    .dev-venta-total { font-size: 1rem; font-weight: 800; color: #d4a017; }
+    .dev-venta-card-bot { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .dev-venta-cliente { font-size: .82rem; color: #333; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dev-venta-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .dev-venta-hora { font-size: .75rem; color: #999; }
+    .dev-badge { font-size: .65rem; padding: 2px 7px; border-radius: 8px; font-weight: 700; text-transform: uppercase; display: inline-block; border: 1px solid; }
+    .dev-badge-ef  { background: rgba(40,167,69,.1);  color: #28a745; border-color: #28a745; }
+    .dev-badge-tr  { background: rgba(23,162,184,.1); color: #17a2b8; border-color: #17a2b8; }
+    .dev-badge-cr  { background: rgba(212,160,23,.1); color: #d4a017; border-color: #d4a017; }
+    .dev-badge-cambiado { background: rgba(230,126,34,.1); color: #e67e22; border-color: #e67e22; }
+    .dev-empty-state { text-align: center; padding: 3rem 1rem; color: #bbb; }
+    .dev-empty-state i { font-size: 2.5rem; display: block; margin-bottom: .6rem; opacity: .35; }
+    .dev-resumen-bar { background: rgba(230,126,34,.07); border: 1px solid rgba(230,126,34,.2); border-radius: 8px; padding: 8px 12px; font-size: .82rem; color: #333; margin-top: 6px; }
+
+    /* Gestión panel */
+    .dev-venta-info-bar {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 12px 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        font-size: .83rem;
+        margin-bottom: 16px;
+        border: 1px solid #e8e8e8;
+    }
+    .dev-info-id { font-family: monospace; color: #888; }
+    .dev-info-sep { color: #ccc; }
+    .dev-info-fecha { color: #888; }
+    .dev-info-cliente { font-weight: 700; color: #333; }
+
+    /* Step 1 - ítems */
+    .dev-item-row {
+        background: #f8f9fa;
+        border: 1.5px solid #e8e8e8;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        transition: border-color .15s;
+    }
+    .dev-item-row.con-seleccion { border-color: #e67e22; background: rgba(230,126,34,.03); }
+    .dev-item-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 8px; }
+    .dev-item-name { font-size: .92rem; font-weight: 600; color: #333; flex: 1; }
+    .dev-item-precio { font-size: .92rem; font-weight: 700; color: #d4a017; white-space: nowrap; }
+    .dev-item-bot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .dev-item-info { font-size: .78rem; color: #888; display: flex; align-items: center; gap: 6px; }
+    .dev-parcial-tag { background: rgba(212,160,23,.12); color: #d4a017; border: 1px solid rgba(212,160,23,.3); font-size: .68rem; padding: 1px 6px; border-radius: 6px; font-weight: 700; }
+    .dev-qty-control { display: flex; align-items: center; gap: 6px; }
+    .dev-qty-btn {
+        background: #fff; border: 1.5px solid #ddd; border-radius: 7px;
+        width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+        font-size: 1rem; font-weight: 700; color: #555; cursor: pointer; padding: 0;
+        transition: all .12s;
+    }
+    .dev-qty-btn:hover { border-color: #e67e22; color: #e67e22; }
+    .dev-qty-btn-plus { border-color: #28a745; color: #28a745; }
+    .dev-qty-btn-plus:hover { background: rgba(40,167,69,.08); }
+    .dev-qty-btn-max { border-color: #d4a017; color: #d4a017; font-size: .7rem; width: auto; padding: 0 8px; }
+    .dev-qty-btn-max:hover { background: rgba(212,160,23,.08); }
+    .dev-qty-input {
+        width: 70px; text-align: center; padding: 6px 8px; font-size: .92rem;
+        border: 1.5px solid #ddd; border-radius: 7px; background: #fff; color: #333;
+        -moz-appearance: textfield;
+    }
+    .dev-qty-input::-webkit-outer-spin-button,
+    .dev-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .dev-qty-input:focus { outline: none; border-color: #e67e22; box-shadow: 0 0 0 3px rgba(230,126,34,.12); }
+
+    /* Totales step 1 */
+    .dev-step1-totales {
+        background: rgba(230,126,34,.06); border: 1px solid rgba(230,126,34,.2);
+        border-radius: 8px; padding: 10px 14px; margin-top: 12px;
+        font-size: .87rem; color: #555; display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* Selección tipo */
+    .dev-tipo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+    .dev-tipo-btn {
+        display: flex; flex-direction: column; align-items: center; gap: 8px;
+        padding: 20px 16px; border: 2px solid #e8e8e8; border-radius: 12px;
+        background: #fff; cursor: pointer; text-align: center;
+        transition: all .15s; color: #555;
+    }
+    .dev-tipo-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.1); }
+    .dev-tipo-btn i { font-size: 1.8rem; }
+    .dev-tipo-btn strong { font-size: .95rem; color: #333; }
+    .dev-tipo-btn small { font-size: .78rem; color: #888; }
+    .dev-tipo-dev { border-color: #28a745; }
+    .dev-tipo-dev i { color: #28a745; }
+    .dev-tipo-dev:hover { border-color: #28a745; background: rgba(40,167,69,.04); }
+    .dev-tipo-cambio { border-color: #e67e22; }
+    .dev-tipo-cambio i { color: #e67e22; }
+    .dev-tipo-cambio:hover { border-color: #e67e22; background: rgba(230,126,34,.04); }
+
+    /* Step 2 - búsqueda cambio */
+    .dev-search-results-drop {
+        border: 1.5px solid #e8e8e8; border-radius: 8px;
+        max-height: 220px; overflow-y: auto; background: #fff; margin-top: 4px;
+    }
+    .dev-drop-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 9px 14px; border-bottom: 1px solid #f0f0f0;
+        cursor: pointer; transition: background .1s; gap: 8px;
+    }
+    .dev-drop-item:last-child { border-bottom: none; }
+    .dev-drop-item:hover { background: #fef9f0; }
+    .dev-drop-item-name { font-size: .87rem; font-weight: 600; color: #333; }
+    .dev-drop-item-sub  { font-size: .74rem; color: #888; margin-top: 1px; }
+    .dev-drop-item-price { font-size: .9rem; font-weight: 700; color: #d4a017; white-space: nowrap; flex-shrink: 0; }
+    .dev-cambio-table { width: 100%; border-collapse: collapse; font-size: .86rem; margin-top: 8px; }
+    .dev-cambio-table th { background: #f8f9fa; padding: 8px 12px; text-align: left; font-size: .78rem; color: #666; font-weight: 600; border-bottom: 1px solid #e8e8e8; }
+    .dev-cambio-table td { padding: 8px 12px; border-bottom: 1px solid #f5f5f5; color: #333; }
+    .dev-cambio-table tr:last-child td { border-bottom: none; }
+    .dev-cambio-table .td-del { text-align: center; }
+    .btn-del-cambio { background: rgba(220,53,69,.1); color: #dc3545; border: 1px solid rgba(220,53,69,.25); border-radius: 6px; padding: 3px 8px; font-size: .78rem; cursor: pointer; }
+    .btn-del-cambio:hover { background: rgba(220,53,69,.2); }
+
+    /* Resumen */
+    .dev-tipo-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: .82rem; font-weight: 700; padding: 5px 14px; border-radius: 20px;
+        margin-bottom: 14px;
+    }
+    .dev-tipo-badge-devolucion { background: rgba(40,167,69,.1); color: #28a745; border: 1px solid rgba(40,167,69,.3); }
+    .dev-tipo-badge-cambio     { background: rgba(230,126,34,.1); color: #e67e22; border: 1px solid rgba(230,126,34,.3); }
+
+    .dev-resumen-table { width: 100%; border-collapse: collapse; font-size: .87rem; margin-bottom: 10px; }
+    .dev-resumen-table td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; }
+    .dev-resumen-table td:first-child { color: #555; width: 60%; }
+    .dev-resumen-table td:last-child { font-weight: 700; color: #333; text-align: right; }
+    .dev-resumen-table tr:last-child td { border-bottom: none; }
+
+    .dev-totales-card {
+        background: #f8f9fa; border-radius: 10px; padding: 14px 16px; margin: 14px 0;
+        display: flex; flex-direction: column; gap: 8px;
+    }
+    .dev-total-row { display: flex; justify-content: space-between; font-size: .88rem; }
+    .dev-total-row span { color: #666; }
+    .dev-total-row strong { font-weight: 800; }
+
+    .dev-diferencia-box {
+        display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+        border-radius: 10px; font-size: .9rem; margin: 10px 0;
+    }
+    .dev-diferencia-cobrar { background: rgba(220,53,69,.07); color: #dc3545; border: 1px solid rgba(220,53,69,.2); }
+    .dev-diferencia-dar    { background: rgba(40,167,69,.07);  color: #28a745; border: 1px solid rgba(40,167,69,.2); }
+    .dev-diferencia-box i  { font-size: 1.2rem; flex-shrink: 0; }
+
+    .dev-pago-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+    .dev-pago-btn {
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
+        padding: 12px; background: #f8f9fa; border: 2px solid #ddd; border-radius: 10px;
+        cursor: pointer; color: #666; font-size: .82rem; font-weight: 600; transition: all .15s;
+    }
+    .dev-pago-btn i { font-size: 1.2rem; }
+    .dev-pago-btn.activo { border-color: #d4a017; color: #d4a017; background: rgba(212,160,23,.07); }
+
+    /* Steps nav bar */
+    .dev-steps-bar {
+        display: flex; align-items: center; gap: 6px; margin-bottom: 18px; flex-wrap: wrap;
+    }
+    .dev-step-label {
+        font-size: .78rem; font-weight: 700; padding: 4px 12px; border-radius: 20px;
+        border: 1.5px solid #e8e8e8; color: #aaa; background: #f8f9fa;
+    }
+    .dev-step-label.activo { border-color: #e67e22; color: #e67e22; background: rgba(230,126,34,.07); }
+    .dev-step-label.completo { border-color: #28a745; color: #28a745; background: rgba(40,167,69,.07); }
+    .dev-step-sep { color: #ccc; font-size: .75rem; }
+
+    /* Botones acción */
+    .btn-dev-confirmar { background: #e67e22; color: #fff; border: none; border-radius: 8px; padding: 10px 22px; font-size: .92rem; font-weight: 700; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 7px; }
+    .btn-dev-confirmar:hover { background: #cf6d17; box-shadow: 0 4px 12px rgba(230,126,34,.35); }
+    .btn-dev-confirmar:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-dev-volver { background: #f8f9fa; color: #555; border: 1.5px solid #ddd; border-radius: 8px; padding: 10px 18px; font-size: .88rem; font-weight: 600; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-dev-volver:hover { border-color: #aaa; background: #f0f0f0; }
+
+    .dev-section-title {
+        font-size: .78rem; font-weight: 700; color: #888; text-transform: uppercase;
+        letter-spacing: .6px; margin: 16px 0 8px; padding-bottom: 6px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .dev-motivo-box { background: #f8f9fa; border-radius: 7px; padding: 8px 12px; font-size: .82rem; color: #555; margin-top: 10px; display: flex; align-items: center; gap: 7px; }
+</style>
+
+<!-- ═══ SCRIPT ════════════════════════════════════════════════════════════════════ -->
+<script>
+// ─── Estado ─────────────────────────────────────────────────────────────
+let _devVentaActual   = null;
+let _devDetalles      = [];       // líneas de ventas_detalle con cantidad_max
+let _devSelecciones   = {};       // { [detalle_uuid]: { cantidad, precio, ... } }
+let _devCambioItems   = [];       // [{ code, name, price, quantity }]
+let _devStep          = 1;
+let _devMotivo        = '';
+let _devTipoPago      = 'EFECTIVO';
+let _devAllProducts   = [];
+let _devAllClients    = [];
+let _devLoading       = false;
+
+// ─── Init ────────────────────────────────────────────────────────────────
+async function initDevoluciones() {
+    const db = getSupabaseClient();
+    if (!db) return;
+
+    // Fecha hoy
+    document.getElementById('devFecha').value = new Date().toISOString().split('T')[0];
+
+    // Cargar catálogos en paralelo
+    const [prodRes, cliRes] = await Promise.allSettled([
+        db.from('ferre_inventario').select('*').order('producto'),
+        db.from('ferre_clientes').select('cedula, razon_social').order('razon_social')
+    ]);
+    _devAllProducts = prodRes.value?.data || [];
+    _devAllClients  = cliRes.value?.data  || [];
+
+    // Listeners
+    document.getElementById('devFecha').addEventListener('change', devCargarLista);
+    document.getElementById('devBuscarBtn').addEventListener('click', devCargarLista);
+    document.getElementById('devBusqueda').addEventListener('keydown', e => {
+        if (e.key === 'Enter') devCargarLista();
+    });
+
+    devCargarLista();
+}
+
+// ─── Lista ventas ────────────────────────────────────────────────────────
+async function devCargarLista() {
+    if (_devLoading) return;
+    _devLoading = true;
+    const db = getSupabaseClient();
+    const lista = document.getElementById('devVentasList');
+    lista.innerHTML = '<div class="dev-empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando ventas…</p></div>';
+
+    try {
+        const fecha  = document.getElementById('devFecha').value;
+        const busq   = document.getElementById('devBusqueda').value.trim();
+        let query = db.from('ferre_ventas')
+            .select('id, id_venta, fecha_hora_venta, cliente_id, total, tipo_pago, tipo, estado')
+            .in('estado', ['COMPLETADO', 'AUTORIZADO', 'CAMBIADO'])
+            .order('fecha_hora_venta', { ascending: false });
+
+        if (busq) {
+            query = query.ilike('id_venta', `%${busq}%`).limit(100);
+        } else if (fecha) {
+            const [y, m, d] = fecha.split('-').map(Number);
+            const s = new Date(y, m - 1, d, 0, 0, 0, 0);
+            const e = new Date(y, m - 1, d, 23, 59, 59, 999);
+            query = query.gte('fecha_hora_venta', s.toISOString()).lte('fecha_hora_venta', e.toISOString());
+        } else {
+            const s = new Date(); s.setHours(0, 0, 0, 0);
+            const e = new Date(); e.setHours(23, 59, 59, 999);
+            query = query.gte('fecha_hora_venta', s.toISOString()).lte('fecha_hora_venta', e.toISOString());
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        devRenderLista(data || []);
+    } catch (err) {
+        lista.innerHTML = `<div class="dev-empty-state" style="color:#dc3545;"><i class="fas fa-exclamation-triangle"></i><p>${_esc(err.message)}</p></div>`;
+    } finally {
+        _devLoading = false;
+    }
+}
+
+function devRenderLista(ventas) {
+    const lista = document.getElementById('devVentasList');
+    const bar   = document.getElementById('devResumenBar');
+
+    if (!ventas.length) {
+        lista.innerHTML = '<div class="dev-empty-state"><i class="fas fa-receipt"></i><p>Sin ventas para este criterio</p></div>';
+        bar.classList.add('hidden');
+        return;
+    }
+
+    bar.classList.remove('hidden');
+    bar.innerHTML = `<strong>${ventas.length} venta${ventas.length > 1 ? 's' : ''}</strong> disponibles`;
+
+    lista.innerHTML = '';
+    ventas.forEach(v => {
+        const hora = new Date(v.fecha_hora_venta).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+        const tp   = v.tipo_pago || 'EFECTIVO';
+        const badgeClass = tp === 'TRANSFERENCIA' ? 'dev-badge-tr' : tp.startsWith('CR') ? 'dev-badge-cr' : 'dev-badge-ef';
+        const cliente = v.cliente_id === '9999999999999' ? 'Consumidor Final'
+            : (_devAllClients.find(c => c.cedula === v.cliente_id)?.razon_social || v.cliente_id);
+        const esCambiado = v.estado === 'CAMBIADO';
+
+        const card = document.createElement('div');
+        card.className = 'dev-venta-card' + (_devVentaActual?.id === v.id ? ' activa' : '');
+        card.innerHTML = `
+            <div class="dev-venta-card-top">
+                <span class="dev-venta-id">${_esc(v.id_venta)}</span>
+                <span class="dev-venta-total">${formatCurrency(v.total)}</span>
+            </div>
+            <div class="dev-venta-card-bot">
+                <span class="dev-venta-cliente">${_esc(cliente)}</span>
+                <span class="dev-venta-meta">
+                    ${esCambiado ? '<span class="dev-badge dev-badge-cambiado">CAMBIADO</span>' : ''}
+                    <span class="dev-venta-hora">${hora}</span>
+                    <span class="dev-badge ${badgeClass}">${_esc(tp)}</span>
+                </span>
+            </div>`;
+        card.addEventListener('click', () => devAbrirGestion(v));
+        lista.appendChild(card);
+    });
+}
+
+// ─── Panel derecho: abrir gestión ────────────────────────────────────────
+async function devAbrirGestion(v) {
+    _devVentaActual  = v;
+    _devDetalles     = [];
+    _devSelecciones  = {};
+    _devCambioItems  = [];
+    _devStep         = 1;
+    _devMotivo       = '';
+    _devTipoPago     = 'EFECTIVO';
+
+    // Resaltar card activa
+    document.querySelectorAll('.dev-venta-card').forEach(c => c.classList.remove('activa'));
+    event.currentTarget.classList.add('activa');
+
+    const panel = document.getElementById('devGestionPanel');
+    panel.innerHTML = '<div class="dev-panel-placeholder"><i class="fas fa-spinner fa-spin" style="font-size:2rem;opacity:.5;"></i></div>';
+
+    const db = getSupabaseClient();
+    try {
+        const { data: detalles, error } = await db.from('ferre_ventas_detalle')
+            .select('*')
+            .eq('venta_id', v.id)
+            .in('estado', ['ACTIVO', 'PARCIAL']);
+        if (error) throw error;
+
+        if (!detalles || detalles.length === 0) {
+            panel.innerHTML = `<div class="card"><p style="color:#888;text-align:center;padding:2rem;">Esta venta no tiene ítems disponibles para devolver.</p></div>`;
+            return;
+        }
+
+        // Enriquecer nombres
+        const ids = [...new Set(detalles.map(d => d.producto_id))];
+        const prodMap = {};
+        ids.forEach(id => { const p = _devAllProducts.find(x => x.codigo === id); if (p) prodMap[id] = p; });
+        const missing = ids.filter(id => !prodMap[id]);
+        if (missing.length) {
+            for (let i = 0; i < missing.length; i += 10) {
+                const { data: prods } = await db.from('ferre_inventario').select('codigo,producto').in('codigo', missing.slice(i, i + 10));
+                if (prods) prods.forEach(p => { prodMap[p.codigo] = { ...(prodMap[p.codigo] || {}), producto: p.producto }; });
+            }
+        }
+
+        // Calcular máximos (descontando devoluciones previas)
+        const detalleIds = detalles.map(d => d.id);
+        const { data: prevDev } = await db.from('ferre_historial_devoluciones_detalle').select('detalle_id, cantidad_devuelta').in('detalle_id', detalleIds);
+        const yaDevuelto = {};
+        (prevDev || []).forEach(r => { yaDevuelto[r.detalle_id] = (yaDevuelto[r.detalle_id] || 0) + parseFloat(r.cantidad_devuelta); });
+
+        _devDetalles = detalles.map(d => ({
+            ...d,
+            nombre: prodMap[d.producto_id]?.producto || d.producto_id,
+            cantidad_max: Math.round((parseFloat(d.cantidad) - (yaDevuelto[d.id] || 0)) * 1000) / 1000
+        })).filter(d => d.cantidad_max > 0);
+
+        if (_devDetalles.length === 0) {
+            panel.innerHTML = `<div class="card"><p style="color:#888;text-align:center;padding:2rem;">Todos los ítems de esta venta ya fueron devueltos.</p></div>`;
+            return;
+        }
+
+        _devDetalles.forEach(d => {
+            _devSelecciones[d.id] = { cantidad: 0, precio: parseFloat(d.precio), producto_id: d.producto_id, nombre: d.nombre, cantidad_max: d.cantidad_max, detalle_id: d.id, id_detalle: d.id_detalle };
+        });
+
+        devRenderStep1();
+
+    } catch (err) {
+        panel.innerHTML = `<div class="card"><p style="color:#dc3545;padding:1rem;">${_esc(err.message)}</p></div>`;
+    }
+}
+
+// ─── Step 1: Cantidades a devolver ────────────────────────────────────────
+function devRenderStep1() {
+    _devStep = 1;
+    const v = _devVentaActual;
+    const fecha = new Date(v.fecha_hora_venta).toLocaleDateString('es-EC');
+    const cliente = v.cliente_id === '9999999999999' ? 'CONSUMIDOR FINAL'
+        : (_devAllClients.find(c => c.cedula === v.cliente_id)?.razon_social || v.cliente_id);
+
+    const itemsHtml = _devDetalles.map(d => {
+        const sel = _devSelecciones[d.id];
+        const esParcial = d.estado === 'PARCIAL';
+        return `
+        <div class="dev-item-row" id="devRow_${d.id}">
+            <div class="dev-item-top">
+                <div class="dev-item-name">${_esc(d.nombre)}</div>
+                <div class="dev-item-precio">${formatCurrency(d.precio)}</div>
+            </div>
+            <div class="dev-item-bot">
+                <div class="dev-item-info">
+                    Vendido: <strong>${parseFloat(d.cantidad)}</strong>
+                    ${esParcial ? '<span class="dev-parcial-tag">PARCIAL</span>' : ''}
+                    &nbsp;·&nbsp; Disponible: <strong>${d.cantidad_max}</strong>
+                </div>
+                <div class="dev-qty-control">
+                    <button class="dev-qty-btn" onclick="devAjustar('${d.id}', -1)">−</button>
+                    <input type="number" class="dev-qty-input" id="devQty_${d.id}"
+                        value="${sel.cantidad}" min="0" max="${d.cantidad_max}" step="0.001"
+                        onchange="devSetQty('${d.id}', this.value)">
+                    <button class="dev-qty-btn dev-qty-btn-plus" onclick="devAjustar('${d.id}', 1)">+</button>
+                    <button class="dev-qty-btn dev-qty-btn-max" onclick="devSetQty('${d.id}', ${d.cantidad_max})">MAX</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('devGestionPanel').innerHTML = `
+        <div class="card" style="margin-bottom: 16px;">
+            ${_stepsBar(1)}
+            <div class="dev-venta-info-bar">
+                <span class="dev-info-id">${_esc(v.id_venta)}</span>
+                <span class="dev-info-sep">·</span>
+                <span class="dev-info-fecha">${fecha}</span>
+                <span class="dev-info-sep">·</span>
+                <span class="dev-info-cliente">${_esc(cliente)}</span>
+            </div>
+            <div class="dev-section-title">SELECCIONA CANTIDADES A DEVOLVER</div>
+            ${itemsHtml}
+            <div class="form-group" style="margin-top: 14px; margin-bottom: 0;">
+                <label class="form-label">Motivo (opcional)</label>
+                <input type="text" id="devMotivoInput" class="form-input"
+                    placeholder="Ej: Producto defectuoso, error en pedido…"
+                    value="${_esc(_devMotivo)}" autocomplete="off" style="margin-bottom:0;">
+            </div>
+            <div id="devStep1Totales" class="dev-step1-totales hidden" style="margin-top:12px;"></div>
+            <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+                <button class="btn-dev-confirmar" onclick="devPasarStep2()">
+                    Continuar <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>`;
+
+    document.getElementById('devMotivoInput').addEventListener('input', e => { _devMotivo = e.target.value; });
+    devActualizarTotalesStep1();
+}
+
+function devAjustar(id, delta) {
+    const sel = _devSelecciones[id];
+    if (!sel) return;
+    devSetQty(id, (sel.cantidad || 0) + delta);
+}
+
+function devSetQty(id, val) {
+    const sel = _devSelecciones[id];
+    if (!sel) return;
+    let n = parseFloat(val) || 0;
+    n = Math.round(Math.min(sel.cantidad_max, Math.max(0, n)) * 1000) / 1000;
+    sel.cantidad = n;
+    const inp = document.getElementById(`devQty_${id}`);
+    if (inp) inp.value = n;
+    const row = document.getElementById(`devRow_${id}`);
+    if (row) row.classList.toggle('con-seleccion', n > 0);
+    devActualizarTotalesStep1();
+}
+
+function devActualizarTotalesStep1() {
+    const sel = Object.values(_devSelecciones).filter(x => x.cantidad > 0);
+    const tot = sel.reduce((s, x) => s + x.cantidad * x.precio, 0);
+    const el = document.getElementById('devStep1Totales');
+    if (!el) return;
+    if (sel.length > 0) {
+        el.classList.remove('hidden');
+        el.innerHTML = `<span><strong>${sel.length} ítem${sel.length > 1 ? 's' : ''}</strong> seleccionado${sel.length > 1 ? 's' : ''}</span><span style="color:#e67e22;font-weight:800;">Total a devolver: ${formatCurrency(tot)}</span>`;
+    } else {
+        el.classList.add('hidden');
+    }
+}
+
+// ─── Pregunta tipo ───────────────────────────────────────────────────────
+function devPasarStep2() {
+    _devMotivo = document.getElementById('devMotivoInput')?.value || '';
+    const sel = Object.values(_devSelecciones).filter(x => x.cantidad > 0);
+    if (sel.length === 0) { showCustomAlert('Selecciona al menos un ítem a devolver', 'warning'); return; }
+    const esTotalCompleto = _devDetalles.every(d => _devSelecciones[d.id]?.cantidad === d.cantidad_max);
+    if (esTotalCompleto && _devCambioItems.length === 0) {
+        devRenderPreguntaTipo();
+    } else {
+        devRenderStep2();
+    }
+}
+
+function devRenderPreguntaTipo() {
+    document.getElementById('devGestionPanel').innerHTML = `
+        <div class="card">
+            ${_stepsBar(1.5)}
+            <div style="text-align:center;padding:16px 0 8px;">
+                <i class="fas fa-question-circle" style="font-size:2.5rem;color:#e67e22;"></i>
+                <p style="margin-top:10px;font-size:.95rem;color:#555;">Seleccionaste todos los ítems. ¿Qué deseas hacer?</p>
+            </div>
+            <div class="dev-tipo-grid">
+                <button class="dev-tipo-btn dev-tipo-dev" onclick="devRenderStep3()">
+                    <i class="fas fa-undo-alt"></i>
+                    <strong>Devolución Total</strong>
+                    <small>Cliente devuelve todo y recibe reembolso</small>
+                </button>
+                <button class="dev-tipo-btn dev-tipo-cambio" onclick="devRenderStep2()">
+                    <i class="fas fa-exchange-alt"></i>
+                    <strong>Cambio</strong>
+                    <small>Cliente quiere llevarse otros productos</small>
+                </button>
+            </div>
+            <div style="margin-top:16px;">
+                <button class="btn-dev-volver" onclick="devRenderStep1()">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+        </div>`;
+}
+
+// ─── Step 2: Productos de cambio ─────────────────────────────────────────
+function devRenderStep2() {
+    _devStep = 2;
+    const totalDev = Object.values(_devSelecciones).reduce((s, x) => s + x.cantidad * x.precio, 0);
+
+    const cambioHtml = _devCambioItems.length
+        ? `<table class="dev-cambio-table">
+            <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th><th></th></tr></thead>
+            <tbody>${_devCambioItems.map((it, i) => `
+                <tr>
+                    <td>${_esc(it.name)}</td>
+                    <td>${it.quantity}</td>
+                    <td>${formatCurrency(it.price)}</td>
+                    <td>${formatCurrency(it.quantity * it.price)}</td>
+                    <td class="td-del"><button class="btn-del-cambio" onclick="devElimCambio(${i})"><i class="fas fa-times"></i></button></td>
+                </tr>`).join('')}
+            </tbody></table>`
+        : '<p style="color:#aaa;font-size:.85rem;text-align:center;padding:.5rem 0;">Sin productos agregados aún</p>';
+
+    document.getElementById('devGestionPanel').innerHTML = `
+        <div class="card">
+            ${_stepsBar(2)}
+            <div class="dev-section-title">AGREGAR PRODUCTOS A ENTREGAR AL CLIENTE</div>
+            <div class="form-group" style="margin-bottom:4px;">
+                <label class="form-label">Buscar producto</label>
+                <input type="text" id="devCambioSearch" class="form-input" style="margin-bottom:0;"
+                    placeholder="Código o nombre…" autocomplete="off">
+            </div>
+            <div id="devCambioDropdown" class="dev-search-results-drop" style="display:none;"></div>
+            <div class="dev-section-title" style="margin-top:14px;">ÍTEMS SELECCIONADOS</div>
+            <div id="devCambioTable">${cambioHtml}</div>
+            <div style="background:#f8f9fa;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:.85rem;display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;justify-content:space-between;">
+                    <span style="color:#666;">Total a devolver al cliente:</span>
+                    <span style="color:#28a745;font-weight:800;">−${formatCurrency(totalDev)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                    <span style="color:#666;">Total entregado al cliente:</span>
+                    <span id="devCambioTotalDisplay" style="color:#dc3545;font-weight:800;">+${formatCurrency(_devCambioItems.reduce((s,x)=>s+x.quantity*x.price,0))}</span>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:16px;">
+                <button class="btn-dev-volver" onclick="devRenderStep1()"><i class="fas fa-arrow-left"></i> Volver</button>
+                <button class="btn-dev-confirmar" onclick="devRenderStep3()">Continuar <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>`;
+
+    const inp = document.getElementById('devCambioSearch');
+    inp.addEventListener('input', () => devFiltrarCambio(inp.value.trim()));
+    inp.addEventListener('blur', () => setTimeout(() => { const d = document.getElementById('devCambioDropdown'); if(d) d.style.display='none'; }, 200));
+}
+
+function devFiltrarCambio(query) {
+    const drop = document.getElementById('devCambioDropdown');
+    if (!drop) return;
+    if (!query) { drop.style.display = 'none'; return; }
+    const q = query.toLowerCase();
+    const matches = _devAllProducts.filter(p => (p.producto.toLowerCase().includes(q) || p.codigo.startsWith(query)) && p.stock > 0).slice(0, 10);
+    if (!matches.length) {
+        drop.innerHTML = '<div style="padding:.6rem 1rem;color:#aaa;font-size:.85rem;">Sin resultados con stock disponible</div>';
+        drop.style.display = 'block';
+        return;
+    }
+    drop.innerHTML = matches.map(p => `
+        <div class="dev-drop-item" onclick="devAgregarCambio('${_esc(p.codigo)}')">
+            <div>
+                <div class="dev-drop-item-name">${_esc(p.producto)}</div>
+                <div class="dev-drop-item-sub">Cód: ${_esc(p.codigo)} · Stock: ${p.stock}</div>
+            </div>
+            <span class="dev-drop-item-price">${formatCurrency(p.precio)}</span>
+        </div>`).join('');
+    drop.style.display = 'block';
+}
+
+function devAgregarCambio(codigo) {
+    const prod = _devAllProducts.find(p => p.codigo === codigo);
+    if (!prod) return;
+    const ex = _devCambioItems.find(x => x.code === codigo);
+    const stockDisp = prod.stock - (ex ? ex.quantity : 0);
+    if (stockDisp <= 0) { showCustomAlert('Stock insuficiente para ese producto', 'warning'); return; }
+    if (ex) { ex.quantity = Math.min(prod.stock, ex.quantity + 1); }
+    else { _devCambioItems.push({ code: codigo, name: prod.producto, price: prod.precio, quantity: 1 }); }
+    devRenderStep2();
+}
+
+function devElimCambio(idx) {
+    _devCambioItems.splice(idx, 1);
+    devRenderStep2();
+}
+
+// ─── Step 3: Resumen y confirmación ─────────────────────────────────────
+function devRenderStep3() {
+    _devStep = 3;
+    const sel = Object.values(_devSelecciones).filter(x => x.cantidad > 0);
+    const totalDev = Math.round(sel.reduce((s, x) => s + x.cantidad * x.precio, 0) * 100) / 100;
+    const totalCam = Math.round(_devCambioItems.reduce((s, x) => s + x.quantity * x.price, 0) * 100) / 100;
+    const diferencia = Math.round((totalCam - totalDev) * 100) / 100;
+    const tipo = _devCambioItems.length > 0 ? 'CAMBIO' : 'DEVOLUCION';
+
+    const tablaDevHtml = sel.map(x => `
+        <tr>
+            <td>${_esc(x.nombre)}</td>
+            <td style="text-align:center;">${x.cantidad}</td>
+            <td style="text-align:right;">${formatCurrency(x.precio)}</td>
+            <td style="text-align:right;font-weight:700;">${formatCurrency(x.cantidad * x.precio)}</td>
+        </tr>`).join('');
+
+    const tablaCamHtml = _devCambioItems.map(x => `
+        <tr>
+            <td>${_esc(x.name)}</td>
+            <td style="text-align:center;">${x.quantity}</td>
+            <td style="text-align:right;">${formatCurrency(x.price)}</td>
+            <td style="text-align:right;font-weight:700;">${formatCurrency(x.quantity * x.price)}</td>
+        </tr>`).join('');
+
+    let diferenciaHtml = '';
+    let pagoHtml = '';
+    if (Math.abs(diferencia) >= 0.01) {
+        if (diferencia > 0) {
+            diferenciaHtml = `<div class="dev-diferencia-box dev-diferencia-cobrar">
+                <i class="fas fa-arrow-circle-up"></i>
+                <span>El cliente paga la diferencia: <strong>${formatCurrency(diferencia)}</strong></span>
+            </div>`;
+            pagoHtml = `
+                <div class="dev-section-title">FORMA DE PAGO DE LA DIFERENCIA</div>
+                <div class="dev-pago-grid">
+                    <div class="dev-pago-btn activo" id="devPagoEf" onclick="devSetTipoPago('EFECTIVO')">
+                        <i class="fas fa-money-bill-alt"></i> Efectivo
+                    </div>
+                    <div class="dev-pago-btn" id="devPagoTr" onclick="devSetTipoPago('TRANSFERENCIA')">
+                        <i class="fas fa-university"></i> Transferencia
+                    </div>
+                </div>`;
+        } else {
+            diferenciaHtml = `<div class="dev-diferencia-box dev-diferencia-dar">
+                <i class="fas fa-arrow-circle-down"></i>
+                <span>La ferretería da vuelto: <strong>${formatCurrency(Math.abs(diferencia))}</strong></span>
+            </div>`;
+        }
+    }
+
+    const motiHtml = _devMotivo
+        ? `<div class="dev-motivo-box"><i class="fas fa-comment" style="color:#aaa;"></i>${_esc(_devMotivo)}</div>` : '';
+
+    const backFn = tipo === 'CAMBIO' ? 'devRenderStep2()' : 'devRenderStep1()';
+    const tipoLabel = tipo === 'CAMBIO' ? 'Cambio' : 'Devolución';
+
+    document.getElementById('devGestionPanel').innerHTML = `
+        <div class="card">
+            ${_stepsBar(3)}
+            <div class="dev-section-title">RESUMEN</div>
+            <span class="dev-tipo-badge dev-tipo-badge-${tipo.toLowerCase()}">
+                <i class="fas fa-${tipo === 'CAMBIO' ? 'exchange-alt' : 'undo-alt'}"></i> ${tipo}
+            </span>
+
+            <div class="dev-section-title" style="margin-top:10px;">ÍTEMS A DEVOLVER</div>
+            <table class="dev-resumen-table">
+                <thead><tr style="font-size:.77rem;color:#888;">
+                    <th style="padding:6px 10px;text-align:left;font-weight:600;">Producto</th>
+                    <th style="padding:6px 10px;text-align:center;font-weight:600;">Cant.</th>
+                    <th style="padding:6px 10px;text-align:right;font-weight:600;">Precio</th>
+                    <th style="padding:6px 10px;text-align:right;font-weight:600;">Subtotal</th>
+                </tr></thead>
+                <tbody>${tablaDevHtml}</tbody>
+            </table>
+
+            ${tipo === 'CAMBIO' ? `
+            <div class="dev-section-title" style="margin-top:10px;">ÍTEMS ENTREGADOS</div>
+            <table class="dev-resumen-table">
+                <thead><tr style="font-size:.77rem;color:#888;">
+                    <th style="padding:6px 10px;text-align:left;font-weight:600;">Producto</th>
+                    <th style="padding:6px 10px;text-align:center;font-weight:600;">Cant.</th>
+                    <th style="padding:6px 10px;text-align:right;font-weight:600;">Precio</th>
+                    <th style="padding:6px 10px;text-align:right;font-weight:600;">Subtotal</th>
+                </tr></thead>
+                <tbody>${tablaCamHtml}</tbody>
+            </table>` : ''}
+
+            <div class="dev-totales-card">
+                <div class="dev-total-row">
+                    <span>Total devuelto:</span>
+                    <strong style="color:#28a745;">${formatCurrency(totalDev)}</strong>
+                </div>
+                ${tipo === 'CAMBIO' ? `<div class="dev-total-row">
+                    <span>Total entregado:</span>
+                    <strong style="color:#dc3545;">${formatCurrency(totalCam)}</strong>
+                </div>` : ''}
+            </div>
+
+            ${diferenciaHtml}
+            ${pagoHtml}
+            ${motiHtml}
+
+            <div style="display:flex;justify-content:space-between;margin-top:20px;">
+                <button class="btn-dev-volver" onclick="${backFn}">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+                <button class="btn-dev-confirmar" id="devBtnFinal" onclick="devConfirmar()">
+                    <i class="fas fa-check"></i> Confirmar ${tipoLabel}
+                </button>
+            </div>
+        </div>`;
+}
+
+function devSetTipoPago(tipo) {
+    _devTipoPago = tipo;
+    const ef = document.getElementById('devPagoEf');
+    const tr = document.getElementById('devPagoTr');
+    if (ef) ef.classList.toggle('activo', tipo === 'EFECTIVO');
+    if (tr) tr.classList.toggle('activo', tipo === 'TRANSFERENCIA');
+}
+
+// ─── Confirmar ───────────────────────────────────────────────────────────
+async function devConfirmar() {
+    const confirmed = await showCustomConfirm(
+        '¿Confirmar la operación? Esta acción no se puede deshacer.',
+        'Confirmar', 'Sí, confirmar', 'Cancelar'
+    );
+    if (!confirmed) return;
+
+    const btn = document.getElementById('devBtnFinal');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando…'; }
+
+    const db = getSupabaseClient();
+    const sel = Object.values(_devSelecciones).filter(x => x.cantidad > 0);
+    const totalDev = Math.round(sel.reduce((s, x) => s + x.cantidad * x.precio, 0) * 100) / 100;
+    const totalCam = Math.round(_devCambioItems.reduce((s, x) => s + x.quantity * x.price, 0) * 100) / 100;
+    const diferencia = Math.round((totalCam - totalDev) * 100) / 100;
+    const tipo = _devCambioItems.length > 0 ? 'CAMBIO' : 'DEVOLUCION';
+
+    try {
+        // 1. Cabecera
+        const { data: { user } } = await db.auth.getUser();
+        const userEmail = user?.email || '';
+        const idDevolucion = `DEV${Date.now()}`;
+
+        const { data: devData, error: devErr } = await db.from('ferre_devoluciones').insert({
+            id_devolucion: idDevolucion,
+            venta_id: _devVentaActual.id,
+            id_venta: _devVentaActual.id_venta,
+            tipo,
+            motivo: _devMotivo || null,
+            total_devuelto: totalDev,
+            total_cobrado: totalCam,
+            diferencia,
+            tipo_pago_diferencia: diferencia > 0.009 ? _devTipoPago : null,
+            estado: 'COMPLETADO',
+            usuario_email: userEmail
+        }).select('id').single();
+        if (devErr) throw devErr;
+
+        const devolucionId = devData.id;
+
+        // 2. Detalle de lo devuelto (triggers DB actualizan stock e inventario)
+        const devRows = sel.map(x => {
+            const orig = _devDetalles.find(d => d.id === x.detalle_id);
+            return {
+                detalle_id: x.detalle_id,
+                id_detalle: x.id_detalle || '',
+                venta_id: _devVentaActual.id,
+                id_venta: _devVentaActual.id_venta,
+                producto_id: x.producto_id,
+                cantidad_original: parseFloat(orig?.cantidad || x.cantidad),
+                cantidad_devuelta: x.cantidad,
+                cantidad_restante: Math.max(0, Math.round((x.cantidad_max - x.cantidad) * 1000) / 1000),
+                motivo: _devMotivo || null,
+                usuario_email: userEmail,
+                devolucion_id: devolucionId,
+                precio_unitario: x.precio,
+                subtotal_devuelto: Math.round(x.cantidad * x.precio * 100) / 100
+            };
+        });
+        const { error: ddErr } = await db.from('ferre_historial_devoluciones_detalle').insert(devRows);
+        if (ddErr) throw ddErr;
+
+        // 3. Ítems de cambio entregados (trigger DB baja stock)
+        if (_devCambioItems.length > 0) {
+            const { error: cdErr } = await db.from('ferre_cambios_detalle').insert(
+                _devCambioItems.map(x => ({ devolucion_id: devolucionId, producto_id: x.code, cantidad: x.quantity, precio: x.price, usuario_email: userEmail }))
+            );
+            if (cdErr) throw cdErr;
+        }
+
+        // 4. Auditoría
+        const nuevoEstado = tipo === 'DEVOLUCION' ? 'DEVUELTO' : 'CAMBIADO';
+        await db.from('ferre_historial_modificaciones_ventas').insert({
+            venta_id: _devVentaActual.id,
+            id_venta: _devVentaActual.id_venta,
+            tipo_modificacion: tipo,
+            motivo: _devMotivo || null,
+            estado_anterior: _devVentaActual.estado,
+            estado_nuevo: nuevoEstado,
+            total_anterior: parseFloat(_devVentaActual.total),
+            total_nuevo: parseFloat(_devVentaActual.total),
+            usuario_email: userEmail
+        });
+
+        // 5. Éxito
+        await showCustomAlert(
+            tipo === 'DEVOLUCION'
+                ? `✅ Devolución registrada correctamente.<br>Inventario actualizado automáticamente.`
+                : `✅ Cambio registrado correctamente.<br>Inventario actualizado automáticamente.`,
+            'success'
+        );
+
+        // Refrescar productos locales
+        const { data: prods } = await db.from('ferre_inventario').select('*').order('producto');
+        _devAllProducts = prods || [];
+
+        // Resetear panel y recargar lista
+        _devVentaActual = null;
+        document.getElementById('devGestionPanel').innerHTML = `
+            <div class="dev-panel-placeholder">
+                <i class="fas fa-check-circle" style="color:#28a745;font-size:3rem;opacity:.6;"></i>
+                <h3>Operación completada</h3>
+                <p>Selecciona otra venta para continuar</p>
+            </div>`;
+        devCargarLista();
+
+    } catch (err) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmar'; }
+        await showCustomAlert(`Error al procesar: ${err.message}`, 'error');
+    }
+}
+
+// ─── Utilidades locales ──────────────────────────────────────────────────
+function _esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _stepsBar(current) {
+    const s = step => {
+        const label = step === 1 ? '1. Cantidades' : step === 2 ? '2. Productos' : '3. Confirmar';
+        const cls   = current === step ? 'activo' : (current > step ? 'completo' : '');
+        return `<span class="dev-step-label ${cls}">${label}</span>`;
+    };
+    return `<div class="dev-steps-bar">${s(1)}<span class="dev-step-sep">›</span>${s(2)}<span class="dev-step-sep">›</span>${s(3)}</div>`;
+}
+</script>
