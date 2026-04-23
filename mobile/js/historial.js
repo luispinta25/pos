@@ -7,7 +7,7 @@ let histLoading = false;
 
 function initHistorialDate() {
     if (!$('histDateFilter').value) {
-        $('histDateFilter').value = new Date().toISOString().split('T')[0];
+        $('histDateFilter').value = localDateStr();
     }
 }
 
@@ -73,7 +73,11 @@ function renderHistorial(ventas) {
         const tipo = (v.tipo || '').toUpperCase();
         const estado = (v.estado || '').toUpperCase();
         let cardClass = 'venta-card';
-        if (tipo === 'RECIBO') {
+        if (estado === 'DEVUELTO') {
+            cardClass += ' card-devuelto';
+        } else if (estado === 'CAMBIADO') {
+            cardClass += ' card-cambiado';
+        } else if (tipo === 'RECIBO') {
             cardClass += ' card-recibo';
         } else if (tipo === 'FACTURA') {
             cardClass += estado === 'AUTORIZADO' ? ' card-factura-aprobada' : ' card-factura-rechazada';

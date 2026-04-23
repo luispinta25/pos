@@ -465,6 +465,16 @@
         /* Verde */
     }
 
+    .venta-card.devuelto {
+        border-left-color: #e74c3c;
+        background: rgba(231,76,60,.07);
+    }
+
+    .venta-card.cambiado {
+        border-left-color: #e67e22;
+        background: rgba(230,126,34,.08);
+    }
+
     .venta-card::before {
         content: '';
         position: absolute;
@@ -1375,15 +1385,19 @@
 
                 // Determinar clase de card según tipo y estado
                 let cardClass = 'venta-card';
-                if (venta.tipo === 'RECIBO') {
+                const estadoCard = (venta.estado || '').toUpperCase();
+                if (estadoCard === 'DEVUELTO') {
+                    cardClass += ' devuelto';
+                } else if (estadoCard === 'CAMBIADO') {
+                    cardClass += ' cambiado';
+                } else if (venta.tipo === 'RECIBO') {
                     cardClass += ' recibo';
                 } else if (venta.tipo === 'FACTURA') {
-                    const estado = venta.estado.toUpperCase();
-                    if (estado === 'PENDIENTE') {
+                    if (estadoCard === 'PENDIENTE') {
                         cardClass += ' factura-pendiente';
-                    } else if (estado === 'RECHAZADO') {
+                    } else if (estadoCard === 'RECHAZADO') {
                         cardClass += ' factura-rechazado';
-                    } else if (estado === 'AUTORIZADO') {
+                    } else if (estadoCard === 'AUTORIZADO') {
                         cardClass += ' factura-autorizado';
                     }
                 }

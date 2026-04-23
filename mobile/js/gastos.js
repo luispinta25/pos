@@ -7,7 +7,7 @@ let gastosLoading = false;
 
 function initGastosDate() {
     if (!$('gastosDateFilter').value) {
-        $('gastosDateFilter').value = new Date().toISOString().split('T')[0];
+        $('gastosDateFilter').value = localDateStr();
     }
 }
 
@@ -17,7 +17,7 @@ async function loadGastos() {
     $('gastosSummary').classList.add('hidden');
     $('gastosList').innerHTML = '<div class="gastos-empty"><i class="fas fa-spinner fa-spin"></i>Cargando gastos\u2026</div>';
     try {
-        const fecha = $('gastosDateFilter').value || new Date().toISOString().split('T')[0];
+        const fecha = $('gastosDateFilter').value || localDateStr();
         const { data, error } = await db.from('ferre_gastos')
             .select('*')
             .gte('fechayhora', `${fecha}T00:00:00-05:00`)

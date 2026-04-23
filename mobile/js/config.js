@@ -22,6 +22,7 @@ function defaultClient() {
 // ── Helpers DOM ────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const fmt = v => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v || 0);
+const localDateStr = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const showLoader = () => $('screenBlocker').classList.add('active');
 const hideLoader = () => $('screenBlocker').classList.remove('active');
 const showModal  = id => $(id).classList.add('active');

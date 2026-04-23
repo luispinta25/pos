@@ -187,6 +187,8 @@ input::placeholder { color: var(--text-muted); }
 .venta-card.card-recibo { border-color: #3182ce; }
 .venta-card.card-factura-aprobada { border-color: #38a169; }
 .venta-card.card-factura-rechazada { border-color: #e53e3e; }
+.venta-card.card-devuelto { border-color: #e74c3c; background: rgba(231,76,60,.13); }
+.venta-card.card-cambiado { border-color: #e67e22; background: rgba(230,126,34,.13); }
 .venta-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
 .venta-id-text { font-size: .72rem; color: var(--text-muted); font-family: monospace; }
 .venta-total-text { font-size: 1.05rem; font-weight: 700; color: var(--primary); }
@@ -393,3 +395,27 @@ input::placeholder { color: var(--text-muted); }
 .badge-dev-estado { font-size: .65rem; padding: 2px 6px; border-radius: 8px; font-weight: 700; }
 .badge-cambiado { background: rgba(230,126,34,.15); color: #e67e22; border: 1px solid rgba(230,126,34,.3); }
 .badge-devuelto { background: rgba(56,161,105,.15); color: var(--success); border: 1px solid rgba(56,161,105,.3); }
+
+/* ── Dev Tabs ── */
+.dev-tab-bar { display: flex; background: var(--bg2); border-bottom: 2px solid var(--border); flex-shrink: 0; }
+.dev-tab-btn { flex: 1; padding: 10px 8px; font-size: .84rem; font-weight: 600; color: var(--text-muted); background: none; border: none; border-bottom: 3px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.dev-tab-btn.active { color: #e67e22; border-bottom-color: #e67e22; }
+
+/* ── Dev Historial cards ── */
+.dev-hist-card { background: var(--bg2); border-left: 3px solid var(--border); border-radius: 8px; padding: .75rem .9rem; margin-bottom: .6rem; }
+.dev-hist-card-devolucion { border-left-color: #e74c3c; background: rgba(231,76,60,.13); }
+.dev-hist-card-cambio { border-left-color: #e67e22; background: rgba(230,126,34,.13); }
+.dev-hist-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.dev-hist-fecha { font-size: .72rem; color: var(--text-muted); }
+.dev-hist-card-mid { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.dev-hist-id { font-family: monospace; font-size: .75rem; color: var(--text-muted); }
+.dev-hist-total { font-size: .95rem; font-weight: 800; color: var(--primary); }
+.dev-hist-card-sub { display: flex; justify-content: space-between; align-items: center; }
+.dev-hist-cliente { font-size: .82rem; font-weight: 600; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dev-hist-venta { font-family: monospace; font-size: .72rem; color: var(--text-muted); flex-shrink: 0; margin-left: 6px; }
+.dev-hist-diferencia { font-size: .77rem; padding: 3px 8px; border-radius: 6px; margin-top: 5px; display: flex; align-items: center; gap: 5px; }
+.dev-hist-diferencia.cobra { background: rgba(229,62,62,.1); color: var(--danger); }
+.dev-hist-diferencia.da { background: rgba(56,161,105,.1); color: var(--success); }
+.dev-hist-motivo { font-size: .76rem; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 5px; font-style: italic; }
+.dev-hist-detalle-btn { width: 100%; margin-top: .55rem; padding: .45rem; background: var(--bg3); border: 1px solid var(--border); border-radius: 7px; font-size: .8rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 5px; }
+.dev-hist-detalle-btn:active { background: var(--bg2); }

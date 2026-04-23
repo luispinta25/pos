@@ -5,14 +5,42 @@
         <span class="hist-header-title"><i class="fas fa-undo-alt" style="color:#e67e22;margin-right:6px;"></i>Devoluciones y Cambios</span>
         <button class="hist-refresh-btn" id="devRefreshBtn"><i class="fas fa-sync-alt"></i></button>
     </header>
-    <div class="hist-filters">
-        <input type="date" id="devDateFilter">
-        <input type="text" id="devSearchInput" placeholder="Buscar por código de venta…" autocomplete="off" autocapitalize="none" spellcheck="false">
-        <button class="hist-search-btn" id="devSearchBtn"><i class="fas fa-search"></i></button>
+
+    <!-- Tabs -->
+    <div class="dev-tab-bar">
+        <button class="dev-tab-btn active" id="devTabHistBtn">
+            <i class="fas fa-list-alt"></i> Historial
+        </button>
+        <button class="dev-tab-btn" id="devTabNuevaBtn">
+            <i class="fas fa-plus-circle"></i> Nueva
+        </button>
     </div>
-    <div class="hist-content">
-        <div id="devList">
-            <div class="hist-empty"><i class="fas fa-undo-alt"></i>Selecciona una fecha o busca una venta</div>
+
+    <!-- Pane: Historial (default) -->
+    <div id="devHistorialPane" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+        <div class="hist-filters" style="gap:6px;">
+            <input type="date" id="devHistDesde">
+            <input type="date" id="devHistHasta">
+            <button class="hist-search-btn" id="devHistBuscarBtn"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="hist-content">
+            <div id="devHistList">
+                <div class="hist-empty"><i class="fas fa-list-alt"></i>Cargando historial…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pane: Nueva Devolución (hidden) -->
+    <div id="devNuevaPane" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+        <div class="hist-filters">
+            <input type="date" id="devDateFilter">
+            <input type="text" id="devSearchInput" placeholder="Buscar por código de venta…" autocomplete="off" autocapitalize="none" spellcheck="false">
+            <button class="hist-search-btn" id="devSearchBtn"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="hist-content">
+            <div id="devList">
+                <div class="hist-empty"><i class="fas fa-undo-alt"></i>Selecciona una fecha o busca una venta</div>
+            </div>
         </div>
     </div>
 </div>

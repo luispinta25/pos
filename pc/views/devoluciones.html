@@ -1,5 +1,63 @@
-<div class="container-full" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px;">
+<div class="container-full" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
 
+    <!-- ══ TAB BAR ══ -->
+    <div class="dev-pc-tab-bar">
+        <button class="dev-pc-tab-btn active" id="devPcTabHistBtn">
+            <i class="fas fa-list-alt"></i> Historial de Devoluciones
+        </button>
+        <button class="dev-pc-tab-btn" id="devPcTabRealizarBtn">
+            <i class="fas fa-plus-circle"></i> Nueva Devolución / Cambio
+        </button>
+    </div>
+
+    <!-- ══ PANE: HISTORIAL (default) ══ -->
+    <div id="devPcHistPane" style="flex: 1; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+
+        <div class="card" style="flex-shrink: 0; padding: 16px; margin-bottom: 0;">
+            <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+                    <label class="form-label">Desde</label>
+                    <input type="date" id="devHistDesde" class="form-input" style="margin-bottom: 0;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+                    <label class="form-label">Hasta</label>
+                    <input type="date" id="devHistHasta" class="form-input" style="margin-bottom: 0;">
+                </div>
+                <button class="btn btn-accent" id="devHistBuscarBtn" style="flex-shrink: 0; padding: 8px 18px;">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+                <span id="devHistResumen" style="font-size: .82rem; color: #888; align-self: center;"></span>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 420px 1fr; gap: 16px; flex: 1; overflow: hidden;">
+
+            <!-- Lista historial -->
+            <div style="overflow-y: auto; scrollbar-width: thin; padding-right: 4px;">
+                <div id="devHistLista">
+                    <div class="dev-empty-state">
+                        <i class="fas fa-list-alt"></i>
+                        <p>Cargando historial…</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalle historial -->
+            <div style="overflow-y: auto; scrollbar-width: thin;">
+                <div id="devHistDetalle">
+                    <div class="dev-panel-placeholder">
+                        <i class="fas fa-hand-point-left"></i>
+                        <h3>Selecciona un registro</h3>
+                        <p>Haz clic en un registro del historial para ver sus detalles</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ══ PANE: REALIZAR DEVOLUCIÓN (hidden) ══ -->
+    <div id="devPcRealizarPane" style="flex: 1; display: none; overflow: hidden;">
     <div style="display: grid; grid-template-columns: 380px 1fr; gap: 20px; height: 100%;">
 
         <!-- ══ PANEL IZQUIERDO: búsqueda y lista de ventas ══ -->
@@ -7,7 +65,7 @@
 
             <div class="card" style="flex-shrink: 0; padding: 20px; margin-bottom: 0;">
                 <h3 style="margin-bottom: 14px; font-size: 1.1em; color: #333;">
-                    <i class="fas fa-undo-alt" style="color: #e67e22;"></i> Devoluciones y Cambios
+                    <i class="fas fa-undo-alt" style="color: #e67e22;"></i> Buscar venta a gestionar
                 </h3>
                 <div class="form-group" style="margin-bottom: 10px;">
                     <label class="form-label">Filtrar por fecha</label>
@@ -48,10 +106,45 @@
         </div>
 
     </div>
+    </div>
+
 </div>
 
 <!-- ═══ ESTILOS ═══════════════════════════════════════════════════════════════════ -->
 <style>
+    /* ── Tab bar PC ── */
+    .dev-pc-tab-bar { display: flex; gap: 4px; background: #f5f7fa; border-radius: 10px; padding: 4px; flex-shrink: 0; width: fit-content; }
+    .dev-pc-tab-btn { padding: 8px 20px; border: none; border-radius: 8px; font-size: .88rem; font-weight: 600; color: #888; background: transparent; cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 7px; }
+    .dev-pc-tab-btn.active { background: #fff; color: #e67e22; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+    .dev-pc-tab-btn:hover:not(.active) { color: #555; background: rgba(255,255,255,.6); }
+
+    /* ── Historial cards PC ── */
+    .dev-hist-pc-card { background: #fff; border: 1.5px solid #e8e8e8; border-left: 4px solid #e8e8e8; border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; cursor: pointer; transition: all .15s; }
+    .dev-hist-pc-card:hover { border-color: #e67e22; border-left-color: #e67e22; box-shadow: 0 3px 10px rgba(230,126,34,.1); }
+    .dev-hist-pc-card.activa { border-color: #e67e22; border-left-color: #e67e22; background: rgba(230,126,34,.03); }
+    .dev-hist-pc-card-dev  { border-left-color: #dc3545; background: rgba(220,53,69,.06); }
+    .dev-hist-pc-card-cambio { border-left-color: #e67e22; background: rgba(230,126,34,.07); }
+    .dev-hist-pc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+    .dev-hist-pc-tipo { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
+    .dev-hist-pc-tipo-dev { background: rgba(40,167,69,.1); color: #28a745; border: 1px solid rgba(40,167,69,.3); }
+    .dev-hist-pc-tipo-cambio { background: rgba(230,126,34,.1); color: #e67e22; border: 1px solid rgba(230,126,34,.3); }
+    .dev-hist-pc-total { font-size: .95rem; font-weight: 800; color: #d4a017; }
+    .dev-hist-pc-mid { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+    .dev-hist-pc-id { font-family: monospace; font-size: .77rem; color: #999; }
+    .dev-hist-pc-fecha { font-size: .75rem; color: #aaa; }
+    .dev-hist-pc-cliente { font-size: .82rem; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dev-hist-pc-venta { font-family: monospace; font-size: .72rem; color: #aaa; }
+    .dev-hist-pc-dif { font-size: .76rem; padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; }
+    .dev-hist-pc-dif-cobra { background: rgba(220,53,69,.08); color: #dc3545; }
+    .dev-hist-pc-dif-da    { background: rgba(40,167,69,.08);  color: #28a745; }
+
+    /* ── Detalle historial PC ── */
+    .dev-hist-det-section { font-size: .75rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .6px; margin: 14px 0 7px; padding-bottom: 5px; border-bottom: 1px solid #f0f0f0; }
+    .dev-hist-det-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f8f8f8; font-size: .87rem; gap: 8px; }
+    .dev-hist-det-row:last-child { border-bottom: none; }
+    .dev-hist-det-prod { color: #333; flex: 1; }
+    .dev-hist-det-sub { color: #aaa; font-size: .78rem; white-space: nowrap; }
+
     /* Panel derecho placeholder */
     .dev-panel-placeholder {
         display: flex;
@@ -279,14 +372,198 @@ let _devTipoPago      = 'EFECTIVO';
 let _devAllProducts   = [];
 let _devAllClients    = [];
 let _devLoading       = false;
+let _devHistLoading   = false;
+let _devPcActiveTab   = 'historial';
+
+// ─── Tab switching ───────────────────────────────────────────────────────
+function _devPcSwitchTab(tab) {
+    _devPcActiveTab = tab;
+    document.getElementById('devPcTabHistBtn').classList.toggle('active', tab === 'historial');
+    document.getElementById('devPcTabRealizarBtn').classList.toggle('active', tab === 'realizar');
+    document.getElementById('devPcHistPane').style.display     = tab === 'historial' ? 'flex' : 'none';
+    document.getElementById('devPcRealizarPane').style.display = tab === 'realizar'  ? 'block' : 'none';
+    if (tab === 'historial') _devCargarHistorial();
+    else if (tab === 'realizar') { devCargarLista(); }
+}
+
+// ─── Historial ───────────────────────────────────────────────────────────
+async function _devCargarHistorial() {
+    if (_devHistLoading) return;
+    _devHistLoading = true;
+    const db = getSupabaseClient();
+    const lista = document.getElementById('devHistLista');
+    lista.innerHTML = '<div class="dev-empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando historial…</p></div>';
+    document.getElementById('devHistResumen').textContent = '';
+    try {
+        const desde = document.getElementById('devHistDesde').value;
+        const hasta = document.getElementById('devHistHasta').value;
+        let query = db.from('ferre_devoluciones')
+            .select('id, id_devolucion, tipo, motivo, total_devuelto, total_cobrado, diferencia, tipo_pago_diferencia, estado, usuario_email, created_at, id_venta, venta_id')
+            .order('created_at', { ascending: false });
+        if (desde) {
+            const [y, m, d] = desde.split('-').map(Number);
+            query = query.gte('created_at', new Date(y, m - 1, d, 0, 0, 0, 0).toISOString());
+        }
+        if (hasta) {
+            const [y, m, d] = hasta.split('-').map(Number);
+            query = query.lte('created_at', new Date(y, m - 1, d, 23, 59, 59, 999).toISOString());
+        }
+        const { data, error } = await query.limit(300);
+        if (error) throw error;
+        const registros = data || [];
+        let ventaMap = {};
+        if (registros.length) {
+            const vids = [...new Set(registros.map(r => r.venta_id).filter(Boolean))];
+            const { data: ventas } = await db.from('ferre_ventas').select('id, cliente_id').in('id', vids);
+            (ventas || []).forEach(v => { ventaMap[v.id] = v; });
+        }
+        _devRenderHistorial(registros, ventaMap);
+        document.getElementById('devHistResumen').textContent =
+            registros.length ? `${registros.length} registro${registros.length > 1 ? 's' : ''}` : '';
+    } catch (err) {
+        lista.innerHTML = `<div class="dev-empty-state" style="color:#dc3545;"><i class="fas fa-exclamation-triangle"></i><p>${_esc(err.message)}</p></div>`;
+    } finally {
+        _devHistLoading = false;
+    }
+}
+
+function _devRenderHistorial(registros, ventaMap) {
+    const lista = document.getElementById('devHistLista');
+    if (!registros.length) {
+        lista.innerHTML = '<div class="dev-empty-state"><i class="fas fa-list-alt"></i><p>Sin registros para este período</p></div>';
+        return;
+    }
+    lista.innerHTML = '';
+    registros.forEach(r => {
+        const fecha = new Date(r.created_at);
+        const fechaStr = fecha.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const horaStr  = fecha.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+        const tipo = r.tipo || 'DEVOLUCION';
+        const esCambio = tipo === 'CAMBIO';
+        const cid = ventaMap[r.venta_id]?.cliente_id;
+        const cliente = !cid ? r.id_venta
+            : cid === '9999999999999' ? 'Consumidor Final'
+            : (_devAllClients.find(c => c.cedula === cid)?.razon_social || r.id_venta);
+        const difAbs = Math.abs(r.diferencia || 0);
+        const difHtml = difAbs >= 0.01
+            ? `<div class="dev-hist-pc-dif ${r.diferencia > 0 ? 'dev-hist-pc-dif-cobra' : 'dev-hist-pc-dif-da'}">
+                <i class="fas fa-${r.diferencia > 0 ? 'arrow-up' : 'arrow-down'}"></i>
+                ${r.diferencia > 0 ? 'Pagó diferencia' : 'Vuelto dado'}: <strong>${formatCurrency(difAbs)}</strong>
+               </div>` : '';
+        const card = document.createElement('div');
+        card.className = `dev-hist-pc-card dev-hist-pc-card-${esCambio ? 'cambio' : 'dev'}`;
+        card.innerHTML = `
+            <div class="dev-hist-pc-top">
+                <span class="dev-hist-pc-tipo ${esCambio ? 'dev-hist-pc-tipo-cambio' : 'dev-hist-pc-tipo-dev'}">
+                    <i class="fas fa-${esCambio ? 'exchange-alt' : 'undo-alt'}"></i> ${tipo}
+                </span>
+                <span class="dev-hist-pc-total">${formatCurrency(r.total_devuelto)}</span>
+            </div>
+            <div class="dev-hist-pc-mid">
+                <span class="dev-hist-pc-id">${_esc(r.id_devolucion)}</span>
+                <span class="dev-hist-pc-fecha">${fechaStr} ${horaStr}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:.8rem;">
+                <span class="dev-hist-pc-cliente">${_esc(cliente)}</span>
+                <span class="dev-hist-pc-venta">${_esc(r.id_venta)}</span>
+            </div>
+            ${difHtml}`;
+        card.addEventListener('click', () => _devVerDetalleHist(r));
+        lista.appendChild(card);
+    });
+}
+
+async function _devVerDetalleHist(r) {
+    document.querySelectorAll('.dev-hist-pc-card').forEach(c => c.classList.remove('activa'));
+    event.currentTarget.classList.add('activa');
+    const det = document.getElementById('devHistDetalle');
+    det.innerHTML = '<div class="dev-panel-placeholder"><i class="fas fa-spinner fa-spin" style="font-size:2rem;opacity:.4;"></i></div>';
+    const db = getSupabaseClient();
+    try {
+        const [devRes, camRes] = await Promise.all([
+            db.from('ferre_historial_devoluciones_detalle').select('*').eq('devolucion_id', r.id),
+            db.from('ferre_cambios_detalle').select('*').eq('devolucion_id', r.id)
+        ]);
+        const devRows = devRes.data || [];
+        const camRows = camRes.data || [];
+        // Enriquecer nombres
+        const allIds = [...new Set([...devRows.map(x => x.producto_id), ...camRows.map(x => x.producto_id)])];
+        const prodMap = {};
+        allIds.forEach(id => { const p = _devAllProducts.find(x => x.codigo === id); if (p) prodMap[id] = p.producto; });
+        const missing = allIds.filter(id => !prodMap[id]);
+        if (missing.length) {
+            const { data: prods } = await db.from('ferre_inventario').select('codigo,producto').in('codigo', missing);
+            (prods || []).forEach(p => { prodMap[p.codigo] = p.producto; });
+        }
+        const tipo = r.tipo || 'DEVOLUCION';
+        const esCambio = tipo === 'CAMBIO';
+        const cid = r.venta_id ? (await db.from('ferre_ventas').select('cliente_id').eq('id', r.venta_id).single()).data?.cliente_id : null;
+        const cliente = !cid ? r.id_venta
+            : cid === '9999999999999' ? 'Consumidor Final'
+            : (_devAllClients.find(c => c.cedula === cid)?.razon_social || r.id_venta);
+        const devTabla = devRows.map(x => `
+            <div class="dev-hist-det-row">
+                <span class="dev-hist-det-prod">${_esc(prodMap[x.producto_id] || x.producto_id)}</span>
+                <span class="dev-hist-det-sub">x${x.cantidad_devuelta} · ${formatCurrency(x.subtotal_devuelto || x.cantidad_devuelta * x.precio_unitario || 0)}</span>
+            </div>`).join('');
+        const camTabla = camRows.map(x => `
+            <div class="dev-hist-det-row">
+                <span class="dev-hist-det-prod">${_esc(prodMap[x.producto_id] || x.producto_id)}</span>
+                <span class="dev-hist-det-sub">x${x.cantidad} · ${formatCurrency(x.subtotal || x.cantidad * x.precio || 0)}</span>
+            </div>`).join('');
+        const fechaLarga = new Date(r.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const difAbs = Math.abs(r.diferencia || 0);
+        det.innerHTML = `
+            <div class="card" style="padding: 20px;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+                    <span class="dev-hist-pc-tipo ${esCambio ? 'dev-hist-pc-tipo-cambio' : 'dev-hist-pc-tipo-dev'}" style="font-size:.8rem; padding:4px 12px;">
+                        <i class="fas fa-${esCambio ? 'exchange-alt' : 'undo-alt'}"></i> ${tipo}
+                    </span>
+                    <span style="font-family:monospace; font-size:.85rem; color:#888;">${_esc(r.id_devolucion)}</span>
+                    <span style="font-size:.82rem; color:#aaa; margin-left:auto;">${fechaLarga}</span>
+                </div>
+                <div style="background:#f8f9fa; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:.85rem; display:flex; flex-wrap:wrap; gap:8px;">
+                    <span><strong>Venta:</strong> ${_esc(r.id_venta)}</span>
+                    <span style="color:#ccc;">·</span>
+                    <span><strong>Cliente:</strong> ${_esc(cliente)}</span>
+                    <span style="color:#ccc;">·</span>
+                    <span style="color:#888;">${_esc(r.usuario_email || '')}</span>
+                </div>
+                <div class="dev-hist-det-section">ÍTEMS DEVUELTOS</div>
+                ${devTabla || '<p style="color:#aaa;font-size:.84rem;text-align:center;padding:.5rem;">Sin detalle</p>'}
+                ${esCambio ? `<div class="dev-hist-det-section">ÍTEMS ENTREGADOS AL CLIENTE</div>${camTabla}` : ''}
+                <div style="background:#f8f9fa; border-radius:8px; padding:12px 14px; margin-top:14px; display:flex; flex-direction:column; gap:6px;">
+                    <div style="display:flex; justify-content:space-between; font-size:.88rem;">
+                        <span style="color:#666;">Total devuelto:</span>
+                        <strong style="color:#28a745;">${formatCurrency(r.total_devuelto)}</strong>
+                    </div>
+                    ${esCambio ? `<div style="display:flex; justify-content:space-between; font-size:.88rem;">
+                        <span style="color:#666;">Total entregado:</span>
+                        <strong style="color:#dc3545;">${formatCurrency(r.total_cobrado)}</strong>
+                    </div>` : ''}
+                </div>
+                ${difAbs >= 0.01 ? `<div class="dev-diferencia-box ${r.diferencia > 0 ? 'dev-diferencia-cobrar' : 'dev-diferencia-dar'}" style="margin-top:10px;">
+                    <i class="fas fa-${r.diferencia > 0 ? 'arrow-circle-up' : 'arrow-circle-down'}"></i>
+                    <span>${r.diferencia > 0 ? 'Cliente pagó diferencia' : 'Se entregó vuelto'}: <strong>${formatCurrency(difAbs)}</strong>
+                    ${r.tipo_pago_diferencia ? ` (${_esc(r.tipo_pago_diferencia)})` : ''}</span>
+                </div>` : ''}
+                ${r.motivo ? `<div style="font-size:.82rem; color:#888; margin-top:10px; padding:.6rem .85rem; background:#f8f9fa; border-radius:7px; display:flex; align-items:center; gap:7px;"><i class="fas fa-comment" style="color:#ccc;"></i>${_esc(r.motivo)}</div>` : ''}
+            </div>`;
+    } catch (err) {
+        det.innerHTML = `<div class="card"><p style="color:#dc3545;padding:1rem;">${_esc(err.message)}</p></div>`;
+    }
+}
 
 // ─── Init ────────────────────────────────────────────────────────────────
 async function initDevoluciones() {
     const db = getSupabaseClient();
     if (!db) return;
 
-    // Fecha hoy
-    document.getElementById('devFecha').value = new Date().toISOString().split('T')[0];
+    // Fechas iniciales
+    document.getElementById('devFecha').value = _localDateStr();
+    const hace6 = new Date(); hace6.setDate(hace6.getDate() - 6);
+    document.getElementById('devHistDesde').value = _localDateStr(hace6);
+    document.getElementById('devHistHasta').value = _localDateStr();
 
     // Cargar catálogos en paralelo
     const [prodRes, cliRes] = await Promise.allSettled([
@@ -296,14 +573,24 @@ async function initDevoluciones() {
     _devAllProducts = prodRes.value?.data || [];
     _devAllClients  = cliRes.value?.data  || [];
 
-    // Listeners
+    // Listeners tabs
+    document.getElementById('devPcTabHistBtn').addEventListener('click', () => _devPcSwitchTab('historial'));
+    document.getElementById('devPcTabRealizarBtn').addEventListener('click', () => _devPcSwitchTab('realizar'));
+
+    // Listeners historial
+    document.getElementById('devHistBuscarBtn').addEventListener('click', _devCargarHistorial);
+    document.getElementById('devHistDesde').addEventListener('change', _devCargarHistorial);
+    document.getElementById('devHistHasta').addEventListener('change', _devCargarHistorial);
+
+    // Listeners realizar
     document.getElementById('devFecha').addEventListener('change', devCargarLista);
     document.getElementById('devBuscarBtn').addEventListener('click', devCargarLista);
     document.getElementById('devBusqueda').addEventListener('keydown', e => {
         if (e.key === 'Enter') devCargarLista();
     });
 
-    devCargarLista();
+    // Cargar historial por defecto
+    _devCargarHistorial();
 }
 
 // ─── Lista ventas ────────────────────────────────────────────────────────
@@ -921,6 +1208,10 @@ async function devConfirmar() {
 }
 
 // ─── Utilidades locales ──────────────────────────────────────────────────
+function _localDateStr(d = new Date()) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function _esc(s) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -933,4 +1224,18 @@ function _stepsBar(current) {
     };
     return `<div class="dev-steps-bar">${s(1)}<span class="dev-step-sep">›</span>${s(2)}<span class="dev-step-sep">›</span>${s(3)}</div>`;
 }
+
+// ─── Exponer funciones llamadas desde onclick inline ─────────────────────
+window.devAjustar           = devAjustar;
+window.devSetQty            = devSetQty;
+window.devPasarStep2        = devPasarStep2;
+window.devRenderStep1       = devRenderStep1;
+window.devRenderStep2       = devRenderStep2;
+window.devRenderStep3       = devRenderStep3;
+window.devRenderPreguntaTipo = devRenderPreguntaTipo;
+window.devAgregarCambio     = devAgregarCambio;
+window.devElimCambio        = devElimCambio;
+window.devSetTipoPago       = devSetTipoPago;
+window.devConfirmar         = devConfirmar;
+window._devVerDetalleHist   = _devVerDetalleHist;
 </script>

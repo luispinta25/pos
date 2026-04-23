@@ -4,19 +4,198 @@
 // =====================================================
 
 let devLoading = false;
-let devCurrentVenta = null;       // cabecera de la venta seleccionada
-let devCurrentDetalles = [];      // líneas con campos extra: nombre, cantidad_max
-let devSelecciones = {};          // { [detalle_id]: { cantidad, precio, producto_id, nombre, cantidad_max, detalle_id, id_detalle } }
-let devCambioItems = [];          // [{ code, name, price, quantity }]
+let devHistLoading = false;
+let devActiveTab = 'historial';
+let devCurrentVenta = null;
+let devCurrentDetalles = [];
+let devSelecciones = {};
+let devCambioItems = [];
 let devStep = 1;
 let devMotivo = '';
 let devTipoPago = 'EFECTIVO';
 
-// ── Lista de ventas ────────────────────────────────────
+// ── Tab switching ──────────────────────────────────────
+
+function devSwitchTab(tab) {
+    devActiveTab = tab;
+    $('devTabHistBtn').classList.toggle('active', tab === 'historial');
+    $('devTabNuevaBtn').classList.toggle('active', tab === 'nueva');
+    $('devHistorialPane').style.display = tab === 'historial' ? 'flex' : 'none';
+    $('devNuevaPane').style.display     = tab === 'nueva'     ? 'flex' : 'none';
+    if (tab === 'historial') loadDevHistorial();
+}
+
+// ── Historial de devoluciones ──────────────────────────
+
+async function loadDevHistorial() {
+    if (devHistLoading) return;
+    devHistLoading = true;
+    $('devHistList').innerHTML = '<div class="hist-empty"><i class="fas fa-spinner fa-spin"></i>Cargando historial…</div>';
+    try {
+        const desde = $('devHistDesde').value;
+        const hasta = $('devHistHasta').value;
+        let query = db.from('ferre_devoluciones')
+            .select('id, id_devolucion, tipo, motivo, total_devuelto, total_cobrado, diferencia, tipo_pago_diferencia, estado, usuario_email, created_at, id_venta, venta_id')
+            .order('created_at', { ascending: false });
+        if (desde) {
+            const [y, m, d] = desde.split('-').map(Number);
+            query = query.gte('created_at', new Date(y, m - 1, d, 0, 0, 0, 0).toISOString());
+        }
+        if (hasta) {
+            const [y, m, d] = hasta.split('-').map(Number);
+            query = query.lte('created_at', new Date(y, m - 1, d, 23, 59, 59, 999).toISOString());
+        }
+        const { data, error } = await query.limit(200);
+        if (error) throw error;
+        const registros = data || [];
+        if (registros.length > 0) {
+            const ventaIds = [...new Set(registros.map(r => r.venta_id).filter(Boolean))];
+            const { data: ventas } = await db.from('ferre_ventas').select('id, cliente_id').in('id', ventaIds);
+            const ventaMap = {};
+            (ventas || []).forEach(v => { ventaMap[v.id] = v; });
+            renderDevHistorial(registros, ventaMap);
+        } else {
+            renderDevHistorial([], {});
+        }
+    } catch (err) {
+        $('devHistList').innerHTML = `<div class="hist-empty" style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i>Error: ${escHtml(err.message)}</div>`;
+    } finally {
+        devHistLoading = false;
+    }
+}
+
+function renderDevHistorial(registros, ventaMap) {
+    if (!registros.length) {
+        $('devHistList').innerHTML = '<div class="hist-empty"><i class="fas fa-list-alt"></i>Sin registros para este período</div>';
+        return;
+    }
+    const list = $('devHistList');
+    list.innerHTML = '';
+    registros.forEach(r => {
+        const fecha = new Date(r.created_at);
+        const fechaStr = fecha.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const horaStr  = fecha.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+        const tipo = r.tipo || 'DEVOLUCION';
+        const tipoCls  = tipo === 'CAMBIO' ? 'badge-cambiado' : 'badge-devuelto';
+        const tipoIcon = tipo === 'CAMBIO' ? 'exchange-alt' : 'undo-alt';
+        const venta = ventaMap[r.venta_id];
+        const cid   = venta?.cliente_id;
+        const clienteLabel = !cid ? r.id_venta
+            : cid === '9999999999999' ? 'Consumidor Final'
+            : (allClients.find(c => c.cedula === cid)?.razon_social || r.id_venta);
+        const difAbs = Math.abs(r.diferencia || 0);
+        const difHtml = difAbs >= 0.01
+            ? `<div class="dev-hist-diferencia ${r.diferencia > 0 ? 'cobra' : 'da'}"><i class="fas fa-${r.diferencia > 0 ? 'arrow-up' : 'arrow-down'}"></i>${r.diferencia > 0 ? 'Pagó diferencia' : 'Vuelto dado'}: ${fmt(difAbs)}</div>`
+            : '';
+        const motiHtml = r.motivo
+            ? `<div class="dev-hist-motivo"><i class="fas fa-comment"></i>${escHtml(r.motivo)}</div>` : '';
+        const div = document.createElement('div');
+        div.className = `dev-hist-card dev-hist-card-${tipo.toLowerCase()}`;
+        div.innerHTML = `
+            <div class="dev-hist-card-top">
+                <span class="badge-dev-estado ${tipoCls}"><i class="fas fa-${tipoIcon}"></i> ${tipo}</span>
+                <span class="dev-hist-fecha">${fechaStr} ${horaStr}</span>
+            </div>
+            <div class="dev-hist-card-mid">
+                <span class="dev-hist-id">${escHtml(r.id_devolucion)}</span>
+                <span class="dev-hist-total">${fmt(r.total_devuelto)}</span>
+            </div>
+            <div class="dev-hist-card-sub">
+                <span class="dev-hist-cliente">${escHtml(clienteLabel)}</span>
+                <span class="dev-hist-venta">${escHtml(r.id_venta)}</span>
+            </div>
+            ${difHtml}${motiHtml}
+            <button class="dev-hist-detalle-btn" onclick="verDetalleHistDevolucion('${r.id}')">
+                <i class="fas fa-eye"></i> Ver detalle
+            </button>`;
+        list.appendChild(div);
+    });
+}
+
+async function verDetalleHistDevolucion(devolucionId) {
+    showModal('devGestionModal');
+    $('devGestionBody').innerHTML = '<p style="text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin"></i></p>';
+    $('devGestionFooter').innerHTML = '<button class="btn-cancel" onclick="hideModal(\'devGestionModal\')">Cerrar</button>';
+    try {
+        const [devRes, camRes, cabRes] = await Promise.all([
+            db.from('ferre_historial_devoluciones_detalle').select('*').eq('devolucion_id', devolucionId),
+            db.from('ferre_cambios_detalle').select('*').eq('devolucion_id', devolucionId),
+            db.from('ferre_devoluciones').select('*').eq('id', devolucionId).single()
+        ]);
+        const devRows = devRes.data || [];
+        const camRows = camRes.data || [];
+        const cab     = cabRes.data;
+        const tipo = cab?.tipo || 'DEVOLUCION';
+        // Enriquecer nombres de productos
+        const allIds = [...new Set([...devRows.map(r => r.producto_id), ...camRows.map(r => r.producto_id)])];
+        const prodMap = {};
+        allIds.forEach(id => { const p = allProducts.find(x => x.codigo === id); if (p) prodMap[id] = p.producto; });
+        const missing = allIds.filter(id => !prodMap[id]);
+        if (missing.length) {
+            const { data: prods } = await db.from('ferre_inventario').select('codigo,producto').in('codigo', missing);
+            (prods || []).forEach(p => { prodMap[p.codigo] = p.producto; });
+        }
+        const devHtml = devRows.map(r => `
+            <div class="dev-resumen-row">
+                <span>${escHtml(prodMap[r.producto_id] || r.producto_id)}</span>
+                <span style="white-space:nowrap;">x${r.cantidad_devuelta} · <strong>${fmt(r.subtotal_devuelto || r.cantidad_devuelta * r.precio_unitario || 0)}</strong></span>
+            </div>`).join('');
+        const camHtml = camRows.map(r => `
+            <div class="dev-resumen-row">
+                <span>${escHtml(prodMap[r.producto_id] || r.producto_id)}</span>
+                <span style="white-space:nowrap;">x${r.cantidad} · <strong>${fmt(r.subtotal || r.cantidad * r.precio || 0)}</strong></span>
+            </div>`).join('');
+        const fechaFmt = cab ? new Date(cab.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
+        $('devGestionBody').innerHTML = `
+            <div class="dev-tipo-badge dev-tipo-badge-${tipo.toLowerCase()}" style="margin-bottom:.5rem;">
+                <i class="fas fa-${tipo === 'CAMBIO' ? 'exchange-alt' : 'undo-alt'}"></i> ${tipo}
+            </div>
+            <div class="dev-venta-info" style="margin-bottom:.8rem;">
+                <span class="dev-venta-id">${escHtml(cab?.id_devolucion || '')}</span>
+                <span class="dev-venta-sep">·</span>
+                <span class="dev-venta-id">${escHtml(cab?.id_venta || '')}</span>
+            </div>
+            <p class="detalle-section-title">ÍTEMs DEVUELTOS</p>
+            ${devHtml || '<p style="color:var(--text-muted);font-size:.82rem;text-align:center;">Sin detalle</p>'}
+            ${camHtml ? `<p class="detalle-section-title" style="margin-top:.7rem;">ÍTEMs ENTREGADOS AL CLIENTE</p>${camHtml}` : ''}
+            <div class="dev-resumen-totales" style="margin-top:.6rem;">
+                <div class="dev-resumen-total-row">
+                    <span>Total devuelto:</span>
+                    <strong style="color:var(--success);">${fmt(cab?.total_devuelto || 0)}</strong>
+                </div>
+                ${tipo === 'CAMBIO' ? `<div class="dev-resumen-total-row">
+                    <span>Total entregado:</span>
+                    <strong style="color:var(--danger);">${fmt(cab?.total_cobrado || 0)}</strong>
+                </div>` : ''}
+            </div>
+            ${Math.abs(cab?.diferencia || 0) >= 0.01 ? `<div class="dev-diferencia-box ${(cab.diferencia || 0) > 0 ? 'dev-diferencia-cobrar' : 'dev-diferencia-dar'}">
+                <i class="fas fa-${(cab.diferencia || 0) > 0 ? 'arrow-circle-up' : 'arrow-circle-down'}"></i>
+                <span>${(cab.diferencia || 0) > 0 ? 'Cliente pagó diferencia' : 'Se entregó vuelto'}: <strong>${fmt(Math.abs(cab.diferencia))}</strong></span>
+            </div>` : ''}
+            ${cab?.motivo ? `<div style="font-size:.8rem;color:var(--text-muted);margin-top:.6rem;padding:.5rem .7rem;background:var(--bg3);border-radius:6px;"><i class="fas fa-comment" style="margin-right:5px;"></i>${escHtml(cab.motivo)}</div>` : ''}
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:.6rem;text-align:right;">
+                ${escHtml(cab?.usuario_email || '')} · ${fechaFmt}
+            </div>`;
+    } catch (err) {
+        $('devGestionBody').innerHTML = `<p style="color:var(--danger);padding:1rem;font-size:.85rem;">${escHtml(err.message)}</p>`;
+    }
+}
+
+// ── Lista de ventas (pestaña Nueva) ────────────────────
 
 function initDevolucionesDate() {
+    // Pestaña historial: última semana por defecto
+    if (!$('devHistDesde').value) {
+        const hace6 = new Date();
+        hace6.setDate(hace6.getDate() - 6);
+        $('devHistDesde').value = localDateStr(hace6);
+    }
+    if (!$('devHistHasta').value) {
+        $('devHistHasta').value = localDateStr();
+    }
+    // Pestaña nueva devolución: hoy
     if (!$('devDateFilter').value) {
-        $('devDateFilter').value = new Date().toISOString().split('T')[0];
+        $('devDateFilter').value = localDateStr();
     }
 }
 
@@ -615,9 +794,20 @@ async function confirmarDevolucion() {
 // ── Event listeners ────────────────────────────────────
 
 function initDevoluciones_eventListeners() {
+    // Pestaña historial
+    $('devTabHistBtn').addEventListener('click', () => devSwitchTab('historial'));
+    $('devTabNuevaBtn').addEventListener('click', () => devSwitchTab('nueva'));
+    $('devHistBuscarBtn').addEventListener('click', loadDevHistorial);
+    $('devHistDesde').addEventListener('change', loadDevHistorial);
+    $('devHistHasta').addEventListener('change', loadDevHistorial);
+    // Pestaña nueva devolución
     $('devDateFilter').addEventListener('change', loadDevoluciones);
     $('devSearchBtn').addEventListener('click', loadDevoluciones);
     $('devSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadDevoluciones(); });
+    // Cabecera
     $('devBackBtn').addEventListener('click', () => navigateTo('pos'));
-    $('devRefreshBtn').addEventListener('click', loadDevoluciones);
+    $('devRefreshBtn').addEventListener('click', () => {
+        if (devActiveTab === 'historial') loadDevHistorial();
+        else loadDevoluciones();
+    });
 }

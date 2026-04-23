@@ -79,7 +79,7 @@ function navigateTo(screen) {
     if (screen === 'hist') { initHistorialDate(); loadHistorial(); }
     if (screen === 'gastos') { initGastosDate(); loadGastos(); }
     if (screen === 'transferencias') { loadTransferencias(); }
-    if (screen === 'devoluciones') { initDevolucionesDate(); loadDevoluciones(); }
+    if (screen === 'devoluciones') { initDevolucionesDate(); loadDevHistorial(); }
 }
 
 // ── Event listeners globales ───────────────────────────
