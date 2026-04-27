@@ -6233,7 +6233,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             params.set('items', items);
         }
 
-        const url = `views/ticket_cxc_deuda.html?${params.toString()}`;
+        const url = `/pc/views/ticket_cxc_deuda.html?${params.toString()}`;
         window.open(url, '_blank');
     }
 
@@ -8895,7 +8895,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             correo: correo
         });
 
-        const url = `views/comprobarcorreo.html?${params.toString()}`;
+        const url = `/pc/views/comprobarcorreo.html?${params.toString()}`;
 
         // Abrir en nueva pestaña
         const ventanaImpresion = window.open(url, '_blank');
@@ -8928,7 +8928,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         }
 
         const params = new URLSearchParams({ correo: correo });
-        const url = `comprobarcorreo.html?${params.toString()}`;
+        const url = `/pc/views/comprobarcorreo.html?${params.toString()}`;
         const ventanaImpresion = window.open(url, '_blank');
 
         if (!ventanaImpresion) {
@@ -8984,7 +8984,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             }).replace(/[/]/g, '/').replace(',', '');
 
             // Construir URL del recibo LOCAL
-            const url = "views/recibo.html" +
+            const url = "/pc/views/recibo.html" +
                 "?fecha=" + encodeURIComponent(formattedDate) +
                 "&venta=" + encodeURIComponent(ventaData.saleCode) +
                 "&subtotal=" + encodeURIComponent(ventaData.total.toFixed(2)) +
@@ -9090,7 +9090,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             params.set('unit_prices', preciosUnitarios.join(','));
             params.set('total_prices', totalesProducto.join(','));
 
-            const facturaUrl = `views/factura.html?${params.toString()}`;
+            const facturaUrl = `/pc/views/factura.html?${params.toString()}`;
             const facturaWindow = window.open(facturaUrl, '_blank');
 
             if (!facturaWindow) {
@@ -10101,7 +10101,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
         const saleCode = 'G' + Date.now();
 
-        const url = "https://pos.ferrisoluciones.com/views/GARANTIAS.html" +
+        const url = "/pc/views/GARANTIAS.html" +
             "?fecha=" + encodeURIComponent(formattedDate) +
             "&venta=" + encodeURIComponent(saleCode) +
             "&nombre_cliente=" + encodeURIComponent(productName) +

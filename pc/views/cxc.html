@@ -1510,7 +1510,7 @@
             params.set('pagos', listaPagos);
         }
 
-        const url = `views/ticket_cxc_deuda.html?${params.toString()}`;
+        const url = `/pc/views/ticket_cxc_deuda.html?${params.toString()}`;
         window.open(url, '_blank');
     }
 
@@ -1529,7 +1529,7 @@
         params.set('deudor_documento', deudor?.cedula_ruc || '');
         params.set('notas', pago.notas || '');
 
-        const url = `views/ticket_cxc_pago.html?${params.toString()}`;
+        const url = `/pc/views/ticket_cxc_pago.html?${params.toString()}`;
         window.open(url, '_blank');
     }
 
@@ -1550,7 +1550,7 @@
         params.set('cuentas', listaCuentas);
         params.set('pagos', listaPagos);
 
-        const url = `views/ticket_cxc_consolidado.html?${params.toString()}`;
+        const url = `/pc/views/ticket_cxc_consolidado.html?${params.toString()}`;
         window.open(url, '_blank');
     }
 

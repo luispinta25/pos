@@ -3082,7 +3082,7 @@
                     hour12: false
                 }).replace(/[/]/g, '/').replace(',', '');
 
-                const url = "views/recibo.html" +
+                const url = "/pc/views/recibo.html" +
                     "?fecha=" + encodeURIComponent(formattedDate) +
                     "&venta=" + encodeURIComponent(venta.id_venta) +
                     "&subtotal=" + encodeURIComponent(venta.total.toFixed(2)) +
@@ -3195,7 +3195,7 @@
                 params.set('total_prices', totalesProducto.join(','));
 
                 // Abrir factura en nueva pestaña
-                const facturaUrl = `views/factura.html?${params.toString()}`;
+                const facturaUrl = `/pc/views/factura.html?${params.toString()}`;
                 window.open(facturaUrl, '_blank');
 
                 window.app?.showToast?.('🖨️ Imprimiendo factura electrónica...', 'success', 2000);
