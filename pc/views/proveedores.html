@@ -73,6 +73,7 @@
                     <option value="pendientes">Pendientes/Abonadas</option>
                     <option value="pagadas">Pagadas</option>
                     <option value="todas">Todas</option>
+                    <option value="archivadas">Archivadas</option>
                 </select>
             </div>
             
@@ -93,6 +94,10 @@
                 <button class="btn btn-warning" onclick="mostrarModalFacturaEmergencia()">
                     <i class="fas fa-exclamation-circle"></i>
                     Factura Emergencia
+                </button>
+                <button class="btn btn-success" onclick="mostrarModalReportes()">
+                    <i class="fas fa-chart-bar"></i>
+                    Reportes
                 </button>
             </div>
         </div>
@@ -273,7 +278,7 @@
                         <button type="button" class="btn btn-secondary" onclick="cerrarModalFactura()">
                             Cancelar
                         </button>
-                        <button type="submit" class="btn btn-accent">
+                        <button type="submit" class="btn btn-accent" id="btnRegistrarPago">
                             <i class="fas fa-save"></i>
                             Registrar Pago
                         </button>
@@ -995,6 +1000,22 @@
         color: #842029;
     }
 
+    .badge-archivada {
+        background: #e2e3e5;
+        color: #41464b;
+    }
+
+    .factura-archivada {
+        opacity: 0.65;
+        border-left: 3px solid #adb5bd !important;
+    }
+
+    .factura-archivada .factura-total,
+    .factura-archivada .factura-saldo {
+        text-decoration: line-through;
+        color: #6c757d !important;
+    }
+
     .badge-counter {
         background: var(--color-danger);
         color: white;
@@ -1425,7 +1446,300 @@
             grid-template-columns: 1fr;
         }
     }
+
+    /* ===== REPORTES ===== */
+    .btn-success {
+        background: linear-gradient(135deg, #198754, #157347);
+        color: white;
+        border: none;
+    }
+    .btn-success:hover { background: linear-gradient(135deg, #157347, #0f5132); }
+
+    .reporte-section {
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .reporte-section:last-child { border-bottom: none; margin-bottom: 0; }
+
+    .reporte-section-title {
+        font-size: 0.85em;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #1a2744;
+        margin: 0 0 14px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .reporte-section-title i { color: #d4a017; }
+
+    .reporte-tipo-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+
+    .reporte-tipo-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 14px 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: white;
+        text-align: center;
+    }
+    .reporte-tipo-card input[type="radio"] { display: none; }
+    .reporte-tipo-card i {
+        font-size: 1.6em;
+        color: #6c757d;
+        transition: color 0.2s;
+    }
+    .reporte-tipo-card .reporte-tipo-nombre {
+        font-size: 0.8em;
+        font-weight: 700;
+        color: #333;
+    }
+    .reporte-tipo-card .reporte-tipo-desc {
+        font-size: 0.7em;
+        color: #888;
+        line-height: 1.3;
+    }
+    .reporte-tipo-card:hover { border-color: #1a2744; background: #f8f9ff; }
+    .reporte-tipo-card.selected {
+        border-color: #1a2744;
+        background: linear-gradient(135deg, #f0f3ff, #e8ecf8);
+    }
+    .reporte-tipo-card.selected i { color: #1a2744; }
+
+    .reporte-periodo-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .reporte-periodo-btn {
+        padding: 7px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 20px;
+        background: white;
+        color: #555;
+        font-size: 0.85em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .reporte-periodo-btn:hover { border-color: #d4a017; color: #d4a017; }
+    .reporte-periodo-btn.selected {
+        border-color: #d4a017;
+        background: #d4a017;
+        color: white;
+    }
+
+    .reporte-checks {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+    .reporte-check-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9em;
+        color: #444;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    .reporte-check-item input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+
+    .reporte-preview-info {
+        background: linear-gradient(135deg, #e8f4fd, #d1ecf1);
+        border: 1px solid #bee5eb;
+        border-radius: 8px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.88em;
+        color: #0c5460;
+        margin-top: 8px;
+    }
+    .reporte-preview-info i { font-size: 1.1em; color: #17a2b8; flex-shrink: 0; }
+
+    .reporte-preview-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        border-left: 4px solid #1a2744;
+    }
+    .reporte-preview-card strong { color: #1a2744; display: block; margin-bottom: 4px; }
+    .reporte-preview-kpi {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    .reporte-kpi-item {
+        background: white;
+        border-radius: 8px;
+        padding: 10px;
+        border: 1px solid #e0e0e0;
+        text-align: center;
+    }
+    .reporte-kpi-valor { font-size: 1.2em; font-weight: 700; color: #1a2744; }
+    .reporte-kpi-label { font-size: 0.75em; color: #888; margin-top: 2px; }
 </style>
+
+
+<!-- =====================================================
+     MODAL DE REPORTES
+     ===================================================== -->
+<div id="modalReportes" class="modal">
+    <div class="modal-overlay" onclick="cerrarModalReportesProveedores()"></div>
+    <div class="modal-content modal-lg" style="max-width:780px">
+        <div class="modal-header" style="background:linear-gradient(135deg,#1a2744 0%,#2c3e6e 100%)">
+            <h3><i class="fas fa-chart-bar"></i> Reportes de Proveedores</h3>
+            <button class="modal-close" onclick="cerrarModalReportesProveedores()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" style="padding:24px;overflow-y:auto;max-height:70vh">
+
+            <!-- TIPO DE REPORTE -->
+            <div class="reporte-section">
+                <h4 class="reporte-section-title"><i class="fas fa-file-alt"></i> Tipo de Reporte</h4>
+                <div class="reporte-tipo-grid">
+                    <label class="reporte-tipo-card selected" data-tipo="ejecutivo">
+                        <input type="radio" name="tipoReporte" value="ejecutivo" checked>
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span class="reporte-tipo-nombre">Resumen Ejecutivo</span>
+                        <span class="reporte-tipo-desc">KPIs, totales y estado general del período</span>
+                    </label>
+                    <label class="reporte-tipo-card" data-tipo="facturas">
+                        <input type="radio" name="tipoReporte" value="facturas">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span class="reporte-tipo-nombre">Reporte de Facturas</span>
+                        <span class="reporte-tipo-desc">Listado detallado de facturas con saldos</span>
+                    </label>
+                    <label class="reporte-tipo-card" data-tipo="pagos">
+                        <input type="radio" name="tipoReporte" value="pagos">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span class="reporte-tipo-nombre">Historial de Pagos</span>
+                        <span class="reporte-tipo-desc">Todos los abonos y pagos registrados</span>
+                    </label>
+                    <label class="reporte-tipo-card" data-tipo="cuenta">
+                        <input type="radio" name="tipoReporte" value="cuenta">
+                        <i class="fas fa-building"></i>
+                        <span class="reporte-tipo-nombre">Estado de Cuenta</span>
+                        <span class="reporte-tipo-desc">Historial completo por proveedor</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- PERÍODO -->
+            <div class="reporte-section">
+                <h4 class="reporte-section-title"><i class="fas fa-calendar-alt"></i> Período</h4>
+                <div class="reporte-periodo-grid">
+                    <button class="reporte-periodo-btn" data-periodo="mes-actual" onclick="seleccionarPeriodoReporte(this,'mes-actual')">Mes Actual</button>
+                    <button class="reporte-periodo-btn" data-periodo="mes-anterior" onclick="seleccionarPeriodoReporte(this,'mes-anterior')">Mes Anterior</button>
+                    <button class="reporte-periodo-btn" data-periodo="3-meses" onclick="seleccionarPeriodoReporte(this,'3-meses')">Últimos 3 Meses</button>
+                    <button class="reporte-periodo-btn selected" data-periodo="todo" onclick="seleccionarPeriodoReporte(this,'todo')">Todo el Historial</button>
+                    <button class="reporte-periodo-btn" data-periodo="personalizado" onclick="seleccionarPeriodoReporte(this,'personalizado')">Rango Personalizado</button>
+                </div>
+                <div id="reporteRangoPersonalizado" class="reporte-rango hidden">
+                    <div class="form-row" style="gap:16px;display:flex;margin-top:12px">
+                        <div style="flex:1">
+                            <label class="filter-label">Desde</label>
+                            <input type="date" id="reporteFechaDesde" class="form-select">
+                        </div>
+                        <div style="flex:1">
+                            <label class="filter-label">Hasta</label>
+                            <input type="date" id="reporteFechaHasta" class="form-select">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROVEEDOR -->
+            <div class="reporte-section">
+                <h4 class="reporte-section-title"><i class="fas fa-building"></i> Proveedor</h4>
+                <select id="reporteProveedor" class="form-select">
+                    <option value="todos">Todos los proveedores</option>
+                </select>
+            </div>
+
+            <!-- FILTROS ADICIONALES -->
+            <div class="reporte-section">
+                <h4 class="reporte-section-title"><i class="fas fa-sliders-h"></i> Filtros Adicionales</h4>
+                <div class="reporte-checks">
+                    <label class="reporte-check-item">
+                        <input type="checkbox" id="reporteIncluirArchivadas">
+                        <span>Incluir facturas archivadas</span>
+                    </label>
+                    <label class="reporte-check-item">
+                        <input type="checkbox" id="reporteSoloVencidas">
+                        <span>Solo facturas vencidas</span>
+                    </label>
+                </div>
+                <div style="margin-top:12px">
+                    <label class="filter-label">Estado de facturas</label>
+                    <select id="reporteEstadoFiltro" class="form-select" style="max-width:260px">
+                        <option value="todos">Todos los estados</option>
+                        <option value="Pendiente">Pendientes</option>
+                        <option value="Abonada">Abonadas</option>
+                        <option value="Pagada">Pagadas</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- PREVIEW INFO -->
+            <div id="reportePreviewInfo" class="reporte-preview-info hidden">
+                <i class="fas fa-info-circle"></i>
+                <span id="reportePreviewTexto"></span>
+            </div>
+        </div>
+
+        <div class="modal-footer" style="padding:16px 24px;display:flex;justify-content:flex-end;gap:12px;border-top:2px solid #f0f0f0">
+            <button class="btn btn-secondary" onclick="cerrarModalReportesProveedores()">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn btn-primary" id="btnPreviewReporte" onclick="previsualizarReporte()">
+                <i class="fas fa-eye"></i> Vista Previa
+            </button>
+            <button class="btn" id="btnGenerarReporte" onclick="generarReporteProveedores()"
+                style="background:linear-gradient(135deg,#1a2744,#2c3e6e);color:white;font-weight:600">
+                <i class="fas fa-file-pdf"></i> Generar PDF
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modalReportePDF" class="modal">
+    <div class="modal-overlay" onclick="cerrarPreviewReporte()"></div>
+    <div class="modal-content" style="max-width:480px">
+        <div class="modal-header" style="background:linear-gradient(135deg,#1a2744 0%,#2c3e6e 100%)">
+            <h3><i class="fas fa-eye"></i> Vista Previa del Reporte</h3>
+            <button class="modal-close" onclick="cerrarPreviewReporte()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body" style="padding:24px">
+            <div id="reportePreviewContent" style="font-size:0.9em;line-height:1.6"></div>
+        </div>
+        <div class="modal-footer" style="padding:16px 24px;display:flex;justify-content:flex-end;gap:12px;border-top:2px solid #f0f0f0">
+            <button class="btn btn-secondary" onclick="cerrarPreviewReporte()">Cancelar</button>
+            <button class="btn" id="btnConfirmarPDF" onclick="confirmarGenerarPDF()"
+                style="background:linear-gradient(135deg,#1a2744,#2c3e6e);color:white;font-weight:600">
+                <i class="fas fa-file-pdf"></i> Descargar PDF
+            </button>
+        </div>
+    </div>
+</div>
 
 
 <div id="modalFacturaEmergencia" class="modal">
@@ -1917,12 +2231,17 @@ function filtrarFacturasProveedores() {
     }
     
     // Filtrar por estado
-    if (estado === 'pendientes') {
+    if (estado === 'archivadas') {
+        facturasFiltradas = facturasFiltradas.filter(f => f.archivada === true);
+    } else if (estado === 'pendientes') {
         facturasFiltradas = facturasFiltradas.filter(f => 
-            f.estado === 'Pendiente' || f.estado === 'Abonada'
+            (f.estado === 'Pendiente' || f.estado === 'Abonada') && !f.archivada
         );
     } else if (estado === 'pagadas') {
-        facturasFiltradas = facturasFiltradas.filter(f => f.estado === 'Pagada');
+        facturasFiltradas = facturasFiltradas.filter(f => f.estado === 'Pagada' && !f.archivada);
+    } else {
+        // 'todas' — excluye archivadas
+        facturasFiltradas = facturasFiltradas.filter(f => !f.archivada);
     }
     
     mostrarFacturasProveedores(facturasFiltradas);
@@ -1966,16 +2285,23 @@ function crearTarjetaFacturaProveedor(factura) {
     if (factura.estado === 'Pendiente') estadoClass = 'badge-pendiente';
     else if (factura.estado === 'Abonada') estadoClass = 'badge-abonada';
     else if (factura.estado === 'Pagada') estadoClass = 'badge-pagada';
-    
-    const vencimientoHTML = factura.esta_vencida ? 
-        `<span class="badge badge-vencida">Vencida (${Math.abs(factura.dias_vencimiento)} días)</span>` : 
-        `<span class="text-secondary">Vence en ${factura.dias_vencimiento} días</span>`;
-    
+
+    const archivadaClass = factura.archivada ? ' factura-archivada' : '';
+    const archivadaBadge = factura.archivada
+        ? `<span class="badge badge-archivada" title="Factura archivada - datos históricos"><i class="fas fa-archive"></i> Archivada</span>`
+        : '';
+
+    const vencimientoHTML = factura.archivada
+        ? `<span class="text-secondary"><i class="fas fa-archive"></i> Datos archivados</span>`
+        : factura.esta_vencida
+            ? `<span class="badge badge-vencida">Vencida (${Math.abs(factura.dias_vencimiento)} días)</span>`
+            : `<span class="text-secondary">Vence en ${factura.dias_vencimiento} días</span>`;
+
     return `
-        <div class="factura-card" data-factura-id="${factura.id}">
+        <div class="factura-card${archivadaClass}" data-factura-id="${factura.id}">
             <div class="factura-header">
                 <span class="factura-numero">${factura.numero_factura}</span>
-                <span class="badge ${estadoClass}">${factura.estado}</span>
+                <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${archivadaBadge}<span class="badge ${estadoClass}">${factura.estado}</span></div>
             </div>
             <div class="factura-body">
                 <div class="factura-row">
@@ -2322,7 +2648,14 @@ async function registrarPagoProveedor(e) {
     logProveedor('📤 Datos a enviar a Supabase:', datosInsert);
     
     const esTransferencia = metodoPago.toUpperCase().includes('TRANSFER');
-    
+
+    // Bloquear botón para evitar doble clic
+    const btnPago = document.getElementById('btnRegistrarPago');
+    if (btnPago) {
+        btnPago.disabled = true;
+        btnPago.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    }
+
     try {
         // Mostrar barra de progreso
         showProgressOverlay(esTransferencia);
@@ -2400,6 +2733,12 @@ async function registrarPagoProveedor(e) {
         hideProgressOverlay();
         logError('❌ Error al registrar pago:', error);
         mostrarNotificacionProveedor('Error al registrar el pago: ' + (error.message || 'Error desconocido'), 'error');
+        // Restaurar botón en caso de error
+        const btnPagoErr = document.getElementById('btnRegistrarPago');
+        if (btnPagoErr) {
+            btnPagoErr.disabled = false;
+            btnPagoErr.innerHTML = '<i class="fas fa-save"></i> Registrar Pago';
+        }
     }
 }
 
@@ -2884,10 +3223,11 @@ async function enviarNotificacionProveedor(e) {
         btnEnviar.disabled = true;
         btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
         
-        // Obtener facturas pendientes del proveedor
+        // Obtener facturas pendientes del proveedor (excluir archivadas)
         const facturasPendientes = proveedoresData.facturas.filter(f => 
             f.proveedor_id === proveedorId && 
-            (f.estado === 'Pendiente' || f.estado === 'Abonada')
+            (f.estado === 'Pendiente' || f.estado === 'Abonada') &&
+            !f.archivada
         );
         
         // Calcular deuda total
@@ -3284,8 +3624,8 @@ function actualizarDeudaProveedorEmergencia() {
         return;
     }
     
-    // Calcular deuda
-    const facturasProveedor = proveedoresData.facturas.filter(f => f.proveedor_id === proveedorId);
+    // Calcular deuda (excluir archivadas)
+    const facturasProveedor = proveedoresData.facturas.filter(f => f.proveedor_id === proveedorId && !f.archivada);
     const deudaTotal = facturasProveedor.reduce((sum, f) => sum + (parseFloat(f.saldo_pendiente) || 0), 0);
     
     montoSpan.textContent = formatCurrency(deudaTotal);
@@ -3378,6 +3718,817 @@ async function guardarFacturaEmergencia(e) {
 
 
 // =====================================================
+// MÓDULO DE REPORTES
+// =====================================================
+
+var reporteState = {
+    periodo: 'todo',
+    generando: false  // bandera anti-doble-click
+};
+
+// helpers bloqueo de botones
+function _lockReporteBtn(id, texto) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled = true;
+    btn._origHTML = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${texto}`;
+}
+function _unlockReporteBtn(id) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled = false;
+    if (btn._origHTML) { btn.innerHTML = btn._origHTML; btn._origHTML = null; }
+}
+
+window.mostrarModalReportes = function() {
+    // Reset estado interno
+    reporteState.periodo = 'todo';
+    reporteState.generando = false;
+
+    // Poblar selector de proveedores
+    const sel = document.getElementById('reporteProveedor');
+    if (sel) {
+        sel.innerHTML = '<option value="todos">Todos los proveedores</option>';
+        (proveedoresData.proveedores || []).forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.empresa;
+            sel.appendChild(opt);
+        });
+    }
+
+    // Defaults de fechas para rango personalizado
+    const hoy = new Date();
+    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+    const hoyStr = hoy.toISOString().split('T')[0];
+    const desdeEl = document.getElementById('reporteFechaDesde');
+    const hastaEl = document.getElementById('reporteFechaHasta');
+    if (desdeEl) desdeEl.value = primerDiaMes;
+    if (hastaEl) hastaEl.value = hoyStr;
+
+    // Reset tipo: seleccionar "ejecutivo"
+    document.querySelectorAll('.reporte-tipo-card').forEach(card => {
+        const radio = card.querySelector('input[type="radio"]');
+        const esPrimero = radio?.value === 'ejecutivo';
+        card.classList.toggle('selected', esPrimero);
+        if (radio) radio.checked = esPrimero;
+        card.onclick = function() {
+            document.querySelectorAll('.reporte-tipo-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            this.querySelector('input[type="radio"]').checked = true;
+        };
+    });
+
+    // Reset período: seleccionar "todo"
+    document.querySelectorAll('.reporte-periodo-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.periodo === 'todo');
+    });
+    const rangoDiv = document.getElementById('reporteRangoPersonalizado');
+    if (rangoDiv) rangoDiv.classList.add('hidden');
+
+    // Reset filtros adicionales
+    const archEl = document.getElementById('reporteIncluirArchivadas');
+    const vencEl = document.getElementById('reporteSoloVencidas');
+    const estadoEl = document.getElementById('reporteEstadoFiltro');
+    if (archEl) archEl.checked = false;
+    if (vencEl) vencEl.checked = false;
+    if (estadoEl) estadoEl.value = 'todos';
+
+    // Desbloquear botones por si quedaron bloqueados
+    _unlockReporteBtn('btnPreviewReporte');
+    _unlockReporteBtn('btnGenerarReporte');
+
+    // Ocultar preview
+    const prev = document.getElementById('reportePreviewInfo');
+    if (prev) prev.classList.add('hidden');
+
+    document.getElementById('modalReportes').classList.add('show');
+};
+
+window.cerrarModalReportesProveedores = function() {
+    document.getElementById('modalReportes').classList.remove('show');
+};
+
+window.seleccionarPeriodoReporte = function(btn, periodo) {
+    document.querySelectorAll('.reporte-periodo-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    reporteState.periodo = periodo;
+
+    const rangoDiv = document.getElementById('reporteRangoPersonalizado');
+    if (rangoDiv) {
+        if (periodo === 'personalizado') rangoDiv.classList.remove('hidden');
+        else rangoDiv.classList.add('hidden');
+    }
+};
+
+function obtenerRangoFechas() {
+    const hoy = new Date();
+    hoy.setHours(23, 59, 59, 999);
+    let desde, hasta;
+
+    switch (reporteState.periodo) {
+        case 'mes-actual':
+            desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            hasta = hoy;
+            break;
+        case 'mes-anterior':
+            desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+            hasta = new Date(hoy.getFullYear(), hoy.getMonth(), 0, 23, 59, 59);
+            break;
+        case '3-meses':
+            desde = new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1);
+            hasta = hoy;
+            break;
+        case 'todo':
+            desde = new Date('2020-01-01');
+            hasta = hoy;
+            break;
+        case 'personalizado':
+            const d = document.getElementById('reporteFechaDesde')?.value;
+            const h = document.getElementById('reporteFechaHasta')?.value;
+            desde = d ? new Date(d + 'T00:00:00') : new Date('2020-01-01');
+            hasta = h ? new Date(h + 'T23:59:59') : hoy;
+            break;
+        default:
+            desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            hasta = hoy;
+    }
+    return { desde, hasta };
+}
+
+function obtenerConfigReporte() {
+    const tipo = document.querySelector('input[name="tipoReporte"]:checked')?.value || 'ejecutivo';
+    const proveedorId = document.getElementById('reporteProveedor')?.value || 'todos';
+    const proveedorNombre = proveedorId === 'todos'
+        ? 'Todos los proveedores'
+        : (proveedoresData.proveedores.find(p => p.id === proveedorId)?.empresa || 'Desconocido');
+    const incluirArchivadas = document.getElementById('reporteIncluirArchivadas')?.checked || false;
+    const soloVencidas = document.getElementById('reporteSoloVencidas')?.checked || false;
+    const estadoFiltro = document.getElementById('reporteEstadoFiltro')?.value || 'todos';
+    const { desde, hasta } = obtenerRangoFechas();
+
+    return { tipo, proveedorId, proveedorNombre, incluirArchivadas, soloVencidas, estadoFiltro, desde, hasta };
+}
+
+function filtrarFacturasParaReporte(cfg) {
+    let lista = [...(proveedoresData.facturas || [])];
+
+    if (!cfg.incluirArchivadas) lista = lista.filter(f => !f.archivada);
+    if (cfg.proveedorId !== 'todos') lista = lista.filter(f => f.proveedor_id === cfg.proveedorId);
+    if (cfg.soloVencidas) lista = lista.filter(f => f.esta_vencida);
+    if (cfg.estadoFiltro !== 'todos') lista = lista.filter(f => f.estado === cfg.estadoFiltro);
+
+    // Filtrar por fecha:
+    // Las facturas Pendientes y Abonadas SIEMPRE se incluyen (son deudas vigentes actuales).
+    // Las Pagadas se filtran por fecha de emisión para delimitar el período histórico.
+    if (reporteState.periodo !== 'todo') {
+        lista = lista.filter(f => {
+            if (f.estado === 'Pendiente' || f.estado === 'Abonada') return true;
+            const fe = new Date(f.fecha_emision + 'T00:00:00');
+            return fe >= cfg.desde && fe <= cfg.hasta;
+        });
+    }
+    return lista;
+}
+
+window.previsualizarReporte = function() {
+    if (reporteState.generando) return;
+    _lockReporteBtn('btnPreviewReporte', 'Calculando...');
+
+    const cfg = obtenerConfigReporte();
+    const facturas = filtrarFacturasParaReporte(cfg);
+    const totalFacturas = facturas.reduce((s, f) => s + parseFloat(f.total_factura || 0), 0);
+    const totalPendiente = facturas.reduce((s, f) => s + parseFloat(f.saldo_pendiente || 0), 0);
+    const pendientes = facturas.filter(f => f.estado === 'Pendiente' || f.estado === 'Abonada');
+    const pagadas = facturas.filter(f => f.estado === 'Pagada');
+    const vencidas = facturas.filter(f => f.esta_vencida);
+
+    const tiposNombres = { ejecutivo: 'Resumen Ejecutivo', facturas: 'Reporte de Facturas', pagos: 'Historial de Pagos', cuenta: 'Estado de Cuenta' };
+    const periodosNombres = { 'mes-actual': 'Mes Actual', 'mes-anterior': 'Mes Anterior', '3-meses': 'Últimos 3 Meses', todo: 'Todo el Historial', personalizado: 'Rango Personalizado' };
+
+    const contenido = document.getElementById('reportePreviewContent');
+    contenido.innerHTML = `
+        <div class="reporte-preview-card">
+            <strong><i class="fas fa-file-alt" style="color:#1a2744"></i> ${tiposNombres[cfg.tipo]}</strong>
+            <div style="color:#555;font-size:0.9em">
+                <b>Período:</b> ${periodosNombres[reporteState.periodo]}
+                ${reporteState.periodo === 'personalizado' ? `(${cfg.desde.toLocaleDateString('es-EC')} — ${cfg.hasta.toLocaleDateString('es-EC')})` : ''}<br>
+                <b>Proveedor:</b> ${cfg.proveedorNombre}<br>
+                <b>Archivadas:</b> ${cfg.incluirArchivadas ? 'Incluidas' : 'Excluidas'} &nbsp;|&nbsp;
+                <b>Estado:</b> ${cfg.estadoFiltro === 'todos' ? 'Todos' : cfg.estadoFiltro}
+            </div>
+        </div>
+        <div class="reporte-preview-kpi">
+            <div class="reporte-kpi-item">
+                <div class="reporte-kpi-valor">${facturas.length}</div>
+                <div class="reporte-kpi-label">Facturas encontradas</div>
+            </div>
+            <div class="reporte-kpi-item">
+                <div class="reporte-kpi-valor" style="color:#1a2744">${formatCurrency(totalFacturas)}</div>
+                <div class="reporte-kpi-label">Total facturado</div>
+            </div>
+            <div class="reporte-kpi-item">
+                <div class="reporte-kpi-valor" style="color:#e67e22">${formatCurrency(totalPendiente)}</div>
+                <div class="reporte-kpi-label">Saldo pendiente</div>
+            </div>
+            <div class="reporte-kpi-item">
+                <div class="reporte-kpi-valor" style="color:#c0392b">${vencidas.length}</div>
+                <div class="reporte-kpi-label">Facturas vencidas</div>
+            </div>
+        </div>
+        <div style="font-size:0.82em;color:#888;text-align:center;margin-top:8px">
+            <i class="fas fa-info-circle"></i>
+            ${pendientes.length} pendientes/abonadas · ${pagadas.length} pagadas ·
+            ${cfg.incluirArchivadas ? facturas.filter(f=>f.archivada).length + ' archivadas incluidas' : 'sin archivadas'}
+        </div>
+    `;
+
+    document.getElementById('modalReportePDF').classList.add('show');
+    _unlockReporteBtn('btnPreviewReporte');
+};
+
+window.cerrarPreviewReporte = function() {
+    document.getElementById('modalReportePDF').classList.remove('show');
+};
+
+window.confirmarGenerarPDF = function() {
+    cerrarPreviewReporte();
+    _lockReporteBtn('btnConfirmarPDF', 'Generando...');
+    generarReporteProveedores();
+};
+
+window.generarReporteProveedores = async function() {
+    if (reporteState.generando) return;
+    reporteState.generando = true;
+    _lockReporteBtn('btnGenerarReporte', 'Generando...');
+
+    // Siempre leer config fresca del DOM
+    const cfg = obtenerConfigReporte();
+
+    if (typeof showAppLoader === 'function') showAppLoader();
+
+    try {
+        const facturas = filtrarFacturasParaReporte(cfg);
+
+        // Si es reporte de pagos, necesitamos los pagos de la BD
+        let pagosData = [];
+        if (cfg.tipo === 'pagos') {
+            pagosData = await cargarPagosParaReporte(cfg);
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const PW = doc.internal.pageSize.getWidth();
+        const PH = doc.internal.pageSize.getHeight();
+        const M = 14;
+        let y = 0;
+
+        // ─── COLORES (paleta austera) ─────────────────────
+        const AZUL    = [26, 39, 68];    // solo banda header
+        const AZUL2   = [26, 39, 68];
+        const DORADO  = [26, 39, 68];
+        const GRIS    = [248, 248, 248];
+        const GRISL   = [235, 235, 235]; // fondo encabezados de tabla
+        const NARANJA = [20, 20, 20];
+        const ROJO    = [160, 30, 30];   // solo texto montos en deuda
+        const VERDE   = [30, 120, 60];   // solo texto montos pagados
+        const TEXTO   = [20, 20, 20];
+        const SUBTXT  = [100, 100, 100];
+
+        // ─── HELPER: FOOTER EN CADA PÁGINA ───────────────
+        const addFooter = (pageNum, totalPages) => {
+            doc.setFontSize(7.5);
+            doc.setTextColor(...SUBTXT);
+            doc.setFont('helvetica', 'normal');
+            doc.line(M, PH - 12, PW - M, PH - 12);
+            doc.text('Ferrisoluciones · Sistema de Gestión de Proveedores', M, PH - 7);
+            doc.text(`Página ${pageNum} de ${totalPages}`, PW - M, PH - 7, { align: 'right' });
+            doc.text(`Generado: ${new Date().toLocaleString('es-EC')}`, PW / 2, PH - 7, { align: 'center' });
+        };
+
+        // ─── HELPER: SALTO DE PÁGINA ──────────────────────
+        const checkPage = (needed) => {
+            if (y + needed > PH - 20) {
+                doc.addPage();
+                y = M + 5;
+                return true;
+            }
+            return false;
+        };
+
+        const tiposNombres = {
+            ejecutivo: 'RESUMEN EJECUTIVO',
+            facturas: 'REPORTE DE FACTURAS',
+            pagos: 'HISTORIAL DE PAGOS',
+            cuenta: 'ESTADO DE CUENTA POR PROVEEDOR'
+        };
+        const periodosNombres = {
+            'mes-actual': 'Mes Actual',
+            'mes-anterior': 'Mes Anterior',
+            '3-meses': 'Últimos 3 Meses',
+            todo: 'Todo el Historial',
+            personalizado: `${cfg.desde.toLocaleDateString('es-EC')} — ${cfg.hasta.toLocaleDateString('es-EC')}`
+        };
+
+        // ─── ENCABEZADO ──────────────────────────────────
+        doc.setFillColor(...AZUL);
+        doc.rect(0, 0, PW, 20, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('FERRISOLUCIONES', PW / 2, 13, { align: 'center' });
+
+        y = 26;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...TEXTO);
+        doc.text(tiposNombres[cfg.tipo], M, y);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(...SUBTXT);
+        doc.text(`Período: ${periodosNombres[reporteState.periodo]}  ·  ${cfg.proveedorNombre}  ·  Emitido: ${new Date().toLocaleDateString('es-EC')}`, M, y + 6);
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineWidth(0.4);
+        doc.line(M, y + 9, PW - M, y + 9);
+        y += 16;
+
+        // ─── NOTA DE FILTRO ACTIVO ────────────────────────
+        // Cuando hay rango de fechas activo, las Pendientes/Abonadas siempre se incluyen
+        // Se muestra una nota informativa debajo del header
+        if (reporteState.periodo !== 'todo') {
+            const pendientesActivas = (proveedoresData.facturas || [])
+                .filter(f => !f.archivada && (f.estado === 'Pendiente' || f.estado === 'Abonada'))
+                .filter(f => cfg.proveedorId === 'todos' || f.proveedor_id === cfg.proveedorId).length;
+
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(...SUBTXT);
+            doc.text(
+                `Nota: Para este período, las facturas Pendientes y Abonadas (${pendientesActivas}) siempre se incluyen al ser deudas vigentes. Solo las Pagadas están acotadas al período seleccionado.`,
+                M, y, { maxWidth: PW - M * 2 }
+            );
+            y += 9;
+        }
+
+        // ─── SECCIÓN SEGÚN TIPO ───────────────────────────
+        if (cfg.tipo === 'ejecutivo') {
+            y = generarSeccionEjecutivo(doc, facturas, cfg, y, PW, M, AZUL, AZUL2, DORADO, GRIS, GRISL, NARANJA, ROJO, VERDE, TEXTO, SUBTXT, checkPage);
+        } else if (cfg.tipo === 'facturas') {
+            y = generarSeccionFacturas(doc, facturas, y, PW, M, AZUL, DORADO, GRIS, NARANJA, ROJO, VERDE, TEXTO, SUBTXT, checkPage);
+        } else if (cfg.tipo === 'pagos') {
+            y = generarSeccionPagos(doc, pagosData, y, PW, M, AZUL, DORADO, GRIS, TEXTO, SUBTXT, checkPage);
+        } else if (cfg.tipo === 'cuenta') {
+            y = generarSeccionCuenta(doc, facturas, cfg, y, PW, M, AZUL, AZUL2, DORADO, GRIS, NARANJA, ROJO, VERDE, TEXTO, SUBTXT, checkPage);
+        }
+
+        // ─── FOOTERS EN TODAS LAS PÁGINAS ────────────────
+        const totalPags = doc.getNumberOfPages();
+        for (let i = 1; i <= totalPags; i++) {
+            doc.setPage(i);
+            addFooter(i, totalPags);
+        }
+
+        // Guardar
+        const tipoCorto = { ejecutivo: 'Ejecutivo', facturas: 'Facturas', pagos: 'Pagos', cuenta: 'EstadoCuenta' };
+        const nombreArchivo = `Reporte_Proveedores_${tipoCorto[cfg.tipo]}_${new Date().toISOString().slice(0,10)}.pdf`;
+        doc.save(nombreArchivo);
+
+        if (typeof hideAppLoader === 'function') hideAppLoader();
+        reporteState.generando = false;
+        _unlockReporteBtn('btnGenerarReporte');
+        _unlockReporteBtn('btnConfirmarPDF');
+        cerrarModalReportesProveedores();
+        mostrarNotificacionProveedor('Reporte generado correctamente', 'success');
+
+    } catch (err) {
+        console.error('Error generando reporte:', err);
+        if (typeof hideAppLoader === 'function') hideAppLoader();
+        reporteState.generando = false;
+        _unlockReporteBtn('btnGenerarReporte');
+        _unlockReporteBtn('btnConfirmarPDF');
+        mostrarNotificacionProveedor('Error al generar el reporte: ' + err.message, 'error');
+    }
+};
+
+// ─── HELPER: TARJETA KPI ─────────────────────────────
+function dibujarKPI(doc, x, y, w, h, label, valor, color) {
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.3);
+    doc.setFillColor(248, 248, 248);
+    doc.rect(x, y, w, h, 'FD');
+    doc.setTextColor(20, 20, 20);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text(String(valor), x + w / 2, y + h / 2 - 1, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(90, 90, 90);
+    doc.text(label.toUpperCase(), x + w / 2, y + h - 3, { align: 'center' });
+}
+
+// ─── HELPER: TÍTULO DE SECCIÓN ────────────────────────
+function dibujarTituloSeccion(doc, titulo, y, PW, M, AZUL, DORADO) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(20, 20, 20);
+    doc.text(titulo, M, y + 5);
+    doc.setDrawColor(150, 150, 150);
+    doc.setLineWidth(0.4);
+    doc.line(M, y + 7, PW - M, y + 7);
+    return y + 12;
+}
+
+// ─── SECCIÓN EJECUTIVO ────────────────────────────────
+function generarSeccionEjecutivo(doc, facturas, cfg, y, PW, M, AZUL, AZUL2, DORADO, GRIS, GRISL, NARANJA, ROJO, VERDE, TEXTO, SUBTXT, checkPage) {
+    const totalFacturado  = facturas.reduce((s, f) => s + parseFloat(f.total_factura || 0), 0);
+    const totalPendiente  = facturas.filter(f => f.estado !== 'Pagada').reduce((s, f) => s + parseFloat(f.saldo_pendiente || 0), 0);
+    const totalPagado     = facturas.reduce((s, f) => s + (parseFloat(f.total_factura || 0) - parseFloat(f.saldo_pendiente || 0)), 0);
+    const cntPendiente    = facturas.filter(f => f.estado === 'Pendiente').length;
+    const cntAbonada      = facturas.filter(f => f.estado === 'Abonada').length;
+    const cntPagada       = facturas.filter(f => f.estado === 'Pagada').length;
+    const cntVencida      = facturas.filter(f => f.esta_vencida).length;
+    const cntArchivada    = facturas.filter(f => f.archivada).length;
+
+    // KPIs
+    const kpiW = (PW - M * 2 - 9) / 4;
+    const kpiH = 22;
+    dibujarKPI(doc, M,               y, kpiW, kpiH, 'Total Facturado',  formatCurrencyPDF(totalFacturado), AZUL);
+    dibujarKPI(doc, M + kpiW + 3,    y, kpiW, kpiH, 'Saldo Pendiente',  formatCurrencyPDF(totalPendiente), NARANJA);
+    dibujarKPI(doc, M + (kpiW+3)*2,  y, kpiW, kpiH, 'Total Pagado',     formatCurrencyPDF(totalPagado),    VERDE);
+    dibujarKPI(doc, M + (kpiW+3)*3,  y, kpiW, kpiH, 'Vencidas',         cntVencida,                        ROJO);
+    y += kpiH + 10;
+
+    // Segunda fila KPIs
+    const kpiW2 = (PW - M * 2 - 12) / 5;
+    const kpiH2 = 18;
+    const kpiColors = [[60, 120, 200], [100, 100, 180], VERDE, NARANJA, [150,150,150]];
+    const kpiData2 = [
+        { l: 'Total Facturas', v: facturas.length },
+        { l: 'Pendientes',     v: cntPendiente },
+        { l: 'Pagadas',        v: cntPagada },
+        { l: 'Abonadas',       v: cntAbonada },
+        { l: 'Archivadas',     v: cntArchivada }
+    ];
+    kpiData2.forEach((k, i) => {
+        dibujarKPI(doc, M + i * (kpiW2 + 3), y, kpiW2, kpiH2, k.l, k.v, kpiColors[i]);
+    });
+    y += kpiH2 + 14;
+
+    // Resumen por proveedor
+    y = dibujarTituloSeccion(doc, 'RESUMEN POR PROVEEDOR', y, PW, M, AZUL, DORADO);
+
+    const porProveedor = {};
+    facturas.forEach(f => {
+        const k = f.proveedor_empresa || 'Sin nombre';
+        if (!porProveedor[k]) porProveedor[k] = { total: 0, pendiente: 0, cnt: 0 };
+        porProveedor[k].total     += parseFloat(f.total_factura || 0);
+        porProveedor[k].pendiente += parseFloat(f.saldo_pendiente || 0);
+        porProveedor[k].cnt++;
+    });
+
+    const rowsProv = Object.entries(porProveedor)
+        .sort((a, b) => b[1].pendiente - a[1].pendiente)
+        .map(([nombre, d]) => [
+            nombre,
+            d.cnt,
+            formatCurrencyPDF(d.total),
+            formatCurrencyPDF(d.total - d.pendiente),
+            formatCurrencyPDF(d.pendiente)
+        ]);
+
+    doc.autoTable({
+        startY: y,
+        head: [['Proveedor', 'Facturas', 'Total Fact.', 'Pagado', 'Pendiente']],
+        body: rowsProv,
+        theme: 'grid',
+        headStyles: { fillColor: [235, 235, 235], textColor: [20,20,20], fontStyle: 'bold', fontSize: 8.5, lineColor: [180,180,180] },
+        bodyStyles: { fontSize: 8, textColor: [20,20,20], lineColor: [200,200,200] },
+        columnStyles: {
+            0: { cellWidth: 'auto' },
+            1: { halign: 'center', cellWidth: 18 },
+            2: { halign: 'right', cellWidth: 32 },
+            3: { halign: 'right', cellWidth: 32, textColor: [30,120,60] },
+            4: { halign: 'right', cellWidth: 32, textColor: [160,30,30] }
+        },
+        margin: { left: M, right: M }
+    });
+    y = doc.lastAutoTable.finalY + 12;
+
+    // Distribución de estados (tabla simple)
+    checkPage(40);
+    y = dibujarTituloSeccion(doc, 'DISTRIBUCIÓN DE ESTADOS', y, PW, M, AZUL, DORADO);
+
+    const estadoRows = [
+        ['Pendiente', cntPendiente, formatCurrencyPDF(facturas.filter(f=>f.estado==='Pendiente').reduce((s,f)=>s+parseFloat(f.saldo_pendiente||0),0))],
+        ['Abonada',   cntAbonada,   formatCurrencyPDF(facturas.filter(f=>f.estado==='Abonada').reduce((s,f)=>s+parseFloat(f.saldo_pendiente||0),0))],
+        ['Pagada',    cntPagada,    '$0.00'],
+        ['Vencida',   cntVencida,   formatCurrencyPDF(facturas.filter(f=>f.esta_vencida).reduce((s,f)=>s+parseFloat(f.saldo_pendiente||0),0))],
+    ];
+    doc.autoTable({
+        startY: y,
+        head: [['Estado', 'Cantidad', 'Saldo Total']],
+        body: estadoRows,
+        theme: 'grid',
+        headStyles: { fillColor: [235,235,235], textColor: [20,20,20], fontSize: 8.5, fontStyle: 'bold', lineColor: [180,180,180] },
+        bodyStyles: { fontSize: 8.5, textColor: [20,20,20], lineColor: [200,200,200] },
+        columnStyles: { 1: { halign: 'center' }, 2: { halign: 'right' } },
+        tableWidth: 100,
+        margin: { left: M, right: M }
+    });
+    return doc.lastAutoTable.finalY + 10;
+}
+
+// ─── SECCIÓN FACTURAS ─────────────────────────────────
+function generarSeccionFacturas(doc, facturas, y, PW, M, AZUL, DORADO, GRIS, NARANJA, ROJO, VERDE, TEXTO, SUBTXT, checkPage) {
+    const totalFacturado = facturas.reduce((s, f) => s + parseFloat(f.total_factura || 0), 0);
+    const totalPendiente = facturas.reduce((s, f) => s + parseFloat(f.saldo_pendiente || 0), 0);
+
+    // Resumen en texto simple
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...SUBTXT);
+    doc.text(`${facturas.length} facturas · Facturado: ${formatCurrencyPDF(totalFacturado)} · Pendiente: ${formatCurrencyPDF(totalPendiente)}`, M, y);
+    y += 8;
+
+    const rows = facturas.map(f => [
+        f.numero_factura,
+        f.proveedor_empresa || '',
+        formatFechaPDF(f.fecha_emision),
+        formatFechaPDF(f.fecha_vencimiento),
+        f.estado + (f.archivada ? ' [A]' : ''),
+        formatCurrencyPDF(parseFloat(f.total_factura || 0)),
+        formatCurrencyPDF(parseFloat(f.saldo_pendiente || 0))
+    ]);
+
+    doc.autoTable({
+        startY: y,
+        head: [['N° Factura', 'Proveedor', 'Emisión', 'Vencimiento', 'Estado', 'Total', 'Saldo']],
+        body: rows,
+        theme: 'grid',
+        headStyles: { fillColor: [235,235,235], textColor: [20,20,20], fontStyle: 'bold', fontSize: 8, lineColor: [180,180,180] },
+        bodyStyles: { fontSize: 7.5, textColor: [20,20,20], lineColor: [200,200,200] },
+        columnStyles: {
+            0: { cellWidth: 28 },
+            1: { cellWidth: 'auto' },
+            2: { cellWidth: 22, halign: 'center' },
+            3: { cellWidth: 22, halign: 'center' },
+            4: { cellWidth: 22, halign: 'center' },
+            5: { cellWidth: 24, halign: 'right' },
+            6: { cellWidth: 24, halign: 'right' }
+        },
+        didParseCell: function(data) {
+            if (data.section === 'body' && data.column.index === 4) {
+                const v = data.cell.raw || '';
+                if (v.includes('Pagada')) data.cell.styles.textColor = [30, 120, 60];
+                else if (v.includes('Pendiente')) data.cell.styles.textColor = [160, 30, 30];
+                else if (v.includes('Abonada')) data.cell.styles.textColor = [40, 80, 160];
+            }
+            if (data.section === 'body' && data.column.index === 6) {
+                const v = parseFloat(String(data.cell.raw).replace(/[^0-9.-]/g,'')) || 0;
+                data.cell.styles.textColor = v > 0 ? [160, 30, 30] : [30, 120, 60];
+            }
+        },
+        margin: { left: M, right: M }
+    });
+
+    // Fila de totales simple
+    const finalY = doc.lastAutoTable.finalY;
+    doc.setDrawColor(80, 80, 80);
+    doc.setLineWidth(0.5);
+    doc.line(M, finalY, PW - M, finalY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(20, 20, 20);
+    doc.text('TOTAL', M + 2, finalY + 5);
+    doc.text(formatCurrencyPDF(totalFacturado), PW - M - 25, finalY + 5, { align: 'right' });
+    doc.text(formatCurrencyPDF(totalPendiente), PW - M, finalY + 5, { align: 'right' });
+
+    return finalY + 12;
+}
+
+// ─── SECCIÓN PAGOS ───────────────────────────────────
+function generarSeccionPagos(doc, pagos, y, PW, M, AZUL, DORADO, GRIS, TEXTO, SUBTXT, checkPage) {
+    const totalPagado = pagos.reduce((s, p) => s + parseFloat(p.monto_pago || 0), 0);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...SUBTXT);
+    doc.text(`${pagos.length} pagos registrados · Total: ${formatCurrencyPDF(totalPagado)}`, M, y);
+    y += 8;
+
+    const rows = pagos.map(p => [
+        formatFechaPDF(p.fecha_pago),
+        p.numero_factura || '',
+        p.proveedor_empresa || '',
+        p.tipo_pago,
+        p.metodo_pago,
+        p.referencia_pago || '',
+        formatCurrencyPDF(parseFloat(p.monto_pago || 0)),
+        formatCurrencyPDF(parseFloat(p.saldo_nuevo || 0))
+    ]);
+
+    doc.autoTable({
+        startY: y,
+        head: [['Fecha', 'N° Factura', 'Proveedor', 'Tipo', 'Método', 'Referencia', 'Monto', 'Saldo Nuevo']],
+        body: rows,
+        theme: 'grid',
+        headStyles: { fillColor: [235,235,235], textColor: [20,20,20], fontStyle: 'bold', fontSize: 7.5, lineColor: [180,180,180] },
+        bodyStyles: { fontSize: 7, textColor: [20,20,20], lineColor: [200,200,200] },
+        columnStyles: {
+            0: { cellWidth: 22 },
+            1: { cellWidth: 22 },
+            2: { cellWidth: 'auto' },
+            3: { cellWidth: 15, halign: 'center' },
+            4: { cellWidth: 28 },
+            5: { cellWidth: 20 },
+            6: { cellWidth: 22, halign: 'right', textColor: [30,120,60] },
+            7: { cellWidth: 22, halign: 'right' }
+        },
+        margin: { left: M, right: M }
+    });
+
+    const finalY = doc.lastAutoTable.finalY;
+    doc.setDrawColor(80, 80, 80);
+    doc.setLineWidth(0.5);
+    doc.line(M, finalY, PW - M, finalY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(20, 20, 20);
+    doc.text('TOTAL PAGADO', M + 2, finalY + 5);
+    doc.text(formatCurrencyPDF(totalPagado), PW - M, finalY + 5, { align: 'right' });
+
+    return finalY + 12;
+}
+
+// ─── SECCIÓN ESTADO DE CUENTA ─────────────────────────
+function generarSeccionCuenta(doc, facturas, cfg, y, PW, M, AZUL, AZUL2, DORADO, GRIS, NARANJA, ROJO, VERDE, TEXTO, SUBTXT, checkPage) {
+    // Agrupar por proveedor
+    const proveedores = {};
+    facturas.forEach(f => {
+        const k = f.proveedor_id;
+        if (!proveedores[k]) proveedores[k] = { nombre: f.proveedor_empresa || 'Sin nombre', facturas: [] };
+        proveedores[k].facturas.push(f);
+    });
+
+    const listaProvs = Object.values(proveedores).sort((a, b) => {
+        const deudaA = a.facturas.reduce((s, f) => s + parseFloat(f.saldo_pendiente || 0), 0);
+        const deudaB = b.facturas.reduce((s, f) => s + parseFloat(f.saldo_pendiente || 0), 0);
+        return deudaB - deudaA;
+    });
+
+    // Resumen global primero
+    const totalGlobal    = facturas.reduce((s, f) => s + parseFloat(f.total_factura || 0), 0);
+    const pendienteGlobal = facturas.reduce((s, f) => s + parseFloat(f.saldo_pendiente || 0), 0);
+
+    const kpiW = (PW - M * 2 - 6) / 3;
+    const kpiH = 20;
+    dibujarKPI(doc, M,             y, kpiW, kpiH, 'Proveedores con deuda', listaProvs.filter(p => p.facturas.some(f=>parseFloat(f.saldo_pendiente)>0)).length, AZUL);
+    dibujarKPI(doc, M + kpiW + 3,  y, kpiW, kpiH, 'Total Facturado',       formatCurrencyPDF(totalGlobal), [44,62,110]);
+    dibujarKPI(doc, M + (kpiW+3)*2,y, kpiW, kpiH, 'Deuda Total',           formatCurrencyPDF(pendienteGlobal), NARANJA);
+    y += kpiH + 14;
+
+    // Por cada proveedor
+    listaProvs.forEach(prov => {
+        checkPage(50);
+
+        const totalProv    = prov.facturas.reduce((s, f) => s + parseFloat(f.total_factura || 0), 0);
+        const pendienteProv = prov.facturas.reduce((s, f) => s + parseFloat(f.saldo_pendiente || 0), 0);
+        const pagadoProv   = totalProv - pendienteProv;
+
+        // Header del proveedor (simple)
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(20, 20, 20);
+        doc.text(prov.nombre, M, y + 5);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`${prov.facturas.length} fact. · Facturado: ${formatCurrencyPDF(totalProv)} · Pagado: ${formatCurrencyPDF(pagadoProv)} · Pendiente: ${formatCurrencyPDF(pendienteProv)}`,
+            PW - M, y + 5, { align: 'right' });
+        doc.setDrawColor(150, 150, 150);
+        doc.setLineWidth(0.4);
+        doc.line(M, y + 7, PW - M, y + 7);
+        y += 11;
+
+        const rows = prov.facturas
+            .sort((a, b) => new Date(b.fecha_emision) - new Date(a.fecha_emision))
+            .map(f => [
+                f.numero_factura,
+                formatFechaPDF(f.fecha_emision),
+                formatFechaPDF(f.fecha_vencimiento),
+                f.estado + (f.archivada ? ' [A]' : ''),
+                formatCurrencyPDF(parseFloat(f.total_factura || 0)),
+                formatCurrencyPDF(parseFloat(f.total_factura || 0) - parseFloat(f.saldo_pendiente || 0)),
+                formatCurrencyPDF(parseFloat(f.saldo_pendiente || 0))
+            ]);
+
+        doc.autoTable({
+            startY: y,
+            head: [['N° Factura', 'Emisión', 'Vencimiento', 'Estado', 'Total', 'Pagado', 'Saldo']],
+            body: rows,
+            theme: 'grid',
+            headStyles: { fillColor: [235,235,235], textColor: [20,20,20], fontStyle: 'bold', fontSize: 7.5, lineColor: [180,180,180] },
+            bodyStyles: { fontSize: 7.5, textColor: [20,20,20], lineColor: [200,200,200] },
+            columnStyles: {
+                0: { cellWidth: 28 },
+                1: { cellWidth: 22, halign: 'center' },
+                2: { cellWidth: 22, halign: 'center' },
+                3: { cellWidth: 22, halign: 'center' },
+                4: { cellWidth: 25, halign: 'right' },
+                5: { cellWidth: 25, halign: 'right', textColor: [30,120,60] },
+                6: { cellWidth: 25, halign: 'right' }
+            },
+            didParseCell: function(data) {
+                if (data.section === 'body' && data.column.index === 6) {
+                    const v = parseFloat(String(data.cell.raw).replace(/[^0-9.-]/g,'')) || 0;
+                    data.cell.styles.textColor = v > 0 ? ROJO : VERDE;
+                }
+                if (data.section === 'body' && data.column.index === 3) {
+                    const v = data.cell.raw || '';
+                    if (v.includes('Pagada')) data.cell.styles.textColor = VERDE;
+                    else if (v.includes('Pendiente')) data.cell.styles.textColor = ROJO;
+                    else if (v.includes('Abonada')) data.cell.styles.textColor = [40, 80, 160];
+                }
+            },
+            margin: { left: M + 4, right: M }
+        });
+        y = doc.lastAutoTable.finalY + 12;
+    });
+
+    return y;
+}
+
+// ─── CARGAR PAGOS PARA REPORTE ────────────────────────
+async function cargarPagosParaReporte(cfg) {
+    const client = getSupabaseClient();
+
+    // Query 1: pagos en el rango de fechas
+    let pagosQuery = client
+        .from('ferre_pagos_proveedores')
+        .select('*')
+        .order('fecha_pago', { ascending: false });
+
+    if (reporteState.periodo !== 'todo') {
+        pagosQuery = pagosQuery
+            .gte('fecha_pago', cfg.desde.toISOString())
+            .lte('fecha_pago', cfg.hasta.toISOString());
+    }
+
+    const { data: pagos, error: errorPagos } = await pagosQuery;
+    if (errorPagos) throw errorPagos;
+    if (!pagos || pagos.length === 0) return [];
+
+    // Query 2: facturas referenciadas
+    const facturaIds = [...new Set(pagos.map(p => p.factura_id).filter(Boolean))];
+    const { data: facturas, error: errorF } = await client
+        .from('ferre_facturas_proveedores')
+        .select('id, numero_factura, proveedor_id')
+        .in('id', facturaIds);
+    if (errorF) throw errorF;
+
+    const facturaMap = {};
+    (facturas || []).forEach(f => { facturaMap[f.id] = f; });
+
+    // Query 3: proveedores
+    const provIds = [...new Set((facturas || []).map(f => f.proveedor_id).filter(Boolean))];
+    const { data: provs, error: errorP } = await client
+        .from('ferre_proveedores')
+        .select('id, empresa')
+        .in('id', provIds);
+    if (errorP) throw errorP;
+
+    const provMap = {};
+    (provs || []).forEach(p => { provMap[p.id] = p; });
+
+    return pagos
+        .map(p => {
+            const f = facturaMap[p.factura_id];
+            const prov = f ? provMap[f.proveedor_id] : null;
+            return {
+                ...p,
+                numero_factura: f?.numero_factura || '',
+                proveedor_id: f?.proveedor_id || '',
+                proveedor_empresa: prov?.empresa || 'Desconocido'
+            };
+        })
+        .filter(p => cfg.proveedorId === 'todos' || p.proveedor_id === cfg.proveedorId);
+}
+
+// ─── HELPERS FORMATO PDF ──────────────────────────────
+function formatCurrencyPDF(v) {
+    const n = parseFloat(v) || 0;
+    return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function formatFechaPDF(val) {
+    if (!val) return '';
+    const d = new Date(val.includes('T') ? val : val + 'T00:00:00');
+    if (isNaN(d)) return String(val);
+    return d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+
+// =====================================================
 // EXPONER FUNCIONES GLOBALES
 // =====================================================
 
@@ -3395,6 +4546,13 @@ window.mostrarModalFacturaEmergencia = mostrarModalFacturaEmergencia;
 window.cerrarModalFacturaEmergencia = cerrarModalFacturaEmergencia;
 window.guardarFacturaEmergencia = guardarFacturaEmergencia;
 window.actualizarDeudaProveedorEmergencia = actualizarDeudaProveedorEmergencia;
+window.mostrarModalReportes = mostrarModalReportes;
+window.cerrarModalReportesProveedores = cerrarModalReportesProveedores;
+window.seleccionarPeriodoReporte = seleccionarPeriodoReporte;
+window.previsualizarReporte = previsualizarReporte;
+window.cerrarPreviewReporte = cerrarPreviewReporte;
+window.confirmarGenerarPDF = confirmarGenerarPDF;
+window.generarReporteProveedores = generarReporteProveedores;
 
 logProveedor('✅ Módulo de proveedores cargado - Funciones globales exportadas');
 
