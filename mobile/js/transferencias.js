@@ -310,6 +310,8 @@ async function guardarCambio() {
                     `📝 *Motivo:* ${motivo}`,
                     `🕐 *Fecha y hora:* ${hora} · ${fecha}`,
                     '',
+                    `📎 Por favor verifica en el siguiente enlace: https://transferencias.ferrisoluciones.com/?v=${codigo}`,
+                    '',
                     '🔴 ⚠️ *VERIFICAR ESTE MOVIMIENTO CON COMPROBANTE O NO SE PODRÁ HACER EL CIERRE DE CAJA DIARIO*'
                 ]
             })
