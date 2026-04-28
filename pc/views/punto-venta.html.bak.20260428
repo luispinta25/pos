@@ -1189,40 +1189,6 @@
         color: #c62828;
     }
 
-    /* Badge Gravatar */
-    .gravatar-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 0.82em;
-        padding: 2px 8px;
-        border-radius: 12px;
-        margin-left: 4px;
-        vertical-align: middle;
-        border: 1px solid #e0e0e0;
-        background: #f5f5f5;
-        color: #777;
-        transition: opacity 0.3s ease;
-    }
-    .gravatar-badge img {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        object-fit: cover;
-        flex-shrink: 0;
-    }
-    .gravatar-badge.con-perfil {
-        background: #e8f5e9;
-        border-color: #a5d6a7;
-        color: #2e7d32;
-        font-weight: 500;
-    }
-    .gravatar-badge.sin-perfil {
-        background: #f5f5f5;
-        border-color: #e0e0e0;
-        color: #888;
-    }
-
     /* Item entero mientras verifica */
     .search-result-item.verificando-item {
         border-left: 3px solid #90caf9;
@@ -7358,7 +7324,6 @@ _Sistema de Gestión Ferrisoluciones_`;
                     <div style="font-size: 0.85em; color: #666; margin-top: 4px; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
                         ${tieneCorreo ? `<span><i class="fas fa-envelope"></i> ${cliente.correo}</span>` : '<span style="color:#bbb;"><i class="fas fa-envelope-open"></i> Sin correo</span>'}
                         ${emailBadge}
-                        ${tieneCorreo ? `<span class="gravatar-badge" id="gravatar-badge-${cliente.cedula}" style="display:none;"></span>` : ''}
                         ${cliente.telefono ? `<span style="margin-left:4px;"> | <i class="fas fa-phone"></i> ${cliente.telefono}</span>` : ''}
                     </div>
                 </div>
@@ -7374,13 +7339,12 @@ _Sistema de Gestión Ferrisoluciones_`;
         window._verifAbortController = new AbortController();
         const signal = window._verifAbortController.signal;
 
-        // Verificar los primeros 2 clientes con correo (SMTP + Gravatar en paralelo)
+        // Verificar solo los primeros 2 clientes con correo
         let verificados = 0;
         for (const cliente of clientes) {
             if (verificados >= 2) break;
             if (cliente.correo && !cliente.correo.includes('@cambiar.com')) {
                 _verificarEmailEnBusqueda(cliente.cedula, cliente.correo, signal);
-                _consultarGravatar(cliente.cedula, cliente.correo.trim().toLowerCase(), signal);
                 verificados++;
             }
         }
@@ -7441,30 +7405,6 @@ _Sistema de Gestión Ferrisoluciones_`;
         }
     }
 
-    async function _consultarGravatar(cedula, email, signal) {
-        const gravatarEl = document.getElementById(`gravatar-badge-${cedula}`);
-        if (!gravatarEl) return;
-        try {
-            const url = `https://apicorreo.luispintasolutions.com/gravatar?email=${encodeURIComponent(email)}`;
-            const resp = await fetch(url, { headers: { Accept: 'application/json' }, signal });
-            const data = await resp.json();
-            console.log(`[Gravatar] ${email}`, data);
-            const avatarUrl = data.avatar || `https://www.gravatar.com/avatar/${Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(email)))).map(b=>b.toString(16).padStart(2,'0')).join('')}?s=40&d=mp`;
-            if (data.tiene_perfil) {
-                gravatarEl.className = 'gravatar-badge con-perfil';
-                gravatarEl.innerHTML = `<img src="${data.avatar}" alt="" onerror="this.style.display='none'"> ${data.nombre} <i class="fas fa-check-circle"></i>`;
-                console.log(`[Gravatar] ✓ Perfil encontrado: ${data.nombre} | avatar: ${data.avatar}`);
-            } else {
-                gravatarEl.className = 'gravatar-badge sin-perfil';
-                gravatarEl.innerHTML = `<img src="${data.avatar || 'https://www.gravatar.com/avatar/?d=mp&s=40'}" alt="" onerror="this.style.display='none'"> <i class="fas fa-check-circle" style="color:#2e7d32;"></i>`;
-                console.log(`[Gravatar] — Sin perfil. Avatar por defecto: ${data.avatar}`);
-            }
-            gravatarEl.style.display = 'inline-flex';
-        } catch (e) {
-            if (e.name !== 'AbortError') console.warn(`[Gravatar] Error para ${email}:`, e);
-        }
-    }
-
     function _aplicarBadgeEmail(badgeEl, itemEl, resultado) {
         if (!badgeEl) return;
         badgeEl.className = `email-verif-badge ${resultado.estado}`;
@@ -7480,9 +7420,6 @@ _Sistema de Gestión Ferrisoluciones_`;
             itemEl.style.background = '';
             if (resultado.estado === 'invalido') {
                 itemEl.classList.add('bloqueado');
-                // Ocultar badge Gravatar si el correo es inválido
-                const gravatarEl = itemEl.querySelector('.gravatar-badge');
-                if (gravatarEl) gravatarEl.style.display = 'none';
             } else {
                 itemEl.classList.remove('bloqueado');
             }
