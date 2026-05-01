@@ -57,9 +57,14 @@ function renderTransferenciasHoy(items) {
     $('transfSummary').classList.remove('hidden');
     $('transfPendientesSection').classList.add('hidden');
 
-    // Categorizar: cambios = id_venta empieza con C, ventas = todo lo demás
-    const ventas  = items.filter(t => !(t.id_venta || '').toUpperCase().startsWith('C'));
-    const cambios = items.filter(t =>  (t.id_venta || '').toUpperCase().startsWith('C'));
+    // Categorizar por prefijo: S = ventas, C = cambios, G = gastos.
+    const ventas  = items.filter(t => (t.id_venta || '').toUpperCase().startsWith('S'));
+    const cambios = items.filter(t => (t.id_venta || '').toUpperCase().startsWith('C'));
+    const gastos  = items.filter(t => (t.id_venta || '').toUpperCase().startsWith('G'));
+    const otros   = items.filter(t => {
+        const id = (t.id_venta || '').toUpperCase();
+        return id && !id.startsWith('S') && !id.startsWith('C') && !id.startsWith('G');
+    });
 
     const list = $('transfList');
     list.innerHTML = '';
@@ -76,6 +81,20 @@ function renderTransferenciasHoy(items) {
         const cPend = cambios.filter(t => !t.fotografia || t.fotografia.trim() === '');
         const cFoto = cambios.filter(t =>  t.fotografia && t.fotografia.trim() !== '');
         [...cPend, ...cFoto].forEach(t => list.appendChild(buildTransfCard(t, !t.fotografia || t.fotografia.trim() === '')));
+    }
+
+    if (gastos.length) {
+        list.appendChild(buildTransfSectionHeader('💸 Gastos por Transferencia', 'var(--danger)', gastos));
+        const gPend = gastos.filter(t => !t.fotografia || t.fotografia.trim() === '');
+        const gFoto = gastos.filter(t =>  t.fotografia && t.fotografia.trim() !== '');
+        [...gPend, ...gFoto].forEach(t => list.appendChild(buildTransfCard(t, !t.fotografia || t.fotografia.trim() === '')));
+    }
+
+    if (otros.length) {
+        list.appendChild(buildTransfSectionHeader('📌 Otros Movimientos', 'var(--text-muted)', otros));
+        const oPend = otros.filter(t => !t.fotografia || t.fotografia.trim() === '');
+        const oFoto = otros.filter(t =>  t.fotografia && t.fotografia.trim() !== '');
+        [...oPend, ...oFoto].forEach(t => list.appendChild(buildTransfCard(t, !t.fotografia || t.fotografia.trim() === '')));
     }
 }
 
@@ -132,6 +151,7 @@ async function verDetalleTransferencia(t) {
         hour: '2-digit', minute: '2-digit'
     });
     const tieneFoto = t.fotografia && t.fotografia.trim() !== '';
+    const esVenta = (t.id_venta || '').toUpperCase().startsWith('S');
 
     // Render básico inmediato mientras cargamos el detalle de venta
     $('transfDetalleBody').innerHTML = `
@@ -140,17 +160,17 @@ async function verDetalleTransferencia(t) {
             <div class="transf-detalle-motivo">${escHtml(t.motivo || '')}</div>
             <div class="transf-detalle-row"><span>Fecha</span><strong>${fechaLabel}</strong></div>
             ${t.subido_por ? `<div class="transf-detalle-row"><span>Subido por</span><strong>${escHtml(t.subido_por)}</strong></div>` : ''}
-            ${t.id_venta ? `<div class="transf-detalle-row"><span>Venta</span><strong style="font-family:monospace;">${escHtml(t.id_venta)}</strong></div>` : ''}
+            ${t.id_venta ? `<div class="transf-detalle-row"><span>${esVenta ? 'Venta' : 'Código'}</span><strong style="font-family:monospace;">${escHtml(t.id_venta)}</strong></div>` : ''}
             <div class="transf-detalle-row"><span>Caso</span><strong>${escHtml(t.caso || '')}</strong></div>
             ${tieneFoto
                 ? `<div class="transf-foto-wrap"><img src="${escHtml(t.fotografia)}" alt="Comprobante" class="transf-foto-img" onerror="this.style.display='none'"></div>`
                 : `<div class="transf-no-foto"><i class="fas fa-image"></i><span>Sin comprobante adjunto</span></div>`
             }
-            ${t.id_venta ? `<div id="transfVentaDetalle"><p style="text-align:center;padding:1rem;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Cargando venta…</p></div>` : ''}
+            ${esVenta ? `<div id="transfVentaDetalle"><p style="text-align:center;padding:1rem;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Cargando venta…</p></div>` : ''}
         </div>`;
 
     // Si tiene id_venta, cargar los productos de la venta
-    if (!t.id_venta) return;
+    if (!esVenta) return;
     try {
         const { data: ventaArr, error: ve } = await db
             .from('ferre_ventas')
@@ -414,7 +434,9 @@ async function confirmarVerificacion() {
                 url: ADMIN_FOTO,
                 caption: (verifyItemTarget.id_venta || '').startsWith('S')
                     ? 'Se ha verificado que el dinero de esta venta ha ingresado a la cuenta, muchas gracias'
-                    : 'Se ha verificado correctamente este cambio de dinero, muchas gracias',
+                    : ((verifyItemTarget.id_venta || '').startsWith('G')
+                        ? 'Se ha verificado correctamente el comprobante de este gasto por transferencia, muchas gracias'
+                        : 'Se ha verificado correctamente este cambio de dinero, muchas gracias'),
                 id_message_original: idMsgFresh
             })
         }).catch(e => console.warn('Webhook verificación:', e));

@@ -341,9 +341,14 @@ function cvRender(items) {
         return;
     }
 
-    // Categorizar: cambios = id_venta empieza con C, ventas = todo lo demás
-    var ventas  = items.filter(function(t){ return !(t.id_venta||'').toUpperCase().startsWith('C'); });
-    var cambios = items.filter(function(t){ return  (t.id_venta||'').toUpperCase().startsWith('C'); });
+    // Categorizar por prefijo: S = ventas, C = cambios, G = gastos.
+    var ventas  = items.filter(function(t){ return (t.id_venta||'').toUpperCase().startsWith('S'); });
+    var cambios = items.filter(function(t){ return (t.id_venta||'').toUpperCase().startsWith('C'); });
+    var gastos  = items.filter(function(t){ return (t.id_venta||'').toUpperCase().startsWith('G'); });
+    var otros   = items.filter(function(t){
+        var id = (t.id_venta||'').toUpperCase();
+        return id && !id.startsWith('S') && !id.startsWith('C') && !id.startsWith('G');
+    });
 
     var container = document.getElementById('cvListContainer');
     container.innerHTML = '';
@@ -360,6 +365,20 @@ function cvRender(items) {
         var cPend = cambios.filter(function(t){ return !t.fotografia || t.fotografia.trim() === ''; });
         var cFoto = cambios.filter(function(t){ return  t.fotografia && t.fotografia.trim() !== ''; });
         cPend.concat(cFoto).forEach(function(t){ container.appendChild(cvSection(t)); });
+    }
+
+    if (gastos.length) {
+        container.appendChild(cvCategoryHeader('💸 Gastos por Transferencia', '#e53e3e', gastos));
+        var gPend = gastos.filter(function(t){ return !t.fotografia || t.fotografia.trim() === ''; });
+        var gFoto = gastos.filter(function(t){ return  t.fotografia && t.fotografia.trim() !== ''; });
+        gPend.concat(gFoto).forEach(function(t){ container.appendChild(cvSection(t)); });
+    }
+
+    if (otros.length) {
+        container.appendChild(cvCategoryHeader('📌 Otros Movimientos', '#718096', otros));
+        var oPend = otros.filter(function(t){ return !t.fotografia || t.fotografia.trim() === ''; });
+        var oFoto = otros.filter(function(t){ return  t.fotografia && t.fotografia.trim() !== ''; });
+        oPend.concat(oFoto).forEach(function(t){ container.appendChild(cvSection(t)); });
     }
 }
 
@@ -424,14 +443,16 @@ async function cvOpenDetalle(t) {
         ? '<div style="text-align:center;"><img src="' + cvEsc(t.fotografia) + '" style="max-width:100%;border-radius:10px;border:1px solid #e2e8f0;max-height:280px;object-fit:contain;" onerror="this.style.display=\'none\'"></div>'
         : '<div style="text-align:center;padding:24px;color:#bbb;"><i class="fas fa-image" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin comprobante adjunto</div>';
     var subidoRow = t.subido_por ? '<tr><td style="padding:6px 0;color:#888;">Subido por</td><td style="font-weight:600;">' + cvEsc(t.subido_por) + '</td></tr>' : '';
-    var ventaRow  = t.id_venta   ? '<tr><td style="padding:6px 0;color:#888;">Venta</td><td style="font-family:monospace;color:#3182ce;font-weight:700;">' + cvEsc(t.id_venta) + '</td></tr>' : '';
-    var ventaDetalle = t.id_venta ? '<div id="cvDetVentaDetalle" style="margin-top:16px;border-top:1px solid #eee;padding-top:14px;"><p style="color:#888;text-align:center;"><i class="fas fa-spinner fa-spin"></i> Cargando detalle de venta...</p></div>' : '';
+    var esVenta = (t.id_venta || '').toUpperCase().startsWith('S');
+    var codigoLabel = esVenta ? 'Venta' : 'Código';
+    var ventaRow  = t.id_venta   ? '<tr><td style="padding:6px 0;color:#888;">' + codigoLabel + '</td><td style="font-family:monospace;color:#3182ce;font-weight:700;">' + cvEsc(t.id_venta) + '</td></tr>' : '';
+    var ventaDetalle = esVenta ? '<div id="cvDetVentaDetalle" style="margin-top:16px;border-top:1px solid #eee;padding-top:14px;"><p style="color:#888;text-align:center;"><i class="fas fa-spinner fa-spin"></i> Cargando detalle de venta...</p></div>' : '';
 
     body.innerHTML = '<div style="text-align:center;margin-bottom:20px;"><div style="font-size:2rem;font-weight:800;color:' + mc + ';">' + formatCurrency(t.monto) + '</div><div style="color:#888;font-size:.9em;margin-top:4px;">' + cvEsc(t.motivo||'') + '</div></div>'
         + '<table style="width:100%;border-collapse:collapse;font-size:.88em;margin-bottom:16px;"><tr><td style="padding:6px 0;color:#888;width:110px;">Fecha</td><td style="font-weight:600;">' + fecha + '</td></tr><tr><td style="padding:6px 0;color:#888;">Caso</td><td><span style="background:' + mc + '18;color:' + mc + ';padding:2px 8px;border-radius:6px;font-weight:700;">' + cvEsc(t.caso||'') + '</span></td></tr>' + subidoRow + ventaRow + '</table>'
         + fotoHtml + ventaDetalle;
 
-    if (!t.id_venta) return;
+    if (!esVenta) return;
 
     try {
         var res1 = await db.from('ferre_ventas').select('id,cliente_id,total,tipo_pago').eq('id_venta', t.id_venta).limit(1);
@@ -539,7 +560,9 @@ async function cvConfirmarVerificacion() {
                 url: ADMIN_FOTO,
                 caption: (cvVerifyItemTarget.id_venta || '').startsWith('S')
                     ? 'Se ha verificado que el dinero de esta venta ha ingresado a la cuenta, muchas gracias'
-                    : 'Se ha verificado correctamente este cambio de dinero, muchas gracias',
+                    : ((cvVerifyItemTarget.id_venta || '').startsWith('G')
+                        ? 'Se ha verificado correctamente el comprobante de este gasto por transferencia, muchas gracias'
+                        : 'Se ha verificado correctamente este cambio de dinero, muchas gracias'),
                 id_message_original: idMsgFresh
             })
         }).catch(function(e){ console.warn('Webhook verificación:', e); });

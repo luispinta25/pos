@@ -40,6 +40,14 @@
                             required></textarea>
                     </div>
 
+                    <label class="gasto-transfer-toggle">
+                        <input type="checkbox" id="gastoTransferenciaInput">
+                        <span>
+                            <strong>Gasto pagado por transferencia</strong>
+                            <small>Genera pendiente de comprobante en Caja Virtual</small>
+                        </span>
+                    </label>
+
                     <button type="submit" class="btn btn-accent btn-block">
                         <i class="fas fa-save"></i>
                         <span>Registrar Gasto</span>
@@ -286,6 +294,42 @@
     .btn-eliminar-gasto:hover {
         background: #c82333;
         transform: scale(1.05);
+    }
+
+    .gasto-transfer-toggle {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+        margin: 4px 0 20px;
+        border: 1px solid rgba(49, 130, 206, 0.25);
+        border-radius: 10px;
+        background: rgba(49, 130, 206, 0.06);
+        color: #2d3748;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .gasto-transfer-toggle input {
+        width: 18px;
+        height: 18px;
+        margin-top: 2px;
+        accent-color: #3182ce;
+        flex-shrink: 0;
+    }
+
+    .gasto-transfer-toggle strong {
+        display: block;
+        font-size: 0.92em;
+        color: #1a365d;
+    }
+
+    .gasto-transfer-toggle small {
+        display: block;
+        margin-top: 3px;
+        font-size: 0.78em;
+        color: #718096;
+        line-height: 1.35;
     }
 
     .btn-loading {
@@ -848,6 +892,7 @@
         try {
             const monto = document.getElementById('montoInput').value;
             const motivo = document.getElementById('motivoInput').value;
+            const esTransferencia = document.getElementById('gastoTransferenciaInput')?.checked || false;
 
             if (!monto || parseFloat(monto) <= 0) {
                 mostrarError('El monto debe ser mayor a 0');
@@ -936,12 +981,26 @@
 
             if (error) throw error;
 
+            let codigoTransferencia = null;
+            if (esTransferencia) {
+                codigoTransferencia = await registrarTransferenciaGasto({
+                    db,
+                    monto: nuevoGasto.monto,
+                    motivo: nuevoGasto.motivo,
+                    userEmail,
+                    nomcompleto,
+                    userId: window.auth?.getCurrentUser?.()?.id || null
+                });
+            }
+
             // Restaurar botón
             submitBtn.disabled = false;
             submitBtn.innerHTML = btnOriginalText;
             submitBtn.classList.remove('btn-loading');
 
-            mostrarExito('Gasto registrado exitosamente');
+            mostrarExito(codigoTransferencia
+                ? `Gasto registrado exitosamente. Transferencia ${codigoTransferencia} pendiente de comprobante.`
+                : 'Gasto registrado exitosamente');
             
             // Limpiar formulario
             document.getElementById('gastoForm').reset();
@@ -963,6 +1022,102 @@
                 submitBtn.classList.remove('btn-loading');
             }
         }
+    }
+
+    async function generarCodigoGastoTransferencia(db) {
+        const { data, error } = await db.from('ferre_transferencias')
+            .select('id_venta')
+            .like('id_venta', 'G%')
+            .order('id_venta', { ascending: false })
+            .limit(1);
+
+        if (error) throw error;
+
+        let num = 1;
+        if (data && data.length && data[0].id_venta) {
+            const parsed = parseInt(String(data[0].id_venta).slice(1), 10);
+            if (!isNaN(parsed)) num = parsed + 1;
+        }
+
+        return 'G' + String(num).padStart(5, '0');
+    }
+
+    async function registrarTransferenciaGasto({ db, monto, motivo, userEmail, nomcompleto, userId }) {
+        const codigo = await generarCodigoGastoTransferencia(db);
+        const ahora = new Date();
+
+        const { error } = await db.from('ferre_transferencias').insert({
+            fechahora: ahora.toISOString(),
+            caso: 'egreso',
+            monto,
+            motivo,
+            id_venta: codigo,
+            subido_por: userEmail,
+            fotografia: null,
+            user_id: userId
+        });
+
+        if (error) throw error;
+
+        enviarNotificacionTransferenciaGasto({
+            db,
+            codigo,
+            monto,
+            motivo,
+            nomcompleto,
+            userEmail,
+            fechahora: ahora
+        });
+
+        return codigo;
+    }
+
+    function enviarNotificacionTransferenciaGasto({ db, codigo, monto, motivo, nomcompleto, userEmail, fechahora }) {
+        const hora = fechahora.toLocaleTimeString('es-EC', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        const fecha = fechahora.toLocaleDateString('es-EC', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+
+        fetch('https://lpn8nwebhook.luispintasolutions.com/webhook/Mensaje_General', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mensaje: [
+                    '🔔 *Notificación de Gasto por Transferencia*',
+                    '━━━━━━━━━━━━━━━━',
+                    `🔑 *Código:* ${codigo}`,
+                    '📤 *Operación:* Egreso por gasto',
+                    '📌 _SALE de la cuenta / banco_',
+                    `💵 *Monto:* $${parseFloat(monto).toFixed(2)}`,
+                    `👤 *Registrado por:* ${nomcompleto || userEmail || 'Usuario'}`,
+                    `📝 *Motivo:* ${motivo}`,
+                    `🕐 *Fecha y hora:* ${hora} · ${fecha}`,
+                    '',
+                    `📎 Por favor actualiza el comprobante en el siguiente enlace: https://transferencias.ferrisoluciones.com/?v=${codigo}`,
+                    '',
+                    '🔴 ⚠️ *VERIFICAR ESTE GASTO CON COMPROBANTE O NO SE PODRÁ HACER EL CIERRE DE CAJA DIARIO*'
+                ]
+            })
+        })
+        .then(r => r.json())
+        .then(async data => {
+            const idMessage = (data && data.length > 0 && data[0].data && data[0].data.key)
+                ? data[0].data.key.id
+                : null;
+
+            if (idMessage) {
+                await db.from('ferre_transferencias')
+                    .update({ id_message: idMessage })
+                    .eq('id_venta', codigo);
+            }
+        })
+        .catch(err => console.error('Error webhook gasto transferencia', err));
     }
 
     async function enviarNotificacionWhatsApp(gasto, userData) {
@@ -1189,7 +1344,5 @@ _Powered by Ferrisoluciones Tech_`;
     window.confirmarEliminarGasto = confirmarEliminarGasto;
 
 </script>
-
-
 
 

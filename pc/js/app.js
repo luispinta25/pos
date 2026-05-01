@@ -754,6 +754,7 @@ async function checkTransfPendientesPC() {
         let html = '';
         pendientes.forEach(t => {
             const esVenta = (t.id_venta || '').startsWith('S');
+            const esGasto = (t.id_venta || '').startsWith('G');
             if (esVenta) {
                 const v = ventaMap[t.id_venta];
                 const clienteLabel = v ? (v.cliente_id === '9999999999999' ? 'Consumidor Final' : v.cliente_id) : '';
@@ -774,6 +775,16 @@ async function checkTransfPendientesPC() {
                     ${clienteLabel ? `<div style="font-size:.82rem;color:#555;margin-bottom:6px;"><i class="fas fa-user" style="width:14px;"></i> ${esc(clienteLabel)}</div>` : ''}
                     ${prodsHtml ? `<div style="margin:6px 0 8px;">${prodsHtml}</div>` : ''}
                     <div style="font-size:.9rem;font-weight:700;color:#e53e3e;text-align:right;margin-top:4px;">Total: ${totalLabel}</div>
+                </div>`;
+            } else if (esGasto) {
+                html += `<div style="border:1px solid rgba(229,62,62,.3);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:#fff5f5;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                        <i class="fas fa-money-bill-wave" style="color:#e53e3e;"></i>
+                        <span style="font-weight:700;font-size:.9rem;color:#c53030;">Gasto por Transferencia</span>
+                        <span style="margin-left:auto;font-family:monospace;font-size:.78rem;color:#e53e3e;">${esc(t.id_venta||'')}</span>
+                    </div>
+                    <div style="font-size:.82rem;color:#555;">${esc(t.motivo||'')}</div>
+                    <div style="font-size:.88rem;font-weight:700;color:#e53e3e;margin-top:4px;">${formatCurrency(t.monto)}</div>
                 </div>`;
             } else {
                 html += `<div style="border:1px solid rgba(229,62,62,.3);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:#fff5f5;">
@@ -807,4 +818,3 @@ function startTransfAlertPollingPC() {
     if (_transfAlertInterval) clearInterval(_transfAlertInterval);
     _transfAlertInterval = setInterval(checkTransfPendientesPC, 2 * 60 * 1000);
 }
-
