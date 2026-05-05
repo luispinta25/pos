@@ -1,11 +1,11 @@
 // =====================================================
 // SERVICE WORKER - FERRISOLUCIONES POS
-// Version: 3.5.6
+// Version: 3.5.7
 // Strategy: Network First
 // =====================================================
 
-const CACHE_NAME = 'ferrisoluciones-pos-v3-5-6';
-const RUNTIME_CACHE = 'ferrisoluciones-runtime-v3-5-6';
+const CACHE_NAME = 'ferrisoluciones-pos-v3-5-7';
+const RUNTIME_CACHE = 'ferrisoluciones-runtime-v3-5-7';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -28,7 +28,7 @@ const STATIC_ASSETS = [
 // =====================================================
 
 self.addEventListener('install', (event) => {
-    console.log('🔧 [SW] Installing Service Worker v3.5.6...');
+    console.log('🔧 [SW] Installing Service Worker v3.5.7...');
     
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -56,23 +56,22 @@ self.addEventListener('install', (event) => {
 // =====================================================
 
 self.addEventListener('activate', (event) => {
-    console.log('🚀 [SW] Activating Service Worker v3.5.6...');
+    console.log('🚀 [SW] Activating Service Worker v3.5.7...');
     
     event.waitUntil(
         caches.keys()
             .then(cacheNames => {
+                // Delete ALL caches on activation to ensure a clean start with every update
+                console.log('🗑️ [SW] Clearing ALL caches for fresh start...');
                 return Promise.all(
                     cacheNames.map(cacheName => {
-                        // Delete old caches
-                        if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
-                            console.log('🗑️ [SW] Deleting old cache:', cacheName);
-                            return caches.delete(cacheName);
-                        }
+                        console.log('🗑️ [SW] Deleting cache:', cacheName);
+                        return caches.delete(cacheName);
                     })
                 );
             })
             .then(() => {
-                console.log('✅ [SW] Activation complete');
+                console.log('✅ [SW] All caches cleared. Activation complete.');
                 return self.clients.claim();
             })
     );
@@ -178,11 +177,11 @@ self.addEventListener('message', (event) => {
                     event.ports[0].postMessage({ 
                         success: true, 
                         size: requests.length,
-                        version: '3.5.6'
+                        version: '3.5.7'
                     });
                 });
             });
     }
 });
 
-console.log('✅ Service Worker v3.5.6 loaded (Network First Strategy)');
+console.log('✅ Service Worker v3.5.7 loaded (Network First Strategy)');

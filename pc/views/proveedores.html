@@ -2647,7 +2647,10 @@ async function registrarPagoProveedor(e) {
     
     logProveedor('📤 Datos a enviar a Supabase:', datosInsert);
     
-    const esTransferencia = metodoPago.toUpperCase().includes('TRANSFER');
+    const metodoPagoUpper = metodoPago.toUpperCase();
+    const esTransferencia = metodoPagoUpper.includes('TRANSFER');
+    const esEfectivo = metodoPagoUpper.includes('EFECTIVO');
+    const requiereNotificacionPago = esTransferencia || esEfectivo;
 
     // Bloquear botón para evitar doble clic
     const btnPago = document.getElementById('btnRegistrarPago');
@@ -2658,7 +2661,7 @@ async function registrarPagoProveedor(e) {
 
     try {
         // Mostrar barra de progreso
-        showProgressOverlay(esTransferencia);
+        showProgressOverlay(requiereNotificacionPago);
         await sleep(300);
         
         // Paso 1: Validando datos
@@ -2692,18 +2695,29 @@ async function registrarPagoProveedor(e) {
         await sleep(400);
         updateProgressStep(2, 'completed');
         
-        // Paso 3: Procesando transferencia (si aplica)
-        if (esTransferencia) {
+        // Paso 3: Procesando notificación de pago (si aplica)
+        if (requiereNotificacionPago) {
             updateProgressStep(3, 'active');
             updateProgressBar(75);
-            updateProgressSubtitle('Procesando transferencia y enviando notificación...');
-            
-            logProveedor('💸 Procesando transferencia...');
-            await procesarTransferenciaProveedor({
-                factura: proveedoresData.facturaActual,
-                monto: montoPago,
-                numeroFactura: proveedoresData.facturaActual.numero_factura
-            }, client);
+            if (esTransferencia) {
+                updateProgressSubtitle('Procesando transferencia y enviando notificación...');
+                
+                logProveedor('💸 Procesando transferencia...');
+                await procesarTransferenciaProveedor({
+                    factura: proveedoresData.facturaActual,
+                    monto: montoPago,
+                    numeroFactura: proveedoresData.facturaActual.numero_factura
+                }, client);
+            } else if (esEfectivo) {
+                updateProgressSubtitle('Enviando notificación de pago en efectivo...');
+                
+                logProveedor('💵 Notificando pago en efectivo...');
+                await notificarPagoEfectivoProveedor({
+                    factura: proveedoresData.facturaActual,
+                    monto: montoPago,
+                    numeroFactura: proveedoresData.facturaActual.numero_factura
+                }, client);
+            }
             
             await sleep(500);
             updateProgressStep(3, 'completed');
@@ -2746,15 +2760,17 @@ async function registrarPagoProveedor(e) {
 // CONTROL DE BARRA DE PROGRESO
 // =====================================================
 
-function showProgressOverlay(conTransferencia = false) {
+function showProgressOverlay(conNotificacion = false) {
     const overlay = document.getElementById('progressOverlay');
     if (!overlay) return;
     
     const step3 = document.querySelector('[data-step="3"]');
     
-    // Mostrar/ocultar paso de transferencia según sea necesario
+    // Mostrar/ocultar paso de notificación según sea necesario
     if (step3) {
-        step3.style.display = conTransferencia ? 'flex' : 'none';
+        step3.style.display = conNotificacion ? 'flex' : 'none';
+        const step3Label = step3.querySelector('span');
+        if (step3Label) step3Label.textContent = 'Enviando notificación';
     }
     
     // Resetear progreso
@@ -2935,6 +2951,166 @@ async function procesarTransferenciaProveedor(datos, client) {
         
     } catch (error) {
         logError('Error al procesar transferencia:', error);
+    }
+}
+
+function generarComprobantePagoEfectivoCanvasProveedor(datos) {
+    logProveedor('🎨 Generando comprobante de pago en efectivo');
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 600;
+        canvas.height = 300;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+        
+        ctx.font = 'bold 24px Arial';
+        ctx.fillStyle = '#2563eb';
+        ctx.textAlign = 'center';
+        ctx.fillText('COMPROBANTE DE PAGO EN EFECTIVO', canvas.width / 2, 50);
+        
+        ctx.strokeStyle = '#dbeafe';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(30, 70);
+        ctx.lineTo(canvas.width - 30, 70);
+        ctx.stroke();
+        
+        ctx.font = '18px Arial';
+        ctx.fillStyle = '#1f2937';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Proveedor: ${datos.proveedor}`, 40, 110);
+        ctx.fillText(`Factura N°: ${datos.numeroFactura}`, 40, 145);
+        
+        ctx.font = 'bold 22px Arial';
+        ctx.fillStyle = '#2563eb';
+        ctx.fillText(`Monto: $${datos.monto.toFixed(2)}`, 40, 190);
+        
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText(`Fecha: ${datos.fecha || new Date().toLocaleDateString('es-EC')}`, 40, 230);
+        
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#9ca3af';
+        ctx.fillText('Generado por Ferrisoluciones', canvas.width / 2, 270);
+        
+        return canvas.toDataURL('image/png');
+    } catch (e) {
+        logError('Error al generar comprobante de efectivo:', e);
+        return null;
+    }
+}
+
+async function notificarPagoEfectivoProveedor(datos, client) {
+    try {
+        const proveedorNombre = datos.factura.proveedor_empresa || 'Proveedor';
+        const fotoDataUrl = generarComprobantePagoEfectivoCanvasProveedor({
+            proveedor: proveedorNombre,
+            numeroFactura: datos.numeroFactura,
+            monto: datos.monto,
+            fecha: formatDate(new Date())
+        });
+        
+        if (!fotoDataUrl) {
+            logWarning('No se generó comprobante de efectivo para enviar');
+            return { success: false, reason: 'no_receipt' };
+        }
+        
+        const userNameElement = document.getElementById('userName');
+        const userName = userNameElement ? userNameElement.textContent.trim() : 'Usuario';
+        
+        return await enviarNotificacionWhatsAppEfectivoProveedor({
+            proveedor: proveedorNombre,
+            numeroFactura: datos.numeroFactura,
+            monto: datos.monto,
+            fechahora: new Date().toISOString(),
+            foto_url: fotoDataUrl,
+            subido_por_nombre: userName
+        }, client);
+    } catch (error) {
+        logError('Error al notificar pago en efectivo:', error);
+        return { success: false, error };
+    }
+}
+
+async function enviarNotificacionWhatsAppEfectivoProveedor(pago, client) {
+    try {
+        logProveedor('🔍 Obteniendo configuración de WhatsApp para pago en efectivo...');
+        
+        const { data: ferredatos, error } = await client
+            .from('ferre_ferredatos')
+            .select('*')
+            .limit(1)
+            .single();
+        
+        if (error || !ferredatos) {
+            logWarning('No se encontró configuración de WhatsApp');
+            return { success: false, reason: 'no_config' };
+        }
+        
+        const fecha = new Date(pago.fechahora);
+        const fechaFormateada = fecha.toLocaleDateString('es-EC', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        const horaFormateada = fecha.toLocaleTimeString('es-EC', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        const montoFormateado = parseFloat(pago.monto).toFixed(2);
+        
+        const mensaje = `💵 *Pago a Proveedor en Efectivo*\n\n📅 *Fecha:* ${fechaFormateada}\n🕐 *Hora:* ${horaFormateada}\n\n🏢 *Proveedor:* ${pago.proveedor}\n🧾 *Factura:* ${pago.numeroFactura}\n💵 *Monto:* $${montoFormateado}\n\n👤 *Registrado por:*\n${pago.subido_por_nombre || 'N/A'}\n\n📸 *Comprobante adjunto*\n\n_Sistema de Gestión Ferrisoluciones_`;
+        
+        let mediaToSend = pago.foto_url || '';
+        if (mediaToSend.startsWith('data:')) {
+            const commaIdx = mediaToSend.indexOf(',');
+            if (commaIdx !== -1) {
+                mediaToSend = mediaToSend.substring(commaIdx + 1);
+            }
+        }
+        
+        const fileName = `PAGO_EFECTIVO_${fechaFormateada.replace(/\//g, '-')}_${horaFormateada.replace(/:/g, '-')}.png`;
+        const payload = {
+            number: ferredatos.number,
+            mediatype: 'image',
+            mimetype: 'image/png',
+            caption: mensaje,
+            media: mediaToSend,
+            fileName: fileName,
+            delay: 1000,
+            linkPreview: false
+        };
+        
+        const response = await fetch(`https://api.luispintasolutions.com/message/sendMedia/${ferredatos.instance}`, {
+            method: 'POST',
+            headers: {
+                'apikey': ferredatos.apikey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            logProveedor('✅ Notificación de pago en efectivo enviada:', data);
+            return { success: true, data };
+        }
+        
+        logError('❌ Error en API de WhatsApp para efectivo:', data);
+        return { success: false, error: data };
+    } catch (error) {
+        logError('Error al enviar notificación de efectivo:', error);
+        return { success: false, error };
     }
 }
 
@@ -4557,7 +4733,5 @@ window.generarReporteProveedores = generarReporteProveedores;
 logProveedor('✅ Módulo de proveedores cargado - Funciones globales exportadas');
 
 </script>
-
-
 
 

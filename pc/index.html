@@ -108,7 +108,7 @@
                     <img src="https://i.ibb.co/8gLPXfjh/FERRISOLUCIONES-1.png" alt="Logo" class="nav-logo">
                     <div class="nav-title-wrapper">
                         <span class="nav-title">Ferrisoluciones</span>
-                        <span class="app-version">v3.5.6</span>
+                        <span class="app-version">v3.5.7</span>
                     </div>
                 </div>
 
@@ -217,14 +217,16 @@
     <!-- Service Worker Registration -->
     <script>
         // =====================================================
-        // SERVICE WORKER REGISTRATION - v3.5.6
+        // SERVICE WORKER REGISTRATION - v3.5.7
         // =====================================================
         
         if ('serviceWorker' in navigator) {
+            let swUpdatePending = false;
+
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
                     .then(registration => {
-                        console.log('✅ Service Worker registered successfully (v3.5.6)');
+                        console.log('✅ Service Worker registered successfully (v3.5.7)');
                         console.log('📍 Scope:', registration.scope);
                         console.log('🔄 Strategy: Network First');
                         
@@ -232,15 +234,33 @@
                         setInterval(() => {
                             registration.update();
                         }, 60000); // Check every minute
+
+                        // Detect when a new SW is found and force mandatory update
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            if (!newWorker) return;
+
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New version ready — force it to activate immediately
+                                    console.log('🔄 [SW] Nueva versión lista, activando obligatoriamente...');
+                                    swUpdatePending = true;
+                                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                }
+                            });
+                        });
                     })
                     .catch(error => {
                         console.error('❌ Service Worker registration failed:', error);
                     });
                 
-                // Listen for updates
+                // When new SW takes control, reload the page to apply all changes with clean caches
                 navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    console.log('🔄 Service Worker updated');
-                    // Optional: reload page or notify user about update
+                    if (swUpdatePending) {
+                        console.log('🔄 [SW] Nuevo Service Worker activo. Recargando para aplicar cambios...');
+                        swUpdatePending = false;
+                        window.location.reload();
+                    }
                 });
             });
             

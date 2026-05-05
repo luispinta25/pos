@@ -1350,6 +1350,28 @@ async function guardarFacturaIngreso() {
                         }
                     } catch (insErr) {
                     }
+                } else if (metodoUpper.includes('EFECTIVO')) {
+                    try {
+                        const proveedorNombre = (proveedor && (proveedor.empresa || proveedor.nombre || proveedor.nombre_proveedor)) || (proveedor && proveedor.empresa) || 'PROVEEDOR';
+                        const { name: userName } = getCurrentUserInfo();
+                        const fotoDataUrl = generarComprobantePagoEfectivoCanvas({
+                            proveedor: proveedorNombre,
+                            numeroFactura: facturaData.numero_factura,
+                            monto: totalFactura,
+                            fecha: facturaData.fecha_emision
+                        });
+
+                        enviarNotificacionPagoEfectivo({
+                            proveedor: proveedorNombre,
+                            numeroFactura: facturaData.numero_factura,
+                            monto: totalFactura,
+                            fechahora: new Date().toISOString(),
+                            foto_url: fotoDataUrl,
+                            subido_por_nombre: userName || 'Usuario'
+                        }, client).then(r => {
+                        });
+                    } catch (notifyCashErr) {
+                    }
                 }
             } catch (innerErr) {
             }
@@ -1505,6 +1527,108 @@ function generarComprobantePagoCanvas({proveedor, numeroFactura, monto, fecha}){
         return canvas.toDataURL('image/png');
     }catch(e){
         return null;
+    }
+}
+
+function generarComprobantePagoEfectivoCanvas({proveedor, numeroFactura, monto, fecha}){
+    try{
+        const canvas = document.createElement('canvas');
+        const width = 800, height = 360;
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0,0,width,height);
+
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(16, 16, width - 32, height - 32);
+
+        ctx.fillStyle = '#2563eb';
+        ctx.font = '700 28px Arial';
+        ctx.fillText('Comprobante de Pago en Efectivo', 40, 60);
+
+        ctx.strokeStyle = '#dbeafe';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(40, 82);
+        ctx.lineTo(width - 40, 82);
+        ctx.stroke();
+
+        ctx.font = '600 20px Arial';
+        ctx.fillStyle = '#111827';
+        ctx.fillText(`Proveedor: ${proveedor}`, 40, 125);
+        ctx.fillText(`Factura: ${numeroFactura}`, 40, 165);
+
+        ctx.font = '700 24px Arial';
+        ctx.fillStyle = '#2563eb';
+        ctx.fillText(`Monto: $${(monto||0).toFixed(2)}`, 40, 210);
+
+        ctx.font = '18px Arial';
+        ctx.fillStyle = '#374151';
+        ctx.fillText(`Fecha: ${fecha || new Date().toISOString().split('T')[0]}`, 40, 250);
+
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText('Generado por FERRETERIA App', 40, 310);
+        return canvas.toDataURL('image/png');
+    }catch(e){
+        return null;
+    }
+}
+
+async function enviarNotificacionPagoEfectivo(pago, supabaseClient){
+    try{
+        const ferredatos = await obtenerConfiguracionWhatsAppLocal(supabaseClient);
+        if (!ferredatos) {
+            return { success: false, error: 'Configuración no disponible' };
+        }
+
+        const fecha = new Date(pago.fechahora);
+        const fechaFormateada = fecha.toLocaleDateString('es-EC', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        const horaFormateada = fecha.toLocaleTimeString('es-EC', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        const montoFormateado = parseFloat(pago.monto).toFixed(2);
+
+        const mensaje = `💵 *Pago a Proveedor en Efectivo*\n\n📅 *Fecha:* ${fechaFormateada}\n🕐 *Hora:* ${horaFormateada}\n\n🏢 *Proveedor:* ${pago.proveedor}\n🧾 *Factura:* ${pago.numeroFactura}\n💵 *Monto:* $${montoFormateado}\n\n👤 *Registrado por:*\n${pago.subido_por_nombre || 'N/A'}\n\n📸 *Comprobante adjunto*\n\n_Sistema de Gestión Ferrisoluciones_`;
+
+        let mediaToSend = pago.foto_url || '';
+        if (typeof mediaToSend === 'string' && mediaToSend.startsWith('data:')) {
+            const commaIdx = mediaToSend.indexOf(',');
+            if (commaIdx !== -1) mediaToSend = mediaToSend.substring(commaIdx + 1);
+        }
+
+        const payloadObject = {
+            number: ferredatos.number,
+            mediatype: 'image',
+            mimetype: 'image/png',
+            caption: mensaje,
+            media: mediaToSend,
+            fileName: `PAGO_EFECTIVO_${fechaFormateada.replace(/\//g, '-')}_${horaFormateada.replace(/:/g, '-')}.png`,
+            delay: 1000,
+            linkPreview: false
+        };
+
+        const response = await fetch(`https://api.luispintasolutions.com/message/sendMedia/${ferredatos.instance}`, {
+            method: 'POST',
+            headers: {
+                'apikey': ferredatos.apikey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payloadObject)
+        });
+        const data = await response.json();
+
+        return response.ok ? { success: true, data } : { success: false, error: data };
+    }catch(error){
+        return { success: false, error: error.message };
     }
 }
 
@@ -3043,5 +3167,3 @@ window.cancelarConfirmacionInventarioIngreso = cancelarConfirmacionInventarioIng
 window.ejecutarActualizacionInventarioIngreso = ejecutarActualizacionInventarioIngreso;
 window.cargarListaProveedoresIngreso = cargarListaProveedoresIngreso;
 window.agregarProductoATablaDirecto = agregarProductoATablaDirecto;
-
-
