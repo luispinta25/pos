@@ -129,6 +129,12 @@
                 <span>Ver Dashboard Experto</span>
             </button>
 
+            <button class="btn btn-secondary" onclick="mostrarHistoricoMensual()"
+                style="width: 100%; margin-top: 10px; padding: 15px; font-size: 1.1em; background: #3f51b5; color: white; border: none;">
+                <i class="fas fa-history"></i>
+                <span>Histórico 6 Meses</span>
+            </button>
+
         </div>
 
 
@@ -209,6 +215,48 @@
                     style="text-align: right; color: #666; font-size: 0.9em; margin-top: -15px; margin-bottom: 15px; font-weight: 600;">
                 </div>
 
+                <!-- Financial Metrics Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <!-- Total Ventas Card -->
+                    <div class="stat-card" style="background: #e0f2f1; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; min-height: 100px;">
+                        <div>
+                            <div style="font-size: 0.85em; color: #00796b; margin-bottom: 5px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-hand-holding-dollar" style="font-size: 1.1em;"></i> Total Ventas Periodo
+                            </div>
+                            <div id="dashTotalVentas" style="font-weight: 800; font-size: 1.8em; color: #004d40;">$0.00</div>
+                        </div>
+                        <div id="dashTotalVentasRelacion" style="font-size: 0.85em; margin-top: 8px; display: flex; align-items: center; gap: 4px; font-weight: 600; color: #666;">
+                            -- vs periodo anterior
+                        </div>
+                    </div>
+                    
+                    <!-- Facturas Card -->
+                    <div class="stat-card" style="background: #f3e5f5; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; min-height: 100px;">
+                        <div>
+                            <div style="font-size: 0.85em; color: #7b1fa2; margin-bottom: 5px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-file-invoice" style="font-size: 1.1em;"></i> Facturas Autorizadas
+                            </div>
+                            <div id="dashTotalFacturas" style="font-weight: 800; font-size: 1.8em; color: #4a148c;">$0.00</div>
+                        </div>
+                        <div id="dashCantFacturas" style="font-size: 0.85em; margin-top: 8px; font-weight: 600; color: #666;">
+                            0 comprobantes emitidos
+                        </div>
+                    </div>
+
+                    <!-- Recibos Card -->
+                    <div class="stat-card" style="background: #ffe0b2; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; min-height: 100px;">
+                        <div>
+                            <div style="font-size: 0.85em; color: #e65100; margin-bottom: 5px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-receipt" style="font-size: 1.1em;"></i> Recibos Emitidos
+                            </div>
+                            <div id="dashTotalRecibos" style="font-weight: 800; font-size: 1.8em; color: #bf360c;">$0.00</div>
+                        </div>
+                        <div id="dashCantRecibos" style="font-size: 0.85em; margin-top: 8px; font-weight: 600; color: #666;">
+                            0 comprobantes emitidos
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Stats Cards -->
                 <div
                     style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
@@ -263,6 +311,68 @@
                     </div>
                 </div>
 
+            </div>
+
+            <!-- Historico Mensual View -->
+            <div id="historicoMensualView" class="card hidden" style="display: none; position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 1.3em; display: flex; align-items: center; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="ocultarHistoricoMensual()" style="padding: 5px 10px;">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <span><i class="fas fa-history"></i> Histórico 6 Meses</span>
+                    </h3>
+                </div>
+
+                <!-- Month List View -->
+                <div id="historicoMensualLista">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;" id="historicoMensualGrid">
+                        <!-- Month cards will be rendered here dynamically -->
+                    </div>
+                </div>
+
+                <!-- Month Detail View (Hidden by default) -->
+                <div id="historicoMensualDetalle" class="hidden" style="display: none; margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <button class="btn btn-secondary" onclick="volverAListaMensual()" style="padding: 5px 10px; display: flex; align-items: center; gap: 5px; font-size: 0.9em;">
+                            <i class="fas fa-arrow-left"></i> Volver al listado
+                        </button>
+                        <h4 id="historicoDetalleMesTitulo" style="margin: 0; font-size: 1.2em; color: #3f51b5; font-weight: bold;">Detalle del Mes</h4>
+                    </div>
+
+                    <!-- Summary stats for selected month -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                        <div style="background: #e8eaf6; padding: 15px; border-radius: 8px; border-left: 4px solid #3f51b5;">
+                            <div style="font-size: 0.85em; color: #3f51b5; margin-bottom: 5px; font-weight: 600;">Total Ventas del Mes</div>
+                            <div id="detTotalVentasMes" style="font-weight: bold; font-size: 1.5em; color: #1a237e;">$0.00</div>
+                        </div>
+                        <div style="background: #efebe9; padding: 15px; border-radius: 8px; border-left: 4px solid #5d4037;">
+                            <div style="font-size: 0.85em; color: #5d4037; margin-bottom: 5px; font-weight: 600;">Comprobantes Emitidos</div>
+                            <div id="detComprobantesMes" style="font-weight: bold; font-size: 1.5em; color: #3e2723;">0</div>
+                        </div>
+                        <div style="background: #e0f2f1; padding: 15px; border-radius: 8px; border-left: 4px solid #009688;">
+                            <div style="font-size: 0.85em; color: #009688; margin-bottom: 5px; font-weight: 600;">Crecimiento vs Periodo Anterior</div>
+                            <div id="detCrecimientoMes" style="font-weight: bold; font-size: 1.5em; color: #004d40;">--</div>
+                        </div>
+                    </div>
+
+                    <!-- Evolution Chart -->
+                    <div>
+                        <h4 style="margin-bottom: 10px; color: #666; font-size: 1em; font-weight: 600;">Evolución Diaria vs Periodo Anterior</h4>
+                        <div style="height: 320px; position: relative;">
+                            <canvas id="chartEvolucionMensual"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Month Loading Overlay -->
+                <div id="historicoLoading" class="hidden"
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 10; border-radius: 8px;">
+                    <div class="spinner-large"
+                        style="width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #3f51b5; border-radius: 50%; animation: spin 1s linear infinite;">
+                    </div>
+                    <p style="margin-top: 15px; color: #666; font-weight: 600;">Cargando histórico de ventas...</p>
+                </div>
             </div>
 
             <!-- Loading Overlay -->
@@ -2839,7 +2949,7 @@
                 let productosMap = {};
                 
                 if (productosIds.length > 0) {
-                    const chunkSize = 5; // Reducido a 5 para evitar URLs largas con UUIDs
+                    const chunkSize = 100;
                     for (let i = 0; i < productosIds.length; i += chunkSize) {
                         const chunk = productosIds.slice(i, i + chunkSize);
                         const { data: productos, error: productosError } = await db
@@ -4087,29 +4197,125 @@
 
                 const db = window.app.db;
 
-                // Fetch sales
-                const { data: ventas, error } = await db
+                // Calculate time difference for previous period comparison
+                const timeDiff = fechaFin.getTime() - fechaInicio.getTime() + 1;
+                const fechaInicioPrev = new Date(fechaInicio.getTime() - timeDiff);
+
+                // Fetch sales covering BOTH current and previous period
+                const { data: todasLasVentas, error } = await db
                     .from('ferre_ventas')
                     .select('*')
-                    .gte('fecha_hora_venta', fechaInicio.toISOString())
+                    .gte('fecha_hora_venta', fechaInicioPrev.toISOString())
                     .lte('fecha_hora_venta', fechaFin.toISOString());
 
                 if (error) throw error;
 
+                // Partition sales into current and previous period
+                const ventas = [];
+                const ventasPrev = [];
+                const isoInicio = fechaInicio.toISOString();
+
+                (todasLasVentas || []).forEach(v => {
+                    if (v.fecha_hora_venta >= isoInicio) {
+                        ventas.push(v);
+                    } else {
+                        ventasPrev.push(v);
+                    }
+                });
+
+                // Calculate total sales actual & prev
+                const totalVentasActual = ventas.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+                const totalVentasPrev = ventasPrev.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+
+                // Partition between Facturas and Recibos
+                let totalFacturas = 0;
+                let cantFacturas = 0;
+                let totalRecibos = 0;
+                let cantRecibos = 0;
+
+                ventas.forEach(v => {
+                    const total = parseFloat(v.total || 0);
+                    if (v.tipo === 'FACTURA') {
+                        totalFacturas += total;
+                        cantFacturas++;
+                    } else {
+                        totalRecibos += total;
+                        cantRecibos++;
+                    }
+                });
+
+                // Update UI elements for financials
+                const totalVentasEl = document.getElementById('dashTotalVentas');
+                if (totalVentasEl) totalVentasEl.textContent = window.app.formatCurrency(totalVentasActual);
+                
+                const totalFacturasEl = document.getElementById('dashTotalFacturas');
+                if (totalFacturasEl) totalFacturasEl.textContent = window.app.formatCurrency(totalFacturas);
+                
+                const cantFacturasEl = document.getElementById('dashCantFacturas');
+                if (cantFacturasEl) cantFacturasEl.textContent = `${cantFacturas} comprobantes emitidos`;
+                
+                const totalRecibosEl = document.getElementById('dashTotalRecibos');
+                if (totalRecibosEl) totalRecibosEl.textContent = window.app.formatCurrency(totalRecibos);
+                
+                const cantRecibosEl = document.getElementById('dashCantRecibos');
+                if (cantRecibosEl) cantRecibosEl.textContent = `${cantRecibos} comprobantes emitidos`;
+
+                // Calculate comparison text & style
+                let diffText = "";
+                let diffColor = "#666";
+                let diffIcon = "";
+                
+                if (totalVentasPrev > 0) {
+                    const percentDiff = ((totalVentasActual - totalVentasPrev) / totalVentasPrev) * 100;
+                    const percentStr = percentDiff.toFixed(1);
+                    if (percentDiff > 0) {
+                        diffText = `+${percentStr}%`;
+                        diffColor = "#2e7d32";
+                        diffIcon = '<i class="fas fa-arrow-trend-up"></i>';
+                    } else if (percentDiff < 0) {
+                        diffText = `${percentStr}%`;
+                        diffColor = "#c62828";
+                        diffIcon = '<i class="fas fa-arrow-trend-down"></i>';
+                    } else {
+                        diffText = "0.0%";
+                        diffColor = "#666";
+                        diffIcon = '<i class="fas fa-equals"></i>';
+                    }
+                } else {
+                    if (totalVentasActual > 0) {
+                        diffText = "+100%";
+                        diffColor = "#2e7d32";
+                        diffIcon = '<i class="fas fa-arrow-trend-up"></i>';
+                    } else {
+                        diffText = "0.0%";
+                        diffColor = "#666";
+                        diffIcon = '<i class="fas fa-equals"></i>';
+                    }
+                }
+
+                const labelRel = document.getElementById('dashTotalVentasRelacion');
+                if (labelRel) {
+                    labelRel.innerHTML = `<span style="color: ${diffColor}; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">${diffIcon} ${diffText}</span> vs periodo anterior`;
+                }
+
                 // Fetch details for product stats
                 const ventaIds = ventas.map(v => v.id);
 
-                // Fetch in chunks to avoid URL length limits
+                // Fetch in chunks to avoid URL length limits, running queries in parallel
                 let detalles = [];
                 if (ventaIds.length > 0) {
-                    const chunkSize = 5; // Reducido a 5 para evitar URLs largas con UUIDs
+                    const chunkSize = 100;
+                    const promises = [];
                     for (let i = 0; i < ventaIds.length; i += chunkSize) {
                         const chunk = ventaIds.slice(i, i + chunkSize);
-                        const { data: det, error: detError } = await db
-                            .from('ferre_ventas_detalle')
-                            .select('producto_id, cantidad, subtotal, ganancia')
-                            .in('venta_id', chunk);
-
+                        promises.push(
+                            db.from('ferre_ventas_detalle')
+                              .select('producto_id, cantidad, subtotal, ganancia')
+                              .in('venta_id', chunk)
+                        );
+                    }
+                    const results = await Promise.all(promises);
+                    for (const { data: det, error: detError } of results) {
                         if (detError) {
                             console.error('Error fetching chunk details:', detError);
                             continue;
@@ -4118,20 +4324,28 @@
                     }
                 }
 
-                // Fetch product names in chunks
+                // Fetch product names in chunks in parallel
                 const productoIds = [...new Set(detalles.map(d => d.producto_id))];
                 let productosMap = {};
 
                 if (productoIds.length > 0) {
-                    const chunkSize = 5; // Reducido a 5 para evitar URLs largas con UUIDs
+                    const chunkSize = 100;
+                    const promises = [];
                     for (let i = 0; i < productoIds.length; i += chunkSize) {
                         const chunk = productoIds.slice(i, i + chunkSize);
-                        const { data: prods, error: prodError } = await db
-                            .from('ferre_inventario')
-                            .select('codigo, producto')
-                            .in('codigo', chunk);
-
-                        if (!prodError && prods) {
+                        promises.push(
+                            db.from('ferre_inventario')
+                              .select('codigo, producto')
+                              .in('codigo', chunk)
+                        );
+                    }
+                    const results = await Promise.all(promises);
+                    for (const { data: prods, error: prodError } of results) {
+                        if (prodError) {
+                            console.error('Error fetching product chunk:', prodError);
+                            continue;
+                        }
+                        if (prods) {
                             prods.forEach(p => productosMap[p.codigo] = p.producto);
                         }
                     }
@@ -4310,10 +4524,10 @@
                 dayOfWeekDetails[0]
             ];
 
-            renderCharts(hours.map(h => `${h}:00`), hourlyAverages, orderedLabels, orderedData, orderedDetails);
+            renderCharts(hours.map(h => `${h}:00`), hourlyAverages, hourlyData, orderedLabels, orderedData, orderedDetails);
         }
 
-        function renderCharts(hourlyLabels, hourlyData, dailyLabels, dailyData, dailyDetails) {
+        function renderCharts(hourlyLabels, hourlyAverages, hourlyTotals, dailyLabels, dailyData, dailyDetails) {
             const ctxHoras = document.getElementById('chartHoras').getContext('2d');
             const ctxDias = document.getElementById('chartDias').getContext('2d');
 
@@ -4324,26 +4538,87 @@
                 type: 'line',
                 data: {
                     labels: hourlyLabels,
-                    datasets: [{
-                        label: 'Promedio Ventas por Hora ($)',
-                        data: hourlyData,
-                        borderColor: '#4fc3f7',
-                        backgroundColor: 'rgba(79, 195, 247, 0.2)',
-                        fill: true,
-                        tension: 0.4
-                    }]
+                    datasets: [
+                        {
+                            label: 'Promedio Ventas por Hora ($)',
+                            data: hourlyAverages,
+                            borderColor: '#4fc3f7',
+                            backgroundColor: 'rgba(79, 195, 247, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Ventas Totales por Hora ($)',
+                            data: hourlyTotals,
+                            borderColor: '#66bb6a',
+                            backgroundColor: 'rgba(102, 187, 106, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Promedio ($)',
+                                font: { weight: 'bold' }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Total Acumulado ($)',
+                                font: { weight: 'bold' }
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
                     }
                 }
             });
 
             chartDias = new Chart(ctxDias, {
-                type: 'bar', // Changed to bar for better visualization of daily averages
+                type: 'bar',
                 data: {
                     labels: dailyLabels,
                     datasets: [{
@@ -4375,12 +4650,27 @@
                     maintainAspectRatio: false,
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
                         }
                     },
                     plugins: {
                         tooltip: {
                             callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                },
                                 afterBody: function (context) {
                                     if (!dailyDetails) return [];
                                     const index = context[0].dataIndex;
@@ -4546,10 +4836,346 @@
             const modal = document.getElementById('modalComprobanteTransfer');
             if (modal) modal.classList.remove('active');
         }
-
         function cerrarModalSinComprobante() {
             const modal = document.getElementById('modalSinComprobante');
             if (modal) modal.classList.remove('active');
+        }
+
+        // =====================================================
+        // SUBMODULO: HISTORICO MENSUAL (ULTIMOS 6 MESES)
+        // =====================================================
+        let chartEvolucionMensualInstance = null;
+        let historicoVentasCache = [];
+
+        async function mostrarHistoricoMensual() {
+            document.getElementById('ventasListView').classList.add('hidden');
+            document.getElementById('ventasListView').style.display = 'none';
+            document.getElementById('historicoMensualView').classList.remove('hidden');
+            document.getElementById('historicoMensualView').style.display = 'block';
+            
+            await loadChartJs();
+            volverAListaMensual();
+            cargarHistoricoMensual();
+        }
+
+        function ocultarHistoricoMensual() {
+            document.getElementById('historicoMensualView').classList.add('hidden');
+            document.getElementById('historicoMensualView').style.display = 'none';
+            document.getElementById('ventasListView').classList.remove('hidden');
+            document.getElementById('ventasListView').style.display = 'block';
+        }
+
+        function volverAListaMensual() {
+            document.getElementById('historicoMensualDetalle').classList.add('hidden');
+            document.getElementById('historicoMensualDetalle').style.display = 'none';
+            document.getElementById('historicoMensualLista').classList.remove('hidden');
+            document.getElementById('historicoMensualLista').style.display = 'block';
+        }
+
+        async function cargarHistoricoMensual() {
+            const loadingOverlay = document.getElementById('historicoLoading');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('hidden');
+                loadingOverlay.style.display = 'flex';
+            }
+
+            try {
+                const db = window.app.db;
+                const today = new Date();
+                
+                // Fetch last 7 months of data to allow full comparison for the oldest of the 6 months
+                const startRange = new Date(today.getFullYear(), today.getMonth() - 7, 1);
+                startRange.setHours(0, 0, 0, 0);
+
+                const { data: ventas, error } = await db
+                    .from('ferre_ventas')
+                    .select('*')
+                    .gte('fecha_hora_venta', startRange.toISOString())
+                    .order('fecha_hora_venta', { ascending: true });
+
+                if (error) throw error;
+                historicoVentasCache = ventas || [];
+
+                const grid = document.getElementById('historicoMensualGrid');
+                grid.innerHTML = '';
+
+                const nombresMeses = [
+                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                ];
+
+                // Render last 6 months (including current month)
+                for (let i = 5; i >= 0; i--) {
+                    const targetMonthDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                    const targetYear = targetMonthDate.getFullYear();
+                    const targetMonthIdx = targetMonthDate.getMonth();
+                    
+                    const startOfM = new Date(targetYear, targetMonthIdx, 1);
+                    startOfM.setHours(0, 0, 0, 0);
+                    
+                    const endOfM = new Date(targetYear, targetMonthIdx + 1, 0);
+                    endOfM.setHours(23, 59, 59, 999);
+                    
+                    const daysInM = endOfM.getDate();
+                    
+                    // Sales in target month M
+                    const salesInM = historicoVentasCache.filter(v => {
+                        const date = new Date(v.fecha_hora_venta);
+                        return date >= startOfM && date <= endOfM;
+                    });
+                    
+                    const totalVentasM = salesInM.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+                    const cantComprobantes = salesInM.length;
+
+                    // Previous comparison period of same length
+                    const startOfPrev = new Date(startOfM.getTime() - daysInM * 24 * 60 * 60 * 1000);
+                    const endOfPrev = new Date(startOfM.getTime() - 1);
+                    
+                    const salesInPrev = historicoVentasCache.filter(v => {
+                        const date = new Date(v.fecha_hora_venta);
+                        return date >= startOfPrev && date <= endOfPrev;
+                    });
+                    
+                    const totalVentasPrev = salesInPrev.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+
+                    // Calculate growth
+                    let growthText = "0.0%";
+                    let growthColor = "#666";
+                    let growthIcon = '<i class="fas fa-equals"></i>';
+
+                    if (totalVentasPrev > 0) {
+                        const percentDiff = ((totalVentasM - totalVentasPrev) / totalVentasPrev) * 100;
+                        const percentStr = percentDiff.toFixed(1);
+                        if (percentDiff > 0) {
+                            growthText = `+${percentStr}%`;
+                            growthColor = "#2e7d32";
+                            growthIcon = '<i class="fas fa-arrow-trend-up"></i>';
+                        } else if (percentDiff < 0) {
+                            growthText = `${percentStr}%`;
+                            growthColor = "#c62828";
+                            growthIcon = '<i class="fas fa-arrow-trend-down"></i>';
+                        }
+                    } else if (totalVentasM > 0) {
+                        growthText = "+100%";
+                        growthColor = "#2e7d32";
+                        growthIcon = '<i class="fas fa-arrow-trend-up"></i>';
+                    }
+
+                    // Build Card Element
+                    const card = document.createElement('div');
+                    card.style.cssText = `
+                        background: white;
+                        border: 1px solid #e0e0e0;
+                        padding: 20px;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+                        transition: all 0.2s ease-in-out;
+                    `;
+                    card.innerHTML = `
+                        <div style="font-weight: 700; font-size: 1.15em; color: #1a237e; margin-bottom: 8px;">
+                            ${nombresMeses[targetMonthIdx]} ${targetYear}
+                        </div>
+                        <div style="font-size: 1.8em; font-weight: 800; color: #3f51b5; margin-bottom: 5px;">
+                            ${window.app.formatCurrency(totalVentasM)}
+                        </div>
+                        <div style="font-size: 0.85em; color: #666; margin-bottom: 12px; font-weight: 500;">
+                            <i class="fas fa-file-invoice" style="margin-right: 4px;"></i> ${cantComprobantes} comprobantes emitidos
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 12px;">
+                        <div style="font-size: 0.85em; display: flex; align-items: center; gap: 4px;">
+                            <span style="color: ${growthColor}; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                                ${growthIcon} ${growthText}
+                            </span>
+                            <span style="color: #888;">vs period. anterior</span>
+                        </div>
+                    `;
+
+                    // Add hover states
+                    card.onmouseenter = () => {
+                        card.style.transform = 'translateY(-3px)';
+                        card.style.boxShadow = '0 10px 15px -3px rgba(63, 81, 181, 0.1), 0 4px 6px -2px rgba(63, 81, 181, 0.05)';
+                        card.style.borderColor = '#3f51b5';
+                    };
+                    card.onmouseleave = () => {
+                        card.style.transform = 'translateY(0)';
+                        card.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)';
+                        card.style.borderColor = '#e0e0e0';
+                    };
+
+                    card.onclick = () => verDetalleMes(targetYear, targetMonthIdx);
+
+                    grid.appendChild(card);
+                }
+
+            } catch (error) {
+                console.error('Error cargando historico mensual:', error);
+                window.app.showToast('Error cargando historico mensual', 'error', 3000);
+            } finally {
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.style.display = 'none';
+                }
+            }
+        }
+
+        function verDetalleMes(year, monthIdx) {
+            const nombresMeses = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+
+            document.getElementById('historicoDetalleMesTitulo').textContent = `Detalle de ${nombresMeses[monthIdx]} ${year}`;
+
+            const startOfM = new Date(year, monthIdx, 1);
+            startOfM.setHours(0, 0, 0, 0);
+            
+            const endOfM = new Date(year, monthIdx + 1, 0);
+            endOfM.setHours(23, 59, 59, 999);
+            
+            const daysInM = endOfM.getDate();
+
+            const salesInM = historicoVentasCache.filter(v => {
+                const date = new Date(v.fecha_hora_venta);
+                return date >= startOfM && date <= endOfM;
+            });
+
+            const totalVentasM = salesInM.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+            const cantComprobantes = salesInM.length;
+
+            const startOfPrev = new Date(startOfM.getTime() - daysInM * 24 * 60 * 60 * 1000);
+            const endOfPrev = new Date(startOfM.getTime() - 1);
+
+            const salesInPrev = historicoVentasCache.filter(v => {
+                const date = new Date(v.fecha_hora_venta);
+                return date >= startOfPrev && date <= endOfPrev;
+            });
+
+            const totalVentasPrev = salesInPrev.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+
+            document.getElementById('detTotalVentasMes').textContent = window.app.formatCurrency(totalVentasM);
+            document.getElementById('detComprobantesMes').textContent = cantComprobantes;
+
+            let growthText = "0.0%";
+            let growthColor = "#666";
+            let growthIcon = '<i class="fas fa-equals"></i>';
+
+            if (totalVentasPrev > 0) {
+                const percentDiff = ((totalVentasM - totalVentasPrev) / totalVentasPrev) * 100;
+                const percentStr = percentDiff.toFixed(1);
+                if (percentDiff > 0) {
+                    growthText = `+${percentStr}%`;
+                    growthColor = "#2e7d32";
+                    growthIcon = '<i class="fas fa-arrow-trend-up"></i>';
+                } else if (percentDiff < 0) {
+                    growthText = `${percentStr}%`;
+                    growthColor = "#c62828";
+                    growthIcon = '<i class="fas fa-arrow-trend-down"></i>';
+                }
+            } else if (totalVentasM > 0) {
+                growthText = "+100%";
+                growthColor = "#2e7d32";
+                growthIcon = '<i class="fas fa-arrow-trend-up"></i>';
+            }
+
+            document.getElementById('detCrecimientoMes').innerHTML = `
+                <span style="color: ${growthColor}; display: inline-flex; align-items: center; gap: 4px;">
+                    ${growthIcon} ${growthText}
+                </span>
+            `;
+
+            // Daily arrays
+            const dailyDataM = new Array(daysInM).fill(0);
+            salesInM.forEach(v => {
+                const date = new Date(v.fecha_hora_venta);
+                const day = date.getDate();
+                dailyDataM[day - 1] += parseFloat(v.total || 0);
+            });
+
+            const dailyDataPrev = new Array(daysInM).fill(0);
+            salesInPrev.forEach(v => {
+                const date = new Date(v.fecha_hora_venta);
+                const diffTime = date.getTime() - startOfPrev.getTime();
+                const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000));
+                if (diffDays >= 0 && diffDays < daysInM) {
+                    dailyDataPrev[diffDays] += parseFloat(v.total || 0);
+                }
+            });
+
+            // Initialize Line Chart
+            const ctx = document.getElementById('chartEvolucionMensual').getContext('2d');
+            if (chartEvolucionMensualInstance) {
+                chartEvolucionMensualInstance.destroy();
+            }
+
+            const chartLabels = [];
+            for (let d = 1; d <= daysInM; d++) {
+                chartLabels.push(`Día ${d}`);
+            }
+
+            chartEvolucionMensualInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [
+                        {
+                            label: `${nombresMeses[monthIdx]} ${year} ($)`,
+                            data: dailyDataM,
+                            borderColor: '#3f51b5',
+                            backgroundColor: 'rgba(63, 81, 181, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            borderWidth: 3
+                        },
+                        {
+                            label: 'Periodo Anterior ($)',
+                            data: dailyDataPrev,
+                            borderColor: '#b0bec5',
+                            backgroundColor: 'rgba(176, 190, 197, 0.05)',
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.3,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('historicoMensualLista').classList.add('hidden');
+            document.getElementById('historicoMensualLista').style.display = 'none';
+            document.getElementById('historicoMensualDetalle').classList.remove('hidden');
+            document.getElementById('historicoMensualDetalle').style.display = 'block';
         }
 
         // =====================================================
@@ -4578,6 +5204,10 @@
         window.mostrarModalSinComprobante = mostrarModalSinComprobante;
         window.cerrarModalComprobante = cerrarModalComprobante;
         window.cerrarModalSinComprobante = cerrarModalSinComprobante;
+        window.mostrarHistoricoMensual = mostrarHistoricoMensual;
+        window.ocultarHistoricoMensual = ocultarHistoricoMensual;
+        window.volverAListaMensual = volverAListaMensual;
+        window.verDetalleMes = verDetalleMes;
 
     })(); // Fin del IIFE
 

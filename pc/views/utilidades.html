@@ -1,4 +1,4 @@
-<div class="container" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px;">
+<div class="container utilidades-page">
     
     <!-- Screen Blocker para operaciones -->
     <div id="utilidadesScreenBlocker" class="utilidades-screen-blocker">
@@ -264,6 +264,20 @@
                 </div>
             </div>
 
+            <!-- Botón Cotizaciones -->
+            <div class="utilidad-card clickable" onclick="window.app.loadModule('cotizacion')">
+                <div class="utilidad-icon" style="background: linear-gradient(135deg, #c62828 0%, #8e1b1b 100%);">
+                    <i class="fas fa-file-signature"></i>
+                </div>
+                <div class="utilidad-info">
+                    <h3>Cotizaciones</h3>
+                    <p>Crea cotizaciones, imprime ticket y prepara PDF profesional para WhatsApp.</p>
+                </div>
+                <div class="utilidad-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+
             <!-- Botón Ir a Contabilidad -->
             <div class="utilidad-card clickable" onclick="window.open('https://contabilidad.ferrisoluciones.com', '_blank')">
                 <div class="utilidad-icon" style="background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);">
@@ -375,8 +389,15 @@
        ESTILOS GENERALES DE UTILIDADES
        ===================================================== */
     
+    .utilidades-page {
+        height: calc(100vh - 80px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 20px 24px 48px;
+    }
+
     .utilidades-container {
-        max-width: 900px;
+        max-width: 1320px;
         margin: 0 auto;
     }
 
@@ -408,7 +429,7 @@
 
     .utilidades-gallery {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(3, minmax(280px, 1fr));
         gap: 20px;
         padding: 10px;
     }
@@ -424,6 +445,7 @@
         transition: all 0.3s ease;
         border: 2px solid #e0e0e0;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        min-height: 140px;
     }
 
     .utilidad-card:hover {
@@ -874,7 +896,13 @@
        RESPONSIVE
        ===================================================== */
 
-    @media (max-width: 600px) {
+    @media (max-width: 1100px) {
+        .utilidades-gallery {
+            grid-template-columns: repeat(2, minmax(280px, 1fr));
+        }
+    }
+
+    @media (max-width: 700px) {
         .form-row {
             grid-template-columns: 1fr;
         }

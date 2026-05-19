@@ -1,11 +1,11 @@
 // =====================================================
 // SERVICE WORKER - FERRISOLUCIONES POS
-// Version: 3.5.7
+// Version: 3.7.0
 // Strategy: Network First
 // =====================================================
 
-const CACHE_NAME = 'ferrisoluciones-pos-v3-5-7';
-const RUNTIME_CACHE = 'ferrisoluciones-runtime-v3-5-7';
+const CACHE_NAME = 'ferrisoluciones-pos-v3-7-0';
+const RUNTIME_CACHE = 'ferrisoluciones-runtime-v3-7-0';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -28,7 +28,7 @@ const STATIC_ASSETS = [
 // =====================================================
 
 self.addEventListener('install', (event) => {
-    console.log('🔧 [SW] Installing Service Worker v3.5.7...');
+    console.log('🔧 [SW] Installing Service Worker v3.7.0...');
     
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -56,7 +56,7 @@ self.addEventListener('install', (event) => {
 // =====================================================
 
 self.addEventListener('activate', (event) => {
-    console.log('🚀 [SW] Activating Service Worker v3.5.7...');
+    console.log('🚀 [SW] Activating Service Worker v3.7.0...');
     
     event.waitUntil(
         caches.keys()
@@ -177,11 +177,11 @@ self.addEventListener('message', (event) => {
                     event.ports[0].postMessage({ 
                         success: true, 
                         size: requests.length,
-                        version: '3.5.7'
+                        version: '3.7.0'
                     });
                 });
             });
     }
 });
 
-console.log('✅ Service Worker v3.5.7 loaded (Network First Strategy)');
+console.log('✅ Service Worker v3.7.0 loaded (Network First Strategy)');

@@ -73,6 +73,15 @@ function updateNavbarCounter(moduleName, value = null) {
             totalAmount.textContent = '';
             break;
 
+        case 'cotizacion':
+            totalLabel.textContent = 'Cotizacion:';
+            if (value !== null && value !== undefined) {
+                totalAmount.textContent = formatCurrency(value);
+            } else {
+                totalAmount.textContent = '$0.00';
+            }
+            break;
+
         case 'devoluciones':
             totalLabel.textContent = 'Devoluciones:';
             totalAmount.textContent = '';
@@ -121,7 +130,7 @@ async function loadModule(moduleName) {
         `;
 
         // Cargar HTML del módulo
-        const response = await fetch(`views/${moduleName}.html`);
+        const response = await fetch(`views/${moduleName}.html?v=${Date.now()}`, { cache: 'no-store' });
         if (!response.ok) throw new Error('Módulo no encontrado');
         
         const html = await response.text();

@@ -825,7 +825,11 @@
 
             <div class="form-group">
                 <label class="form-label">Teléfono</label>
-                <input type="tel" id="updateClienteTelefono" class="form-input" placeholder="Opcional">
+                <div class="email-validation-container">
+                    <input type="tel" id="updateClienteTelefono" class="form-input" placeholder="Opcional">
+                    <span class="email-validation-icon whatsapp-validation-icon"><i class="fab fa-whatsapp"></i></span>
+                </div>
+                <div class="email-error-message" id="updateClienteWhatsappError"></div>
             </div>
 
             <div class="form-group">
@@ -919,7 +923,11 @@
 
             <div class="form-group">
                 <label class="form-label">Teléfono</label>
-                <input type="tel" id="nuevoClienteTelefono" class="form-input" placeholder="Opcional">
+                <div class="email-validation-container">
+                    <input type="tel" id="nuevoClienteTelefono" class="form-input" placeholder="Opcional">
+                    <span class="email-validation-icon whatsapp-validation-icon"><i class="fab fa-whatsapp"></i></span>
+                </div>
+                <div class="email-error-message" id="nuevoClienteWhatsappError"></div>
             </div>
 
             <div class="form-group">
@@ -3556,6 +3564,114 @@
         }
     }
 
+    async function validarWhatsapp(whatsapp) {
+        try {
+            const respuesta = await fetch('https://lpn8nwebhook.luispintasolutions.com/webhook/e8d543f3-add4-47c1-bbe6-777122b0bc09', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ whatsapp })
+            });
+
+            if (!respuesta.ok) throw new Error(`Error HTTP: ${respuesta.status}`);
+            const data = await respuesta.json();
+            const item = Array.isArray(data) ? data[0]?.data?.[0] : data?.data?.[0];
+
+            return {
+                whatsapp,
+                exists: item?.exists === true,
+                number: item?.number || whatsapp,
+                jid: item?.jid || null,
+                mensaje: item?.exists === true ? 'WhatsApp confirmado' : 'Este numero no tiene WhatsApp'
+            };
+        } catch (error) {
+            console.error('Error validando WhatsApp:', error);
+            return {
+                whatsapp,
+                exists: null,
+                mensaje: 'No fue posible verificar WhatsApp en este momento',
+                error: true
+            };
+        }
+    }
+
+    function actualizarUIValidacionWhatsapp(inputElement, errorElement, resultado, obligatorio = false) {
+        inputElement.classList.remove('email-valid', 'email-invalid', 'email-error', 'email-validating');
+        inputElement.dataset.whatsappValido = resultado.exists === true ? 'true' : resultado.exists === false ? 'false' : 'unknown';
+
+        const iconElement = inputElement.nextElementSibling;
+        if (resultado.exists === true) {
+            inputElement.classList.add('email-valid');
+            if (iconElement) iconElement.innerHTML = '<i class="fab fa-whatsapp"></i>';
+            if (errorElement) {
+                errorElement.innerHTML = '<i class="fab fa-whatsapp" style="margin-right:5px;"></i> WhatsApp valido';
+                errorElement.classList.add('show');
+                errorElement.style.background = '#f1f8f4';
+                errorElement.style.borderLeftColor = '#4caf50';
+                errorElement.style.color = '#2e7d32';
+            }
+        } else if (resultado.exists === false || obligatorio) {
+            inputElement.classList.add('email-invalid');
+            if (iconElement) iconElement.innerHTML = '<i class="fab fa-whatsapp"></i>';
+            if (errorElement) {
+                errorElement.innerHTML = '<i class="fas fa-times-circle" style="margin-right:5px;"></i>' + (resultado.mensaje || 'WhatsApp invalido');
+                errorElement.classList.add('show');
+                errorElement.style.background = '#ffebee';
+                errorElement.style.borderLeftColor = '#f44336';
+                errorElement.style.color = '#c62828';
+            }
+        } else {
+            inputElement.classList.add('email-error');
+            if (iconElement) iconElement.innerHTML = '<i class="fab fa-whatsapp"></i>';
+            if (errorElement) {
+                errorElement.innerHTML = '<i class="fas fa-info-circle" style="margin-right:5px;"></i>' + (resultado.mensaje || 'WhatsApp no verificado');
+                errorElement.classList.add('show');
+                errorElement.style.background = '#e0f7fa';
+                errorElement.style.borderLeftColor = '#00bcd4';
+                errorElement.style.color = '#00838f';
+            }
+        }
+    }
+
+    async function manejarValidacionWhatsapp(event, errorElementId, obligatorio = false) {
+        const inputElement = event.target;
+        const whatsapp = inputElement.value.trim();
+        const errorElement = document.getElementById(errorElementId);
+
+        if (!whatsapp) {
+            inputElement.classList.remove('email-valid', 'email-invalid', 'email-error', 'email-validating');
+            inputElement.dataset.whatsappValido = '';
+            if (errorElement) {
+                errorElement.textContent = '';
+                errorElement.classList.remove('show');
+                errorElement.style.background = '';
+                errorElement.style.borderLeftColor = '';
+                errorElement.style.color = '';
+            }
+            if (obligatorio) {
+                actualizarUIValidacionWhatsapp(inputElement, errorElement, {
+                    whatsapp,
+                    exists: false,
+                    mensaje: 'El WhatsApp es obligatorio'
+                }, true);
+            }
+            return;
+        }
+
+        inputElement.classList.add('email-validating');
+        const iconEl = inputElement.nextElementSibling;
+        if (iconEl) iconEl.innerHTML = '<i class="fas fa-spinner" style="animation: spin 0.7s linear infinite; color: #1565c0;"></i>';
+        if (errorElement) {
+            errorElement.innerHTML = '<i class="fas fa-circle-notch fa-spin" style="color:#1565c0; margin-right:5px;"></i><span style="color:#1565c0;">Verificando WhatsApp...</span>';
+            errorElement.classList.add('show');
+            errorElement.style.background = '#e3f2fd';
+            errorElement.style.borderLeftColor = '#1565c0';
+            errorElement.style.color = '#1565c0';
+        }
+
+        const resultado = await validarWhatsapp(whatsapp);
+        actualizarUIValidacionWhatsapp(inputElement, errorElement, resultado, obligatorio);
+    }
+
     // =====================================================
     // CAJA INICIAL
     // =====================================================
@@ -5347,6 +5463,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             document.addEventListener('keydown', function (e) {
                 // Verificar que el módulo esté activo
                 if (!document.getElementById('searchInput')) return;
+                if (document.querySelector('.cotizacion-module')) return;
 
                 // Verificar si hay algún modal abierto
                 const modalCantidad = document.getElementById('modalCantidadOverlay');
@@ -5419,6 +5536,13 @@ _Sistema de Gestión Ferrisoluciones_`;
                     e.preventDefault();
                     e.stopPropagation();
                     toggleBusquedaCliente();
+                }
+
+                // F6 - Cargar cotizacion en el carrito
+                if (e.key === 'F6') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    cargarCotizacionEnCarrito();
                 }
 
                 // Tab - Siempre enfoca búsqueda de productos
@@ -5746,6 +5870,20 @@ _Sistema de Gestión Ferrisoluciones_`;
             });
         }
 
+        const updateClienteTelefonoInput = document.getElementById('updateClienteTelefono');
+        if (updateClienteTelefonoInput && !updateClienteTelefonoInput.dataset.whatsappListenerConfigured) {
+            updateClienteTelefonoInput.addEventListener('blur', function (e) {
+                manejarValidacionWhatsapp(e, 'updateClienteWhatsappError', false);
+            });
+            updateClienteTelefonoInput.addEventListener('input', function () {
+                this.classList.remove('email-valid', 'email-invalid', 'email-error');
+                this.dataset.whatsappValido = '';
+                const error = document.getElementById('updateClienteWhatsappError');
+                if (error) error.classList.remove('show');
+            });
+            updateClienteTelefonoInput.dataset.whatsappListenerConfigured = 'true';
+        }
+
         // Event listener para mostrar/ocultar botones de correo en modal registro
         const nuevoClienteCorreoInput = document.getElementById('nuevoClienteCorreo');
         if (nuevoClienteCorreoInput) {
@@ -5793,6 +5931,20 @@ _Sistema de Gestión Ferrisoluciones_`;
                     cerrarModalIngresoDirecto();
                 }
             });
+        }
+
+        const nuevoClienteTelefonoInput = document.getElementById('nuevoClienteTelefono');
+        if (nuevoClienteTelefonoInput && !nuevoClienteTelefonoInput.dataset.whatsappListenerConfigured) {
+            nuevoClienteTelefonoInput.addEventListener('blur', function (e) {
+                manejarValidacionWhatsapp(e, 'nuevoClienteWhatsappError', false);
+            });
+            nuevoClienteTelefonoInput.addEventListener('input', function () {
+                this.classList.remove('email-valid', 'email-invalid', 'email-error');
+                this.dataset.whatsappValido = '';
+                const error = document.getElementById('nuevoClienteWhatsappError');
+                if (error) error.classList.remove('show');
+            });
+            nuevoClienteTelefonoInput.dataset.whatsappListenerConfigured = 'true';
         }
     }
 
@@ -7347,6 +7499,10 @@ _Sistema de Gestión Ferrisoluciones_`;
             const emailBadge = tieneCorreo
                 ? `<span class="email-verif-badge verificando" id="${badgeId}"><span class="verif-spinner"></span> Verificando<span class="verif-dots"></span></span>`
                 : `<span class="email-verif-badge incierto" id="${badgeId}" title="Sin correo registrado"><i class="fas fa-envelope-open"></i> Sin correo</span>`;
+            const whatsappBadgeId = `whatsapp-badge-${cliente.cedula}`;
+            const whatsappBadge = cliente.telefono
+                ? `<span class="email-verif-badge verificando" id="${whatsappBadgeId}"><span class="verif-spinner"></span> WhatsApp</span>`
+                : `<span class="email-verif-badge invalido" id="${whatsappBadgeId}" title="Sin WhatsApp registrado"><i class="fab fa-whatsapp"></i> Sin WhatsApp</span>`;
 
             return `
                 <div class="search-result-item ${isSelected ? 'selected' : ''}${tieneCorreo ? ' verificando-item' : ''}" 
@@ -7360,6 +7516,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                         ${emailBadge}
                         ${tieneCorreo ? `<span class="gravatar-badge" id="gravatar-badge-${cliente.cedula}" style="display:none;"></span>` : ''}
                         ${cliente.telefono ? `<span style="margin-left:4px;"> | <i class="fas fa-phone"></i> ${cliente.telefono}</span>` : ''}
+                        ${whatsappBadge}
                     </div>
                 </div>
             `;
@@ -7384,10 +7541,50 @@ _Sistema de Gestión Ferrisoluciones_`;
                 verificados++;
             }
         }
+
+        clientes.filter(cliente => cliente.telefono).forEach(cliente => {
+            _verificarWhatsappEnBusqueda(cliente.cedula, cliente.telefono, signal);
+        });
     }
 
     // Cache de resultados de verificación (clave: email normalizado)
     if (!window._emailVerifCache) window._emailVerifCache = {};
+    if (!window._whatsappVerifCache) window._whatsappVerifCache = {};
+
+    async function _verificarWhatsappEnBusqueda(cedula, telefono, signal) {
+        const telefonoConsulta = String(telefono || '').trim();
+        const telKey = `whatsapp-v2:${telefonoConsulta}`;
+        const badgeEl = document.getElementById(`whatsapp-badge-${cedula}`);
+        if (!badgeEl || !telefonoConsulta) return;
+
+        if (window._whatsappVerifCache[telKey]) {
+            _aplicarBadgeWhatsapp(badgeEl, window._whatsappVerifCache[telKey]);
+            return;
+        }
+
+        try {
+            const resultado = await validarWhatsapp(telefonoConsulta);
+            if (signal?.aborted) return;
+            window._whatsappVerifCache[telKey] = resultado;
+            _aplicarBadgeWhatsapp(badgeEl, resultado);
+        } catch (e) {
+            if (e.name !== 'AbortError') {
+                const resultado = { exists: null, mensaje: 'No verificado' };
+                window._whatsappVerifCache[telKey] = resultado;
+                _aplicarBadgeWhatsapp(badgeEl, resultado);
+            }
+        }
+    }
+
+    function _aplicarBadgeWhatsapp(badgeEl, resultado) {
+        if (!badgeEl) return;
+        const estado = resultado.exists === true ? 'valido' : 'invalido';
+        badgeEl.className = `email-verif-badge ${estado}`;
+        badgeEl.innerHTML = resultado.exists === true
+            ? '<i class="fab fa-whatsapp"></i> WhatsApp'
+            : '<i class="fab fa-whatsapp"></i> Sin WhatsApp';
+        badgeEl.title = resultado.mensaje || '';
+    }
 
     async function _verificarEmailEnBusqueda(cedula, email, signal) {
         const emailNorm = email.trim().toLowerCase();
@@ -7540,6 +7737,15 @@ _Sistema de Gestión Ferrisoluciones_`;
                     return;
                 }
                 // valido === true → continúa abajo
+            }
+
+            if (!data.telefono || !String(data.telefono).trim()) {
+                window.app.showToast('<i class="fab fa-whatsapp"></i> Este cliente no tiene WhatsApp registrado', 'warning', 3000);
+            } else {
+                const whatsappResult = await validarWhatsapp(String(data.telefono).trim());
+                if (whatsappResult.exists !== true) {
+                    window.app.showToast('<i class="fab fa-whatsapp"></i> El WhatsApp del cliente no esta validado o no existe', 'warning', 3500);
+                }
             }
 
             _confirmarSeleccionCliente(data);
@@ -8916,6 +9122,19 @@ _Sistema de Gestión Ferrisoluciones_`;
             return;
         }
 
+        if (telefono) {
+            const whatsappResult = await validarWhatsapp(telefono);
+            actualizarUIValidacionWhatsapp(
+                document.getElementById('updateClienteTelefono'),
+                document.getElementById('updateClienteWhatsappError'),
+                whatsappResult,
+                false
+            );
+            if (whatsappResult.exists !== true) {
+                window.app.showToast('<i class="fab fa-whatsapp"></i> WhatsApp no validado; en punto de venta no es obligatorio actualizarlo', 'warning', 3500);
+            }
+        }
+
         try {
             // Obtener referencia a la base de datos
             const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
@@ -9110,6 +9329,19 @@ _Sistema de Gestión Ferrisoluciones_`;
             window.app.showToast('<i class="fas fa-exclamation-triangle"></i> Por favor ingrese un correo electrónico válido', 'warning', 3000);
             document.getElementById('nuevoClienteCorreo').focus();
             return;
+        }
+
+        if (telefono) {
+            const whatsappResult = await validarWhatsapp(telefono);
+            actualizarUIValidacionWhatsapp(
+                document.getElementById('nuevoClienteTelefono'),
+                document.getElementById('nuevoClienteWhatsappError'),
+                whatsappResult,
+                false
+            );
+            if (whatsappResult.exists !== true) {
+                window.app.showToast('<i class="fab fa-whatsapp"></i> WhatsApp no validado; en punto de venta no es obligatorio actualizarlo', 'warning', 3500);
+            }
         }
 
         try {
@@ -10532,6 +10764,97 @@ _Sistema de Gestión Ferrisoluciones_`;
     window.cerrarModalExitoVenta = cerrarModalExitoVenta;
     window.reimprimirUltimoComprobante = reimprimirUltimoComprobante;
 
+    async function cargarCotizacionEnCarrito() {
+        try {
+            const codigo = await window.app.showCustomPrompt(
+                'Ingresa el codigo de cotizacion o escanea la cotizacion',
+                '',
+                'Cargar Cotizacion',
+                'Ej: CM9ABC12'
+            );
+            const idCotizacion = (codigo || '').trim().toUpperCase();
+            if (!idCotizacion) return;
+
+            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : supabaseClient);
+            const { data: cotizacion, error: cotizacionError } = await db
+                .from('ferre_cotizaciones')
+                .select('*')
+                .eq('id_cotizacion', idCotizacion)
+                .maybeSingle();
+
+            if (cotizacionError) throw new Error(cotizacionError.message);
+            if (!cotizacion) {
+                window.app.showToast(`No se encontro la cotizacion ${idCotizacion}`, 'warning', 3000);
+                return;
+            }
+
+            const { data: detalles, error: detalleError } = await db
+                .from('ferre_cotizaciones_detalle')
+                .select('*')
+                .eq('id_cotizacion', idCotizacion)
+                .eq('estado', 'ACTIVO')
+                .order('orden', { ascending: true });
+
+            if (detalleError) throw new Error(detalleError.message);
+            if (!detalles || detalles.length === 0) {
+                window.app.showToast(`La cotizacion ${idCotizacion} no tiene productos`, 'warning', 3000);
+                return;
+            }
+
+            const productosIds = [...new Set(detalles.map(d => d.producto_id).filter(Boolean))];
+            const inventarioMap = {};
+            for (let i = 0; i < productosIds.length; i += 50) {
+                const { data: productos } = await db
+                    .from('ferre_inventario')
+                    .select('codigo, producto, stock, precio, costo, unidad_paquete, zona')
+                    .in('codigo', productosIds.slice(i, i + 50));
+                (productos || []).forEach(p => { inventarioMap[p.codigo] = p; });
+            }
+
+            ventaState.carrito = detalles.map(detalle => {
+                const producto = inventarioMap[detalle.producto_id] || {};
+                return {
+                    codigo: detalle.producto_id,
+                    nombre: detalle.producto_nombre || producto.producto || detalle.producto_id,
+                    precio: parseFloat(detalle.precio) || parseFloat(producto.precio) || 0,
+                    cantidad: parseFloat(detalle.cantidad) || 1,
+                    stock: parseFloat(producto.stock) || parseFloat(detalle.cantidad) || 999999,
+                    costo: parseFloat(detalle.costo) || parseFloat(producto.costo) || 0,
+                    unidad: detalle.unidad || producto.unidad_paquete || 'UNIDADES',
+                    zona: detalle.zona || producto.zona || null
+                };
+            });
+
+            if (cotizacion.cliente_id && cotizacion.cliente_id !== '9999999999999') {
+                const { data: cliente } = await db
+                    .from('ferre_clientes')
+                    .select('*')
+                    .eq('cedula', cotizacion.cliente_id)
+                    .maybeSingle();
+                ventaState.clienteSeleccionado = cliente || {
+                    cedula: cotizacion.cliente_id,
+                    razon_social: cotizacion.cliente_nombre || 'CLIENTE COTIZACION',
+                    direccion: cotizacion.cliente_direccion || 'S/N',
+                    telefono: cotizacion.cliente_telefono || 'S/N',
+                    correo: cotizacion.cliente_correo || 'S/N'
+                };
+            } else {
+                ventaState.clienteSeleccionado = null;
+            }
+
+            actualizarCarrito();
+            mostrarClienteSeleccionado();
+            guardarCarritoEnCache();
+            window.app.showToast(`Cotizacion ${idCotizacion} cargada en el carrito`, 'success', 3500);
+
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.focus();
+        } catch (error) {
+            console.error('Error cargando cotizacion:', error);
+            window.app.showToast('Error cargando cotizacion: ' + error.message, 'danger', 4000);
+        }
+    }
+
 
 
     // =====================================================
@@ -10569,6 +10892,7 @@ _Sistema de Gestión Ferrisoluciones_`;
     window.abrirRecibo = abrirRecibo;
     window.seleccionarTipoComprobante = seleccionarTipoComprobante;
     window.procesarVentaConValidacion = procesarVentaConValidacion;
+    window.cargarCotizacionEnCarrito = cargarCotizacionEnCarrito;
     window.abrirModalGarantia = abrirModalGarantia;
     window.cerrarModalGarantia = cerrarModalGarantia;
     window.generarGarantia = generarGarantia;
