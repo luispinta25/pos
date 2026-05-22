@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=80mm, initial-scale=1.0">
+    <title>WHATSAPP FERRISOLUCIONES</title>
+    <link rel="stylesheet" media="print" href="../css/print.css">
+    <style media="print">
+        @page {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        #thermal-pos {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+    </style>
+    <style>
+        @page {
+            margin: 0;
+            padding: 0;
+            size: 80mm auto;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 2.7mm;
+            text-align: center;
+            background-color: white;
+            color: black;
+            line-height: 1.15;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        #thermal-pos {
+            margin: 0 auto;
+            max-width: 80mm;
+            padding: 1mm;
+        }
+
+        .banner-container {
+            border: 1px solid black;
+            border-radius: 3px;
+            padding: 3mm 2.5mm 2.5mm;
+            margin-bottom: 1mm;
+        }
+
+        .logo-wrap {
+            text-align: center;
+            margin-bottom: 2mm;
+        }
+
+        .logo-wrap img {
+            max-width: 54mm;
+            max-height: 20mm;
+            height: auto;
+        }
+
+        .whatsapp-badge {
+            background: black;
+            color: white;
+            border-radius: 1.8mm;
+            display: inline-block;
+            font-size: 2.4mm;
+            font-weight: bold;
+            letter-spacing: 0.1mm;
+            margin-bottom: 1.5mm;
+            padding: 0.9mm 2.5mm;
+            text-transform: uppercase;
+        }
+
+        .headline {
+            font-size: 5mm;
+            font-weight: 900;
+            line-height: 1.02;
+            margin: 0.5mm 0 1.5mm;
+            text-transform: uppercase;
+        }
+
+        .message {
+            font-size: 3.1mm;
+            font-weight: bold;
+            line-height: 1.18;
+            margin: 0 auto 2mm;
+            max-width: 68mm;
+        }
+
+        .question-card {
+            border: 1px dashed black;
+            border-radius: 2mm;
+            margin: 0 1mm 2mm;
+            padding: 1.7mm 2mm;
+        }
+
+        .question-card div {
+            font-size: 2.8mm;
+            font-weight: bold;
+            margin-bottom: 0.7mm;
+        }
+
+        .question-card div:last-child {
+            margin-bottom: 0;
+        }
+
+        .phone-row {
+            align-items: center;
+            border-bottom: 1px solid black;
+            border-top: 1px solid black;
+            display: flex;
+            gap: 2mm;
+            justify-content: center;
+            margin: 2mm 0;
+            padding: 1.7mm 0;
+        }
+
+        .phone-icon {
+            align-items: center;
+            border: 1px solid black;
+            border-radius: 50%;
+            display: flex;
+            font-size: 5.5mm;
+            font-weight: 900;
+            height: 9mm;
+            justify-content: center;
+            width: 9mm;
+        }
+
+        .phone-number {
+            font-size: 5mm;
+            font-weight: 900;
+            letter-spacing: 0.2mm;
+        }
+
+        .qr-wrap {
+            margin: 1mm auto 1.5mm;
+            text-align: center;
+        }
+
+        .qr-wrap img {
+            border: 1px solid black;
+            height: 31mm;
+            padding: 1mm;
+            width: 31mm;
+        }
+
+        .scan-text {
+            font-size: 2.6mm;
+            font-weight: bold;
+            margin-bottom: 1.5mm;
+        }
+
+        .footer {
+            border-top: 1px solid black;
+            font-size: 2.4mm;
+            font-weight: bold;
+            margin-top: 1.5mm;
+            padding-top: 1.5mm;
+        }
+    </style>
+</head>
+<body onafterprint="window.close()">
+    <div id="thermal-pos">
+        <div class="banner-container">
+            <div class="logo-wrap">
+                <img id="company-logo" src="https://lh3.googleusercontent.com/d/1-_IsocnUhx_k6EGsNSpaJUNnQ2Nn4cFj=w2048?name=ISO%20DELGADO.png" alt="Ferrisoluciones">
+            </div>
+
+            <div class="whatsapp-badge">Atencion por WhatsApp</div>
+            <h1 class="headline">¿Tienes una pregunta ferretera?</h1>
+            <p class="message">¿Deseas averiguar si tenemos algun producto? Escribenos y te ayudamos con gusto.</p>
+
+            <div class="question-card">
+                <div>Consulta disponibilidad</div>
+                <div>Pregunta precios</div>
+                <div>Recibe orientacion para tu compra</div>
+            </div>
+
+            <div class="phone-row">
+                <div class="phone-icon">W</div>
+                <div class="phone-number">096 224 8046</div>
+            </div>
+
+            <div class="qr-wrap">
+                <img id="whatsapp-qr" alt="QR WhatsApp">
+            </div>
+            <div class="scan-text">Escanea el QR o escribe al numero</div>
+
+            <div class="footer">FERRISOLUCIONES - Siempre listos para ayudarte</div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const whatsappUrl = 'https://wa.me/593962248046?text=' + encodeURIComponent('Hola Ferrisoluciones, tengo una consulta');
+            const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=' + encodeURIComponent(whatsappUrl);
+            const qr = document.getElementById('whatsapp-qr');
+            qr.src = qrUrl;
+
+            const waitForImages = Array.from(document.images).map(function(img) {
+                if (img.complete) return Promise.resolve();
+                return new Promise(function(resolve) {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                });
+            });
+
+            Promise.all(waitForImages).then(function() {
+                setTimeout(function() {
+                    window.print();
+                }, 700);
+            });
+        };
+    </script>
+</body>
+</html>

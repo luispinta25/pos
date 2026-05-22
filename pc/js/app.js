@@ -115,6 +115,7 @@ async function loadModule(moduleName) {
 
         // Mostrar loading rediseñado
         const container = document.getElementById('moduleContainer');
+        document.getElementById('btnWhatsappBannerFlotante')?.remove();
         container.innerHTML = `
             <div class="loading">
                 <div class="spinner-container">

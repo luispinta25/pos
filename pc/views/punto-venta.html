@@ -3222,12 +3222,31 @@
         gap: 12px;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         cursor: pointer;
-        z-index: 999;
+        z-index: 10002;
         transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         border: 3px solid #1a1a1a;
         font-weight: 800;
         text-transform: uppercase;
         font-size: 0.85rem;
+    }
+
+    .btn-flotante-whatsapp {
+        position: fixed;
+        bottom: 30px;
+        right: 225px;
+        background: #25d366;
+        color: white;
+        width: 64px;
+        height: 60px;
+        border-radius: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        z-index: 10002;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 3px solid #1a1a1a;
     }
 
     .btn-flotante-eventualidad:hover {
@@ -3236,8 +3255,18 @@
         box-shadow: 0 15px 30px rgba(108, 92, 231, 0.4);
     }
 
+    .btn-flotante-whatsapp:hover {
+        transform: scale(1.05) translateY(-5px);
+        background: #1ebe5d;
+        box-shadow: 0 15px 30px rgba(37, 211, 102, 0.4);
+    }
+
     .btn-flotante-eventualidad i {
         font-size: 1.3rem;
+    }
+
+    .btn-flotante-whatsapp i {
+        font-size: 1.8rem;
     }
 
     .eventualidad-alerta {
@@ -3258,6 +3287,11 @@
 
 
 
+
+<!-- Boton Flotante WhatsApp -->
+<button class="btn-flotante-whatsapp" id="btnWhatsappBannerFlotante" onclick="window.abrirBannerWhatsapp()" title="Imprimir banner de WhatsApp">
+    <i class="fab fa-whatsapp"></i>
+</button>
 
 <!-- Boton Flotante Eventualidad -->
 <button class="btn-flotante-eventualidad" onclick="window.abrirModalEventualidad()">
@@ -5410,9 +5444,24 @@ _Sistema de Gestión Ferrisoluciones_`;
     // INICIALIZACIÓN
     // =====================================================
 
+    function asegurarBotonBannerWhatsapp() {
+        const botonExistente = document.getElementById('btnWhatsappBannerFlotante');
+        if (botonExistente) botonExistente.remove();
+
+        const boton = document.createElement('button');
+        boton.className = 'btn-flotante-whatsapp';
+        boton.id = 'btnWhatsappBannerFlotante';
+        boton.type = 'button';
+        boton.title = 'Imprimir banner de WhatsApp';
+        boton.innerHTML = '<i class="fab fa-whatsapp"></i>';
+        boton.onclick = abrirBannerWhatsapp;
+        document.body.appendChild(boton);
+    }
+
     async function initPuntoVenta() {
         // Resetear guards de eventos para permitir re-vinculación al recargar módulo
         window._clienteBusquedaListenerAdded = false;
+        asegurarBotonBannerWhatsapp();
         
         setupCajaInicialModal();
         await verificarCajaInicialDelDia({ forceConsulta: true });
@@ -9501,6 +9550,23 @@ _Sistema de Gestión Ferrisoluciones_`;
     // GENERAR RECIBO
     // =====================================================
 
+    function abrirBannerWhatsapp() {
+        try {
+            const url = "/pc/views/whatsapp-banner.html?v=3.7.3";
+            const ventanaImpresion = window.open(url, '_blank');
+
+            if (!ventanaImpresion) {
+                window.app?.showToast?.('<i class="fas fa-exclamation-triangle"></i> Habilita las ventanas emergentes para imprimir el banner', 'warning', 3000);
+                return;
+            }
+
+            window.app?.showToast?.('<i class="fab fa-whatsapp"></i> Imprimiendo banner de WhatsApp...', 'info', 2000);
+        } catch (error) {
+            console.error('Error al abrir banner de WhatsApp:', error);
+            window.app?.showToast?.('<i class="fas fa-exclamation-triangle"></i> Error al generar banner de WhatsApp', 'warning', 3000);
+        }
+    }
+
     function abrirRecibo(ventaData) {
         try {
             // Preparar arrays para la URL
@@ -10889,6 +10955,7 @@ _Sistema de Gestión Ferrisoluciones_`;
     window.confirmarVenta = confirmarVenta;
     window.calcularVuelto = calcularVuelto;
     window.manejarTeclasCantidad = manejarTeclasCantidad;
+    window.abrirBannerWhatsapp = abrirBannerWhatsapp;
     window.abrirRecibo = abrirRecibo;
     window.seleccionarTipoComprobante = seleccionarTipoComprobante;
     window.procesarVentaConValidacion = procesarVentaConValidacion;
