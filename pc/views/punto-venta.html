@@ -119,6 +119,10 @@
                             <span id="itemsCount">0</span>
                             <span class="items-label">items</span>
                         </div>
+                        <button class="obsequio-toggle-btn" id="obsequioToggleBtn" onclick="toggleModoObsequios()"
+                            title="Marcar productos como obsequio">
+                            <i class="fas fa-gift"></i>
+                        </button>
                         <button class="ganancia-toggle-btn" id="gananciaToggleBtn" onclick="toggleGananciaPanel()"
                             title="Mostrar ganancia total">
                             <i class="fas fa-dollar-sign"></i>
@@ -1656,6 +1660,74 @@
         font-size: 0.9em;
         color: #666;
         text-transform: lowercase;
+    }
+
+    /* Botón de Obsequios */
+    .obsequio-toggle-btn {
+        background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+        border: 2px solid #d35400;
+        color: white;
+        border-radius: 8px;
+        padding: 10px 12px;
+        height: 42px;
+        min-width: 46px;
+        cursor: pointer;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(211, 84, 0, 0.25);
+        transition: all 0.25s ease;
+    }
+
+    .obsequio-toggle-btn:hover,
+    .obsequio-toggle-btn.active {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(211, 84, 0, 0.35);
+    }
+
+    .obsequio-toggle-btn.active {
+        outline: 3px solid rgba(254, 202, 87, 0.35);
+    }
+
+    .btn-obsequio-item {
+        width: 32px;
+        height: 32px;
+        border: 2px solid #d35400;
+        border-radius: 8px;
+        background: #fff8e1;
+        color: #d35400;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-obsequio-item:hover,
+    .btn-obsequio-item.active {
+        background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .obsequio-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #fff3cd;
+        color: #9a5a00;
+        font-size: 0.75em;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .precio-obsequio-original {
+        display: block;
+        color: #999;
+        font-size: 0.78em;
+        text-decoration: line-through;
+        margin-bottom: 2px;
     }
 
     /* Botón de Ganancia */
@@ -3351,6 +3423,7 @@
             },
             // Modo edición
             modoEdicion: false,
+            modoObsequios: false,
             indiceSeleccionado: -1, // -1 = búsqueda, >= 0 = carrito
             busquedaResultados: [],
             busquedaSeleccionado: -1,
@@ -3371,6 +3444,7 @@
                 window.ventaState.carrito = data.carrito || [];
                 window.ventaState.clienteSeleccionado = data.clienteSeleccionado || null;
                 window.ventaState.tipoComprobante = data.tipoComprobante || 'RECIBO';
+                window.ventaState.modoObsequios = false;
             } catch (error) {
             }
         }
@@ -3392,6 +3466,12 @@
     }
     if (typeof ventaState.cajaInicialEsperada === 'undefined') {
         ventaState.cajaInicialEsperada = null;
+    }
+    if (typeof ventaState.modoObsequios === 'undefined') {
+        ventaState.modoObsequios = false;
+    }
+    if (Array.isArray(ventaState.carrito)) {
+        ventaState.carrito.forEach(normalizarItemCarrito);
     }
 
     function logProcesandoVenta(evento, detalle = {}) {
@@ -6829,6 +6909,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             ventaState.carrito = [];
             ventaState.clienteSeleccionado = null;
             ventaState.tipoComprobante = 'RECIBO';
+            ventaState.modoObsequios = false;
             ventaState.credito = { total: 0, abono: 0, saldo: 0 };
 
             limpiarCarritoCache();
@@ -6862,6 +6943,82 @@ _Sistema de Gestión Ferrisoluciones_`;
     // =====================================================
     // GESTIÓN DEL CARRITO
     // =====================================================
+
+    function normalizarPrecioCarrito(valor, fallback = 0) {
+        const numero = parseFloat(valor);
+        return Number.isFinite(numero) ? numero : fallback;
+    }
+
+    function normalizarItemCarrito(item) {
+        if (!item) return item;
+        item.precio = normalizarPrecioCarrito(item.precio, 0);
+        item.precio_original = normalizarPrecioCarrito(
+            item.precio_original,
+            item.esObsequio ? obtenerPrecioBaseProducto(item) : item.precio
+        );
+        item.esObsequio = item.esObsequio === true;
+        if (item.esObsequio) {
+            item.precio = 0;
+        }
+        return item;
+    }
+
+    function obtenerPrecioBaseProducto(item) {
+        if (!item) return 0;
+        const precioOriginal = parseFloat(item.precio_original);
+        if (Number.isFinite(precioOriginal) && precioOriginal >= 0) {
+            return precioOriginal;
+        }
+
+        const productoCache = window.inventarioCache?.productos?.find(p => p.codigo === item.codigo);
+        const precioCache = parseFloat(productoCache?.precio);
+        if (Number.isFinite(precioCache) && precioCache >= 0) {
+            return precioCache;
+        }
+
+        const precioActual = parseFloat(item.precio);
+        return Number.isFinite(precioActual) ? precioActual : 0;
+    }
+
+    function toggleModoObsequios() {
+        ventaState.modoObsequios = !ventaState.modoObsequios;
+        const btn = document.getElementById('obsequioToggleBtn');
+        if (btn) btn.classList.toggle('active', ventaState.modoObsequios);
+        actualizarCarrito();
+        guardarCarritoEnCache();
+        window.app?.showToast?.(
+            ventaState.modoObsequios
+                ? '<i class="fas fa-gift"></i> Modo obsequios activado'
+                : '<i class="fas fa-gift"></i> Modo obsequios oculto',
+            'info',
+            1800
+        );
+    }
+
+    function toggleObsequioProducto(codigo) {
+        const item = ventaState.carrito.find(i => i.codigo === codigo);
+        if (!item) return;
+
+        normalizarItemCarrito(item);
+        item.esObsequio = !item.esObsequio;
+
+        if (item.esObsequio) {
+            item.precio_original = obtenerPrecioBaseProducto(item);
+            item.precio = 0;
+        } else {
+            item.precio = obtenerPrecioBaseProducto(item);
+        }
+
+        actualizarCarrito();
+        guardarCarritoEnCache();
+        window.app?.showToast?.(
+            item.esObsequio
+                ? '<i class="fas fa-gift"></i> Producto marcado como obsequio'
+                : '<i class="fas fa-undo"></i> Precio normal restaurado',
+            item.esObsequio ? 'success' : 'info',
+            1600
+        );
+    }
 
     async function agregarAlCarrito(producto) {
         // OPTIMIZACIÓN: Usar caché si está disponible, verificar BD solo en background
@@ -6916,6 +7073,8 @@ _Sistema de Gestión Ferrisoluciones_`;
                 codigo: producto.codigo,
                 nombre: producto.producto,
                 precio: precioActual,
+                precio_original: precioActual,
+                esObsequio: false,
                 cantidad: 1,
                 stock: stockActual,
                 costo: producto.costo || 0,
@@ -7009,6 +7168,14 @@ _Sistema de Gestión Ferrisoluciones_`;
         const item = ventaState.carrito.find(i => i.codigo === codigo);
         if (!item) return;
 
+        normalizarItemCarrito(item);
+        if (item.esObsequio) {
+            item.precio = 0;
+            actualizarCarrito();
+            guardarCarritoEnCache();
+            return;
+        }
+
         const precio = parseFloat(nuevoPrecio);
 
         if (isNaN(precio) || precio <= 0) {
@@ -7018,6 +7185,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         }
 
         item.precio = precio;
+        item.precio_original = precio;
         actualizarCarrito();
         guardarCarritoEnCache();
         window.app.showToast('Precio actualizado', 'success', 1500);
@@ -7025,6 +7193,12 @@ _Sistema de Gestión Ferrisoluciones_`;
 
     function actualizarCarrito() {
         const tbody = document.getElementById('carritoBody');
+        ventaState.carrito.forEach(normalizarItemCarrito);
+
+        const obsequioBtn = document.getElementById('obsequioToggleBtn');
+        if (obsequioBtn) {
+            obsequioBtn.classList.toggle('active', ventaState.modoObsequios);
+        }
 
         if (ventaState.carrito.length === 0) {
             tbody.innerHTML = `
@@ -7052,6 +7226,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
     // Función auxiliar para generar HTML de una fila
     function generarFilaCarrito(item, index) {
+        normalizarItemCarrito(item);
         const subtotal = item.cantidad * item.precio;
         const stockRestante = item.stock - item.cantidad;
         const isSelected = ventaState.modoEdicion && index === ventaState.indiceSeleccionado;
@@ -7096,6 +7271,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                             <small style="color: ${stockRestante < 10 ? '#dc3545' : '#28a745'};">
                                 Stock restante: ${stockRestante} ${item.unidad}
                             </small>
+                            ${item.esObsequio ? '<br><span class="obsequio-label"><i class="fas fa-gift"></i> Obsequio</span>' : ''}
                         </div>
                         ${item.zona ? `<span class="badge-zona">ZONA: ${item.zona}</span>` : ''}
                     </div>
@@ -7124,10 +7300,12 @@ _Sistema de Gestión Ferrisoluciones_`;
                             value="${item.precio}" 
                             step="0.01" 
                             min="0.01"
+                            ${item.esObsequio ? 'disabled' : ''}
                             onchange="actualizarPrecio('${item.codigo}', this.value)"
                             onclick="this.select()">`
                 :
                 `<div>
+                            ${item.esObsequio ? `<span class="precio-obsequio-original">${window.app.formatCurrency(item.precio_original || 0)}</span>` : ''}
                             ${window.app.formatCurrency(item.precio)}
                             ${gananciaHTML}
                         </div>`
@@ -7139,6 +7317,12 @@ _Sistema de Gestión Ferrisoluciones_`;
                 </td>
                 <td>
                     <div class="action-buttons">
+                        ${ventaState.modoObsequios ?
+                `<button class="btn-obsequio-item ${item.esObsequio ? 'active' : ''}" onclick="toggleObsequioProducto('${item.codigo}')" title="${item.esObsequio ? 'Quitar obsequio' : 'Marcar como obsequio'}">
+                                <i class="fas fa-gift"></i>
+                            </button>`
+                : ''
+            }
                         ${item.nombre.toLowerCase().includes('ducha') ?
                 `<button class="btn-warranty-item" onclick="abrirModalGarantia('${item.codigo}')" title="Generar Garantía">
                                 <i class="fas fa-shield-alt"></i>
@@ -7167,6 +7351,8 @@ _Sistema de Gestión Ferrisoluciones_`;
             codigo: producto.codigo,
             nombre: producto.producto,
             precio: precio,
+            precio_original: precio,
+            esObsequio: false,
             cantidad: 1,
             stock: stock,
             unidad: producto.unidad_paquete || 'UNIDADES',
@@ -8598,6 +8784,8 @@ _Sistema de Gestión Ferrisoluciones_`;
                 codigo: producto.codigo,
                 nombre: producto.producto,
                 precio: producto.precio,
+                precio_original: producto.precio,
+                esObsequio: false,
                 cantidad: cantidad,
                 stock: producto.stock,
                 costo: producto.costo || 0,
@@ -8750,6 +8938,8 @@ _Sistema de Gestión Ferrisoluciones_`;
                     codigo: producto.codigo,
                     nombre: producto.producto,
                     precio: producto.precio,
+                    precio_original: producto.precio,
+                    esObsequio: false,
                     cantidad: cantidad,
                     stock: producto.stock,
                     costo: producto.costo || 0,
@@ -9025,6 +9215,8 @@ _Sistema de Gestión Ferrisoluciones_`;
                 codigo: producto.codigo,
                 nombre: producto.producto,
                 precio: producto.precio,
+                precio_original: producto.precio,
+                esObsequio: false,
                 cantidad: cantidad,
                 stock: producto.stock,
                 costo: producto.costo || 0,
@@ -9552,7 +9744,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
     function abrirBannerWhatsapp() {
         try {
-            const url = "/pc/views/whatsapp-banner.html?v=3.7.3";
+            const url = "/pc/views/whatsapp-banner.html?v=3.8.0";
             const ventanaImpresion = window.open(url, '_blank');
 
             if (!ventanaImpresion) {
@@ -10358,9 +10550,10 @@ _Sistema de Gestión Ferrisoluciones_`;
                     },
                     productos: ventaState.carrito.map(item => ({
                         codigo: item.codigo,
-                        nombre: item.nombre,
+                        nombre: item.esObsequio ? `${item.nombre} (OBSEQUIO)` : item.nombre,
                         cantidad: item.cantidad,
-                        precio: item.precio
+                        precio: item.precio,
+                        esObsequio: item.esObsequio === true
                     })),
                     total: totalConIva,
                     subtotal: totalConIva,
@@ -10484,7 +10677,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             // NUEVO: Enviar Webhook si NO es efectivo (Transferencia o Mixto)
             if (tipoPago !== 'EFECTIVO') {
-                const productosLista = ventaState.carrito.map(item => `${item.cantidad} x ${item.nombre}`).join('\n');
+                const productosLista = ventaState.carrito.map(item => `${item.cantidad} x ${item.nombre}${item.esObsequio ? ' (OBSEQUIO)' : ''}`).join('\n');
                 let montoWebhook = totalConIva;
 
                 if (tipoPago === 'MIXTO') {
@@ -10595,10 +10788,11 @@ _Sistema de Gestión Ferrisoluciones_`;
                     },
                     productos: ventaState.carrito.map(item => ({
                         codigo: item.codigo,
-                        nombre: item.nombre,
+                        nombre: item.esObsequio ? `${item.nombre} (OBSEQUIO)` : item.nombre,
                         cantidad: item.cantidad,
                         precio: item.precio,
-                        subtotal: item.cantidad * item.precio
+                        subtotal: item.cantidad * item.precio,
+                        esObsequio: item.esObsequio === true
                     }))
                 };
 
@@ -10626,6 +10820,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             ventaState.carrito = [];
             ventaState.clienteSeleccionado = null;
             ventaState.tipoComprobante = 'RECIBO';
+            ventaState.modoObsequios = false;
             limpiarCarritoCache();
             actualizarCarrito();
             mostrarClienteSeleccionado();
@@ -10883,6 +11078,8 @@ _Sistema de Gestión Ferrisoluciones_`;
                     codigo: detalle.producto_id,
                     nombre: detalle.producto_nombre || producto.producto || detalle.producto_id,
                     precio: parseFloat(detalle.precio) || parseFloat(producto.precio) || 0,
+                    precio_original: parseFloat(detalle.precio) || parseFloat(producto.precio) || 0,
+                    esObsequio: false,
                     cantidad: parseFloat(detalle.cantidad) || 1,
                     stock: parseFloat(producto.stock) || parseFloat(detalle.cantidad) || 999999,
                     costo: parseFloat(detalle.costo) || parseFloat(producto.costo) || 0,
@@ -10942,6 +11139,8 @@ _Sistema de Gestión Ferrisoluciones_`;
     window.agregarProductoPorCodigo = agregarProductoPorCodigo;
     window.actualizarCantidad = actualizarCantidad;
     window.actualizarPrecio = actualizarPrecio;
+    window.toggleModoObsequios = toggleModoObsequios;
+    window.toggleObsequioProducto = toggleObsequioProducto;
     window.eliminarDelCarrito = eliminarDelCarrito;
     window.limpiarVenta = limpiarVenta;
     window.procesarVenta = procesarVenta;
