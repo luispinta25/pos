@@ -108,7 +108,7 @@
                     <img src="https://i.ibb.co/8gLPXfjh/FERRISOLUCIONES-1.png" alt="Logo" class="nav-logo">
                     <div class="nav-title-wrapper">
                         <span class="nav-title">Ferrisoluciones</span>
-                        <span class="app-version">v3.8.0</span>
+                        <span class="app-version">v3.8.2</span>
                     </div>
                 </div>
 
@@ -210,23 +210,23 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
-    <script src="js/config.js?v=3.8.0"></script>
-    <script src="js/auth.js?v=3.8.0"></script>
-    <script src="js/app.js?v=3.8.0"></script>
+    <script src="js/config.js?v=3.8.2"></script>
+    <script src="js/auth.js?v=3.8.2"></script>
+    <script src="js/app.js?v=3.8.2"></script>
 
     <!-- Service Worker Registration -->
     <script>
         // =====================================================
-        // SERVICE WORKER REGISTRATION - v3.8.0
+        // SERVICE WORKER REGISTRATION - v3.8.2
         // =====================================================
         
         if ('serviceWorker' in navigator) {
             let swUpdatePending = false;
 
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=3.8.0')
+                navigator.serviceWorker.register('/sw.js?v=3.8.2')
                     .then(registration => {
-                        console.log('✅ Service Worker registered successfully (v3.8.0)');
+                        console.log('✅ Service Worker registered successfully (v3.8.2)');
                         console.log('📍 Scope:', registration.scope);
                         console.log('🔄 Strategy: Network First');
                         
