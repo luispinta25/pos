@@ -4985,39 +4985,10 @@
     let cargaInicialCompleta = false;
     let cargaClientesCompleta = false;
 
-    // Cargar tokens de API para webservices
+    // Compatibilidad: las consultas externas ahora se hacen por backend seguro.
     async function cargarTokensAPI() {
-        try {
-            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
-
-            if (!db) {
-                console.error('❌ Base de datos no disponible para cargar tokens');
-                return false;
-            }
-
-
-            const { data, error } = await db
-                .from('ferre_api')
-                .select('service_name, webservices_token')
-                .eq('is_active', true);
-
-            if (error) {
-                console.error('❌ Error cargando tokens API:', error);
-                return false;
-            }
-
-            // Mapear tokens por nombre de servicio
-            API_TOKENS = data.reduce((acc, item) => {
-                acc[item.service_name] = item.webservices_token;
-                return acc;
-            }, {});
-
-            return true;
-
-        } catch (error) {
-            console.error('❌ Error cargando tokens API:', error);
-            return false;
-        }
+        API_TOKENS = {};
+        return true;
     }
 
     // Cargar clientes completo en cache
@@ -5186,26 +5157,12 @@
 
     async function consultarCedulaFallback(cedula) {
         try {
-            const url = `https://webservices.ec/api/cedula/${cedula}`;
-            const token = API_TOKENS['webservices_cedula'];
-            if (!token) return null;
             actualizarServicioConsulta('Fallback');
-            const { controller, timeoutId } = crearTimeoutAbort(15000);
-            try {
-                const res = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    },
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                if (!res.ok) return null;
-                return { tipo: 'exito', data: await res.json(), origen: 'fallback' };
-            } catch (e) {
-                clearTimeout(timeoutId);
-                throw e;
-            }
+            if (typeof posApiRequest !== 'function') return null;
+            const result = await posApiRequest(`/api/identity/cedula/${cedula}`, {
+                method: 'GET'
+            });
+            return result?.ok ? { tipo: 'exito', data: result.data, origen: 'fallback' } : null;
         } catch (error) {
             console.warn('Fallback cédula:', error.message);
             return null;
@@ -5214,26 +5171,12 @@
 
     async function consultarRucFallback(ruc) {
         try {
-            const url = `https://webservices.ec/api/ruc/${ruc}`;
-            const token = API_TOKENS['webservices_ruc'];
-            if (!token) return null;
             actualizarServicioConsulta('Fallback');
-            const { controller, timeoutId } = crearTimeoutAbort(15000);
-            try {
-                const res = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    },
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                if (!res.ok) return null;
-                return { tipo: 'exito', data: await res.json(), origen: 'fallback' };
-            } catch (e) {
-                clearTimeout(timeoutId);
-                throw e;
-            }
+            if (typeof posApiRequest !== 'function') return null;
+            const result = await posApiRequest(`/api/identity/ruc/${ruc}`, {
+                method: 'GET'
+            });
+            return result?.ok ? { tipo: 'exito', data: result.data, origen: 'fallback' } : null;
         } catch (error) {
             console.warn('Fallback RUC:', error.message);
             return null;
