@@ -3614,7 +3614,7 @@
         // =====================================================
 
         async function reenviarAlSRI() {
-            const { venta, detalles, productosMap } = window.ventaActual;
+            const { venta } = window.ventaActual;
 
             if (!venta.doc || !venta.clave_acceso) {
                 window.app?.showToast?.('No hay datos suficientes para reenviar', 'error', 3000);
@@ -3642,82 +3642,16 @@
 
                 window.app?.showToast?.('<i class="fas fa-sync-alt fa-spin"></i> Reenviando factura al SRI...', 'info', 3000);
 
-                const db = window.app.db;
-
-                // Obtener configuraciones
-                const { data: configSRI } = await db.from('ferre_facelectronicaconfig').select('*').single();
-                const { data: configServicios } = await db.from('ferre_config_servicios').select('*').single();
-                const { data: clienteData } = await db.from('ferre_clientes').select('*').eq('cedula', venta.cliente_id).single();
-
-                if (!configSRI || !configServicios) {
-                    throw new Error('Configuración no disponible');
+                if (typeof posApiRequest !== 'function') {
+                    throw new Error('Backend seguro no disponible para reenvío SRI');
                 }
 
-                // Preparar productos
-                const productos = detalles.map(detalle => ({
-                    codigo: detalle.producto_id,
-                    cantidad: detalle.cantidad,
-                    nombre: productosMap[detalle.producto_id] || detalle.producto_id,
-                    precio: detalle.precio,
-                    subtotal: detalle.subtotal
-                }));
-
-                // Generar JSON
-                const jsonResult = generarJsonFacturacion(
-                    {
-                        productos,
-                        total: venta.total,
-                        cliente: clienteData || {
-                            cedula: venta.cliente_id,
-                            razon_social: venta.cliente_id,
-                            correo: 'consumidor@final.com',
-                            telefono: '',
-                            direccion: ''
-                        },
-                        saleCode: venta.id_venta,
-                        fecha: venta.fecha_hora_venta
-                    },
-                    configSRI,
-                    configServicios,
-                    venta.clave_acceso,
-                    venta.doc
-                );
-
-                if (!jsonResult.success) {
-                    throw new Error('Error generando JSON: ' + jsonResult.message);
-                }
-
-                const jsonPayload = jsonResult.json;
-
-                // Enviar al SRI
-                const urlFirma = configServicios.firma_url;
-                if (!urlFirma) {
-                    throw new Error('URL del servicio de firma no configurada');
-                }
-
-                console.groupCollapsed('%c🚀 REENVÍO AL SRI', 'color:#2196F3;font-weight:bold;font-size:14px;');
-                console.log('📄 Factura:', venta.doc);
-                console.log('🔑 Clave Acceso:', venta.clave_acceso);
-                console.log('👤 Cliente:', clienteData?.razon_social || venta.cliente_id);
-                console.log('💰 Total:', venta.total);
-                console.log('📦 Productos:', productos.length);
-                console.log('🌐 URL:', urlFirma);
-                console.group('📋 JSON Generado');
-                console.log('- Correo:', jsonPayload.correo);
-                console.log('- Archivo:', jsonPayload.archivo);
-                console.log('- Clave Acceso:', jsonPayload.claveAcceso);
-                console.log('- Nombre P12:', jsonPayload.nombrep12);
-                console.log('- Clave P12:', jsonPayload.clave_12 ? '***' : 'NO CONFIGURADA');
-                console.log('📋 JSON completo:', JSON.stringify(jsonPayload, null, 2));
-                console.groupEnd();
-                console.groupEnd();
-
-                const resultado = await enviarFacturaAlServicioFirma({
-                    url: urlFirma,
-                    payload: jsonPayload,
-                    maxIntentos: 3,
-                    timeoutMs: 30000
+                const respuesta = await posApiRequest('/api/billing/retry', {
+                    method: 'POST',
+                    body: JSON.stringify({ ventaId: venta.id })
                 });
+                const data = respuesta?.data || {};
+                const resultado = data.result || {};
 
                 // Validar si es exitoso (verificar tanto success como el detalle del SRI)
                 const detalleString = resultado.data?.detalle || resultado.data?.data?.detalle || '';
@@ -3730,41 +3664,17 @@
                         detalleUpper.includes('CLAVE ACCESO REGISTRADA'));
 
                 if (esExitoso) {
-                    // Primero verificar que el registro existe
-                    const { data: checkData, error: checkError } = await db
-                        .from('ferre_ventas')
-                        .select('id, estado, usuario_email')
-                        .eq('id', venta.id)
-                        .single();
-
-                    if (checkError) {
-                        console.error('Error accediendo al registro:', checkError);
-                        window.app?.showToast?.('⚠️ Error: No se puede actualizar el registro. Verifica permisos.', 'error', 4000);
-                        return;
-                    }
-
-                    // Actualizar estado en la base de datos
-                    const { error: updateError } = await db
-                        .from('ferre_ventas')
-                        .update({
-                            estado: 'AUTORIZADO',
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('id', venta.id);
-
-                    if (updateError) {
-                        console.error('Error actualizando estado:', updateError);
-                        window.app?.showToast?.('⚠️ Factura autorizada pero no se actualizó el estado local', 'warning', 4000);
-                    }
-
                     window.app?.showToast?.('✅ Factura autorizada por el SRI', 'success', 4000);
                     cerrarModalDetalle();
 
                     await new Promise(resolve => setTimeout(resolve, 300));
                     cargarVentas();
                 } else {
-                    const mensaje = resultado.data?.message || resultado.message || 'Error desconocido';
-                    window.app?.showToast?.(`❌ Error SRI: ${mensaje}`, 'error', 5000);
+                    const mensaje = resultado.data?.message || resultado.message || 'Comprobante pendiente o rechazado';
+                    const tipoToast = data.estado === 'RECHAZADO' ? 'error' : 'warning';
+                    window.app?.showToast?.(`⚠️ SRI: ${mensaje}`, tipoToast, 5000);
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    cargarVentas();
                 }
 
             } catch (error) {
