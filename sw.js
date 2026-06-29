@@ -178,11 +178,11 @@ self.addEventListener('message', (event) => {
                     event.ports[0].postMessage({ 
                         success: true, 
                         size: requests.length,
-                        version: '3.8.2'
+                        version: '3.8.3'
                     });
                 });
             });
     }
 });
 
-console.log('✅ Service Worker v3.8.2 loaded (Network First Strategy)');
+console.log('✅ Service Worker v3.8.3 loaded (Network First Strategy)');
