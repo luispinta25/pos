@@ -10012,7 +10012,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             // Obtener configuración SRI
             const { data: configSRI, error: errorSRI } = await db
                 .from('ferre_facelectronicaconfig')
-                .select('*')
+                .select('id, ambiente, establecimiento, punto_emision, comprobante_actual, codigo_numerico, tipo_emision, ruc')
                 .single();
 
             if (errorSRI) {
@@ -10020,17 +10020,18 @@ _Sistema de Gestión Ferrisoluciones_`;
                 throw new Error('No se pudo obtener configuración de facturación SRI');
             }
 
-            // Obtener configuración de servicios
-            const { data: configServicios, error: errorServicios } = await db
-                .from('ferre_config_servicios')
-                .select('*')
-                .single();
-
-            if (errorServicios) {
-                console.error('❌ Error obteniendo configuración de servicios:', errorServicios);
+            if (typeof posApiRequest !== 'function') {
                 throw new Error('No se pudo obtener configuración de servicios');
             }
 
+            const publicConfig = await posApiRequest('/api/billing/config-public', {
+                method: 'GET'
+            });
+            const configServicios = publicConfig?.data;
+
+            if (!configServicios) {
+                throw new Error('No se pudo obtener configuración pública de facturación');
+            }
 
             return {
                 success: true,
@@ -10307,66 +10308,30 @@ _Sistema de Gestión Ferrisoluciones_`;
         };
     }
 
-    async function procesarEnvioFacturaElectronica({ db, ventaId, ventaCodigo, docNumber, payload, configServicios }) {
-        const urlFirma = configServicios?.firma_url || configServicios?.firmaUrl;
-
-        if (!urlFirma) {
-            console.warn('⚠️ No se configuró firma_url en config_servicios. La factura queda pendiente.');
-            window.app?.showToast?.('Factura generada, pero el servicio de firma no está configurado. La autorización queda pendiente.', 'warning', 7000);
-            return { success: false, skipped: true, message: 'URL del servicio de firma no configurada' };
+    async function procesarEnvioFacturaElectronica({ ventaId, ventaCodigo, docNumber }) {
+        if (typeof posApiRequest !== 'function') {
+            throw new Error('Backend seguro no disponible para facturación.');
         }
 
-        const maxIntentos = Number(configServicios.firma_max_intentos) || 3;
-        const timeoutMs = (Number(configServicios.firma_timeout_segundos) || 30) * 1000;
+        window.app?.showToast?.('⌛ Enviando factura al SRI desde backend seguro...', 'info', 3500);
 
-        window.app?.showToast?.('⌛ Enviando factura al servicio de firma...', 'info', 3500);
-
-        const resultado = await enviarFacturaAlServicioFirma({
-            url: urlFirma,
-            payload,
-            maxIntentos,
-            timeoutMs
+        const respuesta = await posApiRequest('/api/billing/emit', {
+            method: 'POST',
+            body: JSON.stringify({ ventaId })
         });
+        const resultado = respuesta?.data?.result || {};
 
         window.lastFacturaFirmaResult = resultado;
         if (window.lastFacturaPayload) {
             window.lastFacturaPayload.result = resultado;
         }
 
-        const supabase = db;
-
-        if (!supabase || typeof supabase.from !== 'function') {
-            console.error('❌ Cliente de base de datos no disponible para actualizar estado de la venta.');
-        }
-
         if (resultado.success) {
-            if (supabase && typeof supabase.from === 'function') {
-                const { error: updateError } = await supabase
-                    .from('ferre_ventas')
-                    .update({ estado: 'AUTORIZADO' })
-                    .eq('id', ventaId);
-
-                if (updateError) {
-                    console.error('❌ Error actualizando estado de venta a AUTORIZADO:', updateError);
-                }
-            }
-
             window.app?.showToast?.(`<i class="fas fa-check-circle"></i> Factura ${docNumber} autorizada por el SRI`, 'success', 6000);
         } else {
             const detalle = resultado.message || resultado.data?.message || resultado.data?.detalle || 'Sin detalle de error.';
 
             if (resultado.statusCode && resultado.statusCode >= 200 && resultado.statusCode < 300) {
-                if (supabase && typeof supabase.from === 'function') {
-                    const { error: updateError } = await supabase
-                        .from('ferre_ventas')
-                        .update({ estado: 'RECHAZADO' })
-                        .eq('id', ventaId);
-
-                    if (updateError) {
-                        console.error('❌ Error actualizando estado de venta a RECHAZADO:', updateError);
-                    }
-                }
-
                 window.app?.showToast?.(`❌ Factura ${docNumber} rechazada por el SRI. ${detalle}`, 'danger', 7000);
             } else {
                 console.warn('⚠️ Factura quedó pendiente de autorización SRI:', resultado);
@@ -10512,19 +10477,14 @@ _Sistema de Gestión Ferrisoluciones_`;
 
                 jsonFactura = jsonResult.json;
                 window.lastFacturaPayload = {
-                    url: configServiciosData.firma_url || null,
-                    json: jsonFactura,
                     docNumber,
                     claveAcceso
                 };
 
                 console.groupCollapsed('%c🧾 Facturación electrónica', 'color:#0b7285;font-weight:bold;');
-                console.log('Endpoint firma:', configServiciosData.firma_url || 'No configurado');
-                console.log('Intentos máximos:', configServiciosData.firma_max_intentos ?? 'N/D');
-                console.log('Timeout (segundos):', configServiciosData.firma_timeout_segundos ?? 'N/D');
                 console.log('Documento:', docNumber);
                 console.log('Clave de acceso:', claveAcceso);
-                console.log('Payload JSON:', jsonFactura);
+                console.log('La firma y SMTP se procesan en backend seguro.');
                 console.groupEnd();
 
 
@@ -10698,9 +10658,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                         db,
                         ventaId: ventaInsertada.id,
                         ventaCodigo: ventaIdText,
-                        docNumber,
-                        payload: jsonFactura,
-                        configServicios: configServiciosData
+                        docNumber
                     });
                     window.lastFacturaFirmaPromise = firmaPromise;
                     firmaPromise.catch(error => {
