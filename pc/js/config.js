@@ -4,6 +4,7 @@
 
 const SUPABASE_URL = 'https://lpsupabase.luispintasolutions.com';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzE1MDUwODAwLAogICJleHAiOiAxODcyODE3MjAwCn0.LJEZ3yyGRxLBmCKM9z3EW-Yla1SszwbmvQMngMe3IWA';
+const POS_API_BASE_URL = 'https://api.ferrisoluciones.com';
 
 // Variable global para el cliente
 let supabaseClient = null;
@@ -29,6 +30,44 @@ function getSupabaseClient() {
         initSupabase();
     }
     return supabaseClient;
+}
+
+async function posApiRequest(path, options = {}) {
+    const client = getSupabaseClient();
+    if (!client) {
+        throw new Error('Cliente Supabase no disponible.');
+    }
+
+    const { data, error } = await client.auth.getSession();
+    const token = data?.session?.access_token;
+    if (error || !token) {
+        throw new Error('Sesión no disponible para llamar al backend seguro.');
+    }
+
+    const response = await fetch(`${POS_API_BASE_URL}${path}`, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            ...(options.headers || {})
+        }
+    });
+
+    const raw = await response.text();
+    let body = null;
+    if (raw) {
+        try {
+            body = JSON.parse(raw);
+        } catch (_) {
+            body = { raw };
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error(body?.error || body?.message || `Error ${response.status}`);
+    }
+
+    return body;
 }
 
 // Intentar inicializar inmediatamente
@@ -286,5 +325,4 @@ function showCustomPrompt(message, defaultValue = '', title = 'Ingrese valor', p
 window.showCustomAlert = showCustomAlert;
 window.showCustomConfirm = showCustomConfirm;
 window.showCustomPrompt = showCustomPrompt;
-
 

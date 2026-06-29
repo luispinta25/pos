@@ -107,20 +107,16 @@ async function guardarGasto() {
 
 async function enviarNotificacionGasto(gasto, nomcompleto) {
     try {
-        const { data: fd, error } = await db.from('ferre_ferredatos').select('*').limit(1).single();
-        if (error || !fd) return null;
         const fecha = new Date(gasto.fechayhora);
         const fechaFmt = fecha.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const horaFmt  = fecha.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         const texto = `\u{1F4B8} *Nuevo Gasto Registrado*\n\n*DETALLES DEL GASTO*\n\n\u{1F4C5} *Fecha:* ${fechaFmt}\n\u{1F550} *Hora:* ${horaFmt}\n\n\u{1F4B5} *Monto:* $${parseFloat(gasto.monto).toFixed(2)}\n\n\u{1F4DD} *Motivo:*\n${gasto.motivo}\n\n\u{1F464} *Registrado por:*\n${nomcompleto}\n\n\u{1F4CA} *Total Gastos del D\u00eda:* $${parseFloat(gasto.totalDia).toFixed(2)}\n\n_Sistema de Gesti\u00f3n Ferrisoluciones_\n_Powered by Ferrisoluciones Tech_`;
-        const url = `https://api.luispintasolutions.com/message/sendText/${fd.instance}`;
-        const resp = await fetch(url, {
+        const result = await posApiRequest('/api/whatsapp/send-text', {
             method: 'POST',
-            headers: { 'apikey': fd.apikey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ number: fd.number, text: texto, delay: 1000, linkPreview: false })
+            body: JSON.stringify({ text: texto, delay: 1000, linkPreview: false })
         });
-        const json = await resp.json();
-        if (resp.ok && json.key?.id) return { messageId: json.key.id, remoteJid: json.key.remoteJid };
+        const key = result?.data?.key || result?.data?.data?.key;
+        if (key?.id) return { messageId: key.id, remoteJid: key.remoteJid };
         return null;
     } catch (_) { return null; }
 }
@@ -146,13 +142,9 @@ function confirmarEliminarGasto(idigasto, messageid, remotejid) {
 
 async function eliminarMensajeWhatsApp(messageid, remotejid) {
     try {
-        const { data: fd, error } = await db.from('ferre_ferredatos').select('*').limit(1).single();
-        if (error || !fd) return;
-        const url = `https://api.luispintasolutions.com/chat/deleteMessageForEveryone/${fd.instance}`;
-        await fetch(url, {
-            method: 'DELETE',
-            headers: { 'apikey': fd.apikey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: messageid, remoteJid: remotejid, fromMe: true })
+        await posApiRequest('/api/whatsapp/delete-message', {
+            method: 'POST',
+            body: JSON.stringify({ messageId: messageid, remoteJid: remotejid })
         });
     } catch (_) {}
 }

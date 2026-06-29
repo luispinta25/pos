@@ -1122,20 +1122,6 @@
 
     async function enviarNotificacionWhatsApp(gasto, userData) {
         try {
-            const db = window.app ? window.app.db : supabaseClient;
-            
-            // Obtener configuración de WhatsApp
-            const { data: ferredatos, error } = await db
-                .from('ferre_ferredatos')
-                .select('*')
-                .limit(1)
-                .single();
-
-            if (error || !ferredatos) {
-                console.error('Configuración de WhatsApp no disponible');
-                return null;
-            }
-
             const fecha = new Date(gasto.fechayhora);
             const fechaFormateada = fecha.toLocaleDateString('es-EC', {
                 day: '2-digit',
@@ -1173,28 +1159,21 @@ ${nombreCompleto}
 _Sistema de Gestión Ferrisoluciones_
 _Powered by Ferrisoluciones Tech_`;
 
-            const url = `https://api.luispintasolutions.com/message/sendText/${ferredatos.instance}`;
-
-            const response = await fetch(url, {
+            const result = await posApiRequest('/api/whatsapp/send-text', {
                 method: 'POST',
-                headers: {
-                    'apikey': ferredatos.apikey,
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify({
-                    number: ferredatos.number,
                     text: texto,
                     delay: 1000,
                     linkPreview: false
                 })
             });
 
-            const data = await response.json();
+            const key = result?.data?.key || result?.data?.data?.key;
 
-            if (response.ok && data.key && data.key.id) {
+            if (key?.id) {
                 return {
-                    messageId: data.key.id,
-                    remoteJid: data.key.remoteJid
+                    messageId: key.id,
+                    remoteJid: key.remoteJid
                 };
             }
 
@@ -1279,32 +1258,9 @@ _Powered by Ferrisoluciones Tech_`;
 
     async function eliminarMensajeWhatsApp(messageid, remotejid) {
         try {
-            const db = window.app ? window.app.db : supabaseClient;
-            
-            const { data: ferredatos, error } = await db
-                .from('ferre_ferredatos')
-                .select('*')
-                .limit(1)
-                .single();
-
-            if (error || !ferredatos) {
-                console.error('Configuración de WhatsApp no disponible');
-                return;
-            }
-
-            const url = `https://api.luispintasolutions.com/chat/deleteMessageForEveryone/${ferredatos.instance}`;
-
-            await fetch(url, {
-                method: 'DELETE',
-                headers: {
-                    'apikey': ferredatos.apikey,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    id: messageid,
-                    remoteJid: remotejid,
-                    fromMe: true
-                })
+            await posApiRequest('/api/whatsapp/delete-message', {
+                method: 'POST',
+                body: JSON.stringify({ messageId: messageid, remoteJid: remotejid })
             });
 
         } catch (error) {
@@ -1344,5 +1300,4 @@ _Powered by Ferrisoluciones Tech_`;
     window.confirmarEliminarGasto = confirmarEliminarGasto;
 
 </script>
-
 
