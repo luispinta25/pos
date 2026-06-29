@@ -3225,8 +3225,17 @@
                 // Obtener configuraciones
                 const db = window.app.db;
 
-                const { data: configSRI } = await db.from('ferre_facelectronicaconfig').select('*').single();
-                const { data: configServicios } = await db.from('ferre_config_servicios').select('*').single();
+                const { data: configSRI } = await db
+                    .from('ferre_facelectronicaconfig')
+                    .select('ambiente, tipo_emision')
+                    .single();
+                if (typeof posApiRequest !== 'function') {
+                    throw new Error('Backend seguro no disponible para configuración pública');
+                }
+                const publicConfig = await posApiRequest('/api/billing/config-public', {
+                    method: 'GET'
+                });
+                const configServicios = publicConfig?.data;
                 const { data: clienteData } = await db.from('ferre_clientes').select('*').eq('cedula', venta.cliente_id).single();
 
                 if (!configSRI || !configServicios) {
