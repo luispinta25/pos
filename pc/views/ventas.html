@@ -3443,159 +3443,38 @@
             try {
                 window.app?.showToast?.('<i class="fas fa-spinner fa-spin"></i> Convirtiendo recibo a factura...', 'info', 3000);
 
-                const { venta, detalles, productosMap } = window.ventaActual;
-                const db = window.app.db;
+                const { venta } = window.ventaActual;
 
-                // 1. Obtener configuraciones
-                const { data: configSRI } = await db.from('ferre_facelectronicaconfig').select('*').single();
-                const { data: configServicios } = await db.from('ferre_config_servicios').select('*').single();
-
-                if (!configSRI || !configServicios) {
-                    throw new Error('Configuración de facturación no disponible');
+                if (typeof posApiRequest !== 'function') {
+                    throw new Error('Backend seguro no disponible para convertir recibo');
                 }
 
-                // 2. Incrementar número de comprobante
-                const nuevoNumero = parseInt(configSRI.comprobante_actual) + 1;
-                const { error: updateError } = await db
-                    .from('ferre_facelectronicaconfig')
-                    .update({ comprobante_actual: nuevoNumero })
-                    .eq('id', configSRI.id);
-
-                if (updateError) throw updateError;
-
-                // 3. Generar número de documento y clave de acceso
-                const docNumber = `${String(configSRI.establecimiento).padStart(3, '0')}-${String(configSRI.punto_emision).padStart(3, '0')}-${String(nuevoNumero).padStart(9, '0')}`;
-
-                const fechaActual = new Date();
-                const fechaFormateada = `${String(fechaActual.getDate()).padStart(2, '0')}${String(fechaActual.getMonth() + 1).padStart(2, '0')}${fechaActual.getFullYear()}`;
-
-                // IMPORTANTE: Usar configSRI.ruc (de facelectronicaconfig) NO empresa_ruc
-                const claveAcceso = generarClaveAcceso(fechaFormateada, {
-                    ruc: configSRI.ruc,  // De tabla facelectronicaconfig
-                    ambiente: configSRI.ambiente,
-                    establecimiento: configSRI.establecimiento,
-                    punto_emision: configSRI.punto_emision,
-                    comprobante_actual: nuevoNumero,
-                    codigo_numerico: configSRI.codigo_numerico,
-                    tipo_emision: configSRI.tipo_emision
-                });
-
-                if (!claveAcceso.success) {
-                    throw new Error('Error generando clave de acceso: ' + claveAcceso.error);
-                }
-
-                // 4. Actualizar venta en BD
-                const { error: ventaUpdateError } = await db
-                    .from('ferre_ventas')
-                    .update({
-                        tipo: 'FACTURA',
-                        cliente_id: cliente.cedula,
-                        doc: docNumber,
-                        clave_acceso: claveAcceso.claveAcceso,
-                        estado: 'PENDIENTE',
-                        fecha_factura: fechaActual.toISOString()
+                const respuesta = await posApiRequest('/api/billing/convert-receipt', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        ventaId: venta.id,
+                        clienteId: cliente.cedula
                     })
-                    .eq('id', venta.id);
+                });
+                const data = respuesta?.data || {};
+                const resultado = data.result || {};
 
-                if (ventaUpdateError) throw ventaUpdateError;
+                console.groupCollapsed('%c🔄 CONVERSIÓN RECIBO → FACTURA', 'color:#9C27B0;font-weight:bold;font-size:14px;');
+                console.log('Recibo original:', venta.id_venta);
+                console.log('Número de factura:', data.doc);
+                console.log('Cliente:', cliente.razon_social);
+                console.log('Resultado SRI:', resultado);
+                console.groupEnd();
 
-                // 5. Preparar y enviar al SRI
-                const productos = detalles.map(detalle => ({
-                    codigo: detalle.producto_id,
-                    cantidad: detalle.cantidad,
-                    nombre: productosMap[detalle.producto_id] || detalle.producto_id,
-                    precio: detalle.precio,
-                    subtotal: detalle.subtotal
-                }));
-
-                const jsonResult = generarJsonFacturacion(
-                    {
-                        productos,
-                        total: venta.total,
-                        cliente,
-                        saleCode: venta.id_venta,
-                        fecha: fechaActual.toISOString()
-                    },
-                    configSRI,
-                    configServicios,
-                    claveAcceso.claveAcceso,
-                    docNumber
-                );
-
-                if (!jsonResult.success) {
-                    throw new Error('Error generando JSON de facturación: ' + jsonResult.message);
+                if (resultado.success) {
+                    window.app?.showToast?.('✅ Factura convertida y autorizada por el SRI', 'success', 4000);
+                } else {
+                    const mensaje = resultado.data?.message || resultado.message || 'Factura convertida, pendiente de autorización SRI';
+                    const tipoToast = data.estado === 'RECHAZADO' ? 'error' : 'warning';
+                    window.app?.showToast?.(`⚠️ ${mensaje}`, tipoToast, 5000);
                 }
 
-                const jsonPayload = jsonResult.json;
-
-                // 6. Enviar al servicio de firma
-                const urlFirma = configServicios.firma_url;
-                if (urlFirma) {
-                    console.groupCollapsed('%c🔄 CONVERSIÓN RECIBO → FACTURA', 'color:#9C27B0;font-weight:bold;font-size:14px;');
-                    console.log('📄 Recibo original:', venta.id_venta);
-                    console.log('🆕 Número de Factura:', docNumber);
-                    console.log('🔑 Clave Acceso:', claveAcceso.claveAcceso);
-                    console.log('👤 Cliente:', cliente.razon_social);
-                    console.log('📧 Correo:', cliente.correo);
-                    console.log('💰 Total:', venta.total);
-                    console.log('📦 Productos:', productos.length);
-                    console.log('🌐 URL Firma:', urlFirma);
-                    console.group('📋 JSON Generado');
-                    console.log('- Correo:', jsonPayload.correo);
-                    console.log('- Archivo:', jsonPayload.archivo);
-                    console.log('- Clave Acceso:', jsonPayload.claveAcceso);
-                    console.log('- Nombre P12:', jsonPayload.nombrep12);
-                    console.log('- Clave P12:', jsonPayload.clave_12 ? '***' : 'NO CONFIGURADA');
-                    console.log('📋 JSON completo:', JSON.stringify(jsonPayload, null, 2));
-                    console.groupEnd();
-                    console.groupEnd();
-
-                    const resultado = await enviarFacturaAlServicioFirma({
-                        url: urlFirma,
-                        payload: jsonPayload,
-                        maxIntentos: 3,
-                        timeoutMs: 30000
-                    });
-
-                    // LOGGING DETALLADO DE LA RESPUESTA
-                    console.groupCollapsed('%c📥 RESPUESTA DEL SRI (Conversión)', 'color:#4CAF50;font-weight:bold;font-size:14px;');
-                    console.log('✅ Success:', resultado.success);
-                    console.log('📊 Status Code:', resultado.statusCode);
-                    console.log('📄 Data completa:', resultado.data);
-                    console.log('💬 Mensaje:', resultado.data?.message || resultado.message);
-                    console.log('📝 Detalles:', resultado.data?.detalle || resultado.data?.details);
-                    console.log('🔍 Objeto completo resultado:', JSON.stringify(resultado, null, 2));
-
-                    if (resultado.data) {
-                        console.group('🔎 Análisis de data');
-                        console.log('- Status:', resultado.data.status);
-                        console.log('- Message:', resultado.data.message);
-                        console.log('- Detalle:', resultado.data.detalle);
-                        console.log('- ClaveAcceso:', resultado.data.claveAcceso);
-                        console.log('- NumeroAutorizacion:', resultado.data.numeroAutorizacion);
-                        console.log('- FechaAutorizacion:', resultado.data.fechaAutorizacion);
-                        console.log('- Estado:', resultado.data.estado);
-                        console.groupEnd();
-                    }
-
-                    if (resultado.error) {
-                        console.error('❌ Error:', resultado.error);
-                    }
-
-                    console.groupEnd();
-
-                    if (resultado.success) {
-                        await db.from('ferre_ventas').update({ estado: 'AUTORIZADO' }).eq('id', venta.id);
-                        window.app?.showToast?.('✅ Factura convertida y autorizada por el SRI', 'success', 4000);
-                    } else {
-                        console.warn('%c⚠️ FACTURA CONVERTIDA PERO PENDIENTE', 'color:#FF9800;font-weight:bold;font-size:14px;');
-                        console.warn('Motivo:', resultado.data?.message || resultado.message);
-                        console.warn('Respuesta completa:', resultado);
-                        window.app?.showToast?.('⚠️ Factura convertida pero pendiente de autorización SRI', 'warning', 4000);
-                    }
-                }
-
-                // 7. Cerrar modales y recargar
+                // Cerrar modales y recargar
                 cerrarModalSeleccionCliente();
                 cerrarModalDetalle();
                 cargarVentas();
