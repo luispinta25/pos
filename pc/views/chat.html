@@ -526,6 +526,41 @@
             background: #fff;
         }
 
+        .chat-quick-replies {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 0 0 2px;
+            scrollbar-width: thin;
+        }
+
+        .chat-quick-reply {
+            flex: 0 0 auto;
+            border: 1px solid rgba(15, 118, 110, 0.18);
+            border-radius: 999px;
+            padding: 8px 12px;
+            background: #f0fdfa;
+            color: #115e59;
+            font-size: 0.78rem;
+            font-weight: 850;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .chat-quick-reply:hover {
+            transform: translateY(-1px);
+            background: #ccfbf1;
+            border-color: rgba(15, 118, 110, 0.34);
+        }
+
+        .chat-quick-reply:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .chat-composer-text {
             min-height: 48px;
             max-height: 130px;
@@ -629,6 +664,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
+            <div id="chatQuickReplies" class="chat-quick-replies" aria-label="Respuestas rapidas"></div>
             <textarea id="chatMessageInput" class="chat-composer-text" placeholder="Escribe una respuesta..." disabled></textarea>
             <button id="chatAttachBtn" class="chat-attach-btn" type="button" disabled title="Adjuntar imagen">
                 <i class="fas fa-image"></i>
@@ -682,6 +718,7 @@ function initChat() {
         imagePreviewImg: document.getElementById('chatImagePreviewImg'),
         imagePreviewName: document.getElementById('chatImagePreviewName'),
         imagePreviewRemove: document.getElementById('chatImagePreviewRemove'),
+        quickReplies: document.getElementById('chatQuickReplies'),
         imageModal: document.getElementById('chatImageModal'),
         imageModalImg: document.getElementById('chatImageModalImg'),
         newPhone: document.getElementById('chatNewPhone'),
@@ -710,6 +747,81 @@ function initChat() {
         }
     }
 
+    function getScheduleForDate(date) {
+        const day = date.getDay();
+        if (day === 6) return { open: '8:30', close: '19:00' };
+        if (day === 0) return { open: '8:30', close: '18:00' };
+        return { open: '8:00', close: '19:30' };
+    }
+
+    function getDayName(date) {
+        return ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][date.getDay()];
+    }
+
+    function getScheduleReply(offsetDays) {
+        const date = new Date();
+        date.setDate(date.getDate() + offsetDays);
+        const schedule = getScheduleForDate(date);
+        const prefix = offsetDays === 0 ? 'Hoy' : offsetDays === 1 ? 'Mañana' : 'Ese día';
+        return prefix + ' ' + getDayName(date) + ' atendemos de ' + schedule.open + ' a ' + schedule.close + '.';
+    }
+
+    function getQuickReplyText(type) {
+        const replies = {
+            greeting: 'Hola, gracias por escribir a Ferrisoluciones, tu solución. Cuénteme, ¿en qué podemos ayudarle?',
+            today: getScheduleReply(0),
+            tomorrow: getScheduleReply(1),
+            location: 'Estamos en Luis Cordero N1-32 y José Mejía, Machachi. Como referencia, entre el Hospital y el Mercado Central, al lado de Electrónica Joselito.\nUbicación: https://maps.app.goo.gl/gmuSZSCv86pzJ5iP7',
+            stock: 'Con gusto le ayudamos. ¿Busca alguna marca específica o nos puede indicar para qué uso lo necesita? Si tiene una foto o medida, puede enviárnosla para cotizar mejor.',
+            quote: 'Claro, envíenos por favor una foto, lista o las medidas de lo que necesita. Así revisamos disponibilidad y le ayudamos con la mejor opción.',
+            delivery: 'Por el momento no contamos con entrega a domicilio fija. Podemos ayudarle si es en el centro de Machachi, máximo a 3 cuadras del Mercado Central. También podemos dejarle listo el pedido para retirar o enviarlo por Flash; el envío corre por cuenta del cliente.',
+            payments: 'Aceptamos efectivo, transferencia y Deuna por QR.',
+            invoice: 'Sí emitimos factura electrónica y también podemos entregar física. Para facturar necesitamos RUC o cédula, nombre, correo, dirección y teléfono.',
+            unavailable: 'Por el momento no manejamos zinc, varillas, cemento por quintal, bloques ni pinturas de galón. Cemento por libras sí tenemos, y pintura manejamos solo en spray.',
+            closing: 'Quedamos atentos para ayudarle. Gracias por escribir a Ferrisoluciones.'
+        };
+        return replies[type] || '';
+    }
+
+    function insertQuickReply(type) {
+        const text = getQuickReplyText(type);
+        if (!text) return;
+
+        const current = els.input.value.trim();
+        els.input.value = current ? current + '\n\n' + text : text;
+        els.input.disabled = false;
+        els.send.disabled = false;
+        els.input.focus();
+        els.input.setSelectionRange(els.input.value.length, els.input.value.length);
+    }
+
+    function renderQuickReplies() {
+        const items = [
+            ['greeting', 'Saludo'],
+            ['today', 'Horario hoy'],
+            ['tomorrow', 'Horario mañana'],
+            ['location', 'Ubicación'],
+            ['stock', 'Precio/stock'],
+            ['quote', 'Cotización'],
+            ['delivery', 'Entrega'],
+            ['payments', 'Pagos'],
+            ['invoice', 'Factura'],
+            ['unavailable', 'No manejamos'],
+            ['closing', 'Cierre']
+        ];
+
+        els.quickReplies.innerHTML = items.map(function(item) {
+            return '<button class="chat-quick-reply" type="button" data-reply="' + escapeHtml(item[0]) + '"' + (!state.selected ? ' disabled' : '') + '>' + escapeHtml(item[1]) + '</button>';
+        }).join('');
+
+        els.quickReplies.querySelectorAll('.chat-quick-reply').forEach(function(button) {
+            button.addEventListener('click', function() {
+                if (!state.selected) return;
+                insertQuickReply(button.dataset.reply);
+            });
+        });
+    }
+
     function initials(name, phone) {
         const text = String(name || phone || 'C').trim();
         const parts = text.split(/\s+/).filter(Boolean);
@@ -719,6 +831,20 @@ function initChat() {
 
     function getMessageTimestamp(message) {
         return new Date(message.created_at || 0).getTime() || 0;
+    }
+
+    function normalizeWhatsappNumber(value) {
+        const digits = String(value || '').replace(/\D/g, '');
+        const localNumber = digits.slice(-9);
+        return localNumber ? '593' + localNumber : '';
+    }
+
+    function formatWhatsappInput() {
+        const normalized = normalizeWhatsappNumber(els.newPhone.value);
+        if (normalized) {
+            els.newPhone.value = normalized;
+        }
+        return normalized;
     }
 
     function dedupeMessages(messages) {
@@ -801,8 +927,10 @@ function initChat() {
                 els.input.disabled = false;
                 els.send.disabled = false;
                 els.attach.disabled = false;
+                renderQuickReplies();
                 renderMessages({ forceBottom: true });
             } else {
+                renderQuickReplies();
                 renderEmpty('Selecciona una conversacion');
             }
         } catch (error) {
@@ -1043,6 +1171,7 @@ function initChat() {
         state.messages = state.messagesByConversation[item.id] || [];
         state.hasMoreMessages = false;
         renderList();
+        renderQuickReplies();
         renderMessages({ forceBottom: true });
         saveCache();
         await loadMessages({ forceBottom: true });
@@ -1200,9 +1329,13 @@ function initChat() {
     }
 
     async function startConversation() {
-        const phone = els.newPhone.value.trim();
+        const phone = formatWhatsappInput();
         if (!phone) {
             showCustomAlert('Ingresa un numero de WhatsApp.', 'warning', 'Nuevo chat');
+            return;
+        }
+        if (phone.length !== 12) {
+            showCustomAlert('Revisa el numero de WhatsApp. Debe tener 9 digitos locales.', 'warning', 'Nuevo chat');
             return;
         }
 
@@ -1332,6 +1465,13 @@ function initChat() {
     els.panelReload.addEventListener('click', refreshAll);
     els.composer.addEventListener('submit', sendMessage);
     els.start.addEventListener('click', startConversation);
+    els.newPhone.addEventListener('blur', formatWhatsappInput);
+    els.newPhone.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            startConversation();
+        }
+    });
     els.attach.addEventListener('click', function() {
         if (!state.selected) return;
         els.imageInput.click();
@@ -1380,6 +1520,7 @@ function initChat() {
     });
 
     renderEmpty('Selecciona una conversacion');
+    renderQuickReplies();
     (async function bootstrapChat() {
         await setupCacheKey();
         hydrateCache();
