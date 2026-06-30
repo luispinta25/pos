@@ -1,6 +1,6 @@
 // =====================================================
 // SERVICE WORKER - FERRISOLUCIONES POS
-// Version: 3.8.9
+// Version: 3.9.0
 // Strategy: Network First
 // =====================================================
 
@@ -29,7 +29,7 @@ const STATIC_ASSETS = [
 // =====================================================
 
 self.addEventListener('install', (event) => {
-    console.log('🔧 [SW] Installing Service Worker v3.8.9...');
+    console.log('🔧 [SW] Installing Service Worker v3.9.0...');
     
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -57,7 +57,7 @@ self.addEventListener('install', (event) => {
 // =====================================================
 
 self.addEventListener('activate', (event) => {
-    console.log('🚀 [SW] Activating Service Worker v3.8.9...');
+    console.log('🚀 [SW] Activating Service Worker v3.9.0...');
     
     event.waitUntil(
         caches.keys()
@@ -178,11 +178,11 @@ self.addEventListener('message', (event) => {
                     event.ports[0].postMessage({ 
                         success: true, 
                         size: requests.length,
-                        version: '3.8.9'
+                        version: '3.9.0'
                     });
                 });
             });
     }
 });
 
-console.log('✅ Service Worker v3.8.9 loaded (Network First Strategy)');
+console.log('✅ Service Worker v3.9.0 loaded (Network First Strategy)');

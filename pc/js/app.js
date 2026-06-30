@@ -125,6 +125,10 @@ async function loadModule(moduleName) {
             clearInterval(window.__posChatRefreshInterval);
             window.__posChatRefreshInterval = null;
         }
+        if (window.__posChatStreamAbort && moduleName !== 'chat') {
+            window.__posChatStreamAbort.abort();
+            window.__posChatStreamAbort = null;
+        }
         container.innerHTML = `
             <div class="loading">
                 <div class="spinner-container">

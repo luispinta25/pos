@@ -53,6 +53,36 @@
             opacity: 0.86;
         }
 
+        .chat-live-status {
+            margin-top: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.16);
+            font-size: 0.76rem;
+            font-weight: 850;
+        }
+
+        .chat-live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #fbbf24;
+            box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.16);
+        }
+
+        .chat-live-status.connected .chat-live-dot {
+            background: #22c55e;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.16);
+        }
+
+        .chat-live-status.error .chat-live-dot {
+            background: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.16);
+        }
+
         .chat-actions {
             padding: 14px;
             display: grid;
@@ -351,6 +381,10 @@
             <div class="chat-kicker">Atencion al cliente</div>
             <div class="chat-title">WhatsApp POS</div>
             <div class="chat-subtitle">Mensajes y respuestas desde Ferrisoluciones</div>
+            <div id="chatLiveStatus" class="chat-live-status">
+                <span class="chat-live-dot"></span>
+                <span id="chatLiveText">Conectando en vivo</span>
+            </div>
         </div>
         <div class="chat-actions">
             <input id="chatSearch" class="chat-search" type="search" placeholder="Buscar cliente o numero">
@@ -410,7 +444,9 @@ function initChat() {
         input: document.getElementById('chatMessageInput'),
         send: document.getElementById('chatSendBtn'),
         newPhone: document.getElementById('chatNewPhone'),
-        start: document.getElementById('chatStartBtn')
+        start: document.getElementById('chatStartBtn'),
+        liveStatus: document.getElementById('chatLiveStatus'),
+        liveText: document.getElementById('chatLiveText')
     };
 
     function escapeHtml(value) {
@@ -580,6 +616,82 @@ function initChat() {
         }
     }
 
+    function setLiveStatus(status, text) {
+        els.liveStatus.classList.remove('connected', 'error');
+        if (status) els.liveStatus.classList.add(status);
+        els.liveText.textContent = text;
+    }
+
+    async function connectLiveStream() {
+        if (window.__posChatStreamAbort) {
+            window.__posChatStreamAbort.abort();
+        }
+
+        const client = getSupabaseClient();
+        const sessionResult = await client.auth.getSession();
+        const token = sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+        if (!token) {
+            setLiveStatus('error', 'Sin sesion en vivo');
+            return;
+        }
+
+        const abortController = new AbortController();
+        window.__posChatStreamAbort = abortController;
+        setLiveStatus('', 'Conectando en vivo');
+
+        try {
+            const response = await fetch(POS_API_BASE_URL + '/api/chat/stream', {
+                method: 'GET',
+                headers: { Authorization: 'Bearer ' + token },
+                signal: abortController.signal
+            });
+
+            if (!response.ok || !response.body) {
+                throw new Error('Stream no disponible');
+            }
+
+            setLiveStatus('connected', 'En vivo');
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (!abortController.signal.aborted) {
+                const result = await reader.read();
+                if (result.done) break;
+                buffer += decoder.decode(result.value, { stream: true });
+
+                let separatorIndex = buffer.indexOf('\n\n');
+                while (separatorIndex >= 0) {
+                    const rawEvent = buffer.slice(0, separatorIndex);
+                    buffer = buffer.slice(separatorIndex + 2);
+                    handleStreamChunk(rawEvent);
+                    separatorIndex = buffer.indexOf('\n\n');
+                }
+            }
+        } catch (error) {
+            if (!abortController.signal.aborted) {
+                setLiveStatus('error', 'Reconectando');
+                setTimeout(connectLiveStream, 4000);
+            }
+        }
+    }
+
+    function handleStreamChunk(rawEvent) {
+        if (!rawEvent || rawEvent.charAt(0) === ':') return;
+
+        const eventNameLine = rawEvent.split('\n').find(function(line) { return line.indexOf('event: ') === 0; });
+        const eventName = eventNameLine ? eventNameLine.replace('event: ', '').trim() : 'message';
+
+        if (eventName === 'ping') {
+            setLiveStatus('connected', 'En vivo');
+            return;
+        }
+
+        if (eventName === 'message' || eventName === 'conversation') {
+            refreshAll();
+        }
+    }
+
     els.search.addEventListener('input', app.debounce(function() {
         loadConversations(true).catch(function(error) {
             console.error('Error buscando conversaciones', error);
@@ -598,7 +710,8 @@ function initChat() {
 
     renderEmpty('Selecciona una conversacion');
     refreshAll();
+    connectLiveStream();
     clearInterval(window.__posChatRefreshInterval);
-    window.__posChatRefreshInterval = setInterval(refreshAll, 15000);
+    window.__posChatRefreshInterval = setInterval(refreshAll, 60000);
 }
 </script>
