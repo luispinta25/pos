@@ -39,6 +39,11 @@ function updateNavbarCounter(moduleName, value = null) {
                 totalAmount.textContent = String(value);
             }
             break;
+
+        case 'chat':
+            totalLabel.textContent = 'WhatsApp:';
+            totalAmount.textContent = value !== null && value !== undefined ? String(value) : 'Atención';
+            break;
         
         case 'gastos':
             totalLabel.textContent = 'Gastos del día:';
@@ -116,6 +121,10 @@ async function loadModule(moduleName) {
         // Mostrar loading rediseñado
         const container = document.getElementById('moduleContainer');
         document.getElementById('btnWhatsappBannerFlotante')?.remove();
+        if (window.__posChatRefreshInterval && moduleName !== 'chat') {
+            clearInterval(window.__posChatRefreshInterval);
+            window.__posChatRefreshInterval = null;
+        }
         container.innerHTML = `
             <div class="loading">
                 <div class="spinner-container">
