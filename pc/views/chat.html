@@ -407,13 +407,119 @@
             color: #7f1d1d;
         }
 
+        .chat-image {
+            display: block;
+            width: min(320px, 58vw);
+            max-height: 360px;
+            object-fit: cover;
+            border-radius: 12px;
+            cursor: zoom-in;
+            background: #e5e7eb;
+            margin-bottom: 8px;
+        }
+
+        .chat-image-placeholder {
+            width: min(320px, 58vw);
+            min-height: 130px;
+            display: grid;
+            place-items: center;
+            gap: 8px;
+            border-radius: 12px;
+            background: #e0f2fe;
+            color: #075985;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .chat-attach-btn {
+            width: 48px;
+            height: 48px;
+            border: 0;
+            border-radius: 12px;
+            background: #eef2f6;
+            color: #172033;
+            cursor: pointer;
+            font-weight: 900;
+        }
+
+        .chat-attach-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .chat-image-preview {
+            display: none;
+            grid-column: 1 / -1;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid rgba(15, 118, 110, 0.18);
+            border-radius: 14px;
+            background: #ecfdf5;
+        }
+
+        .chat-image-preview.active {
+            display: flex;
+        }
+
+        .chat-image-preview img {
+            width: 58px;
+            height: 58px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .chat-image-preview-name {
+            flex: 1;
+            min-width: 0;
+            font-size: 0.82rem;
+            font-weight: 850;
+            color: #14532d;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-image-preview-remove {
+            border: 0;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: #dc2626;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .chat-image-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 20000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.82);
+            padding: 28px;
+        }
+
+        .chat-image-modal.active {
+            display: flex;
+        }
+
+        .chat-image-modal img {
+            max-width: min(1100px, 94vw);
+            max-height: 88vh;
+            object-fit: contain;
+            border-radius: 14px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+        }
+
         @keyframes chatSpin {
             to { transform: rotate(360deg); }
         }
 
         .chat-composer {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 48px;
+            grid-template-columns: minmax(0, 1fr) 48px 48px;
             gap: 10px;
             padding: 14px;
             border-top: 1px solid rgba(133, 146, 166, 0.18);
@@ -516,12 +622,26 @@
         </div>
         <div id="chatMessages" class="chat-messages"></div>
         <form id="chatComposer" class="chat-composer">
+            <div id="chatImagePreview" class="chat-image-preview">
+                <img id="chatImagePreviewImg" alt="Vista previa">
+                <div id="chatImagePreviewName" class="chat-image-preview-name"></div>
+                <button id="chatImagePreviewRemove" class="chat-image-preview-remove" type="button" title="Quitar imagen">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <textarea id="chatMessageInput" class="chat-composer-text" placeholder="Escribe una respuesta..." disabled></textarea>
+            <button id="chatAttachBtn" class="chat-attach-btn" type="button" disabled title="Adjuntar imagen">
+                <i class="fas fa-image"></i>
+            </button>
             <button id="chatSendBtn" class="chat-send-btn" type="submit" disabled title="Enviar">
                 <i class="fas fa-paper-plane"></i>
             </button>
+            <input id="chatImageInput" type="file" accept="image/*" hidden>
         </form>
     </section>
+    <div id="chatImageModal" class="chat-image-modal">
+        <img id="chatImageModalImg" alt="Imagen de WhatsApp">
+    </div>
 </div>
 
 <script>
@@ -536,6 +656,7 @@ function initChat() {
         messages: [],
         messagesByConversation: {},
         pendingMessages: [],
+        pendingImage: null,
         hasMoreMessages: false,
         loadingMessages: false,
         loadingOlder: false,
@@ -555,6 +676,14 @@ function initChat() {
         composer: document.getElementById('chatComposer'),
         input: document.getElementById('chatMessageInput'),
         send: document.getElementById('chatSendBtn'),
+        attach: document.getElementById('chatAttachBtn'),
+        imageInput: document.getElementById('chatImageInput'),
+        imagePreview: document.getElementById('chatImagePreview'),
+        imagePreviewImg: document.getElementById('chatImagePreviewImg'),
+        imagePreviewName: document.getElementById('chatImagePreviewName'),
+        imagePreviewRemove: document.getElementById('chatImagePreviewRemove'),
+        imageModal: document.getElementById('chatImageModal'),
+        imageModalImg: document.getElementById('chatImageModalImg'),
         newPhone: document.getElementById('chatNewPhone'),
         start: document.getElementById('chatStartBtn'),
         liveStatus: document.getElementById('chatLiveStatus'),
@@ -620,6 +749,9 @@ function initChat() {
                 .map(function(message) {
                     const copy = { ...message };
                     delete copy._status;
+                    if (String(copy.media_url || '').startsWith('data:')) {
+                        copy.media_url = '';
+                    }
                     return copy;
                 });
         });
@@ -668,6 +800,7 @@ function initChat() {
                 setSelectedHeader(state.selected);
                 els.input.disabled = false;
                 els.send.disabled = false;
+                els.attach.disabled = false;
                 renderMessages({ forceBottom: true });
             } else {
                 renderEmpty('Selecciona una conversacion');
@@ -686,6 +819,14 @@ function initChat() {
         if (msg._status === 'failed') return '<span class="chat-status-error" title="No enviado">No enviado</span>';
         if (msg.direction === 'out') return '<span class="chat-status-check" title="Enviado"><i class="fas fa-check"></i></span>';
         return '';
+    }
+
+    function renderMessageMedia(msg) {
+        if (msg.message_type !== 'image') return '';
+        if (msg.media_url) {
+            return '<img class="chat-image" src="' + escapeHtml(msg.media_url) + '" alt="Imagen enviada por WhatsApp" data-image-src="' + escapeHtml(msg.media_url) + '">';
+        }
+        return '<div class="chat-image-placeholder"><i class="fas fa-image"></i><span>Imagen</span></div>';
     }
 
     function isNearBottom() {
@@ -727,11 +868,13 @@ function initChat() {
             const statusClass = msg._status ? ' ' + msg._status : '';
             const status = messageStatusHtml(msg);
             return '<div class="chat-message-row ' + direction + statusClass + '"><div class="chat-bubble">' +
+                renderMessageMedia(msg) +
                 escapeHtml(msg.body || '') +
                 '<div class="chat-time"><span>' + escapeHtml(formatTime(msg.created_at)) + '</span>' + status + '</div>' +
             '</div></div>';
         }).join('');
         wireLoadOlderButton();
+        wireImageOpeners();
 
         if (opts.preserveScroll) {
             const delta = els.messages.scrollHeight - (opts.previousScrollHeight || 0);
@@ -746,6 +889,32 @@ function initChat() {
         if (button) button.addEventListener('click', loadOlderMessages);
     }
 
+    function wireImageOpeners() {
+        els.messages.querySelectorAll('.chat-image[data-image-src]').forEach(function(img) {
+            img.addEventListener('click', function() {
+                els.imageModalImg.src = img.dataset.imageSrc;
+                els.imageModal.classList.add('active');
+            });
+        });
+    }
+
+    function clearPendingImage() {
+        state.pendingImage = null;
+        els.imageInput.value = '';
+        els.imagePreview.classList.remove('active');
+        els.imagePreviewImg.removeAttribute('src');
+        els.imagePreviewName.textContent = '';
+    }
+
+    function fileToDataUrl(file) {
+        return new Promise(function(resolve, reject) {
+            const reader = new FileReader();
+            reader.onload = function() { resolve(reader.result); };
+            reader.onerror = function() { reject(reader.error || new Error('No se pudo leer la imagen')); };
+            reader.readAsDataURL(file);
+        });
+    }
+
     function renderList() {
         if (!state.conversations.length) {
             els.list.innerHTML = '<div class="chat-empty" style="height:auto; padding:28px 14px;"><div><strong>Sin conversaciones todavia</strong><div style="margin-top:6px;">Cuando llegue un mensaje por Evolution aparecera aqui.</div></div></div>';
@@ -755,10 +924,11 @@ function initChat() {
         els.list.innerHTML = state.conversations.map(function(item) {
             const active = state.selected && state.selected.id === item.id ? ' active' : '';
             const name = item.contact_name || item.phone || 'Cliente';
+            const preview = item.last_message || item.phone || '';
             const badge = Number(item.unread_count || 0) > 0 ? '<span class="chat-badge">' + Number(item.unread_count || 0) + '</span>' : '';
             return '<button class="chat-item' + active + '" type="button" data-id="' + escapeHtml(item.id) + '">' +
                 '<div class="chat-avatar">' + escapeHtml(initials(name, item.phone)) + '</div>' +
-                '<div><div class="chat-contact">' + escapeHtml(name) + '</div><div class="chat-preview">' + escapeHtml(item.last_message || item.phone || '') + '</div></div>' +
+                '<div><div class="chat-contact">' + escapeHtml(name) + '</div><div class="chat-preview">' + escapeHtml(preview) + '</div></div>' +
                 '<div>' + badge + '</div>' +
             '</button>';
         }).join('');
@@ -792,6 +962,7 @@ function initChat() {
         setSelectedHeader(item);
         els.input.disabled = false;
         els.send.disabled = false;
+        els.attach.disabled = false;
         state.messages = state.messagesByConversation[item.id] || [];
         state.hasMoreMessages = false;
         renderList();
@@ -860,7 +1031,12 @@ function initChat() {
         if (!state.selected) return;
 
         const text = els.input.value.trim();
-        if (!text) return;
+        if (!text && !state.pendingImage) return;
+
+        if (state.pendingImage) {
+            await sendImageMessage(text);
+            return;
+        }
 
         const tempId = 'pending-' + Date.now() + '-' + Math.random().toString(16).slice(2);
         const optimisticMessage = {
@@ -893,6 +1069,55 @@ function initChat() {
             showCustomAlert('No se pudo enviar el mensaje: ' + error.message, 'error', 'WhatsApp');
         } finally {
             els.send.disabled = false;
+            els.input.focus();
+        }
+    }
+
+    async function sendImageMessage(caption) {
+        if (!state.selected || !state.pendingImage) return;
+
+        const image = state.pendingImage;
+        const tempId = 'pending-image-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+        const optimisticMessage = {
+            id: tempId,
+            conversation_id: state.selected.id,
+            direction: 'out',
+            message_type: 'image',
+            body: caption || '',
+            media_url: image.dataUrl,
+            created_at: new Date().toISOString(),
+            _status: 'pending'
+        };
+
+        state.pendingMessages.push(optimisticMessage);
+        els.input.value = '';
+        clearPendingImage();
+        renderMessages();
+        els.send.disabled = true;
+        els.attach.disabled = true;
+
+        try {
+            await posApiRequest('/api/chat/conversations/' + encodeURIComponent(state.selected.id) + '/send-media', {
+                method: 'POST',
+                body: JSON.stringify({
+                    dataUrl: image.dataUrl,
+                    mimetype: image.mimetype,
+                    fileName: image.fileName,
+                    caption: caption || ''
+                })
+            });
+            state.pendingMessages = state.pendingMessages.filter(function(msg) {
+                return msg.id !== tempId;
+            });
+            await loadConversations(true);
+            await loadMessages({ forceBottom: true });
+        } catch (error) {
+            optimisticMessage._status = 'failed';
+            renderMessages();
+            showCustomAlert('No se pudo enviar la imagen: ' + error.message, 'error', 'WhatsApp');
+        } finally {
+            els.send.disabled = false;
+            els.attach.disabled = false;
             els.input.focus();
         }
     }
@@ -1020,6 +1245,46 @@ function initChat() {
     els.panelReload.addEventListener('click', refreshAll);
     els.composer.addEventListener('submit', sendMessage);
     els.start.addEventListener('click', startConversation);
+    els.attach.addEventListener('click', function() {
+        if (!state.selected) return;
+        els.imageInput.click();
+    });
+    els.imageInput.addEventListener('change', async function() {
+        const file = els.imageInput.files && els.imageInput.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            showCustomAlert('Selecciona una imagen valida.', 'warning', 'Imagen');
+            clearPendingImage();
+            return;
+        }
+        if (file.size > 7 * 1024 * 1024) {
+            showCustomAlert('La imagen es muy pesada. Usa una imagen menor a 7 MB.', 'warning', 'Imagen');
+            clearPendingImage();
+            return;
+        }
+        try {
+            const dataUrl = await fileToDataUrl(file);
+            state.pendingImage = {
+                dataUrl: dataUrl,
+                mimetype: file.type || 'image/jpeg',
+                fileName: file.name || 'imagen.jpg'
+            };
+            els.imagePreviewImg.src = dataUrl;
+            els.imagePreviewName.textContent = file.name || 'Imagen seleccionada';
+            els.imagePreview.classList.add('active');
+            els.input.focus();
+        } catch (error) {
+            showCustomAlert('No se pudo cargar la imagen: ' + error.message, 'error', 'Imagen');
+            clearPendingImage();
+        }
+    });
+    els.imagePreviewRemove.addEventListener('click', clearPendingImage);
+    els.imageModal.addEventListener('click', function(event) {
+        if (event.target === els.imageModal || event.target === els.imageModalImg) {
+            els.imageModal.classList.remove('active');
+            els.imageModalImg.removeAttribute('src');
+        }
+    });
     els.input.addEventListener('keydown', function(event) {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
