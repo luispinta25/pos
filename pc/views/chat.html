@@ -1,14 +1,15 @@
 <div class="chat-module">
     <style>
         .chat-module {
-            height: calc(100vh - 112px);
-            min-height: 620px;
+            height: 100%;
+            min-height: 0;
             display: grid;
             grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
             gap: 18px;
             padding: 18px;
             background: #eef2f6;
             color: #172033;
+            overflow: hidden;
         }
 
         .chat-sidebar,
@@ -24,6 +25,7 @@
             display: flex;
             flex-direction: column;
             min-width: 0;
+            min-height: 0;
         }
 
         .chat-head {
@@ -146,6 +148,8 @@
             flex: 1;
             overflow-y: auto;
             padding: 8px;
+            min-height: 0;
+            overscroll-behavior: contain;
         }
 
         .chat-item {
@@ -211,6 +215,7 @@
             display: flex;
             flex-direction: column;
             min-width: 0;
+            min-height: 0;
         }
 
         .chat-panel-top {
@@ -245,9 +250,35 @@
             flex: 1;
             overflow-y: auto;
             padding: 22px;
+            min-height: 0;
+            overscroll-behavior: contain;
             background:
                 radial-gradient(circle at top left, rgba(31, 111, 235, 0.07), transparent 28%),
                 linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%);
+        }
+
+        .chat-load-older-wrap {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+
+        .chat-load-older-btn {
+            border: 1px solid rgba(31, 111, 235, 0.22);
+            border-radius: 999px;
+            background: #fff;
+            color: #1f4f91;
+            padding: 8px 14px;
+            font-size: 0.78rem;
+            font-weight: 850;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(23, 32, 51, 0.08);
+        }
+
+        .chat-load-older-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
         }
 
         .chat-empty {
@@ -403,13 +434,14 @@
 
         @media (max-width: 900px) {
             .chat-module {
-                height: auto;
+                height: 100%;
                 grid-template-columns: 1fr;
                 min-height: 0;
+                grid-template-rows: minmax(260px, 38%) minmax(0, 1fr);
             }
 
             .chat-panel {
-                min-height: 620px;
+                min-height: 0;
             }
         }
     </style>
@@ -463,11 +495,20 @@
 
 <script>
 function initChat() {
+    const CACHE_CONTACT_LIMIT = 6;
+    const CACHE_MESSAGE_LIMIT = 25;
+    const PAGE_SIZE = 25;
+
     const state = {
         conversations: [],
         selected: null,
         messages: [],
+        messagesByConversation: {},
         pendingMessages: [],
+        hasMoreMessages: false,
+        loadingMessages: false,
+        loadingOlder: false,
+        cacheKey: 'ferrisoluciones-chat-cache-anon',
         loading: false,
         interval: null
     };
@@ -516,6 +557,95 @@ function initChat() {
         return text.slice(0, 2).toUpperCase();
     }
 
+    function getMessageTimestamp(message) {
+        return new Date(message.created_at || 0).getTime() || 0;
+    }
+
+    function dedupeMessages(messages) {
+        const map = new Map();
+        messages.forEach(function(message) {
+            const key = message.id || message.provider_message_id || [message.direction, message.created_at, message.body].join('|');
+            map.set(key, message);
+        });
+        return Array.from(map.values()).sort(function(a, b) {
+            return getMessageTimestamp(a) - getMessageTimestamp(b);
+        });
+    }
+
+    function pruneCachePayload(conversations, messagesByConversation) {
+        const cachedConversations = conversations
+            .slice()
+            .sort(function(a, b) {
+                return new Date(b.last_message_at || b.updated_at || 0) - new Date(a.last_message_at || a.updated_at || 0);
+            })
+            .slice(0, CACHE_CONTACT_LIMIT);
+
+        const allowedIds = new Set(cachedConversations.map(function(item) { return item.id; }));
+        const cachedMessages = {};
+        Object.keys(messagesByConversation || {}).forEach(function(conversationId) {
+            if (!allowedIds.has(conversationId)) return;
+            cachedMessages[conversationId] = dedupeMessages(messagesByConversation[conversationId] || [])
+                .slice(-CACHE_MESSAGE_LIMIT)
+                .map(function(message) {
+                    const copy = { ...message };
+                    delete copy._status;
+                    return copy;
+                });
+        });
+
+        return {
+            conversations: cachedConversations,
+            messagesByConversation: cachedMessages,
+            selectedId: state.selected && state.selected.id,
+            savedAt: new Date().toISOString()
+        };
+    }
+
+    async function setupCacheKey() {
+        try {
+            const client = getSupabaseClient();
+            const result = await client.auth.getSession();
+            const userId = result.data && result.data.session && result.data.session.user && result.data.session.user.id;
+            if (userId) {
+                state.cacheKey = 'ferrisoluciones-chat-cache-' + userId;
+            }
+        } catch (_) {}
+    }
+
+    function saveCache() {
+        try {
+            const payload = pruneCachePayload(state.conversations, state.messagesByConversation);
+            localStorage.setItem(state.cacheKey, JSON.stringify(payload));
+        } catch (error) {
+            console.warn('No se pudo guardar cache de chat', error);
+        }
+    }
+
+    function hydrateCache() {
+        try {
+            const raw = localStorage.getItem(state.cacheKey);
+            if (!raw) return;
+            const cached = JSON.parse(raw);
+            state.conversations = Array.isArray(cached.conversations) ? cached.conversations : [];
+            state.messagesByConversation = cached.messagesByConversation || {};
+            state.selected = state.conversations.find(function(item) {
+                return item.id === cached.selectedId;
+            }) || state.conversations[0] || null;
+            state.messages = state.selected ? (state.messagesByConversation[state.selected.id] || []) : [];
+            renderList();
+            if (state.selected) {
+                setSelectedHeader(state.selected);
+                els.input.disabled = false;
+                els.send.disabled = false;
+                renderMessages({ forceBottom: true });
+            } else {
+                renderEmpty('Selecciona una conversacion');
+            }
+        } catch (error) {
+            console.warn('No se pudo leer cache de chat', error);
+        }
+    }
+
     function renderEmpty(message) {
         els.messages.innerHTML = '<div class="chat-empty"><div><div class="chat-empty-icon"><i class="fab fa-whatsapp"></i></div><strong>' + escapeHtml(message) + '</strong><div style="margin-top:6px;">Puedes iniciar una conversacion por numero o elegir una existente.</div></div></div>';
     }
@@ -527,12 +657,23 @@ function initChat() {
         return '';
     }
 
-    function renderMessages() {
+    function isNearBottom() {
+        return els.messages.scrollHeight - els.messages.scrollTop - els.messages.clientHeight < 96;
+    }
+
+    function setSelectedHeader(item) {
+        els.selectedName.textContent = item.contact_name || item.phone || 'Cliente';
+        els.selectedMeta.textContent = item.phone || item.remote_jid || '';
+    }
+
+    function renderMessages(options) {
+        const opts = options || {};
         if (!state.selected) {
             renderEmpty('Selecciona una conversacion');
             return;
         }
 
+        const shouldStickToBottom = opts.forceBottom || isNearBottom();
         const selectedId = state.selected.id;
         const pending = state.pendingMessages.filter(function(msg) {
             return msg.conversation_id === selectedId;
@@ -540,11 +681,17 @@ function initChat() {
         const messages = state.messages.concat(pending);
 
         if (!messages.length) {
-            renderEmpty('Sin mensajes en esta conversacion');
+            const older = state.hasMoreMessages ? '<div class="chat-load-older-wrap"><button id="chatLoadOlderBtn" class="chat-load-older-btn" type="button">Cargar anteriores</button></div>' : '';
+            els.messages.innerHTML = older + '<div class="chat-empty"><div><div class="chat-empty-icon"><i class="fab fa-whatsapp"></i></div><strong>Sin mensajes en esta conversacion</strong></div></div>';
+            wireLoadOlderButton();
             return;
         }
 
-        els.messages.innerHTML = messages.map(function(msg) {
+        const olderButton = state.hasMoreMessages
+            ? '<div class="chat-load-older-wrap"><button id="chatLoadOlderBtn" class="chat-load-older-btn" type="button"' + (state.loadingOlder ? ' disabled' : '') + '>' + (state.loadingOlder ? 'Cargando...' : 'Cargar anteriores') + '</button></div>'
+            : '';
+
+        els.messages.innerHTML = olderButton + messages.map(function(msg) {
             const direction = msg.direction === 'out' ? 'out' : 'in';
             const statusClass = msg._status ? ' ' + msg._status : '';
             const status = messageStatusHtml(msg);
@@ -553,7 +700,19 @@ function initChat() {
                 '<div class="chat-time"><span>' + escapeHtml(formatTime(msg.created_at)) + '</span>' + status + '</div>' +
             '</div></div>';
         }).join('');
-        els.messages.scrollTop = els.messages.scrollHeight;
+        wireLoadOlderButton();
+
+        if (opts.preserveScroll) {
+            const delta = els.messages.scrollHeight - (opts.previousScrollHeight || 0);
+            els.messages.scrollTop = delta + (opts.previousScrollTop || 0);
+        } else if (shouldStickToBottom) {
+            els.messages.scrollTop = els.messages.scrollHeight;
+        }
+    }
+
+    function wireLoadOlderButton() {
+        const button = document.getElementById('chatLoadOlderBtn');
+        if (button) button.addEventListener('click', loadOlderMessages);
     }
 
     function renderList() {
@@ -594,28 +753,75 @@ function initChat() {
         }
 
         renderList();
+        saveCache();
     }
 
     async function selectConversation(item) {
         state.selected = item;
-        els.selectedName.textContent = item.contact_name || item.phone || 'Cliente';
-        els.selectedMeta.textContent = item.phone || item.remote_jid || '';
+        setSelectedHeader(item);
         els.input.disabled = false;
         els.send.disabled = false;
+        state.messages = state.messagesByConversation[item.id] || [];
+        state.hasMoreMessages = false;
         renderList();
-        await loadMessages();
+        renderMessages({ forceBottom: true });
+        saveCache();
+        await loadMessages({ forceBottom: true });
     }
 
-    async function loadMessages() {
+    async function loadMessages(options) {
+        const opts = options || {};
         if (!state.selected) {
             renderEmpty('Selecciona una conversacion');
             return;
         }
 
-        const result = await posApiRequest('/api/chat/conversations/' + encodeURIComponent(state.selected.id) + '/messages', { method: 'GET' });
-        state.messages = result.data || [];
+        state.loadingMessages = true;
+        const wasNearBottom = isNearBottom();
+        const params = new URLSearchParams();
+        params.set('limit', String(PAGE_SIZE));
+        if (opts.before) params.set('before', opts.before);
 
-        renderMessages();
+        const previousScrollHeight = els.messages.scrollHeight;
+        const previousScrollTop = els.messages.scrollTop;
+        const result = await posApiRequest('/api/chat/conversations/' + encodeURIComponent(state.selected.id) + '/messages?' + params.toString(), { method: 'GET' });
+        const rows = result.data || [];
+
+        if (opts.appendOlder) {
+            state.messages = dedupeMessages(rows.concat(state.messages));
+        } else {
+            state.messages = dedupeMessages(rows);
+        }
+
+        state.hasMoreMessages = Boolean(result.hasMore);
+        state.messagesByConversation[state.selected.id] = state.messages.slice(-CACHE_MESSAGE_LIMIT);
+        state.loadingMessages = false;
+        saveCache();
+
+        renderMessages({
+            forceBottom: Boolean(opts.forceBottom || (!opts.appendOlder && wasNearBottom)),
+            preserveScroll: Boolean(opts.appendOlder),
+            previousScrollHeight: previousScrollHeight,
+            previousScrollTop: previousScrollTop
+        });
+    }
+
+    async function loadOlderMessages() {
+        if (!state.selected || state.loadingOlder || !state.messages.length) return;
+
+        state.loadingOlder = true;
+        renderMessages({ preserveScroll: true, previousScrollHeight: els.messages.scrollHeight, previousScrollTop: els.messages.scrollTop });
+        try {
+            await loadMessages({
+                before: state.messages[0].created_at,
+                appendOlder: true
+            });
+        } catch (error) {
+            showCustomAlert('No se pudieron cargar mensajes anteriores: ' + error.message, 'error', 'WhatsApp');
+        } finally {
+            state.loadingOlder = false;
+            renderMessages({ preserveScroll: true, previousScrollHeight: els.messages.scrollHeight, previousScrollTop: els.messages.scrollTop });
+        }
     }
 
     async function sendMessage(event) {
@@ -649,7 +855,7 @@ function initChat() {
                 return msg.id !== tempId;
             });
             await loadConversations(true);
-            await loadMessages();
+        await loadMessages({ forceBottom: true });
         } catch (error) {
             optimisticMessage._status = 'failed';
             renderMessages();
@@ -791,8 +997,12 @@ function initChat() {
     });
 
     renderEmpty('Selecciona una conversacion');
-    refreshAll();
-    connectLiveStream();
+    (async function bootstrapChat() {
+        await setupCacheKey();
+        hydrateCache();
+        await refreshAll();
+        connectLiveStream();
+    })();
     clearInterval(window.__posChatRefreshInterval);
     window.__posChatRefreshInterval = setInterval(refreshAll, 60000);
 }
