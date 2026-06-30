@@ -906,12 +906,91 @@ function initChat() {
         els.imagePreviewName.textContent = '';
     }
 
-    function fileToDataUrl(file) {
+    function canvasToBlob(canvas, type, quality) {
+        return new Promise(function(resolve) {
+            canvas.toBlob(function(blob) {
+                resolve(blob);
+            }, type, quality);
+        });
+    }
+
+    function blobToDataUrl(blob) {
         return new Promise(function(resolve, reject) {
             const reader = new FileReader();
             reader.onload = function() { resolve(reader.result); };
             reader.onerror = function() { reject(reader.error || new Error('No se pudo leer la imagen')); };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    function loadImageFromFile(file) {
+        return new Promise(function(resolve, reject) {
+            const url = URL.createObjectURL(file);
+            const image = new Image();
+            image.onload = function() {
+                URL.revokeObjectURL(url);
+                resolve(image);
+            };
+            image.onerror = function() {
+                URL.revokeObjectURL(url);
+                reject(new Error('No se pudo procesar la imagen'));
+            };
+            image.src = url;
+        });
+    }
+
+    async function compressImageForWhatsApp(file) {
+        const image = await loadImageFromFile(file);
+        const maxSide = 1600;
+        const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+        const width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+        const height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext('2d', { alpha: false });
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, width, height);
+        context.drawImage(image, 0, 0, width, height);
+
+        let blob = await canvasToBlob(canvas, 'image/webp', 0.8);
+        let mimetype = 'image/webp';
+
+        if (!blob || blob.type !== 'image/webp') {
+            blob = await canvasToBlob(canvas, 'image/jpeg', 0.82);
+            mimetype = 'image/jpeg';
+        }
+
+        if (!blob) {
+            throw new Error('No se pudo comprimir la imagen');
+        }
+
+        return {
+            dataUrl: await blobToDataUrl(blob),
+            mimetype: mimetype,
+            fileName: (file.name || 'imagen').replace(/\.[^.]+$/, '') + (mimetype === 'image/webp' ? '.webp' : '.jpg'),
+            originalSize: file.size,
+            compressedSize: blob.size
+        };
+    }
+
+    function formatFileSize(bytes) {
+        if (!bytes) return '0 KB';
+        if (bytes >= 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+        return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+    }
+
+    function validateCompressedImage(image) {
+        if (image.dataUrl.length > 10 * 1024 * 1024) {
+            throw new Error('La imagen sigue siendo muy pesada despues de comprimirla.');
+        }
+        return image;
+    }
+
+    function fileToDataUrl(file) {
+        return compressImageForWhatsApp(file).then(validateCompressedImage);
+    }
         });
     }
 
@@ -1257,20 +1336,20 @@ function initChat() {
             clearPendingImage();
             return;
         }
-        if (file.size > 7 * 1024 * 1024) {
-            showCustomAlert('La imagen es muy pesada. Usa una imagen menor a 7 MB.', 'warning', 'Imagen');
+        if (file.size > 12 * 1024 * 1024) {
+            showCustomAlert('La imagen es muy pesada. Usa una imagen menor a 12 MB.', 'warning', 'Imagen');
             clearPendingImage();
             return;
         }
         try {
-            const dataUrl = await fileToDataUrl(file);
+            const image = await fileToDataUrl(file);
             state.pendingImage = {
-                dataUrl: dataUrl,
-                mimetype: file.type || 'image/jpeg',
-                fileName: file.name || 'imagen.jpg'
+                dataUrl: image.dataUrl,
+                mimetype: image.mimetype,
+                fileName: image.fileName
             };
-            els.imagePreviewImg.src = dataUrl;
-            els.imagePreviewName.textContent = file.name || 'Imagen seleccionada';
+            els.imagePreviewImg.src = image.dataUrl;
+            els.imagePreviewName.textContent = (file.name || 'Imagen seleccionada') + ' · ' + formatFileSize(image.compressedSize);
             els.imagePreview.classList.add('active');
             els.input.focus();
         } catch (error) {
