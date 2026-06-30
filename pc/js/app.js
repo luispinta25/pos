@@ -6,7 +6,16 @@
 // Estado de la aplicación
 const appState = {
     currentModule: null,
-    moduleCache: {}
+    moduleCache: {},
+    chatUnreadTotal: 0
+};
+
+const chatGlobalState = {
+    abortController: null,
+    reconnectTimer: null,
+    refreshTimer: null,
+    lastNotifiedAt: {},
+    started: false
 };
 
 // =====================================================
@@ -242,6 +251,203 @@ function reloadCurrentModule() {
 }
 
 // =====================================================
+// NOTIFICACIONES GLOBALES DE WHATSAPP
+// =====================================================
+
+function parseServerSentEvent(rawEvent) {
+    const event = { name: 'message', data: {} };
+    if (!rawEvent || rawEvent.charAt(0) === ':') return event;
+
+    rawEvent.split('\n').forEach(line => {
+        if (line.indexOf('event: ') === 0) {
+            event.name = line.replace('event: ', '').trim() || 'message';
+        }
+        if (line.indexOf('data: ') === 0) {
+            const rawData = line.replace('data: ', '').trim();
+            try {
+                event.data = JSON.parse(rawData);
+            } catch (_) {
+                event.data = {};
+            }
+        }
+    });
+
+    return event;
+}
+
+function getChatNavButton() {
+    return document.querySelector('[data-module="chat"]');
+}
+
+function updateChatUnreadBadge(total) {
+    appState.chatUnreadTotal = Math.max(0, Number(total || 0));
+    const button = getChatNavButton();
+    if (!button) return;
+
+    let badge = button.querySelector('.nav-chat-badge');
+    if (!appState.chatUnreadTotal) {
+        if (badge) badge.remove();
+        return;
+    }
+
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'nav-chat-badge';
+        button.appendChild(badge);
+    }
+
+    badge.textContent = appState.chatUnreadTotal > 99 ? '99+' : String(appState.chatUnreadTotal);
+}
+
+async function refreshChatUnreadBadge() {
+    try {
+        const result = await posApiRequest('/api/chat/conversations?', { method: 'GET' });
+        const conversations = result.data || [];
+        const total = conversations.reduce((sum, item) => sum + Number(item.unread_count || 0), 0);
+        updateChatUnreadBadge(total);
+    } catch (error) {
+        console.warn('[WhatsApp] No se pudo actualizar el contador global', error);
+    }
+}
+
+function scheduleChatUnreadRefresh() {
+    clearTimeout(chatGlobalState.refreshTimer);
+    chatGlobalState.refreshTimer = setTimeout(refreshChatUnreadBadge, 350);
+}
+
+function showWhatsappNotification(payload) {
+    if (!payload || payload.type !== 'message.in') return;
+    if (appState.currentModule === 'chat') return;
+
+    const key = payload.conversationId || payload.phone || 'unknown';
+    const now = Date.now();
+    if (chatGlobalState.lastNotifiedAt[key] && now - chatGlobalState.lastNotifiedAt[key] < 2500) {
+        return;
+    }
+    chatGlobalState.lastNotifiedAt[key] = now;
+
+    let container = document.getElementById('whatsappGlobalToastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'whatsappGlobalToastContainer';
+        container.className = 'whatsapp-global-toast-container';
+        document.body.appendChild(container);
+    }
+
+    const contact = payload.contactName || payload.phone || 'Cliente';
+    const toast = document.createElement('button');
+    toast.type = 'button';
+    toast.className = 'whatsapp-global-toast';
+    toast.innerHTML = `
+        <span class="whatsapp-global-toast-icon"><i class="fab fa-whatsapp"></i></span>
+        <span class="whatsapp-global-toast-body">
+            <span class="whatsapp-global-toast-title">Nuevo mensaje</span>
+            <span class="whatsapp-global-toast-text">${escapeToastText(contact)}</span>
+        </span>
+        <span class="whatsapp-global-toast-action">Abrir</span>
+    `;
+
+    toast.addEventListener('click', () => {
+        window.__posChatTargetConversationId = payload.conversationId || null;
+        toast.remove();
+        loadModule('chat');
+    });
+
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('closing');
+        setTimeout(() => toast.remove(), 260);
+    }, 7000);
+}
+
+function escapeToastText(value) {
+    return String(value || '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[char]);
+}
+
+async function startGlobalChatStream() {
+    if (chatGlobalState.started) return;
+    chatGlobalState.started = true;
+    await connectGlobalChatStream();
+    refreshChatUnreadBadge();
+}
+
+async function connectGlobalChatStream() {
+    if (chatGlobalState.abortController) {
+        chatGlobalState.abortController.abort();
+    }
+    clearTimeout(chatGlobalState.reconnectTimer);
+
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (!client) {
+        chatGlobalState.reconnectTimer = setTimeout(connectGlobalChatStream, 5000);
+        return;
+    }
+
+    try {
+        const sessionResult = await client.auth.getSession();
+        const token = sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+        if (!token) {
+            chatGlobalState.reconnectTimer = setTimeout(connectGlobalChatStream, 5000);
+            return;
+        }
+
+        const abortController = new AbortController();
+        chatGlobalState.abortController = abortController;
+
+        const response = await fetch(POS_API_BASE_URL + '/api/chat/stream', {
+            method: 'GET',
+            headers: { Authorization: 'Bearer ' + token },
+            signal: abortController.signal
+        });
+
+        if (!response.ok || !response.body) {
+            throw new Error('Stream global no disponible');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (!abortController.signal.aborted) {
+            const result = await reader.read();
+            if (result.done) break;
+            buffer += decoder.decode(result.value, { stream: true });
+
+            let separatorIndex = buffer.indexOf('\n\n');
+            while (separatorIndex >= 0) {
+                const rawEvent = buffer.slice(0, separatorIndex);
+                buffer = buffer.slice(separatorIndex + 2);
+                handleGlobalChatStreamEvent(rawEvent);
+                separatorIndex = buffer.indexOf('\n\n');
+            }
+        }
+    } catch (error) {
+        if (!chatGlobalState.abortController?.signal.aborted) {
+            console.warn('[WhatsApp] Reconectando stream global', error);
+        }
+    } finally {
+        if (!chatGlobalState.abortController?.signal.aborted) {
+            chatGlobalState.reconnectTimer = setTimeout(connectGlobalChatStream, 4000);
+        }
+    }
+}
+
+function handleGlobalChatStreamEvent(rawEvent) {
+    const event = parseServerSentEvent(rawEvent);
+    if (event.name === 'ping') return;
+    if (event.name !== 'message' && event.name !== 'conversation') return;
+
+    scheduleChatUnreadRefresh();
+    showWhatsappNotification(event.data || {});
+}
+
+// =====================================================
 // UTILIDADES GLOBALES
 // =====================================================
 
@@ -448,6 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 !mutation.target.classList.contains('hidden')) {
                 loadModule('punto-venta');
                 startTransfAlertPollingPC();
+                startGlobalChatStream();
                 observer.disconnect();
             }
         });

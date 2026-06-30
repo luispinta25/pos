@@ -1227,6 +1227,16 @@ function initChat() {
         state.loading = true;
         try {
             await loadConversations(true);
+            if (window.__posChatTargetConversationId) {
+                const target = state.conversations.find(function(item) {
+                    return item.id === window.__posChatTargetConversationId;
+                });
+                if (target) {
+                    window.__posChatTargetConversationId = null;
+                    await selectConversation(target);
+                    return;
+                }
+            }
             if (state.selected) await loadMessages();
             if (!state.selected) renderEmpty('Selecciona una conversacion');
         } catch (error) {

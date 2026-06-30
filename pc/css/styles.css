@@ -230,6 +230,128 @@ body.loaded {
     box-shadow: 0 0 0 4px rgba(212, 160, 23, 0.35);
 }
 
+.nav-chat-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #fff;
+    border: 2px solid #1f1f1f;
+    font-size: 0.68rem;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 8px 18px rgba(239, 68, 68, 0.32);
+}
+
+.whatsapp-global-toast-container {
+    position: fixed;
+    right: 20px;
+    bottom: 22px;
+    z-index: 12000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(360px, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.whatsapp-global-toast {
+    width: 100%;
+    border: 1px solid rgba(15, 118, 110, 0.16);
+    border-radius: 14px;
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.97);
+    color: #172033;
+    box-shadow: 0 18px 44px rgba(23, 32, 51, 0.22);
+    cursor: pointer;
+    text-align: left;
+    pointer-events: auto;
+    animation: whatsappToastIn 0.26s ease-out;
+}
+
+.whatsapp-global-toast.closing {
+    animation: whatsappToastOut 0.24s ease-in forwards;
+}
+
+.whatsapp-global-toast:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 22px 52px rgba(23, 32, 51, 0.28);
+}
+
+.whatsapp-global-toast-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: #0f766e;
+    color: #fff;
+    font-size: 1.25rem;
+}
+
+.whatsapp-global-toast-body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.whatsapp-global-toast-title {
+    font-size: 0.82rem;
+    font-weight: 900;
+    color: #0f766e;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.whatsapp-global-toast-text {
+    font-size: 0.92rem;
+    font-weight: 750;
+    color: #172033;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.whatsapp-global-toast-action {
+    color: #1f6feb;
+    font-size: 0.82rem;
+    font-weight: 900;
+}
+
+@keyframes whatsappToastIn {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes whatsappToastOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+    }
+}
+
 .nav-user {
     display: flex;
     align-items: center;
