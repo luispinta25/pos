@@ -121,6 +121,7 @@ async function loadModule(moduleName) {
         // Mostrar loading rediseñado
         const container = document.getElementById('moduleContainer');
         document.getElementById('btnWhatsappBannerFlotante')?.remove();
+        document.body.classList.toggle('chat-module-active', moduleName === 'chat');
         if (window.__posChatRefreshInterval && moduleName !== 'chat') {
             clearInterval(window.__posChatRefreshInterval);
             window.__posChatRefreshInterval = null;
@@ -209,6 +210,7 @@ async function loadModule(moduleName) {
         appState.currentModule = moduleName;
 
     } catch (error) {
+        document.body.classList.remove('chat-module-active');
         document.getElementById('moduleContainer').innerHTML = `
             <div class="container">
                 <div class="alert alert-danger">
