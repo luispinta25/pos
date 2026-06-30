@@ -309,6 +309,44 @@
             color: rgba(23, 32, 51, 0.56);
             font-weight: 700;
             text-align: right;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+
+        .chat-status-spinner {
+            width: 11px;
+            height: 11px;
+            border: 2px solid rgba(20, 83, 45, 0.25);
+            border-top-color: rgba(20, 83, 45, 0.9);
+            border-radius: 999px;
+            display: inline-block;
+            animation: chatSpin 0.75s linear infinite;
+        }
+
+        .chat-status-check {
+            color: #0f766e;
+            font-size: 0.78rem;
+        }
+
+        .chat-status-error {
+            color: #dc2626;
+            font-size: 0.78rem;
+            font-weight: 900;
+        }
+
+        .chat-message-row.pending .chat-bubble {
+            opacity: 0.86;
+        }
+
+        .chat-message-row.failed .chat-bubble {
+            background: #fee2e2;
+            color: #7f1d1d;
+        }
+
+        @keyframes chatSpin {
+            to { transform: rotate(360deg); }
         }
 
         .chat-composer {
@@ -428,6 +466,8 @@ function initChat() {
     const state = {
         conversations: [],
         selected: null,
+        messages: [],
+        pendingMessages: [],
         loading: false,
         interval: null
     };
@@ -478,6 +518,42 @@ function initChat() {
 
     function renderEmpty(message) {
         els.messages.innerHTML = '<div class="chat-empty"><div><div class="chat-empty-icon"><i class="fab fa-whatsapp"></i></div><strong>' + escapeHtml(message) + '</strong><div style="margin-top:6px;">Puedes iniciar una conversacion por numero o elegir una existente.</div></div></div>';
+    }
+
+    function messageStatusHtml(msg) {
+        if (msg._status === 'pending') return '<span class="chat-status-spinner" title="Enviando"></span>';
+        if (msg._status === 'failed') return '<span class="chat-status-error" title="No enviado">No enviado</span>';
+        if (msg.direction === 'out') return '<span class="chat-status-check" title="Enviado"><i class="fas fa-check"></i></span>';
+        return '';
+    }
+
+    function renderMessages() {
+        if (!state.selected) {
+            renderEmpty('Selecciona una conversacion');
+            return;
+        }
+
+        const selectedId = state.selected.id;
+        const pending = state.pendingMessages.filter(function(msg) {
+            return msg.conversation_id === selectedId;
+        });
+        const messages = state.messages.concat(pending);
+
+        if (!messages.length) {
+            renderEmpty('Sin mensajes en esta conversacion');
+            return;
+        }
+
+        els.messages.innerHTML = messages.map(function(msg) {
+            const direction = msg.direction === 'out' ? 'out' : 'in';
+            const statusClass = msg._status ? ' ' + msg._status : '';
+            const status = messageStatusHtml(msg);
+            return '<div class="chat-message-row ' + direction + statusClass + '"><div class="chat-bubble">' +
+                escapeHtml(msg.body || '') +
+                '<div class="chat-time"><span>' + escapeHtml(formatTime(msg.created_at)) + '</span>' + status + '</div>' +
+            '</div></div>';
+        }).join('');
+        els.messages.scrollTop = els.messages.scrollHeight;
     }
 
     function renderList() {
@@ -537,21 +613,9 @@ function initChat() {
         }
 
         const result = await posApiRequest('/api/chat/conversations/' + encodeURIComponent(state.selected.id) + '/messages', { method: 'GET' });
-        const messages = result.data || [];
+        state.messages = result.data || [];
 
-        if (!messages.length) {
-            renderEmpty('Sin mensajes en esta conversacion');
-            return;
-        }
-
-        els.messages.innerHTML = messages.map(function(msg) {
-            const direction = msg.direction === 'out' ? 'out' : 'in';
-            return '<div class="chat-message-row ' + direction + '"><div class="chat-bubble">' +
-                escapeHtml(msg.body || '') +
-                '<div class="chat-time">' + escapeHtml(formatTime(msg.created_at)) + '</div>' +
-            '</div></div>';
-        }).join('');
-        els.messages.scrollTop = els.messages.scrollHeight;
+        renderMessages();
     }
 
     async function sendMessage(event) {
@@ -561,16 +625,34 @@ function initChat() {
         const text = els.input.value.trim();
         if (!text) return;
 
+        const tempId = 'pending-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+        const optimisticMessage = {
+            id: tempId,
+            conversation_id: state.selected.id,
+            direction: 'out',
+            body: text,
+            created_at: new Date().toISOString(),
+            _status: 'pending'
+        };
+
+        state.pendingMessages.push(optimisticMessage);
+        els.input.value = '';
+        renderMessages();
         els.send.disabled = true;
         try {
             await posApiRequest('/api/chat/conversations/' + encodeURIComponent(state.selected.id) + '/send-text', {
                 method: 'POST',
                 body: JSON.stringify({ text: text })
             });
-            els.input.value = '';
+            optimisticMessage._status = 'sent';
+            state.pendingMessages = state.pendingMessages.filter(function(msg) {
+                return msg.id !== tempId;
+            });
             await loadConversations(true);
             await loadMessages();
         } catch (error) {
+            optimisticMessage._status = 'failed';
+            renderMessages();
             showCustomAlert('No se pudo enviar el mensaje: ' + error.message, 'error', 'WhatsApp');
         } finally {
             els.send.disabled = false;
