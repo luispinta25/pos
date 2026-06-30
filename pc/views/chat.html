@@ -991,8 +991,6 @@ function initChat() {
     function fileToDataUrl(file) {
         return compressImageForWhatsApp(file).then(validateCompressedImage);
     }
-        });
-    }
 
     function renderList() {
         if (!state.conversations.length) {
