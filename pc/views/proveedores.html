@@ -18,6 +18,10 @@
                 
                 <div class="header-center">
                     <div class="mode-tabs">
+                        <button class="mode-tab" data-mode="dashboard" onclick="cambiarModoProveedor('dashboard')">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Dashboard</span>
+                        </button>
                         <button class="mode-tab active" data-mode="facturas" onclick="cambiarModoProveedor('facturas')">
                             <i class="fas fa-file-invoice-dollar"></i>
                             <span>Facturas</span>
@@ -53,7 +57,94 @@
         </div>
         
         
-        <div class="filters-bar">
+        <div id="proveedoresDashboardPanel" class="proveedores-dashboard hidden">
+            <div class="dashboard-toolbar">
+                <div>
+                    <h2>Prioridad de proveedores</h2>
+                    <p>Lectura operativa de deuda, vencimientos y ventas por proveedor.</p>
+                </div>
+                <div class="dashboard-controls">
+                    <label>
+                        Año
+                        <select id="dashboardProveedorAnio" class="form-select"></select>
+                    </label>
+                    <button class="btn btn-secondary" onclick="recargarDashboardProveedores()">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualizar
+                    </button>
+                </div>
+            </div>
+
+            <div id="dashboardKpisProveedores" class="dashboard-kpi-grid"></div>
+
+            <div class="dashboard-main-grid">
+                <section class="dashboard-card dashboard-card-wide">
+                    <div class="dashboard-card-header">
+                        <div>
+                            <h3>Proveedores a priorizar</h3>
+                            <p>Ordenado por saldo vencido, antigüedad y facturas abiertas.</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-table-wrap">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Proveedor</th>
+                                    <th>Prioridad</th>
+                                    <th>Saldo</th>
+                                    <th>Vencido</th>
+                                    <th>Máx. atraso</th>
+                                    <th>Ventas año</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboardPrioridadBody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <div>
+                            <h3>Vencimientos</h3>
+                            <p>Semáforo ajustado a la operación real.</p>
+                        </div>
+                    </div>
+                    <div id="dashboardBucketsProveedores" class="dashboard-buckets"></div>
+                </section>
+
+                <section class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <div>
+                            <h3>Esta semana</h3>
+                            <p>Facturas vencidas y próximas a vencer.</p>
+                        </div>
+                    </div>
+                    <div id="dashboardSemanaProveedores" class="dashboard-week-list"></div>
+                </section>
+
+                <section class="dashboard-card dashboard-card-wide">
+                    <div class="dashboard-card-header">
+                        <div>
+                            <h3>Ventas asociadas por proveedor</h3>
+                            <p>Calculado con proveedor actual del producto en inventario.</p>
+                        </div>
+                    </div>
+                    <div id="dashboardVentasProveedores" class="dashboard-sales-list"></div>
+                </section>
+
+                <section class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <div>
+                            <h3>Recomendaciones</h3>
+                            <p>Acciones sugeridas sin metas irreales.</p>
+                        </div>
+                    </div>
+                    <div id="dashboardRecomendacionesProveedores" class="dashboard-recommendations"></div>
+                </section>
+            </div>
+        </div>
+
+        <div class="filters-bar" id="proveedoresFacturasFilters">
             <div class="filter-group">
                 <label class="filter-label">
                     <i class="fas fa-building"></i>
@@ -103,7 +194,7 @@
         </div>
 
         
-        <div class="content-wrapper">
+        <div class="content-wrapper" id="proveedoresFacturasContent">
             <div class="facturas-scroll-container">
                 <div id="facturasGrid" class="facturas-grid">
                     
@@ -900,6 +991,253 @@
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         gap: 20px;
+    }
+
+    .proveedores-dashboard {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        min-height: 0;
+    }
+
+    .proveedores-dashboard.hidden {
+        display: none;
+    }
+
+    .dashboard-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        background: var(--bg-white);
+        border: 1px solid rgba(17, 24, 39, 0.08);
+        border-radius: var(--border-radius-md);
+        padding: 18px 20px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .dashboard-toolbar h2,
+    .dashboard-card h3 {
+        margin: 0;
+        color: var(--text-primary);
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+
+    .dashboard-toolbar h2 {
+        font-size: 1.25rem;
+    }
+
+    .dashboard-toolbar p,
+    .dashboard-card-header p {
+        margin: 4px 0 0;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .dashboard-controls {
+        display: flex;
+        align-items: end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-controls label {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        color: var(--text-secondary);
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .dashboard-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(150px, 1fr));
+        gap: 12px;
+    }
+
+    .dashboard-kpi {
+        background: var(--bg-white);
+        border: 1px solid rgba(17, 24, 39, 0.08);
+        border-left: 5px solid var(--kpi-color, var(--color-accent));
+        border-radius: var(--border-radius-md);
+        padding: 16px;
+        box-shadow: var(--shadow-sm);
+        min-height: 104px;
+    }
+
+    .dashboard-kpi-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .dashboard-kpi-value {
+        margin-top: 10px;
+        color: var(--text-primary);
+        font-size: 1.35rem;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .dashboard-kpi-note {
+        margin-top: 6px;
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .dashboard-main-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.95fr);
+        gap: 16px;
+        align-items: start;
+    }
+
+    .dashboard-card {
+        background: var(--bg-white);
+        border: 1px solid rgba(17, 24, 39, 0.08);
+        border-radius: var(--border-radius-md);
+        box-shadow: var(--shadow-sm);
+        padding: 18px;
+        min-width: 0;
+    }
+
+    .dashboard-card-wide {
+        grid-column: span 1;
+    }
+
+    .dashboard-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .dashboard-table-wrap {
+        overflow-x: auto;
+    }
+
+    .dashboard-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 760px;
+        font-size: 0.86rem;
+    }
+
+    .dashboard-table th {
+        text-align: left;
+        background: #111827;
+        color: #ffffff;
+        padding: 11px 10px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .dashboard-table td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #e5e7eb;
+        color: var(--text-primary);
+        vertical-align: middle;
+    }
+
+    .dashboard-table tr:hover td {
+        background: #f8fafc;
+    }
+
+    .priority-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 5px 9px;
+        font-size: 0.74rem;
+        font-weight: 900;
+        white-space: nowrap;
+        color: #111827;
+        background: #e5e7eb;
+    }
+
+    .priority-pill.al-dia { background: #dcfce7; color: #166534; }
+    .priority-pill.seguimiento { background: #e0f2fe; color: #075985; }
+    .priority-pill.atencion { background: #fef3c7; color: #92400e; }
+    .priority-pill.alta { background: #ffedd5; color: #9a3412; }
+    .priority-pill.critica { background: #fee2e2; color: #991b1b; }
+    .priority-pill.riesgo { background: #7f1d1d; color: #ffffff; }
+
+    .dashboard-buckets,
+    .dashboard-week-list,
+    .dashboard-sales-list,
+    .dashboard-recommendations {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .bucket-row,
+    .week-row,
+    .sales-row,
+    .recommendation-row {
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 11px 12px;
+        background: #ffffff;
+    }
+
+    .bucket-row {
+        border-left: 5px solid var(--bucket-color, #94a3b8);
+    }
+
+    .bucket-row-main,
+    .week-row-main,
+    .sales-row-main {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: var(--text-primary);
+        font-weight: 850;
+    }
+
+    .bucket-row-sub,
+    .week-row-sub,
+    .sales-row-sub,
+    .recommendation-row {
+        color: var(--text-secondary);
+        font-size: 0.82rem;
+        line-height: 1.35;
+    }
+
+    .sales-bar {
+        height: 7px;
+        margin-top: 9px;
+        background: #e5e7eb;
+        border-radius: 99px;
+        overflow: hidden;
+    }
+
+    .sales-bar span {
+        display: block;
+        height: 100%;
+        width: var(--sales-width, 0%);
+        background: linear-gradient(90deg, #111827 0%, #d4a017 100%);
+        border-radius: inherit;
+    }
+
+    @media (max-width: 1200px) {
+        .dashboard-kpi-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .dashboard-main-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
     .factura-card {
@@ -1856,8 +2194,17 @@ let proveedoresData = {
     facturas: [],
     proveedores: [],
     notas: [],
+    dashboard: {
+        cargado: false,
+        inventario: [],
+        ventas: [],
+        ventasDetalle: [],
+        pagos: [],
+        anio: new Date().getFullYear(),
+        resumen: null
+    },
     facturaActual: null,
-    modoActual: 'facturas' // 'facturas' o 'productos'
+    modoActual: 'facturas'
 };
 
 // CAMBIO DE MODO
@@ -1878,7 +2225,17 @@ async function cambiarModoProveedor(modo) {
     });
     
     // Mostrar/ocultar vistas
-    if (modo === 'facturas') {
+    if (modo === 'dashboard') {
+        const vistaFacturas = document.getElementById('vistaFacturas');
+        const vistaProductos = document.getElementById('vistaProductos');
+        const vistaComparador = document.getElementById('vistaComparador');
+
+        if (vistaFacturas) vistaFacturas.classList.remove('hidden');
+        if (vistaProductos) vistaProductos.classList.add('hidden');
+        if (vistaComparador) vistaComparador.classList.add('hidden');
+        mostrarPanelDashboardProveedores(true);
+        await cargarDashboardProveedores();
+    } else if (modo === 'facturas') {
         const vistaFacturas = document.getElementById('vistaFacturas');
         const vistaProductos = document.getElementById('vistaProductos');
         const vistaComparador = document.getElementById('vistaComparador');
@@ -1886,6 +2243,7 @@ async function cambiarModoProveedor(modo) {
         if (vistaFacturas) vistaFacturas.classList.remove('hidden');
         if (vistaProductos) vistaProductos.classList.add('hidden');
         if (vistaComparador) vistaComparador.classList.add('hidden');
+        mostrarPanelDashboardProveedores(false);
     } else if (modo === 'productos') {
         const vistaFacturas = document.getElementById('vistaFacturas');
         const vistaProductos = document.getElementById('vistaProductos');
@@ -1894,6 +2252,7 @@ async function cambiarModoProveedor(modo) {
         if (vistaFacturas) vistaFacturas.classList.add('hidden');
         if (vistaProductos) vistaProductos.classList.remove('hidden');
         if (vistaComparador) vistaComparador.classList.add('hidden');
+        mostrarPanelDashboardProveedores(false);
         
         // Cargar módulo de ingreso de facturas
         await cargarModuloIngresoFactura();
@@ -1919,6 +2278,7 @@ async function cambiarModoProveedor(modo) {
         if (vistaFacturas) vistaFacturas.classList.add('hidden');
         if (vistaProductos) vistaProductos.classList.add('hidden');
         if (vistaComparador) vistaComparador.classList.remove('hidden');
+        mostrarPanelDashboardProveedores(false);
         
         // Cargar módulo de comparador
         await cargarModuloComparador();
@@ -2043,6 +2403,8 @@ async function initProveedores() {
         cargarFacturasData(),
         cargarNotasData()
     ]);
+
+    prepararSelectorAnioDashboard();
     
     // Configurar event listeners
     setupProveedoresListeners();
@@ -2075,6 +2437,10 @@ function setupProveedoresListeners() {
     // Selectores de filtro
     document.getElementById('proveedorSelector')?.addEventListener('change', filtrarFacturasProveedores);
     document.getElementById('estadoSelector')?.addEventListener('change', filtrarFacturasProveedores);
+    document.getElementById('dashboardProveedorAnio')?.addEventListener('change', () => {
+        proveedoresData.dashboard.anio = Number(document.getElementById('dashboardProveedorAnio')?.value) || new Date().getFullYear();
+        renderDashboardProveedores();
+    });
     
     // Formulario de pago
     document.getElementById('formPago')?.addEventListener('submit', registrarPagoProveedor);
@@ -2090,6 +2456,29 @@ function setupProveedoresListeners() {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => cambiarTabProveedor(btn.dataset.tab));
     });
+}
+
+function mostrarPanelDashboardProveedores(mostrar) {
+    document.getElementById('proveedoresDashboardPanel')?.classList.toggle('hidden', !mostrar);
+    document.getElementById('proveedoresFacturasFilters')?.classList.toggle('hidden', mostrar);
+    document.getElementById('proveedoresFacturasContent')?.classList.toggle('hidden', mostrar);
+}
+
+function prepararSelectorAnioDashboard() {
+    const selector = document.getElementById('dashboardProveedorAnio');
+    if (!selector) return;
+
+    const actual = new Date().getFullYear();
+    const anios = new Set([actual, actual - 1, actual - 2]);
+    (proveedoresData.facturas || []).forEach(f => {
+        const year = Number(String(f.fecha_emision || '').slice(0, 4));
+        if (year) anios.add(year);
+    });
+
+    selector.innerHTML = [...anios]
+        .sort((a, b) => b - a)
+        .map(anio => `<option value="${anio}" ${anio === proveedoresData.dashboard.anio ? 'selected' : ''}>${anio}</option>`)
+        .join('');
 }
 
 // =====================================================
@@ -2204,6 +2593,429 @@ async function cargarNotasData() {
     } catch (error) {
         logError('Error cargando notas:', error);
     }
+}
+
+// =====================================================
+// DASHBOARD DE PROVEEDORES
+// =====================================================
+
+window.recargarDashboardProveedores = async function() {
+    proveedoresData.dashboard.cargado = false;
+    await cargarDashboardProveedores();
+    mostrarNotificacionProveedor('Dashboard actualizado', 'success');
+};
+
+async function fetchAllProveedor(table, select = '*') {
+    const client = getSupabaseClient();
+    const rows = [];
+
+    for (let from = 0; ; from += 1000) {
+        const { data, error } = await client
+            .from(table)
+            .select(select)
+            .range(from, from + 999);
+
+        if (error) throw error;
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+    }
+
+    return rows;
+}
+
+async function cargarDashboardProveedores() {
+    const panel = document.getElementById('proveedoresDashboardPanel');
+    if (!panel) return;
+
+    const kpis = document.getElementById('dashboardKpisProveedores');
+    if (kpis && !proveedoresData.dashboard.cargado) {
+        kpis.innerHTML = `
+            <div class="loading-state" style="grid-column:1/-1">
+                <div class="spinner"></div>
+                <p>Calculando dashboard...</p>
+            </div>
+        `;
+    }
+
+    try {
+        if (!proveedoresData.dashboard.cargado) {
+            const [inventario, ventas, ventasDetalle, pagos] = await Promise.all([
+                fetchAllProveedor('ferre_inventario', 'codigo,producto,proveedor_id,precio_proveedor,precio,stock'),
+                fetchAllProveedor('ferre_ventas', 'id,id_venta,fecha_hora_venta,total,estado,tipo'),
+                fetchAllProveedor('ferre_ventas_detalle', 'venta_id,id_venta,producto_id,cantidad,precio,subtotal,ganancia'),
+                fetchAllProveedor('ferre_pagos_proveedores', 'factura_id,fecha_pago,monto_pago')
+            ]);
+
+            proveedoresData.dashboard.inventario = inventario;
+            proveedoresData.dashboard.ventas = ventas;
+            proveedoresData.dashboard.ventasDetalle = ventasDetalle;
+            proveedoresData.dashboard.pagos = pagos;
+            proveedoresData.dashboard.cargado = true;
+        }
+
+        renderDashboardProveedores();
+    } catch (error) {
+        logError('Error cargando dashboard proveedores:', error);
+        if (kpis) {
+            kpis.innerHTML = `
+                <div class="empty-state" style="grid-column:1/-1">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>No se pudo cargar el dashboard de proveedores</p>
+                </div>
+            `;
+        }
+    }
+}
+
+function getTodayEcDateString() {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Guayaquil',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).formatToParts(new Date());
+    const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+    return `${map.year}-${map.month}-${map.day}`;
+}
+
+function parseEcDate(value) {
+    return new Date(`${String(value || '').slice(0, 10)}T00:00:00-05:00`);
+}
+
+function daysBetweenEc(a, b) {
+    return Math.floor((parseEcDate(a) - parseEcDate(b)) / 86400000);
+}
+
+function moneyNumber(value) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+}
+
+function prioridadProveedorPorAtraso(dias) {
+    if (dias <= 0) return { key: 'al-dia', label: 'Al dia', order: 1, icon: 'fa-check-circle' };
+    if (dias <= 21) return { key: 'seguimiento', label: 'Seguimiento', order: 2, icon: 'fa-clock' };
+    if (dias <= 45) return { key: 'atencion', label: 'Atencion', order: 3, icon: 'fa-eye' };
+    if (dias <= 60) return { key: 'alta', label: 'Alta prioridad', order: 4, icon: 'fa-arrow-up' };
+    if (dias <= 90) return { key: 'critica', label: 'Critica', order: 5, icon: 'fa-exclamation-triangle' };
+    return { key: 'riesgo', label: 'Riesgo proveedor', order: 6, icon: 'fa-fire' };
+}
+
+function bucketAtrasoProveedor(dias) {
+    if (dias <= 0) return 'alDia';
+    if (dias <= 21) return 'normal';
+    if (dias <= 45) return 'atencion';
+    if (dias <= 60) return 'alta';
+    if (dias <= 90) return 'critica';
+    return 'riesgo';
+}
+
+function renderPriorityPill(prioridad) {
+    return `<span class="priority-pill ${prioridad.key}"><i class="fas ${prioridad.icon}"></i>${prioridad.label}</span>`;
+}
+
+function calcularDashboardProveedores() {
+    const anio = Number(document.getElementById('dashboardProveedorAnio')?.value) || proveedoresData.dashboard.anio || new Date().getFullYear();
+    proveedoresData.dashboard.anio = anio;
+    const today = getTodayEcDateString();
+    const proveedoresMap = new Map((proveedoresData.proveedores || []).map(p => [p.id, p]));
+    const inventarioMap = new Map((proveedoresData.dashboard.inventario || []).map(p => [String(p.codigo), p]));
+    const resumenMap = new Map();
+
+    function getResumen(proveedorId) {
+        const proveedor = proveedoresMap.get(proveedorId);
+        const key = proveedorId || 'sin-proveedor';
+        if (!resumenMap.has(key)) {
+            resumenMap.set(key, {
+                proveedor_id: proveedorId,
+                proveedor: proveedor?.empresa || 'Sin proveedor',
+                totalFacturas: 0,
+                facturasPendientes: 0,
+                facturasVencidas: 0,
+                saldoPendiente: 0,
+                saldoVencido: 0,
+                comprasAnio: 0,
+                pagosAnio: 0,
+                ventasAnio: 0,
+                costoEstimadoAnio: 0,
+                gananciaEstimadaAnio: 0,
+                lineasVenta: 0,
+                maxAtraso: 0,
+                prioridad: prioridadProveedorPorAtraso(0)
+            });
+        }
+        return resumenMap.get(key);
+    }
+
+    const facturasActivas = (proveedoresData.facturas || []).filter(f => !f.archivada);
+    const pendientes = facturasActivas.filter(f => moneyNumber(f.saldo_pendiente) > 0);
+    const facturasSemana = [];
+    const buckets = {
+        alDia: { label: 'Al dia o por vencer', count: 0, saldo: 0, color: '#22c55e' },
+        normal: { label: 'Seguimiento 1-21 dias', count: 0, saldo: 0, color: '#38bdf8' },
+        atencion: { label: 'Atencion 22-45 dias', count: 0, saldo: 0, color: '#facc15' },
+        alta: { label: 'Alta prioridad 46-60 dias', count: 0, saldo: 0, color: '#fb923c' },
+        critica: { label: 'Critico 61-90 dias', count: 0, saldo: 0, color: '#ef4444' },
+        riesgo: { label: 'Riesgo +90 dias', count: 0, saldo: 0, color: '#7f1d1d' }
+    };
+
+    for (const factura of facturasActivas) {
+        const row = getResumen(factura.proveedor_id);
+        row.totalFacturas += 1;
+
+        if (String(factura.fecha_emision || '').slice(0, 4) === String(anio)) {
+            row.comprasAnio += moneyNumber(factura.total_factura);
+        }
+
+        if (moneyNumber(factura.saldo_pendiente) > 0) {
+            const diasAtraso = Math.max(0, daysBetweenEc(today, factura.fecha_vencimiento));
+            const diasParaVencer = daysBetweenEc(factura.fecha_vencimiento, today);
+            const saldo = moneyNumber(factura.saldo_pendiente);
+            const bucket = buckets[bucketAtrasoProveedor(diasAtraso)];
+
+            row.facturasPendientes += 1;
+            row.saldoPendiente += saldo;
+            row.maxAtraso = Math.max(row.maxAtraso, diasAtraso);
+
+            bucket.count += 1;
+            bucket.saldo += saldo;
+
+            if (diasAtraso > 0) {
+                row.facturasVencidas += 1;
+                row.saldoVencido += saldo;
+            }
+
+            if ((diasParaVencer >= 0 && diasParaVencer <= 7) || diasAtraso > 45) {
+                facturasSemana.push({
+                    ...factura,
+                    diasAtraso,
+                    diasParaVencer,
+                    proveedor: row.proveedor
+                });
+            }
+        }
+    }
+
+    for (const pago of proveedoresData.dashboard.pagos || []) {
+        if (String(pago.fecha_pago || '').slice(0, 4) !== String(anio)) continue;
+        const factura = facturasActivas.find(f => f.id === pago.factura_id);
+        if (!factura) continue;
+        getResumen(factura.proveedor_id).pagosAnio += moneyNumber(pago.monto_pago);
+    }
+
+    const ventasAnio = (proveedoresData.dashboard.ventas || [])
+        .filter(v => String(v.fecha_hora_venta || '').slice(0, 4) === String(anio))
+        .filter(v => !['ANULADA', 'ANULADO'].includes(String(v.estado || '').toUpperCase()));
+    const ventasMap = new Map();
+    ventasAnio.forEach(v => {
+        ventasMap.set(v.id, v);
+        if (v.id_venta) ventasMap.set(v.id_venta, v);
+    });
+
+    let lineasVenta = 0;
+    let lineasConProveedor = 0;
+    for (const detalle of proveedoresData.dashboard.ventasDetalle || []) {
+        const venta = ventasMap.get(detalle.venta_id) || ventasMap.get(detalle.id_venta);
+        if (!venta) continue;
+        lineasVenta += 1;
+
+        const producto = inventarioMap.get(String(detalle.producto_id));
+        if (!producto?.proveedor_id) continue;
+        lineasConProveedor += 1;
+
+        const row = getResumen(producto.proveedor_id);
+        const subtotal = moneyNumber(detalle.subtotal) || moneyNumber(detalle.cantidad) * moneyNumber(detalle.precio);
+        const costo = moneyNumber(detalle.cantidad) * moneyNumber(producto.precio_proveedor);
+
+        row.ventasAnio += subtotal;
+        row.costoEstimadoAnio += costo;
+        row.gananciaEstimadaAnio += moneyNumber(detalle.ganancia) || (subtotal - costo);
+        row.lineasVenta += 1;
+    }
+
+    const proveedores = [...resumenMap.values()].map(row => {
+        row.prioridad = prioridadProveedorPorAtraso(row.maxAtraso);
+        row.scorePrioridad = (row.prioridad.order * 1000000) + (row.saldoVencido * 100) + (row.facturasVencidas * 1000) + row.saldoPendiente;
+        return row;
+    });
+
+    return {
+        anio,
+        today,
+        proveedores,
+        facturasActivas,
+        pendientes,
+        buckets,
+        facturasSemana,
+        lineasVenta,
+        lineasConProveedor
+    };
+}
+
+function renderDashboardProveedores() {
+    const data = calcularDashboardProveedores();
+    proveedoresData.dashboard.resumen = data;
+
+    renderDashboardKpisProveedores(data);
+    renderDashboardPrioridadProveedores(data);
+    renderDashboardBucketsProveedores(data);
+    renderDashboardSemanaProveedores(data);
+    renderDashboardVentasProveedores(data);
+    renderDashboardRecomendacionesProveedores(data);
+}
+
+function renderDashboardKpisProveedores(data) {
+    const totalPendiente = data.pendientes.reduce((sum, f) => sum + moneyNumber(f.saldo_pendiente), 0);
+    const totalVencido = data.pendientes
+        .filter(f => daysBetweenEc(data.today, f.fecha_vencimiento) > 0)
+        .reduce((sum, f) => sum + moneyNumber(f.saldo_pendiente), 0);
+    const comprasAnio = data.proveedores.reduce((sum, p) => sum + p.comprasAnio, 0);
+    const ventasAnio = data.proveedores.reduce((sum, p) => sum + p.ventasAnio, 0);
+    const venceSemana = data.facturasSemana
+        .filter(f => f.diasParaVencer >= 0 && f.diasParaVencer <= 7)
+        .reduce((sum, f) => sum + moneyNumber(f.saldo_pendiente), 0);
+    const pctVencido = totalPendiente > 0 ? (totalVencido * 100 / totalPendiente) : 0;
+
+    const kpis = [
+        { label: 'Saldo pendiente', value: formatCurrency(totalPendiente), note: `${data.pendientes.length} facturas abiertas`, icon: 'fa-wallet', color: '#111827' },
+        { label: 'Saldo vencido', value: formatCurrency(totalVencido), note: `${pctVencido.toFixed(1)}% del pendiente`, icon: 'fa-clock', color: '#ef4444' },
+        { label: 'Vence esta semana', value: formatCurrency(venceSemana), note: 'No incluye vencidas antiguas', icon: 'fa-calendar-week', color: '#f59e0b' },
+        { label: 'Compras del año', value: formatCurrency(comprasAnio), note: `Facturas emitidas en ${data.anio}`, icon: 'fa-file-invoice', color: '#2563eb' },
+        { label: 'Ventas asociadas', value: formatCurrency(ventasAnio), note: `${data.lineasConProveedor}/${data.lineasVenta} lineas con proveedor`, icon: 'fa-chart-line', color: '#16a34a' }
+    ];
+
+    const el = document.getElementById('dashboardKpisProveedores');
+    if (!el) return;
+    el.innerHTML = kpis.map(kpi => `
+        <div class="dashboard-kpi" style="--kpi-color:${kpi.color}">
+            <div class="dashboard-kpi-label"><i class="fas ${kpi.icon}"></i>${kpi.label}</div>
+            <div class="dashboard-kpi-value">${kpi.value}</div>
+            <div class="dashboard-kpi-note">${kpi.note}</div>
+        </div>
+    `).join('');
+}
+
+function renderDashboardPrioridadProveedores(data) {
+    const rows = data.proveedores
+        .filter(p => p.saldoPendiente > 0 || p.ventasAnio > 0 || p.comprasAnio > 0)
+        .sort((a, b) => b.scorePrioridad - a.scorePrioridad)
+        .slice(0, 12);
+
+    const body = document.getElementById('dashboardPrioridadBody');
+    if (!body) return;
+
+    body.innerHTML = rows.map(row => `
+        <tr>
+            <td><strong>${row.proveedor}</strong><br><small>${row.facturasPendientes} pendientes · ${row.facturasVencidas} vencidas</small></td>
+            <td>${renderPriorityPill(row.prioridad)}</td>
+            <td>${formatCurrency(row.saldoPendiente)}</td>
+            <td><strong>${formatCurrency(row.saldoVencido)}</strong></td>
+            <td>${row.maxAtraso} dias</td>
+            <td>${formatCurrency(row.ventasAnio)}</td>
+        </tr>
+    `).join('');
+}
+
+function renderDashboardBucketsProveedores(data) {
+    const el = document.getElementById('dashboardBucketsProveedores');
+    if (!el) return;
+
+    el.innerHTML = Object.values(data.buckets).map(bucket => `
+        <div class="bucket-row" style="--bucket-color:${bucket.color}">
+            <div class="bucket-row-main">
+                <span>${bucket.label}</span>
+                <strong>${formatCurrency(bucket.saldo)}</strong>
+            </div>
+            <div class="bucket-row-sub">${bucket.count} facturas</div>
+        </div>
+    `).join('');
+}
+
+function renderDashboardSemanaProveedores(data) {
+    const el = document.getElementById('dashboardSemanaProveedores');
+    if (!el) return;
+
+    const rows = data.facturasSemana
+        .sort((a, b) => b.diasAtraso - a.diasAtraso || moneyNumber(b.saldo_pendiente) - moneyNumber(a.saldo_pendiente))
+        .slice(0, 8);
+
+    if (!rows.length) {
+        el.innerHTML = '<div class="recommendation-row">No hay facturas próximas a vencer ni atrasos altos para esta semana.</div>';
+        return;
+    }
+
+    el.innerHTML = rows.map(f => {
+        const estado = f.diasAtraso > 0
+            ? `${f.diasAtraso} dias vencida`
+            : `vence en ${f.diasParaVencer} dias`;
+        return `
+            <div class="week-row">
+                <div class="week-row-main">
+                    <span>${f.proveedor}</span>
+                    <strong>${formatCurrency(f.saldo_pendiente)}</strong>
+                </div>
+                <div class="week-row-sub">${f.numero_factura} · ${estado}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderDashboardVentasProveedores(data) {
+    const el = document.getElementById('dashboardVentasProveedores');
+    if (!el) return;
+
+    const rows = data.proveedores
+        .filter(p => p.ventasAnio > 0)
+        .sort((a, b) => b.ventasAnio - a.ventasAnio)
+        .slice(0, 8);
+    const max = Math.max(...rows.map(r => r.ventasAnio), 1);
+
+    el.innerHTML = rows.map(row => `
+        <div class="sales-row">
+            <div class="sales-row-main">
+                <span>${row.proveedor}</span>
+                <strong>${formatCurrency(row.ventasAnio)}</strong>
+            </div>
+            <div class="sales-row-sub">Ganancia estimada ${formatCurrency(row.gananciaEstimadaAnio)} · ${row.lineasVenta} lineas</div>
+            <div class="sales-bar"><span style="--sales-width:${Math.max(4, row.ventasAnio * 100 / max)}%"></span></div>
+        </div>
+    `).join('');
+}
+
+function renderDashboardRecomendacionesProveedores(data) {
+    const el = document.getElementById('dashboardRecomendacionesProveedores');
+    if (!el) return;
+
+    const ordered = data.proveedores
+        .filter(p => p.saldoPendiente > 0)
+        .sort((a, b) => b.scorePrioridad - a.scorePrioridad);
+    const top = ordered[0];
+    const riesgo = ordered.filter(p => p.maxAtraso > 60);
+    const normal = Object.values(data.buckets).find(b => b.label.includes('1-21'));
+    const vencen = data.facturasSemana.filter(f => f.diasParaVencer >= 0 && f.diasParaVencer <= 7);
+    const recomendaciones = [];
+
+    if (top) {
+        recomendaciones.push(`Priorizar ${top.proveedor}: concentra ${formatCurrency(top.saldoVencido)} vencidos y su mayor atraso es de ${top.maxAtraso} dias.`);
+    }
+    if (normal?.saldo > 0) {
+        recomendaciones.push(`${formatCurrency(normal.saldo)} estan vencidos dentro del rango operativo normal de 1 a 21 dias; conviene monitorear sin saturar alertas.`);
+    }
+    if (vencen.length) {
+        const total = vencen.reduce((sum, f) => sum + moneyNumber(f.saldo_pendiente), 0);
+        recomendaciones.push(`Esta semana vencen ${vencen.length} facturas por ${formatCurrency(total)}.`);
+    }
+    if (riesgo.length) {
+        recomendaciones.push(`${riesgo.length} proveedores tienen atrasos mayores a 60 dias; revisarlos antes de nuevos pedidos grandes.`);
+    }
+    if (!recomendaciones.length) {
+        recomendaciones.push('El estado general luce controlado. Mantener seguimiento semanal de vencimientos.');
+    }
+
+    el.innerHTML = recomendaciones.map(texto => `
+        <div class="recommendation-row">
+            <i class="fas fa-lightbulb" style="color:#d4a017;margin-right:6px"></i>${texto}
+        </div>
+    `).join('');
 }
 
 // =====================================================
@@ -4733,5 +5545,3 @@ window.generarReporteProveedores = generarReporteProveedores;
 logProveedor('✅ Módulo de proveedores cargado - Funciones globales exportadas');
 
 </script>
-
-
