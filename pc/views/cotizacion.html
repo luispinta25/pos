@@ -11110,6 +11110,8 @@ _Sistema de Gestión Ferrisoluciones_`;
     // Exportar funciones
     window.mostrarModalExitoCotización = mostrarModalExitoCotizacion;
     window.cerrarModalExitoCotización = cerrarModalExitoCotizacion;
+    window.mostrarModalExitoCotizacion = mostrarModalExitoCotizacion;
+    window.cerrarModalExitoCotizacion = cerrarModalExitoCotizacion;
     window.reimprimirUltimoComprobanteCotizacion = reimprimirUltimoComprobanteCotizacion;
 
     function generarCodigoCotizacion() {
@@ -11710,15 +11712,17 @@ _Sistema de Gestión Ferrisoluciones_`;
             head: [['Codigo', 'Producto', 'Cant.', 'P. Unit', 'Subtotal']],
             body: rows,
             theme: 'grid',
+            margin: { left: 16, right: 16 },
+            tableWidth: 178,
             headStyles: { fillColor: negro, textColor: 255, lineColor: amarillo, lineWidth: 0.3 },
-            styles: { fontSize: 9, cellPadding: 2 },
+            styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
             alternateRowStyles: { fillColor: [252, 252, 252] },
             columnStyles: {
-                0: { cellWidth: 28 },
-                1: { cellWidth: 78 },
-                2: { halign: 'right', cellWidth: 20 },
+                0: { cellWidth: 24 },
+                1: { cellWidth: 76 },
+                2: { halign: 'right', cellWidth: 22 },
                 3: { halign: 'right', cellWidth: 26 },
-                4: { halign: 'right', cellWidth: 26 }
+                4: { halign: 'right', cellWidth: 30 }
             }
         });
 
@@ -11811,8 +11815,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 if (telefono === null) return; // cancelado por el usuario
             }
 
-            window.app.showToast('Generando PDF...', 'info', 2000);
-            const doc = await generarPdfCotizacionA4(cotizacionData);
+            window.app.showToast('Preparando cotizacion...', 'info', 2000);
 
             const numero = String(telefono || '').replace(/\D/g, '');
             const numeroFormatted = numero.slice(-9) ? `593${numero.slice(-9)}` : '';
@@ -11823,15 +11826,6 @@ _Sistema de Gestión Ferrisoluciones_`;
             }
 
             try {
-                const pdfBase64Data = doc.output('datauristring');
-                let pdfBase64 = pdfBase64Data;
-                if (pdfBase64.startsWith('data:')) {
-                    const commaIdx = pdfBase64.indexOf(',');
-                    if (commaIdx !== -1) {
-                        pdfBase64 = pdfBase64.substring(commaIdx + 1);
-                    }
-                }
-
                 window.app.showToast('Enviando cotizacion por WhatsApp...', 'info', 3000);
 
                 const response = await posApiRequest('/api/chat/send-quote-pdf', {
@@ -11842,7 +11836,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                         clienteNombre: nombreCliente,
                         saleCode: cotizacionData.saleCode,
                         total: cotizacionData.total || 0,
-                        pdfBase64,
+                        cotizacionData,
                         fileName: nombreArchivo
                     })
                 });

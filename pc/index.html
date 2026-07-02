@@ -16,7 +16,7 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="css/styles.css?v=3.10.1">
+    <link rel="stylesheet" href="css/styles.css?v=3.10.2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1a1a1a">
@@ -108,7 +108,7 @@
                     <img src="https://i.ibb.co/8gLPXfjh/FERRISOLUCIONES-1.png" alt="Logo" class="nav-logo">
                     <div class="nav-title-wrapper">
                         <span class="nav-title">Ferrisoluciones</span>
-                        <span class="app-version">v3.10.1</span>
+                        <span class="app-version">v3.10.2</span>
                     </div>
                 </div>
 
@@ -215,23 +215,23 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
-    <script src="js/config.js?v=3.10.1"></script>
-    <script src="js/auth.js?v=3.10.1"></script>
-    <script src="js/app.js?v=3.10.1"></script>
+    <script src="js/config.js?v=3.10.2"></script>
+    <script src="js/auth.js?v=3.10.2"></script>
+    <script src="js/app.js?v=3.10.2"></script>
 
     <!-- Service Worker Registration -->
     <script>
         // =====================================================
-        // SERVICE WORKER REGISTRATION - v3.10.1
+        // SERVICE WORKER REGISTRATION - v3.10.2
         // =====================================================
         
         if ('serviceWorker' in navigator) {
             let swUpdatePending = false;
 
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=3.10.1')
+                navigator.serviceWorker.register('/sw.js?v=3.10.2')
                     .then(registration => {
-                        console.log('✅ Service Worker registered successfully (v3.10.1)');
+                        console.log('✅ Service Worker registered successfully (v3.10.2)');
                         console.log('📍 Scope:', registration.scope);
                         console.log('🔄 Strategy: Network First');
                         
