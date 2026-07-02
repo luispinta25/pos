@@ -431,6 +431,88 @@
             margin-bottom: 8px;
         }
 
+        .chat-document-card,
+        .chat-audio-card,
+        .chat-media-placeholder {
+            width: min(360px, 68vw);
+            margin-bottom: 8px;
+            border-radius: 14px;
+            background: #f8fafc;
+            border: 1px solid rgba(133, 146, 166, 0.26);
+        }
+
+        .chat-document-card {
+            display: grid;
+            grid-template-columns: 42px minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            padding: 12px;
+            color: #172033;
+            text-decoration: none;
+            white-space: normal;
+        }
+
+        .chat-document-card:hover {
+            background: #eef6ff;
+        }
+
+        .chat-document-icon,
+        .chat-media-placeholder-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            background: #fff7ed;
+            color: #c2410c;
+            font-size: 1.05rem;
+        }
+
+        .chat-document-title {
+            font-weight: 900;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .chat-document-meta {
+            margin-top: 2px;
+            font-size: 0.72rem;
+            color: #697386;
+            font-weight: 800;
+        }
+
+        .chat-document-open {
+            color: #0f766e;
+            font-size: 0.9rem;
+        }
+
+        .chat-audio-card {
+            padding: 10px;
+            background: #ecfdf5;
+        }
+
+        .chat-audio-card audio {
+            display: block;
+            width: 100%;
+            height: 38px;
+        }
+
+        .chat-media-placeholder {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            color: #475569;
+            font-weight: 900;
+        }
+
+        .chat-media-placeholder-icon {
+            background: #e0f2fe;
+            color: #0369a1;
+            flex: 0 0 auto;
+        }
+
         .chat-attach-btn {
             width: 48px;
             height: 48px;
@@ -949,12 +1031,80 @@ function initChat() {
         return '';
     }
 
+    function getRawMessageNode(msg, type) {
+        const raw = msg.raw || {};
+        const message = (raw.data && raw.data.message) || raw.message || {};
+        const key = type + 'Message';
+        return message[key] || (raw.data && raw.data[key]) || raw[key] || {};
+    }
+
+    function getMediaMime(msg) {
+        const url = String(msg.media_url || '');
+        const dataMatch = url.match(/^data:([^;]+);base64,/i);
+        if (dataMatch) return dataMatch[1].toLowerCase();
+
+        const type = msg.message_type || '';
+        const node = getRawMessageNode(msg, type);
+        return String(node.mimetype || '').split(';')[0].trim().toLowerCase();
+    }
+
+    function getDocumentName(msg) {
+        const node = getRawMessageNode(msg, 'document');
+        return String(node.fileName || node.title || msg.body || 'documento.pdf').trim();
+    }
+
+    function getDocumentLabel(msg) {
+        const mime = getMediaMime(msg);
+        if (mime === 'application/pdf' || /\.pdf$/i.test(getDocumentName(msg))) return 'PDF';
+        return 'Documento';
+    }
+
+    function getDocumentIcon(msg) {
+        return getDocumentLabel(msg) === 'PDF' ? 'fa-file-pdf' : 'fa-file-lines';
+    }
+
+    function renderMessageBody(msg) {
+        const body = String(msg.body || '').trim();
+        if (!body) return '';
+        if (msg.message_type === 'audio' || msg.message_type === 'document') return '';
+        return escapeHtml(body);
+    }
+
     function renderMessageMedia(msg) {
-        if (msg.message_type !== 'image') return '';
-        if (msg.media_url) {
+        if (msg.message_type === 'image' && msg.media_url) {
             return '<img class="chat-image" src="' + escapeHtml(msg.media_url) + '" alt="Imagen enviada por WhatsApp" data-image-src="' + escapeHtml(msg.media_url) + '">';
         }
-        return '<div class="chat-image-placeholder"><i class="fas fa-image"></i><span>Imagen</span></div>';
+
+        if (msg.message_type === 'image') {
+            return '<div class="chat-image-placeholder"><i class="fas fa-image"></i><span>Imagen</span></div>';
+        }
+
+        if (msg.message_type === 'audio') {
+            if (msg.media_url) {
+                return '<div class="chat-audio-card"><audio controls preload="metadata" src="' + escapeHtml(msg.media_url) + '"></audio></div>';
+            }
+            return '<div class="chat-media-placeholder"><span class="chat-media-placeholder-icon"><i class="fas fa-microphone"></i></span><span>Mensaje de voz</span></div>';
+        }
+
+        if (msg.message_type === 'document') {
+            const name = getDocumentName(msg);
+            const label = getDocumentLabel(msg);
+            const icon = getDocumentIcon(msg);
+            if (msg.media_url) {
+                return '<a class="chat-document-card" href="' + escapeHtml(msg.media_url) + '" target="_blank" rel="noopener" download="' + escapeHtml(name) + '">' +
+                    '<span class="chat-document-icon"><i class="fas ' + icon + '"></i></span>' +
+                    '<span><span class="chat-document-title">' + escapeHtml(name) + '</span><span class="chat-document-meta">' + escapeHtml(label) + ' recibido por WhatsApp</span></span>' +
+                    '<span class="chat-document-open"><i class="fas fa-arrow-up-right-from-square"></i></span>' +
+                '</a>';
+            }
+            return '<div class="chat-media-placeholder"><span class="chat-media-placeholder-icon"><i class="fas ' + icon + '"></i></span><span>' + escapeHtml(label) + '</span></div>';
+        }
+
+        if (msg.message_type === 'video') {
+            return '<div class="chat-media-placeholder"><span class="chat-media-placeholder-icon"><i class="fas fa-video"></i></span><span>Video recibido</span></div>';
+        }
+
+        return '';
     }
 
     function isNearBottom() {
@@ -997,7 +1147,7 @@ function initChat() {
             const status = messageStatusHtml(msg);
             return '<div class="chat-message-row ' + direction + statusClass + '"><div class="chat-bubble">' +
                 renderMessageMedia(msg) +
-                escapeHtml(msg.body || '') +
+                renderMessageBody(msg) +
                 '<div class="chat-time"><span>' + escapeHtml(formatTime(msg.created_at)) + '</span>' + status + '</div>' +
             '</div></div>';
         }).join('');
