@@ -760,13 +760,70 @@
             font-weight: 800;
         }
 
+        .chat-quote-form {
+            display: grid;
+            gap: 12px;
+            padding: 14px 16px 18px;
+        }
+
+        .chat-quote-field {
+            display: grid;
+            gap: 6px;
+        }
+
+        .chat-quote-field label {
+            color: #475569;
+            font-size: 0.78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .chat-quote-field input {
+            width: 100%;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 14px;
+            padding: 12px 14px;
+            color: #0f172a;
+            font: inherit;
+            font-weight: 750;
+            outline: none;
+        }
+
+        .chat-quote-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .chat-quote-primary,
+        .chat-quote-secondary {
+            border: 0;
+            border-radius: 14px;
+            padding: 12px;
+            font: inherit;
+            font-size: 0.86rem;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .chat-quote-primary {
+            background: #0f766e;
+            color: #fff;
+        }
+
+        .chat-quote-secondary {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
         @keyframes chatSpin {
             to { transform: rotate(360deg); }
         }
 
         .chat-composer {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 48px 48px;
+            grid-template-columns: minmax(0, 1fr) 48px 48px 48px;
             gap: 10px;
             padding: 14px;
             border-top: 1px solid rgba(133, 146, 166, 0.18);
@@ -913,6 +970,9 @@
             </div>
             <div id="chatQuickReplies" class="chat-quick-replies" aria-label="Respuestas rapidas"></div>
             <textarea id="chatMessageInput" class="chat-composer-text" placeholder="Escribe una respuesta..." disabled></textarea>
+            <button id="chatQuoteBtn" class="chat-attach-btn" type="button" disabled title="Atender cotizacion">
+                <i class="fas fa-clipboard-list"></i>
+            </button>
             <button id="chatAttachBtn" class="chat-attach-btn" type="button" disabled title="Adjuntar imagen">
                 <i class="fas fa-image"></i>
             </button>
@@ -942,6 +1002,20 @@
             <div id="chatForwardList" class="chat-forward-list"></div>
         </div>
     </div>
+    <div id="chatQuoteModal" class="chat-forward-modal">
+        <div class="chat-forward-card">
+            <div class="chat-forward-head">
+                <div>
+                    <div id="chatQuoteTitle" class="chat-forward-title">Atender cotizacion</div>
+                    <div id="chatQuotePreview" class="chat-forward-preview"></div>
+                </div>
+                <button id="chatQuoteClose" class="chat-forward-close" type="button" title="Cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="chatQuoteContent" class="chat-quote-form"></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -960,6 +1034,7 @@ function initChat() {
         forwardingMessage: null,
         forwardTargets: [],
         forwardSearchTimer: null,
+        quoteContext: null,
         hasMoreMessages: false,
         loadingMessages: false,
         loadingOlder: false,
@@ -979,6 +1054,7 @@ function initChat() {
         composer: document.getElementById('chatComposer'),
         input: document.getElementById('chatMessageInput'),
         send: document.getElementById('chatSendBtn'),
+        quote: document.getElementById('chatQuoteBtn'),
         attach: document.getElementById('chatAttachBtn'),
         imageInput: document.getElementById('chatImageInput'),
         imagePreview: document.getElementById('chatImagePreview'),
@@ -993,6 +1069,11 @@ function initChat() {
         forwardClose: document.getElementById('chatForwardClose'),
         forwardSearch: document.getElementById('chatForwardSearch'),
         forwardList: document.getElementById('chatForwardList'),
+        quoteModal: document.getElementById('chatQuoteModal'),
+        quoteTitle: document.getElementById('chatQuoteTitle'),
+        quotePreview: document.getElementById('chatQuotePreview'),
+        quoteClose: document.getElementById('chatQuoteClose'),
+        quoteContent: document.getElementById('chatQuoteContent'),
         newPhone: document.getElementById('chatNewPhone'),
         start: document.getElementById('chatStartBtn'),
         liveStatus: document.getElementById('chatLiveStatus'),
@@ -1198,6 +1279,7 @@ function initChat() {
                 setSelectedHeader(state.selected);
                 els.input.disabled = false;
                 els.send.disabled = false;
+                els.quote.disabled = false;
                 els.attach.disabled = false;
                 renderQuickReplies();
                 renderMessages({ forceBottom: true });
@@ -1468,10 +1550,161 @@ function initChat() {
                 body: JSON.stringify({ phone: phone })
             });
             closeForwardModal();
+            await loadConversations(true);
+            if (state.selected) await loadMessages({ forceBottom: true });
             showCustomAlert('Mensaje reenviado correctamente.', 'success', 'WhatsApp');
         } catch (error) {
             showCustomAlert('No se pudo reenviar: ' + error.message, 'error', 'WhatsApp');
             renderForwardTargets();
+        }
+    }
+
+    function normalizeLocalPhone(value) {
+        const digits = String(value || '').replace(/\D/g, '');
+        const local = digits.slice(-9);
+        return local ? '0' + local : '';
+    }
+
+    function closeQuoteModal() {
+        state.quoteContext = null;
+        els.quoteModal.classList.remove('active');
+        els.quoteContent.innerHTML = '';
+        els.quotePreview.textContent = '';
+    }
+
+    function openCotizacionForClient(client) {
+        if (!state.quoteContext || !client) return;
+        window.__posQuoteFromChat = {
+            conversationId: state.selected.id,
+            phone: state.quoteContext.phone,
+            localPhone: state.quoteContext.localPhone,
+            client: client
+        };
+        closeQuoteModal();
+        if (typeof loadModule === 'function') {
+            loadModule('cotizacion');
+        } else {
+            showCustomAlert('No se pudo abrir el modulo de cotizaciones.', 'error', 'Cotizaciones');
+        }
+    }
+
+    function renderQuoteClientSelection(clients) {
+        els.quoteTitle.textContent = 'Selecciona el cliente';
+        els.quotePreview.textContent = 'Este WhatsApp coincide con mas de un cliente.';
+        els.quoteContent.innerHTML = (clients || []).map(function(client) {
+            return '<button class="chat-forward-target" type="button" data-client="' + escapeHtml(client.cedula) + '">' +
+                '<span class="chat-forward-type"><i class="fas fa-user"></i></span>' +
+                '<span><span class="chat-forward-label">' + escapeHtml(client.razon_social || client.nombres || client.cedula) + '</span><span class="chat-forward-detail">' + escapeHtml([client.cedula, client.telefono].filter(Boolean).join(' - ')) + '</span></span>' +
+                '<span class="chat-forward-send"><i class="fas fa-arrow-right"></i></span>' +
+                '</button>';
+        }).join('');
+
+        els.quoteContent.querySelectorAll('[data-client]').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const client = clients.find(function(item) { return String(item.cedula) === String(button.dataset.client); });
+                openCotizacionForClient(client);
+            });
+        });
+    }
+
+    function renderQuoteRegisterForm(context) {
+        const defaultName = context.suggestedName || context.conversation?.contact_name || 'Cliente (prospecto)';
+        const localPhone = context.localPhone || normalizeLocalPhone(context.phone);
+        els.quoteTitle.textContent = 'Registrar cliente para cotizar';
+        els.quotePreview.textContent = 'El registro solo es necesario para enviar una cotizacion formal.';
+        els.quoteContent.innerHTML =
+            '<div class="chat-quote-field"><label>Cedula o RUC</label><input id="quoteClientId" inputmode="numeric" autocomplete="off" placeholder="Cedula o RUC"></div>' +
+            '<div class="chat-quote-field"><label>Nombre</label><input id="quoteClientName" autocomplete="name" value="' + escapeHtml(defaultName) + '"></div>' +
+            '<div class="chat-quote-field"><label>Telefono</label><input id="quoteClientPhone" inputmode="tel" value="' + escapeHtml(localPhone) + '"></div>' +
+            '<div class="chat-quote-field"><label>Correo</label><input id="quoteClientEmail" type="email" autocomplete="email" placeholder="correo@ejemplo.com"></div>' +
+            '<div class="chat-quote-field"><label>Direccion</label><input id="quoteClientAddress" autocomplete="street-address" placeholder="Direccion del cliente"></div>' +
+            '<div class="chat-quote-actions">' +
+                '<button id="quoteRegisterBtn" class="chat-quote-primary" type="button"><i class="fas fa-user-plus"></i> Guardar y cotizar</button>' +
+                '<button id="quoteRequestDataBtn" class="chat-quote-secondary" type="button"><i class="fab fa-whatsapp"></i> Pedir datos</button>' +
+            '</div>';
+
+        document.getElementById('quoteRegisterBtn').addEventListener('click', registerQuoteClient);
+        document.getElementById('quoteRequestDataBtn').addEventListener('click', requestQuoteClientData);
+        setTimeout(function() {
+            const input = document.getElementById('quoteClientId');
+            if (input) input.focus();
+        }, 80);
+    }
+
+    async function registerQuoteClient() {
+        const cedula = document.getElementById('quoteClientId').value.trim();
+        const razonSocial = document.getElementById('quoteClientName').value.trim();
+        const telefono = document.getElementById('quoteClientPhone').value.trim();
+        const correo = document.getElementById('quoteClientEmail').value.trim() || 'S/N';
+        const direccion = document.getElementById('quoteClientAddress').value.trim() || 'S/N';
+
+        if (!/^\d{10,13}$/.test(cedula)) {
+            showCustomAlert('Ingresa una cedula o RUC valido.', 'warning', 'Cliente');
+            return;
+        }
+
+        if (!razonSocial) {
+            showCustomAlert('Ingresa el nombre del cliente.', 'warning', 'Cliente');
+            return;
+        }
+
+        if (correo !== 'S/N' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            showCustomAlert('El correo no parece valido.', 'warning', 'Cliente');
+            return;
+        }
+
+        try {
+            const result = await posApiRequest('/api/chat/clients', {
+                method: 'POST',
+                body: JSON.stringify({ cedula, razonSocial, telefono, correo, direccion })
+            });
+            showCustomAlert('Cliente registrado. Abrimos cotizaciones.', 'success', 'Cliente');
+            openCotizacionForClient(result.data);
+        } catch (error) {
+            showCustomAlert('No se pudo registrar el cliente: ' + error.message, 'error', 'Cliente');
+        }
+    }
+
+    async function requestQuoteClientData() {
+        if (!state.quoteContext || !state.selected) return;
+        const name = state.quoteContext.conversation?.contact_name || state.selected.contact_name || 'estimado cliente';
+        try {
+            await posApiRequest('/api/chat/request-client-data', {
+                method: 'POST',
+                body: JSON.stringify({
+                    conversationId: state.selected.id,
+                    name: name
+                })
+            });
+            await loadConversations(true);
+            await loadMessages({ forceBottom: true });
+            closeQuoteModal();
+            showCustomAlert('Peticion de datos enviada al cliente.', 'success', 'WhatsApp');
+        } catch (error) {
+            showCustomAlert('No se pudo enviar la peticion: ' + error.message, 'error', 'WhatsApp');
+        }
+    }
+
+    async function startQuoteFromChat() {
+        if (!state.selected) return;
+        els.quote.disabled = true;
+        try {
+            const result = await posApiRequest('/api/chat/conversations/' + encodeURIComponent(state.selected.id) + '/quote-context', { method: 'GET' });
+            const context = result.data || {};
+            state.quoteContext = context;
+            els.quoteModal.classList.add('active');
+
+            if (Array.isArray(context.clients) && context.clients.length === 1) {
+                openCotizacionForClient(context.clients[0]);
+            } else if (Array.isArray(context.clients) && context.clients.length > 1) {
+                renderQuoteClientSelection(context.clients);
+            } else {
+                renderQuoteRegisterForm(context);
+            }
+        } catch (error) {
+            showCustomAlert('No se pudo preparar la cotizacion: ' + error.message, 'error', 'Cotizaciones');
+        } finally {
+            els.quote.disabled = false;
         }
     }
 
@@ -1616,6 +1849,7 @@ function initChat() {
         setSelectedHeader(item);
         els.input.disabled = false;
         els.send.disabled = false;
+        els.quote.disabled = false;
         els.attach.disabled = false;
         state.messages = state.messagesByConversation[item.id] || [];
         state.hasMoreMessages = false;
@@ -1925,6 +2159,7 @@ function initChat() {
         if (!state.selected) return;
         els.imageInput.click();
     });
+    els.quote.addEventListener('click', startQuoteFromChat);
     els.imageInput.addEventListener('change', async function() {
         const file = els.imageInput.files && els.imageInput.files[0];
         if (!file) return;
@@ -1971,6 +2206,10 @@ function initChat() {
     });
     els.forwardSearch.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') closeForwardModal();
+    });
+    els.quoteClose.addEventListener('click', closeQuoteModal);
+    els.quoteModal.addEventListener('click', function(event) {
+        if (event.target === els.quoteModal) closeQuoteModal();
     });
     els.input.addEventListener('keydown', function(event) {
         if (event.key === 'Enter' && !event.shiftKey) {

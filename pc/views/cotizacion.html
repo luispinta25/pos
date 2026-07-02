@@ -5874,6 +5874,27 @@ _Sistema de Gestión Ferrisoluciones_`;
     // INICIALIZACIÓN
     // =====================================================
 
+    function aplicarContextoCotizacionWhatsApp() {
+        const context = window.__posQuoteFromChat;
+        if (!context || !context.client) return;
+
+        cotizacionState.clienteSeleccionado = {
+            ...context.client,
+            telefono: context.client.telefono || context.localPhone || context.phone || 'S/N'
+        };
+        mostrarClienteSeleccionadoCotizacion();
+
+        setTimeout(() => {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }, 120);
+
+        window.app?.showToast?.('<i class="fab fa-whatsapp"></i> Cliente cargado desde WhatsApp para cotizar', 'success', 2600);
+    }
+
     async function initCotizacion() {
         // Re-vincular todas las funciones globales a window para evitar colisiones con otros módulos
         registrarGlobalesCotizacion();
@@ -5886,6 +5907,8 @@ _Sistema de Gestión Ferrisoluciones_`;
 
         // Event listeners
         setupEventListeners();
+
+        aplicarContextoCotizacionWhatsApp();
 
         // Cargar datos en background
 
@@ -11718,7 +11741,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         doc.setFontSize(9);
         doc.setTextColor(...gris);
         doc.text('Cotizacion sujeta a disponibilidad de stock y variacion de precios.', 16, 282);
-        doc.text('Gracias por preferir Ferresoluciones.', 16, 287);
+        doc.text('Gracias por preferir Ferrisoluciones.', 16, 287);
         return doc;
     }
 
@@ -11767,7 +11790,6 @@ _Sistema de Gestión Ferrisoluciones_`;
         if (opcionElegida === 'cancelar') return;
 
         const nombreArchivo = `COTIZACION ${nombreCliente}.pdf`;
-        const mensaje = `Hola, adjuntamos la cotizacion ${cotizacionData.saleCode} de Ferresoluciones por $${Number(cotizacionData.total || 0).toFixed(2)}.`;
 
         if (opcionElegida === 'descargar') {
             window.app.showToast('Generando PDF...', 'info', 2000);
@@ -11775,7 +11797,8 @@ _Sistema de Gestión Ferrisoluciones_`;
             doc.save(`COTIZACION-${cotizacionData.saleCode}.pdf`);
             window.app.showToast('PDF descargado correctamente.', 'success', 3000);
         } else if (opcionElegida === 'webhook') {
-            let telefono = (cotizacionData.cliente?.telefono || '').replace(/\D/g, '');
+            const quoteContext = window.__posQuoteFromChat || null;
+            let telefono = (quoteContext?.phone || cotizacionData.cliente?.telefono || '').replace(/\D/g, '');
 
             // Si es Consumidor Final o no tiene un teléfono válido/confirmado, pedirlo al usuario
             if (cedulaCliente === '9999999999999' || nombreCliente === 'CONSUMIDOR FINAL' || !telefono || telefono === 'S/N' || telefono === '0000000000') {
@@ -11792,7 +11815,12 @@ _Sistema de Gestión Ferrisoluciones_`;
             const doc = await generarPdfCotizacionA4(cotizacionData);
 
             const numero = String(telefono || '').replace(/\D/g, '');
-            const numeroFormatted = numero.replace(/^0/, '593');
+            const numeroFormatted = numero.slice(-9) ? `593${numero.slice(-9)}` : '';
+
+            if (!numeroFormatted) {
+                window.app.showToast('No hay un numero de WhatsApp valido para enviar la cotizacion', 'warning', 3500);
+                return;
+            }
 
             try {
                 const pdfBase64Data = doc.output('datauristring');
@@ -11803,35 +11831,32 @@ _Sistema de Gestión Ferrisoluciones_`;
                         pdfBase64 = pdfBase64.substring(commaIdx + 1);
                     }
                 }
-                
-                const payload = {
-                    number: numeroFormatted,
-                    mediatype: 'document',
-                    mimetype: 'application/pdf',
-                    caption: mensaje,
-                    media: pdfBase64,
-                    fileName: nombreArchivo,
-                    delay: 1000,
-                    linkPreview: false,
-                    "nombre archivo": `cotizacion ${nombreCliente}`
-                };
-                
-                window.app.showToast('Enviando cotizacion por WhatsApp automáticamente...', 'info', 3000);
-                
-                const response = await fetch('https://lpn8nwebhook.luispintasolutions.com/webhook/envio_de_cotizaciones_sin_respuesta', {
+
+                window.app.showToast('Enviando cotizacion por WhatsApp...', 'info', 3000);
+
+                const response = await posApiRequest('/api/chat/send-quote-pdf', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        phone: numeroFormatted,
+                        conversationId: quoteContext?.conversationId || null,
+                        clienteNombre: nombreCliente,
+                        saleCode: cotizacionData.saleCode,
+                        total: cotizacionData.total || 0,
+                        pdfBase64,
+                        fileName: nombreArchivo
+                    })
                 });
-                
-                if (response.ok) {
-                    window.app.showToast('Cotizacion enviada por WhatsApp exitosamente', 'success', 4000);
-                } else {
-                    window.app.showToast('Error al enviar la cotizacion por WhatsApp', 'danger', 4000);
+
+                window.app.showToast('Cotizacion enviada por WhatsApp exitosamente', 'success', 4000);
+
+                if (quoteContext?.conversationId && typeof loadModule === 'function') {
+                    window.__posChatTargetConversationId = response.conversationId || quoteContext.conversationId;
+                    window.__posQuoteFromChat = null;
+                    setTimeout(() => loadModule('chat'), 450);
                 }
             } catch (error) {
-                console.error('Error enviando cotizacion webhook:', error);
-                window.app.showToast('Fallo la conexion con el servidor de envios', 'danger', 4000);
+                console.error('Error enviando cotizacion por WhatsApp:', error);
+                window.app.showToast('Fallo el envio de la cotizacion por WhatsApp: ' + error.message, 'danger', 4500);
             }
         }
     }
