@@ -398,6 +398,23 @@
             font-weight: 900;
         }
 
+        .chat-forward-btn {
+            border: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 8px;
+            background: rgba(15, 118, 110, 0.1);
+            color: #0f766e;
+            cursor: pointer;
+            display: inline-grid;
+            place-items: center;
+            font-size: 0.72rem;
+        }
+
+        .chat-forward-btn:hover {
+            background: rgba(15, 118, 110, 0.18);
+        }
+
         .chat-message-row.pending .chat-bubble {
             opacity: 0.86;
         }
@@ -595,6 +612,154 @@
             box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
         }
 
+        .chat-forward-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 20001;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.68);
+            padding: 18px;
+        }
+
+        .chat-forward-modal.active {
+            display: flex;
+        }
+
+        .chat-forward-card {
+            width: min(560px, 94vw);
+            max-height: min(720px, 88vh);
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+            overflow: hidden;
+        }
+
+        .chat-forward-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: center;
+            padding: 18px;
+            border-bottom: 1px solid rgba(133, 146, 166, 0.18);
+        }
+
+        .chat-forward-title {
+            font-size: 1rem;
+            font-weight: 900;
+        }
+
+        .chat-forward-preview {
+            margin-top: 4px;
+            max-width: 420px;
+            color: #697386;
+            font-size: 0.82rem;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-forward-close {
+            border: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: #eef2f6;
+            color: #172033;
+            cursor: pointer;
+        }
+
+        .chat-forward-search-wrap {
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(133, 146, 166, 0.14);
+        }
+
+        .chat-forward-search {
+            width: 100%;
+            height: 44px;
+            border: 1px solid rgba(133, 146, 166, 0.32);
+            border-radius: 12px;
+            padding: 0 12px;
+            outline: none;
+            font-weight: 750;
+        }
+
+        .chat-forward-list {
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .chat-forward-target {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            display: grid;
+            grid-template-columns: 44px minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            padding: 12px;
+            border-radius: 14px;
+            text-align: left;
+            cursor: pointer;
+            color: #172033;
+        }
+
+        .chat-forward-target:hover {
+            background: #eef6ff;
+        }
+
+        .chat-forward-type {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .chat-forward-target[data-type="conversation"] .chat-forward-type {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .chat-forward-target[data-type="manual"] .chat-forward-type {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .chat-forward-label {
+            font-weight: 900;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-forward-detail {
+            margin-top: 3px;
+            color: #697386;
+            font-size: 0.78rem;
+            font-weight: 750;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-forward-send {
+            color: #0f766e;
+        }
+
+        .chat-forward-empty {
+            padding: 26px 16px;
+            text-align: center;
+            color: #697386;
+            font-weight: 800;
+        }
+
         @keyframes chatSpin {
             to { transform: rotate(360deg); }
         }
@@ -760,6 +925,23 @@
     <div id="chatImageModal" class="chat-image-modal">
         <img id="chatImageModalImg" alt="Imagen de WhatsApp">
     </div>
+    <div id="chatForwardModal" class="chat-forward-modal">
+        <div class="chat-forward-card">
+            <div class="chat-forward-head">
+                <div>
+                    <div class="chat-forward-title">Reenviar mensaje</div>
+                    <div id="chatForwardPreview" class="chat-forward-preview"></div>
+                </div>
+                <button id="chatForwardClose" class="chat-forward-close" type="button" title="Cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chat-forward-search-wrap">
+                <input id="chatForwardSearch" class="chat-forward-search" type="search" placeholder="Buscar cliente, proveedor o numero">
+            </div>
+            <div id="chatForwardList" class="chat-forward-list"></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -775,6 +957,9 @@ function initChat() {
         messagesByConversation: {},
         pendingMessages: [],
         pendingImage: null,
+        forwardingMessage: null,
+        forwardTargets: [],
+        forwardSearchTimer: null,
         hasMoreMessages: false,
         loadingMessages: false,
         loadingOlder: false,
@@ -803,6 +988,11 @@ function initChat() {
         quickReplies: document.getElementById('chatQuickReplies'),
         imageModal: document.getElementById('chatImageModal'),
         imageModalImg: document.getElementById('chatImageModalImg'),
+        forwardModal: document.getElementById('chatForwardModal'),
+        forwardPreview: document.getElementById('chatForwardPreview'),
+        forwardClose: document.getElementById('chatForwardClose'),
+        forwardSearch: document.getElementById('chatForwardSearch'),
+        forwardList: document.getElementById('chatForwardList'),
         newPhone: document.getElementById('chatNewPhone'),
         start: document.getElementById('chatStartBtn'),
         liveStatus: document.getElementById('chatLiveStatus'),
@@ -1031,6 +1221,21 @@ function initChat() {
         return '';
     }
 
+    function canForwardMessage(msg) {
+        return Boolean(msg && msg.id && !msg._status && (msg.message_type === 'image' || msg.message_type === 'text' || !msg.message_type) && (msg.body || msg.media_url));
+    }
+
+    function forwardButtonHtml(msg) {
+        if (!canForwardMessage(msg)) return '';
+        return '<button class="chat-forward-btn" type="button" title="Reenviar" data-forward-id="' + escapeHtml(msg.id) + '"><i class="fas fa-share"></i></button>';
+    }
+
+    function getForwardPreview(msg) {
+        if (!msg) return '';
+        if (msg.message_type === 'image') return msg.body ? 'Imagen: ' + msg.body : 'Imagen';
+        return msg.body || 'Mensaje';
+    }
+
     function getRawMessageNode(msg, type) {
         const raw = msg.raw || {};
         const message = (raw.data && raw.data.message) || raw.message || {};
@@ -1148,11 +1353,12 @@ function initChat() {
             return '<div class="chat-message-row ' + direction + statusClass + '"><div class="chat-bubble">' +
                 renderMessageMedia(msg) +
                 renderMessageBody(msg) +
-                '<div class="chat-time"><span>' + escapeHtml(formatTime(msg.created_at)) + '</span>' + status + '</div>' +
+                '<div class="chat-time">' + forwardButtonHtml(msg) + '<span>' + escapeHtml(formatTime(msg.created_at)) + '</span>' + status + '</div>' +
             '</div></div>';
         }).join('');
         wireLoadOlderButton();
         wireImageOpeners();
+        wireForwardButtons();
 
         if (opts.preserveScroll) {
             const delta = els.messages.scrollHeight - (opts.previousScrollHeight || 0);
@@ -1174,6 +1380,99 @@ function initChat() {
                 els.imageModal.classList.add('active');
             });
         });
+    }
+
+    function wireForwardButtons() {
+        els.messages.querySelectorAll('.chat-forward-btn[data-forward-id]').forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const id = button.dataset.forwardId;
+                const msg = state.messages.concat(state.pendingMessages).find(function(item) {
+                    return item.id === id;
+                });
+                if (msg) openForwardModal(msg);
+            });
+        });
+    }
+
+    function forwardIcon(type) {
+        if (type === 'provider') return 'fa-truck';
+        if (type === 'manual') return 'fa-phone';
+        return 'fa-user';
+    }
+
+    function renderForwardTargets() {
+        if (!state.forwardTargets.length) {
+            els.forwardList.innerHTML = '<div class="chat-forward-empty">Busca por nombre, proveedor o numero de WhatsApp.</div>';
+            return;
+        }
+
+        els.forwardList.innerHTML = state.forwardTargets.map(function(target) {
+            return '<button class="chat-forward-target" type="button" data-phone="' + escapeHtml(target.phone) + '" data-type="' + escapeHtml(target.type) + '">' +
+                '<span class="chat-forward-type"><i class="fas ' + forwardIcon(target.type) + '"></i></span>' +
+                '<span><span class="chat-forward-label">' + escapeHtml(target.label) + '</span><span class="chat-forward-detail">' + escapeHtml(target.detail || target.phone) + '</span></span>' +
+                '<span class="chat-forward-send"><i class="fas fa-paper-plane"></i></span>' +
+            '</button>';
+        }).join('');
+
+        els.forwardList.querySelectorAll('.chat-forward-target').forEach(function(button) {
+            button.addEventListener('click', function() {
+                forwardCurrentMessage(button.dataset.phone);
+            });
+        });
+    }
+
+    async function loadForwardTargets() {
+        const search = els.forwardSearch.value.trim();
+        const params = new URLSearchParams();
+        if (search) params.set('search', search);
+        els.forwardList.innerHTML = '<div class="chat-forward-empty">Buscando destinos...</div>';
+        try {
+            const result = await posApiRequest('/api/chat/forward-targets?' + params.toString(), { method: 'GET' });
+            state.forwardTargets = result.data || [];
+            renderForwardTargets();
+        } catch (error) {
+            els.forwardList.innerHTML = '<div class="chat-forward-empty">No se pudo buscar destinos: ' + escapeHtml(error.message) + '</div>';
+        }
+    }
+
+    function openForwardModal(msg) {
+        state.forwardingMessage = msg;
+        state.forwardTargets = [];
+        els.forwardPreview.textContent = getForwardPreview(msg);
+        els.forwardSearch.value = '';
+        els.forwardModal.classList.add('active');
+        renderForwardTargets();
+        loadForwardTargets();
+        setTimeout(function() { els.forwardSearch.focus(); }, 50);
+    }
+
+    function closeForwardModal() {
+        state.forwardingMessage = null;
+        state.forwardTargets = [];
+        els.forwardModal.classList.remove('active');
+        els.forwardSearch.value = '';
+        els.forwardList.innerHTML = '';
+    }
+
+    async function forwardCurrentMessage(phone) {
+        if (!state.forwardingMessage || !phone) return;
+        const message = state.forwardingMessage;
+        els.forwardList.querySelectorAll('.chat-forward-target').forEach(function(button) {
+            button.disabled = true;
+        });
+        try {
+            await posApiRequest('/api/chat/messages/' + encodeURIComponent(message.id) + '/forward', {
+                method: 'POST',
+                body: JSON.stringify({ phone: phone })
+            });
+            closeForwardModal();
+            showCustomAlert('Mensaje reenviado correctamente.', 'success', 'WhatsApp');
+        } catch (error) {
+            showCustomAlert('No se pudo reenviar: ' + error.message, 'error', 'WhatsApp');
+            renderForwardTargets();
+        }
     }
 
     function clearPendingImage() {
@@ -1661,6 +1960,17 @@ function initChat() {
             els.imageModal.classList.remove('active');
             els.imageModalImg.removeAttribute('src');
         }
+    });
+    els.forwardClose.addEventListener('click', closeForwardModal);
+    els.forwardModal.addEventListener('click', function(event) {
+        if (event.target === els.forwardModal) closeForwardModal();
+    });
+    els.forwardSearch.addEventListener('input', function() {
+        clearTimeout(state.forwardSearchTimer);
+        state.forwardSearchTimer = setTimeout(loadForwardTargets, 280);
+    });
+    els.forwardSearch.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') closeForwardModal();
     });
     els.input.addEventListener('keydown', function(event) {
         if (event.key === 'Enter' && !event.shiftKey) {
