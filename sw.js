@@ -1,6 +1,6 @@
 // =====================================================
 // SERVICE WORKER - FERRISOLUCIONES POS
-// Version: 3.10.2
+// Version: 3.10.4
 // Strategy: Network First
 // =====================================================
 
@@ -11,7 +11,7 @@ const STATIC_ASSETS = [
     '/index.html',
     '/pc/index.html',
     '/pc/manifest.json',
-    '/pc/css/styles.css?v=3.10.2',
+    '/pc/css/styles.css?v=3.10.4',
     '/pc/css/cxc-styles.css',
     '/pc/css/print.css',
     '/pc/views/whatsapp-banner.html',
@@ -29,7 +29,7 @@ const STATIC_ASSETS = [
 // =====================================================
 
 self.addEventListener('install', (event) => {
-    console.log('🔧 [SW] Installing Service Worker v3.10.2...');
+    console.log('🔧 [SW] Installing Service Worker v3.10.4...');
     
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -57,7 +57,7 @@ self.addEventListener('install', (event) => {
 // =====================================================
 
 self.addEventListener('activate', (event) => {
-    console.log('🚀 [SW] Activating Service Worker v3.10.2...');
+    console.log('🚀 [SW] Activating Service Worker v3.10.4...');
     
     event.waitUntil(
         caches.keys()
@@ -178,11 +178,11 @@ self.addEventListener('message', (event) => {
                     event.ports[0].postMessage({ 
                         success: true, 
                         size: requests.length,
-                        version: '3.10.2'
+                        version: '3.10.4'
                     });
                 });
             });
     }
 });
 
-console.log('✅ Service Worker v3.10.2 loaded (Network First Strategy)');
+console.log('✅ Service Worker v3.10.4 loaded (Network First Strategy)');
