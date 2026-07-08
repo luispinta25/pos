@@ -1578,11 +1578,6 @@ function generarComprobantePagoEfectivoCanvas({proveedor, numeroFactura, monto, 
 
 async function enviarNotificacionPagoEfectivo(pago, supabaseClient){
     try{
-        const ferredatos = await obtenerConfiguracionWhatsAppLocal(supabaseClient);
-        if (!ferredatos) {
-            return { success: false, error: 'Configuración no disponible' };
-        }
-
         const fecha = new Date(pago.fechahora);
         const fechaFormateada = fecha.toLocaleDateString('es-EC', {
             day: '2-digit',
@@ -1606,7 +1601,6 @@ async function enviarNotificacionPagoEfectivo(pago, supabaseClient){
         }
 
         const payloadObject = {
-            number: ferredatos.number,
             mediatype: 'image',
             mimetype: 'image/png',
             caption: mensaje,
@@ -1616,17 +1610,12 @@ async function enviarNotificacionPagoEfectivo(pago, supabaseClient){
             linkPreview: false
         };
 
-        const response = await fetch(`https://api.luispintasolutions.com/message/sendMedia/${ferredatos.instance}`, {
+        const data = await posApiRequest('/api/whatsapp/send-media', {
             method: 'POST',
-            headers: {
-                'apikey': ferredatos.apikey,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payloadObject)
+            body: JSON.stringify({ media: payloadObject })
         });
-        const data = await response.json();
 
-        return response.ok ? { success: true, data } : { success: false, error: data };
+        return { success: true, data };
     }catch(error){
         return { success: false, error: error.message };
     }
@@ -1658,8 +1647,8 @@ async function enviarNotificacionTransferencia(transferencia, supabaseClient){
     }
 }
 
-// --- Implementación local del webhook de TRANSFERENCIAS (replicada) ---
-async function enviarNotificacionWhatsAppLocal(transferencia, ferredatos) {
+// --- Implementación local segura por backend ---
+async function enviarNotificacionWhatsAppLocal(transferencia) {
     try {
         // Formatear la fecha y hora
         const fecha = new Date(transferencia.fechahora);
@@ -1680,8 +1669,6 @@ async function enviarNotificacionWhatsAppLocal(transferencia, ferredatos) {
         const montoFormateado = parseFloat(transferencia.monto).toFixed(2);
 
         const mensaje = `${emoji} *Nueva Transferencia Registrada*\n\n*DETALLES DEL MOVIMIENTO*\n\n\n📅 *Fecha:* ${fechaFormateada}\n🕐 *Hora:* ${horaFormateada}\n\n${transferencia.caso === 'ingreso' ? '✅' : '❌'} *Tipo:* ${tipoMovimiento}\n💵 *Monto:* $${montoFormateado}\n\n📝 *Motivo:*\n${transferencia.motivo}\n\n👤 *Registrado por:*\n${transferencia.subido_por_nombre || transferencia.subido_por || 'N/A'}\n\n📸 *Comprobante adjunto*\n\n_Sistema de Gestión Ferrisoluciones_\n_Powered by Ferrisoluciones Tech_`;
-
-        const url = `https://api.luispintasolutions.com/message/sendMedia/${ferredatos.instance}`;
 
         // Detectar si el media es un data URL (base64) y ajustar mimetype/extension
         let mediaValue = transferencia.foto_url || transferencia.fotografia || '';
@@ -1715,7 +1702,6 @@ async function enviarNotificacionWhatsAppLocal(transferencia, ferredatos) {
         }
 
         const payloadObject = {
-            number: ferredatos.number,
             mediatype: 'image',
             mimetype: detectedMimetype,
             caption: mensaje,
@@ -1725,57 +1711,21 @@ async function enviarNotificacionWhatsAppLocal(transferencia, ferredatos) {
             linkPreview: false
         };
 
-        const payloadStr = JSON.stringify(payloadObject);
-
-        const options = {
+        const data = await posApiRequest('/api/whatsapp/send-media', {
             method: 'POST',
-            headers: {
-                'apikey': ferredatos.apikey,
-                'Content-Type': 'application/json'
-            },
-            body: payloadStr
-        };
+            body: JSON.stringify({ media: payloadObject })
+        });
 
-        const response = await fetch(url, options);
-        const data = await response.json();
-
-        if (response.ok) {
-            return { success: true, data };
-        } else {
-            return { success: false, error: data };
-        }
+        return { success: true, data };
 
     } catch (error) {
         return { success: false, error: error.message };
     }
 }
 
-async function obtenerConfiguracionWhatsAppLocal(supabase) {
-    try {
-        const { data, error } = await supabase
-            .from('ferre_ferredatos')
-            .select('*')
-            .limit(1)
-            .single();
-
-        if (error) {
-            return null;
-        }
-
-        return data;
-    } catch (error) {
-        return null;
-    }
-}
-
 async function notificarTransferenciaLocal(transferencia, supabase) {
     try {
-        const ferredatos = await obtenerConfiguracionWhatsAppLocal(supabase);
-        if (!ferredatos) {
-            return { success: false, error: 'Configuración no disponible' };
-        }
-
-        const resultado = await enviarNotificacionWhatsAppLocal(transferencia, ferredatos);
+        const resultado = await enviarNotificacionWhatsAppLocal(transferencia);
         return resultado;
     } catch (error) {
         return { success: false, error: error.message };

@@ -3528,23 +3528,6 @@
         // GENERACIÓN DE PDF Y WEBHOOK
         // =====================================================
 
-        async function obtenerConfiguracionWhatsApp() {
-            try {
-                const client = getSupabaseClient();
-                const { data: ferredatos, error } = await client
-                    .from('ferre_ferredatos')
-                    .select('*')
-                    .limit(1)
-                    .single();
-
-                if (error) throw error;
-                return ferredatos;
-            } catch (error) {
-                console.error('Error obteniendo configuración WhatsApp:', error);
-                return null;
-            }
-        }
-
         async function generarPDFPedido(items, proveedor) {
             try {
                 const { jsPDF } = window.jspdf;
@@ -3714,9 +3697,7 @@
             }
         }
 
-        async function enviarWebhookPedido(pdfBase64, ferredatos, proveedor) {
-            const url = `https://api.luispintasolutions.com/message/sendMedia/${ferredatos.instance}`;
-
+        async function enviarWebhookPedido(pdfBase64, proveedor) {
             const fechaArchivo = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
             const nombreArchivo = `Pedido_${(proveedor.empresa || 'Prov').replace(/[^a-zA-Z0-9]/g, '_')}_${fechaArchivo}.pdf`;
 
@@ -3727,7 +3708,6 @@
             const valorTexto = subtotal > 0 ? `\n*Valor Estimado (+IVA):* $${total.toFixed(2)}` : '';
 
             const payload = {
-                number: ferredatos.number,
                 media: pdfBase64,
                 mediatype: "document",
                 mimetype: "application/pdf",
@@ -3735,18 +3715,14 @@
                 caption: `📋 *NUEVO PEDIDO GENERADO*\n\n*Proveedor:* ${proveedor.empresa}\n*Fecha:* ${new Date().toLocaleString()}\n*Items:* ${carritoPedido.length}${valorTexto}`
             };
 
-                const response = await fetch(url, {
+                const response = await posApiRequest('/api/whatsapp/send-media', {
                     method: 'POST',
-                    headers: {
-                        'apikey': ferredatos.apikey,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ media: payload })
                 });
 
-                const data = await response.json();
+                const data = response?.data || response;
 
-                if (response.ok) {
+                if (data) {
                     return { success: true, data };
                 } else {
                     console.error('Error webhook response:', data);
@@ -3849,21 +3825,13 @@
             try {
                 console.log('Iniciando proceso de generación de pedido...');
 
-                // 1. Obtener configuración
-                const ferredatos = await obtenerConfiguracionWhatsApp();
-
-                if (!ferredatos) {
-                    throw new Error('No se pudo obtener la configuración de envío (ferredatos). Verifica tu conexión o configuración.');
-                }
-                console.log('Configuración obtenida correctamente.');
-
-                // 2. Generar PDF
+                // 1. Generar PDF
                 const items = [...carritoPedido]; // Copia
                 const pdfBase64 = await generarPDFPedido(items, proveedorActual);
                 console.log('PDF generado correctamente.');
 
-                // 3. Enviar Webhook
-                const resultado = await enviarWebhookPedido(pdfBase64, ferredatos, proveedorActual);
+                // 2. Enviar por backend seguro
+                const resultado = await enviarWebhookPedido(pdfBase64, proveedorActual);
 
                 if (resultado.success) {
                     window.app?.showToast?.('✅ Pedido enviado correctamente por WhatsApp', 'success', 4000);

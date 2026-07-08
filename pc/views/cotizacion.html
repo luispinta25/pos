@@ -5606,20 +5606,6 @@
 
     async function enviarNotificacionCaja(tipo, datos) {
         try {
-            const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : null);
-            if (!db) return;
-
-            const { data: ferredatos, error } = await db
-                .from('ferre_ferredatos')
-                .select('*')
-                .limit(1)
-                .single();
-
-            if (error || !ferredatos) {
-                console.error('Configuración de WhatsApp no disponible para notificaciones de caja');
-                return;
-            }
-
             const { montoContado, montoEsperado, desfase, detalleDesfase, usuario, ventas, egresos } = datos;
             const absDesfase = Math.abs(desfase);
             const tieneDesfaseMonto = absDesfase > 0.01;
@@ -5672,16 +5658,9 @@ ${tieneDesfaseDenom ? `📝 *Detalle de Diferencias:*\n${detalleDesfase}` : ''}$
 👤 *Usuario:* ${usuario}
 _Sistema de Gestión Ferrisoluciones_`;
 
-            const url = `https://api.luispintasolutions.com/message/sendText/${ferredatos.instance}`;
-
-            await fetch(url, {
+            await posApiRequest('/api/whatsapp/send-text', {
                 method: 'POST',
-                headers: {
-                    'apikey': ferredatos.apikey,
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify({
-                    number: ferredatos.number,
                     text: texto,
                     delay: 1000,
                     linkPreview: false
@@ -10282,10 +10261,6 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             // Construir JSON
             const jsonFactura = {
-                // WhatsApp config
-                instance_id: configServicios.instance_id || configServicios.whatsapp_instance_id || "",
-                access_token: configServicios.acces_token || configServicios.whatsapp_access_token || "",
-
                 // Archivos
                 archivo: `FACTURA-${estab}-${ptoEmi}-${secuencial}.xml`,
                 facturaPDF: `FACTURA-${estab}-${ptoEmi}-${secuencial}.pdf`,
@@ -10360,21 +10335,9 @@ _Sistema de Gestión Ferrisoluciones_`;
                 codigoArtesano: (cliente.correo || "consumidor@final.com"),
                 artesanoRide: (cliente.correo || "consumidor@final.com"),
 
-                // Firma electrónica (.p12)
-                clave_12: configServicios.firma_clave_p12 || "",
-
                 // URLs y logos
                 urlLogo: configServicios.url_logo_factura || "",
                 urlLogoPieCorreo: configServicios.url_logo_pie_correo || "",
-
-                // SMTP
-                correoRemitente: configServicios.smtp_correo_remitente || "",
-                clavecorreoRemitente: configServicios.smtp_clave_remitente || "",
-                hostcorreoRemitente: configServicios.smtp_host || "smtp.gmail.com",
-                puertocorreoRemitente: String(configServicios.smtp_puerto || "587"),
-
-                // Nombre del archivo .p12
-                nombrep12: configServicios.firma_nombre_p12 || "",
 
                 // Ambiente SRI
                 ambientesri: configSRI.ambiente === 1 ? "https://celcer.sri.gob.ec" : "https://cel.sri.gob.ec"

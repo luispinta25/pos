@@ -3742,10 +3742,6 @@
 
                 // Construir JSON
                 const jsonFactura = {
-                    // WhatsApp config
-                    instance_id: configServicios.whatsapp_instance_id || "",
-                    access_token: configServicios.whatsapp_access_token || "",
-
                     // Archivos
                     archivo: `FACTURA-${estab}-${ptoEmi}-${secuencial}.xml`,
                     facturaPDF: `FACTURA-${estab}-${ptoEmi}-${secuencial}.pdf`,
@@ -3820,21 +3816,9 @@
                     codigoArtesano: configServicios.empresa_codigo_artesano || "",
                     artesanoRide: configServicios.empresa_codigo_artesano ? configServicios.empresa_codigo_artesano : "-",
 
-                    // Firma electrónica (.p12)
-                    clave_12: configServicios.firma_clave_p12 || "",
-
                     // URLs y logos
                     urlLogo: configServicios.url_logo_factura || "",
                     urlLogoPieCorreo: configServicios.url_logo_pie_correo || "",
-
-                    // SMTP
-                    correoRemitente: configServicios.smtp_correo_remitente || "",
-                    clavecorreoRemitente: configServicios.smtp_clave_remitente || "",
-                    hostcorreoRemitente: configServicios.smtp_host || "smtp.gmail.com",
-                    puertocorreoRemitente: String(configServicios.smtp_puerto || "587"),
-
-                    // Nombre del archivo .p12
-                    nombrep12: configServicios.firma_nombre_p12 || "",
 
                     // Ambiente SRI
                     ambientesri: configSRI.ambiente === 1 ? "https://celcer.sri.gob.ec" : "https://cel.sri.gob.ec"
