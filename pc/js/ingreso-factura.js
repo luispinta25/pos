@@ -9,7 +9,11 @@ var ingresoFacturaState = ingresoFacturaState || {
     productosEnFactura: [],
     inventarioCompleto: [],
     proveedoresDisponibles: [],
-    descuento: 0
+    descuento: 0,
+    nuevoProveedorWhatsapp: {
+        valido: null,
+        numero: ''
+    }
 };
 
 // Índice del producto para cambiar zona desde el modal
@@ -98,6 +102,10 @@ function setupEventListenersIngreso() {
     if (formNuevoProveedor) {
         formNuevoProveedor.addEventListener('submit', guardarNuevoProveedorIngreso);
     }
+    document.getElementById('contactoProveedorIngreso')?.addEventListener('input', () => {
+        ingresoFacturaState.nuevoProveedorWhatsapp = { valido: null, numero: '' };
+        setWhatsappEstadoNuevoProveedorIngreso('muted', 'Ingresa un número para comprobar WhatsApp.', 'fa-circle-info');
+    });
     
     // Form de nuevo producto
     const formNuevoProducto = document.getElementById('formNuevoProductoIngreso');
@@ -2069,18 +2077,103 @@ function cerrarModalNuevoProveedorIngreso() {
     modal.classList.remove('active');
 }
 
+function normalizarTelefonoProveedorIngreso(value) {
+    if (typeof window.normalizarTelefonoProveedor === 'function') {
+        return window.normalizarTelefonoProveedor(value);
+    }
+    let digits = String(value || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('00')) digits = digits.slice(2);
+    if (digits.startsWith('0') && digits.length === 10) return `593${digits.slice(1)}`;
+    if (digits.length === 9 && digits.startsWith('9')) return `593${digits}`;
+    if (digits.startsWith('593') && digits.length >= 12) return digits;
+    return digits;
+}
+
+function setWhatsappEstadoNuevoProveedorIngreso(tipo, texto, icono = 'fa-circle-info') {
+    const estado = document.getElementById('whatsappEstadoProveedorIngreso');
+    if (!estado) return;
+    const colores = {
+        muted: '#6b7280',
+        checking: '#0ea5e9',
+        ok: '#15803d',
+        error: '#b91c1c'
+    };
+    estado.style.color = colores[tipo] || colores.muted;
+    estado.innerHTML = `<i class="fas ${icono}"></i> ${texto}`;
+}
+
+async function comprobarWhatsappNuevoProveedorIngreso() {
+    const contactoInput = document.getElementById('contactoProveedorIngreso');
+    const boton = document.getElementById('btnComprobarWhatsappIngreso');
+    const numero = normalizarTelefonoProveedorIngreso(contactoInput?.value);
+
+    ingresoFacturaState.nuevoProveedorWhatsapp = { valido: null, numero };
+
+    if (!numero || numero.length < 11) {
+        setWhatsappEstadoNuevoProveedorIngreso('error', 'Número incompleto. Usa 0999999999 o 593999999999.', 'fa-triangle-exclamation');
+        return false;
+    }
+
+    try {
+        if (boton) {
+            boton.disabled = true;
+            boton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Comprobando';
+        }
+        setWhatsappEstadoNuevoProveedorIngreso('checking', 'Comprobando WhatsApp...', 'fa-spinner fa-spin');
+
+        const result = await posApiRequest('/api/whatsapp/check-number', {
+            method: 'POST',
+            body: JSON.stringify({ number: numero })
+        });
+
+        const exists = Boolean(result?.data?.exists);
+        const checkedNumber = result?.data?.number || numero;
+        ingresoFacturaState.nuevoProveedorWhatsapp = { valido: exists, numero: checkedNumber };
+
+        if (exists) {
+            contactoInput.value = checkedNumber;
+            setWhatsappEstadoNuevoProveedorIngreso('ok', 'WhatsApp confirmado para este número.', 'fa-circle-check');
+            return true;
+        }
+
+        setWhatsappEstadoNuevoProveedorIngreso('error', 'Este número no aparece registrado en WhatsApp.', 'fa-circle-xmark');
+        return false;
+    } catch (error) {
+        ingresoFacturaState.nuevoProveedorWhatsapp = { valido: null, numero };
+        setWhatsappEstadoNuevoProveedorIngreso('error', `No se pudo comprobar: ${error.message}`, 'fa-triangle-exclamation');
+        return false;
+    } finally {
+        if (boton) {
+            boton.disabled = false;
+            boton.innerHTML = '<i class="fab fa-whatsapp"></i> Comprobar';
+        }
+    }
+}
+
 async function guardarNuevoProveedorIngreso(e) {
     e.preventDefault();
     
     try {
         showAppLoader();
+        const contactoNormalizado = normalizarTelefonoProveedorIngreso(document.getElementById('contactoProveedorIngreso').value.trim());
+        if (ingresoFacturaState.nuevoProveedorWhatsapp?.valido !== true ||
+            ingresoFacturaState.nuevoProveedorWhatsapp?.numero !== contactoNormalizado) {
+            hideAppLoader();
+            const confirmado = await comprobarWhatsappNuevoProveedorIngreso();
+            if (!confirmado) {
+                mostrarNotificacionIngreso('Confirma un número de WhatsApp válido antes de guardar', 'warning');
+                return;
+            }
+            showAppLoader();
+        }
         
         const client = window.app?.db || window.supabaseClient;
         const proveedorData = {
             codigo: document.getElementById('codigoProveedorIngreso').value.trim(),
             empresa: document.getElementById('empresaProveedorIngreso').value.trim(),
             vendedor: document.getElementById('vendedorProveedorIngreso').value.trim() || null,
-            contacto: document.getElementById('contactoProveedorIngreso').value.trim() || null
+            contacto: ingresoFacturaState.nuevoProveedorWhatsapp?.numero || contactoNormalizado
         };
         
         const { data, error } = await client
@@ -2096,6 +2189,9 @@ async function guardarNuevoProveedorIngreso(e) {
         
         // Recargar grid
         cargarProveedoresIngreso();
+        if (typeof cargarProveedoresData === 'function') {
+            cargarProveedoresData();
+        }
         
         cerrarModalNuevoProveedorIngreso();
         hideAppLoader();
@@ -2106,6 +2202,8 @@ async function guardarNuevoProveedorIngreso(e) {
         mostrarNotificacionIngreso('Error al guardar proveedor: ' + error.message, 'error');
     }
 }
+
+window.comprobarWhatsappNuevoProveedorIngreso = comprobarWhatsappNuevoProveedorIngreso;
 
 async function mostrarModalNuevoProductoIngreso(initialCode = null) {
     // Al abrir el modal, solicitar al servidor (Supabase) el siguiente código sugerido

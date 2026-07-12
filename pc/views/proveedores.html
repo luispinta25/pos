@@ -178,6 +178,10 @@
                     Notas
                     <span id="badgeNotas" class="badge-counter hidden">0</span>
                 </button>
+                <button class="btn btn-info" onclick="mostrarModalAgendaProveedores()">
+                    <i class="fab fa-whatsapp"></i>
+                    Agenda Proveedores
+                </button>
                 <button class="btn btn-primary" onclick="mostrarModalNotificar()">
                     <i class="fas fa-bell"></i>
                     Notificar Visita
@@ -892,30 +896,36 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        flex: 1;
+        flex: 0 1 720px;
+        margin-left: auto;
     }
 
     .mode-tabs {
-        display: flex;
-        gap: 10px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(130px, 1fr));
+        gap: 8px;
         background: var(--bg-primary);
-        padding: 5px;
+        padding: 10px;
         border-radius: var(--border-radius-md);
+        width: 100%;
     }
 
     .mode-tab {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
-        padding: 12px 24px;
+        min-height: 54px;
+        padding: 10px 14px;
         border: none;
         background: transparent;
         color: var(--text-secondary);
-        font-size: 0.95em;
+        font-size: 0.9em;
         font-weight: 600;
         border-radius: var(--border-radius-sm);
         cursor: pointer;
         transition: all var(--transition-fast);
+        text-align: center;
     }
 
     .mode-tab:hover {
@@ -981,6 +991,260 @@
         background: var(--bg-primary);
         border-radius: var(--border-radius-md);
         box-shadow: var(--shadow-sm);
+    }
+
+    #headerFacturas .header-content {
+        max-width: none;
+        display: grid;
+        grid-template-columns: minmax(340px, 0.9fr) minmax(540px, 1.35fr);
+        align-items: start;
+        gap: 26px;
+    }
+
+    #headerFacturas .header-left {
+        min-width: 0;
+    }
+
+    #headerFacturas .header-right {
+        grid-column: 1;
+        min-width: 0;
+    }
+
+    #headerFacturas .header-center {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        align-self: center;
+        width: 100%;
+    }
+
+    #headerFacturas .module-title {
+        line-height: 1.08;
+    }
+
+    #statsFacturas {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(118px, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+    }
+
+    #statsFacturas .stat-item {
+        min-width: 0;
+        padding: 12px 14px;
+    }
+
+    #proveedoresFacturasFilters {
+        display: grid;
+        grid-template-columns: minmax(420px, 1fr) minmax(540px, 0.95fr);
+        align-items: end;
+        gap: 18px;
+    }
+
+    #proveedoresFacturasFilters .filter-group {
+        min-width: 0;
+    }
+
+    #proveedoresFacturasFilters .filter-actions {
+        display: grid;
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
+        gap: 12px;
+        margin-left: 0;
+        width: 100%;
+    }
+
+    #proveedoresFacturasFilters .filter-actions .btn {
+        width: 100%;
+        min-height: 48px;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    .agenda-modal {
+        max-width: 1100px;
+        width: min(1100px, calc(100vw - 36px));
+    }
+
+    .btn-info {
+        background: linear-gradient(135deg, #128c7e, #075e54);
+        color: #ffffff;
+        border: none;
+    }
+
+    .btn-info:hover {
+        background: linear-gradient(135deg, #075e54, #064e46);
+        color: #ffffff;
+    }
+
+    .agenda-modal-header {
+        background: linear-gradient(135deg, #128c7e 0%, #075e54 100%);
+    }
+
+    .agenda-body {
+        padding: 0;
+    }
+
+    .agenda-layout {
+        display: grid;
+        grid-template-columns: minmax(320px, 0.9fr) minmax(360px, 1.1fr);
+        min-height: 560px;
+    }
+
+    .agenda-list-panel,
+    .agenda-form-panel {
+        padding: 22px;
+        min-width: 0;
+    }
+
+    .agenda-list-panel {
+        border-right: 1px solid #e5e7eb;
+        background: #f8fafc;
+    }
+
+    .agenda-panel-head,
+    .agenda-form-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .agenda-panel-head h4 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1.15rem;
+        font-weight: 800;
+    }
+
+    .agenda-panel-head p {
+        margin: 4px 0 0;
+        color: var(--text-secondary);
+        font-size: 0.86rem;
+    }
+
+    .agenda-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 0 12px;
+        margin-bottom: 14px;
+    }
+
+    .agenda-search i {
+        color: var(--text-secondary);
+    }
+
+    .agenda-search input {
+        border: 0;
+        outline: 0;
+        background: transparent;
+        min-height: 42px;
+        width: 100%;
+        font: inherit;
+    }
+
+    .agenda-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 430px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    .agenda-provider-card {
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 12px;
+        cursor: pointer;
+        text-align: left;
+        transition: all var(--transition-fast);
+    }
+
+    .agenda-provider-card:hover,
+    .agenda-provider-card.active {
+        border-color: #128c7e;
+        box-shadow: 0 8px 18px rgba(18, 140, 126, 0.12);
+    }
+
+    .agenda-provider-main {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: var(--text-primary);
+        font-weight: 800;
+    }
+
+    .agenda-provider-meta {
+        margin-top: 7px;
+        display: grid;
+        gap: 4px;
+        color: var(--text-secondary);
+        font-size: 0.84rem;
+    }
+
+    .agenda-whatsapp-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 999px;
+        padding: 4px 8px;
+        background: #dcfce7;
+        color: #166534;
+        font-size: 0.72rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .agenda-form-title span {
+        color: var(--text-primary);
+        font-weight: 850;
+        font-size: 1.12rem;
+    }
+
+    .agenda-form-title small {
+        color: var(--text-secondary);
+        font-weight: 700;
+    }
+
+    .agenda-form {
+        display: grid;
+        gap: 18px;
+    }
+
+    .agenda-phone-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .agenda-whatsapp-status {
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 0.86rem;
+        font-weight: 700;
+    }
+
+    .agenda-whatsapp-status.muted { color: var(--text-secondary); }
+    .agenda-whatsapp-status.checking { color: #0ea5e9; }
+    .agenda-whatsapp-status.ok { color: #15803d; }
+    .agenda-whatsapp-status.error { color: #b91c1c; }
+
+    .agenda-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 8px;
     }
 
     .facturas-scroll-container {
@@ -1231,6 +1495,23 @@
     }
 
     @media (max-width: 1200px) {
+        #headerFacturas .header-content,
+        #proveedoresFacturasFilters {
+            grid-template-columns: 1fr;
+        }
+
+        #headerFacturas .header-center,
+        #headerFacturas .header-right {
+            grid-column: auto;
+            grid-row: auto;
+        }
+
+        #proveedoresFacturasFilters .filter-actions {
+            grid-column: auto;
+            grid-row: auto;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
         .dashboard-kpi-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -1775,6 +2056,23 @@
     }
 
     @media (max-width: 768px) {
+        .mode-tabs,
+        #statsFacturas,
+        #proveedoresFacturasFilters .filter-actions,
+        .agenda-layout,
+        .agenda-phone-row {
+            grid-template-columns: 1fr;
+        }
+
+        .agenda-list-panel {
+            border-right: 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .agenda-actions {
+            flex-direction: column;
+        }
+
         .details-grid,
         .form-grid {
             grid-template-columns: 1fr;
@@ -2079,6 +2377,84 @@
     </div>
 </div>
 
+<div id="modalAgendaProveedores" class="modal">
+    <div class="modal-overlay" onclick="cerrarModalAgendaProveedores()"></div>
+    <div class="modal-content modal-xl agenda-modal">
+        <div class="modal-header agenda-modal-header">
+            <h3>
+                <i class="fab fa-whatsapp"></i>
+                Agenda de Proveedores
+            </h3>
+            <button class="modal-close" onclick="cerrarModalAgendaProveedores()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body agenda-body">
+            <div class="agenda-layout">
+                <section class="agenda-list-panel">
+                    <div class="agenda-panel-head">
+                        <div>
+                            <h4>Contactos</h4>
+                            <p>Empresa, vendedor y número confirmado.</p>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" type="button" onclick="prepararNuevoProveedorAgenda()">
+                            <i class="fas fa-plus"></i>
+                            Nuevo
+                        </button>
+                    </div>
+                    <div class="agenda-search">
+                        <i class="fas fa-search"></i>
+                        <input id="agendaProveedorBuscar" type="search" placeholder="Buscar proveedor o vendedor">
+                    </div>
+                    <div id="agendaProveedoresLista" class="agenda-list"></div>
+                </section>
+
+                <section class="agenda-form-panel">
+                    <div class="agenda-form-title">
+                        <span id="agendaFormModo">Nuevo proveedor</span>
+                        <small id="agendaFormEstado">Sin guardar</small>
+                    </div>
+                    <form id="formAgendaProveedor" class="agenda-form">
+                        <input type="hidden" id="agendaProveedorId">
+                        <div class="form-group">
+                            <label class="form-label required">Nombre de la empresa</label>
+                            <input type="text" id="agendaEmpresa" class="form-input" required autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nombre del vendedor</label>
+                            <input type="text" id="agendaVendedor" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Número de contacto</label>
+                            <div class="agenda-phone-row">
+                                <input type="tel" id="agendaContacto" class="form-input" placeholder="0999999999 o 593999999999" required autocomplete="off">
+                                <button class="btn btn-success" type="button" id="btnComprobarWhatsapp" onclick="comprobarWhatsappAgenda()">
+                                    <i class="fab fa-whatsapp"></i>
+                                    Comprobar
+                                </button>
+                            </div>
+                            <div id="agendaWhatsappEstado" class="agenda-whatsapp-status muted">
+                                <i class="fas fa-circle-info"></i>
+                                Ingresa un número para comprobar WhatsApp.
+                            </div>
+                        </div>
+                        <div class="agenda-actions">
+                            <button type="button" class="btn btn-secondary" onclick="limpiarFormularioAgenda()">
+                                <i class="fas fa-eraser"></i>
+                                Limpiar
+                            </button>
+                            <button type="submit" class="btn btn-accent" id="btnGuardarAgendaProveedor">
+                                <i class="fas fa-save"></i>
+                                Guardar proveedor
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <div id="modalFacturaEmergencia" class="modal">
     <div class="modal-overlay" onclick="cerrarModalFacturaEmergencia()"></div>
@@ -2194,6 +2570,11 @@ let proveedoresData = {
     facturas: [],
     proveedores: [],
     notas: [],
+    agenda: {
+        proveedorActual: null,
+        whatsappValido: null,
+        numeroNormalizado: ''
+    },
     dashboard: {
         cargado: false,
         inventario: [],
@@ -2451,6 +2832,13 @@ function setupProveedoresListeners() {
     document.getElementById('formNotificar')?.addEventListener('submit', enviarNotificacionProveedor);
     document.getElementById('notificarDeuda')?.addEventListener('change', actualizarCheckboxesNotificacion);
     document.getElementById('notificarMotivo')?.addEventListener('change', actualizarCheckboxesNotificacion);
+    document.getElementById('agendaProveedorBuscar')?.addEventListener('input', renderAgendaProveedores);
+    document.getElementById('formAgendaProveedor')?.addEventListener('submit', guardarProveedorAgenda);
+    document.getElementById('agendaContacto')?.addEventListener('input', () => {
+        proveedoresData.agenda.whatsappValido = null;
+        proveedoresData.agenda.numeroNormalizado = '';
+        setAgendaWhatsappEstado('muted', 'Ingresa un número para comprobar WhatsApp.', 'fa-circle-info');
+    });
     
     // Tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -2490,7 +2878,7 @@ async function cargarProveedoresData() {
         const client = getSupabaseClient();
         const { data, error } = await client
             .from('ferre_proveedores')
-            .select('id, codigo, empresa')
+            .select('id, codigo, empresa, vendedor, contacto')
             .order('empresa', { ascending: true });
         
         if (error) throw error;
@@ -4481,6 +4869,253 @@ function cerrarAlertaModal() {
         modalAlertaPredefinido.classList.remove('show');
     }
 }
+
+// =====================================================
+// AGENDA DE PROVEEDORES
+// =====================================================
+
+function escapeProveedorHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function normalizarTelefonoProveedor(value) {
+    let digits = String(value || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('00')) digits = digits.slice(2);
+    if (digits.startsWith('0') && digits.length === 10) return `593${digits.slice(1)}`;
+    if (digits.length === 9 && digits.startsWith('9')) return `593${digits}`;
+    if (digits.startsWith('593') && digits.length >= 12) return digits;
+    return digits;
+}
+
+function setAgendaWhatsappEstado(tipo, texto, icono = 'fa-circle-info') {
+    const estado = document.getElementById('agendaWhatsappEstado');
+    if (!estado) return;
+    estado.className = `agenda-whatsapp-status ${tipo}`;
+    estado.innerHTML = `<i class="fas ${icono}"></i> ${escapeProveedorHtml(texto)}`;
+}
+
+function renderAgendaProveedores() {
+    const lista = document.getElementById('agendaProveedoresLista');
+    if (!lista) return;
+
+    const query = String(document.getElementById('agendaProveedorBuscar')?.value || '').trim().toLowerCase();
+    const proveedores = (proveedoresData.proveedores || []).filter(proveedor => {
+        const texto = [proveedor.empresa, proveedor.vendedor, proveedor.contacto, proveedor.codigo]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+        return !query || texto.includes(query);
+    });
+
+    if (!proveedores.length) {
+        lista.innerHTML = `
+            <div class="empty-state" style="padding:22px">
+                <i class="fas fa-address-book"></i>
+                <p>No hay proveedores para mostrar</p>
+            </div>
+        `;
+        return;
+    }
+
+    lista.innerHTML = proveedores.map(proveedor => {
+        const activo = proveedoresData.agenda.proveedorActual?.id === proveedor.id ? ' active' : '';
+        const contacto = proveedor.contacto || 'Sin número';
+        const vendedor = proveedor.vendedor || 'Sin vendedor asignado';
+        return `
+            <button type="button" class="agenda-provider-card${activo}" onclick="seleccionarProveedorAgenda('${proveedor.id}')">
+                <div class="agenda-provider-main">
+                    <span>${escapeProveedorHtml(proveedor.empresa || 'Proveedor sin nombre')}</span>
+                    ${proveedor.contacto ? '<span class="agenda-whatsapp-pill"><i class="fab fa-whatsapp"></i> Contacto</span>' : ''}
+                </div>
+                <div class="agenda-provider-meta">
+                    <span><i class="fas fa-user-tie"></i> ${escapeProveedorHtml(vendedor)}</span>
+                    <span><i class="fas fa-phone"></i> ${escapeProveedorHtml(contacto)}</span>
+                </div>
+            </button>
+        `;
+    }).join('');
+}
+
+function limpiarFormularioAgenda() {
+    document.getElementById('formAgendaProveedor')?.reset();
+    document.getElementById('agendaProveedorId').value = '';
+    proveedoresData.agenda.proveedorActual = null;
+    proveedoresData.agenda.whatsappValido = null;
+    proveedoresData.agenda.numeroNormalizado = '';
+    document.getElementById('agendaFormModo').textContent = 'Nuevo proveedor';
+    document.getElementById('agendaFormEstado').textContent = 'Sin guardar';
+    setAgendaWhatsappEstado('muted', 'Ingresa un número para comprobar WhatsApp.', 'fa-circle-info');
+    renderAgendaProveedores();
+}
+
+function prepararNuevoProveedorAgenda() {
+    limpiarFormularioAgenda();
+    document.getElementById('agendaEmpresa')?.focus();
+}
+
+function seleccionarProveedorAgenda(id) {
+    const proveedor = (proveedoresData.proveedores || []).find(p => String(p.id) === String(id));
+    if (!proveedor) return;
+
+    proveedoresData.agenda.proveedorActual = proveedor;
+    proveedoresData.agenda.whatsappValido = null;
+    proveedoresData.agenda.numeroNormalizado = '';
+    document.getElementById('agendaProveedorId').value = proveedor.id || '';
+    document.getElementById('agendaEmpresa').value = proveedor.empresa || '';
+    document.getElementById('agendaVendedor').value = proveedor.vendedor || '';
+    document.getElementById('agendaContacto').value = proveedor.contacto || '';
+    document.getElementById('agendaFormModo').textContent = 'Actualizar proveedor';
+    document.getElementById('agendaFormEstado').textContent = proveedor.codigo ? `Código ${proveedor.codigo}` : 'Proveedor existente';
+    setAgendaWhatsappEstado('muted', 'Comprueba el número antes de guardar cambios.', 'fa-circle-info');
+    renderAgendaProveedores();
+}
+
+async function mostrarModalAgendaProveedores() {
+    if (!proveedoresData.proveedores?.length) {
+        await cargarProveedoresData();
+    }
+    renderAgendaProveedores();
+    limpiarFormularioAgenda();
+    document.getElementById('modalAgendaProveedores')?.classList.add('active');
+}
+
+function cerrarModalAgendaProveedores() {
+    document.getElementById('modalAgendaProveedores')?.classList.remove('active');
+}
+
+async function comprobarWhatsappAgenda() {
+    const contactoInput = document.getElementById('agendaContacto');
+    const boton = document.getElementById('btnComprobarWhatsapp');
+    const numero = normalizarTelefonoProveedor(contactoInput?.value);
+
+    proveedoresData.agenda.whatsappValido = null;
+    proveedoresData.agenda.numeroNormalizado = numero;
+
+    if (!numero || numero.length < 11) {
+        setAgendaWhatsappEstado('error', 'Número incompleto. Usa 0999999999 o 593999999999.', 'fa-triangle-exclamation');
+        return false;
+    }
+
+    try {
+        if (boton) {
+            boton.disabled = true;
+            boton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Comprobando';
+        }
+        setAgendaWhatsappEstado('checking', 'Comprobando WhatsApp...', 'fa-spinner fa-spin');
+
+        const result = await posApiRequest('/api/whatsapp/check-number', {
+            method: 'POST',
+            body: JSON.stringify({ number: numero })
+        });
+
+        const exists = Boolean(result?.data?.exists);
+        proveedoresData.agenda.whatsappValido = exists;
+        proveedoresData.agenda.numeroNormalizado = result?.data?.number || numero;
+
+        if (exists) {
+            contactoInput.value = proveedoresData.agenda.numeroNormalizado;
+            setAgendaWhatsappEstado('ok', 'WhatsApp confirmado para este número.', 'fa-circle-check');
+            return true;
+        }
+
+        setAgendaWhatsappEstado('error', 'Este número no aparece registrado en WhatsApp.', 'fa-circle-xmark');
+        return false;
+    } catch (error) {
+        proveedoresData.agenda.whatsappValido = null;
+        setAgendaWhatsappEstado('error', `No se pudo comprobar: ${error.message}`, 'fa-triangle-exclamation');
+        return false;
+    } finally {
+        if (boton) {
+            boton.disabled = false;
+            boton.innerHTML = '<i class="fab fa-whatsapp"></i> Comprobar';
+        }
+    }
+}
+
+async function guardarProveedorAgenda(event) {
+    event.preventDefault();
+
+    const id = document.getElementById('agendaProveedorId').value;
+    const empresa = document.getElementById('agendaEmpresa').value.trim();
+    const vendedor = document.getElementById('agendaVendedor').value.trim();
+    const contactoRaw = document.getElementById('agendaContacto').value.trim();
+    const contacto = normalizarTelefonoProveedor(contactoRaw);
+
+    if (!empresa || !contacto) {
+        mostrarNotificacionProveedor('Empresa y número de contacto son obligatorios', 'warning');
+        return;
+    }
+
+    if (proveedoresData.agenda.whatsappValido !== true || proveedoresData.agenda.numeroNormalizado !== contacto) {
+        const confirmado = await comprobarWhatsappAgenda();
+        if (!confirmado) {
+            mostrarNotificacionProveedor('Confirma un número de WhatsApp válido antes de guardar', 'warning');
+            return;
+        }
+    }
+
+    const boton = document.getElementById('btnGuardarAgendaProveedor');
+    const textoOriginal = boton?.innerHTML;
+
+    try {
+        if (boton) {
+            boton.disabled = true;
+            boton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando';
+        }
+
+        const client = getSupabaseClient();
+        const proveedorData = {
+            empresa,
+            vendedor: vendedor || null,
+            contacto
+        };
+
+        let response;
+        if (id) {
+            response = await client
+                .from('ferre_proveedores')
+                .update(proveedorData)
+                .eq('id', id)
+                .select('id, codigo, empresa, vendedor, contacto')
+                .single();
+        } else {
+            const codigo = `PROV-${Date.now().toString().slice(-6)}`;
+            response = await client
+                .from('ferre_proveedores')
+                .insert([{ ...proveedorData, codigo }])
+                .select('id, codigo, empresa, vendedor, contacto')
+                .single();
+        }
+
+        if (response.error) throw response.error;
+
+        await cargarProveedoresData();
+        seleccionarProveedorAgenda(response.data.id);
+        mostrarNotificacionProveedor(id ? 'Proveedor actualizado correctamente' : 'Proveedor registrado correctamente', 'success');
+    } catch (error) {
+        mostrarNotificacionProveedor('Error al guardar proveedor: ' + error.message, 'error');
+    } finally {
+        if (boton) {
+            boton.disabled = false;
+            boton.innerHTML = textoOriginal || '<i class="fas fa-save"></i> Guardar proveedor';
+        }
+    }
+}
+
+window.mostrarModalAgendaProveedores = mostrarModalAgendaProveedores;
+window.cerrarModalAgendaProveedores = cerrarModalAgendaProveedores;
+window.prepararNuevoProveedorAgenda = prepararNuevoProveedorAgenda;
+window.limpiarFormularioAgenda = limpiarFormularioAgenda;
+window.seleccionarProveedorAgenda = seleccionarProveedorAgenda;
+window.comprobarWhatsappAgenda = comprobarWhatsappAgenda;
+window.guardarProveedorAgenda = guardarProveedorAgenda;
+window.normalizarTelefonoProveedor = normalizarTelefonoProveedor;
 
 // =====================================================
 // MODAL FACTURA EMERGENCIA
