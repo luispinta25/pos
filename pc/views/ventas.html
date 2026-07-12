@@ -419,7 +419,7 @@
 <div id="modalSeleccionCliente" class="modal">
     <div class="modal-content" style="max-width: 900px;">
         <div class="modal-header">
-            <h2 class="modal-title"><i class="fas fa-user-plus"></i> Seleccionar Cliente para Factura</h2>
+            <h2 id="cliente-modal-title" class="modal-title"><i class="fas fa-user-plus"></i> Seleccionar Cliente para Factura</h2>
             <button class="modal-close" onclick="cerrarModalSeleccionCliente()">&times;</button>
         </div>
         <div class="modal-body" style="padding: 20px;">
@@ -439,7 +439,7 @@
                         <div id="recibo-fecha" style="font-weight: 600;"></div>
                     </div>
                     <div>
-                        <label style="font-size: 0.85em; color: #666;">Fecha facturación:</label>
+                        <label id="cliente-modal-date-label" style="font-size: 0.85em; color: #666;">Fecha facturación:</label>
                         <div id="factura-fecha" style="font-weight: 600; color: #d4a017;"></div>
                     </div>
                 </div>
@@ -1522,7 +1522,6 @@
                     else if (estado === 'AUTORIZADO') badgeClass += ' autorizado';
                     estadoBadge = `<span class="${badgeClass}">${venta.estado}</span>`;
                 }
-
                 return `
                 <div class="${cardClass}" onclick="verDetalleVenta('${venta.id}')">
                     <div class="venta-card-header">
@@ -3331,9 +3330,46 @@
 
         let clientesBusqueda = [];
         let debounceTimer = null;
+        let clienteModalModo = 'convertir';
+
+        function iniciarProgresoFacturacion(mensajes) {
+            const loadingText = document.getElementById('conversionLoadingText');
+            const timers = [];
+            mensajes.forEach((mensaje, index) => {
+                const aplicar = () => {
+                    if (loadingText) loadingText.textContent = mensaje;
+                };
+                if (index === 0) aplicar();
+                else timers.push(setTimeout(aplicar, [2000, 5000, 9000, 15000][index - 1] || index * 5000));
+            });
+            return {
+                actualizar(mensaje) {
+                    timers.forEach(clearTimeout);
+                    if (loadingText) loadingText.textContent = mensaje;
+                },
+                detener() {
+                    timers.forEach(clearTimeout);
+                }
+            };
+        }
 
         function iniciarConversionAFactura() {
+            abrirModalSeleccionCliente('convertir');
+        }
+
+        function abrirModalSeleccionCliente() {
             const { venta } = window.ventaActual;
+            clienteModalModo = 'convertir';
+
+            const title = document.getElementById('cliente-modal-title');
+            if (title) {
+                title.innerHTML = '<i class="fas fa-user-plus"></i> Seleccionar Cliente para Factura';
+            }
+
+            const dateLabel = document.getElementById('cliente-modal-date-label');
+            if (dateLabel) {
+                dateLabel.textContent = 'Fecha facturación:';
+            }
 
             // Mostrar información del recibo
             document.getElementById('recibo-id').textContent = venta.id_venta;
@@ -3443,9 +3479,14 @@
             }
 
             const loadingOverlay = document.getElementById('conversionLoadingOverlay');
-            const loadingText = document.getElementById('conversionLoadingText');
+            const progreso = iniciarProgresoFacturacion([
+                'Preparando datos de la factura...',
+                'Enviando factura al microservicio...',
+                'Esperando recepción del SRI...',
+                'Consultando autorización...',
+                'Finalizando comprobante y envíos...'
+            ]);
             if (loadingOverlay) {
-                if (loadingText) loadingText.textContent = 'Convirtiendo recibo a factura...';
                 loadingOverlay.style.display = 'flex';
             }
 
@@ -3462,7 +3503,8 @@
                     method: 'POST',
                     body: JSON.stringify({
                         ventaId: venta.id,
-                        clienteId: cliente.cedula
+                        clienteId: cliente.cedula,
+                        flowVersion: 'microservice-v1'
                     })
                 });
                 const data = respuesta?.data || {};
@@ -3470,16 +3512,17 @@
 
                 console.groupCollapsed('%c🔄 CONVERSIÓN RECIBO → FACTURA', 'color:#9C27B0;font-weight:bold;font-size:14px;');
                 console.log('Recibo original:', venta.id_venta);
-                console.log('Número de factura:', data.doc);
+                console.log('Número de factura:', resultado.doc || data.venta?.doc);
                 console.log('Cliente:', cliente.razon_social);
                 console.log('Resultado SRI:', resultado);
                 console.groupEnd();
 
                 if (resultado.success) {
-                    window.app?.showToast?.('✅ Factura convertida y autorizada por el SRI', 'success', 4000);
+                    progreso.actualizar('Factura autorizada. Finalizando correo y WhatsApp...');
+                    window.app?.showToast?.(`✅ Factura ${resultado.doc || data.venta?.doc || ''} autorizada y enviada al cliente`, 'success', 5000);
                 } else {
-                    const mensaje = resultado.data?.message || resultado.message || 'Factura convertida, pendiente de autorización SRI';
-                    const tipoToast = data.estado === 'RECHAZADO' ? 'error' : 'warning';
+                    const mensaje = resultado.error || resultado.message || resultado.estado || 'Factura pendiente de autorización SRI';
+                    const tipoToast = resultado.estado === 'RECHAZADO' ? 'error' : 'warning';
                     window.app?.showToast?.(`⚠️ ${mensaje}`, tipoToast, 5000);
                 }
 
@@ -3489,9 +3532,11 @@
                 cargarVentas();
 
             } catch (error) {
+                progreso.actualizar('No se completó la conversión. El recibo permanece intacto.');
                 console.error('Error convirtiendo recibo:', error);
                 window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
             } finally {
+                progreso.detener();
                 const loadingOverlay = document.getElementById('conversionLoadingOverlay');
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
             }
@@ -3504,8 +3549,8 @@
         async function reenviarAlSRI() {
             const { venta } = window.ventaActual;
 
-            if (!venta.doc || !venta.clave_acceso) {
-                window.app?.showToast?.('No hay datos suficientes para reenviar', 'error', 3000);
+            if (venta.estado === 'AUTORIZADO') {
+                window.app?.showToast?.('La factura ya está autorizada; no necesita reintento', 'info', 3000);
                 return;
             }
 
@@ -3515,16 +3560,22 @@
             // Pequeño delay para asegurar que el modal se cierre completamente
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            const confirmed = await window.showCustomConfirm(`¿Reenviar factura <strong>${venta.doc}</strong> al SRI?`);
+            const confirmed = await window.showCustomConfirm('¿Reintentar la autorización de esta factura?<br><br>Se conservarán la referencia, clave y secuencial existentes.');
             if (!confirmed) {
                 return;
             }
 
+            let progreso = null;
             try {
                 const loadingOverlay = document.getElementById('conversionLoadingOverlay');
-                const loadingText = document.getElementById('conversionLoadingText');
+                progreso = iniciarProgresoFacturacion([
+                    'Recuperando la misma referencia y clave...',
+                    'Reenviando el comprobante pendiente...',
+                    'Consultando recepción del SRI...',
+                    'Esperando autorización...',
+                    'Finalizando estado y envíos...'
+                ]);
                 if (loadingOverlay) {
-                    if (loadingText) loadingText.textContent = 'Reenviando comprobante al SRI...';
                     loadingOverlay.style.display = 'flex';
                 }
 
@@ -3536,30 +3587,27 @@
 
                 const respuesta = await posApiRequest('/api/billing/retry', {
                     method: 'POST',
-                    body: JSON.stringify({ ventaId: venta.id })
+                    body: JSON.stringify({
+                        ventaId: venta.id,
+                        clienteId: venta.cliente_id,
+                        flowVersion: 'microservice-v1'
+                    })
                 });
                 const data = respuesta?.data || {};
                 const resultado = data.result || {};
 
-                // Validar si es exitoso (verificar tanto success como el detalle del SRI)
-                const detalleString = resultado.data?.detalle || resultado.data?.data?.detalle || '';
-                const detalleUpper = detalleString.toUpperCase();
-
-                const esExitoso = resultado.success &&
-                    resultado.data &&
-                    (resultado.data.status === 'success' ||
-                        detalleUpper === 'AUTORIZADO' ||
-                        detalleUpper.includes('CLAVE ACCESO REGISTRADA'));
+                const esExitoso = resultado.success === true && resultado.estado === 'AUTORIZADO';
 
                 if (esExitoso) {
+                    progreso.actualizar('Factura autorizada. Finalizando correo y WhatsApp...');
                     window.app?.showToast?.('✅ Factura autorizada por el SRI', 'success', 4000);
                     cerrarModalDetalle();
 
                     await new Promise(resolve => setTimeout(resolve, 300));
                     cargarVentas();
                 } else {
-                    const mensaje = resultado.data?.message || resultado.message || 'Comprobante pendiente o rechazado';
-                    const tipoToast = data.estado === 'RECHAZADO' ? 'error' : 'warning';
+                    const mensaje = resultado.error || resultado.message || resultado.estado || 'Comprobante pendiente o rechazado';
+                    const tipoToast = resultado.estado === 'RECHAZADO' ? 'error' : 'warning';
                     window.app?.showToast?.(`⚠️ SRI: ${mensaje}`, tipoToast, 5000);
                     await new Promise(resolve => setTimeout(resolve, 300));
                     cargarVentas();
@@ -3569,6 +3617,7 @@
                 console.error('Error reenviando al SRI:', error);
                 window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
             } finally {
+                if (progreso) progreso.detener();
                 const loadingOverlay = document.getElementById('conversionLoadingOverlay');
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
             }
@@ -3584,333 +3633,6 @@
             return '0'.repeat(length - str.length) + str;
         }
 
-        function calcularDigitoVerificador(cadena) {
-            try {
-                if (!cadena || cadena.length !== 48) {
-                    return { success: false, error: 'Cadena inválida' };
-                }
-
-                const factores = [2, 3, 4, 5, 6, 7];
-                let suma = 0;
-
-                for (let i = 0; i < cadena.length; i++) {
-                    const digito = parseInt(cadena[i]);
-                    const factor = factores[i % 6];
-                    suma += digito * factor;
-                }
-
-                let digitoVerificador = 11 - (suma % 11);
-                if (digitoVerificador === 10) digitoVerificador = 1;
-                if (digitoVerificador === 11) digitoVerificador = 0;
-
-                return {
-                    success: true,
-                    claveAcceso: cadena + digitoVerificador
-                };
-            } catch (error) {
-                return { success: false, error: error.message };
-            }
-        }
-
-        function generarClaveAcceso(fecha, config) {
-            try {
-                console.group('🔑 Generando Clave de Acceso');
-                console.log('📅 Fecha:', fecha);
-                console.log('📋 Config recibida:', config);
-
-                if (!fecha || fecha.length !== 8) {
-                    console.error('❌ Fecha inválida:', fecha, 'longitud:', fecha?.length);
-                    console.groupEnd();
-                    return { success: false, error: 'Fecha inválida (debe tener 8 dígitos: ddMMyyyy)' };
-                }
-
-                const tipoComprobante = "01";
-                const ruc = padWithZeroes(config.ruc, 13);
-                const ambiente = padWithZeroes(config.ambiente, 1);
-                const establecimiento = padWithZeroes(config.establecimiento, 3);
-                const puntoEmision = padWithZeroes(config.punto_emision, 3);
-                const comprobante = padWithZeroes(config.comprobante_actual, 9);
-                const codigoNumerico = padWithZeroes(config.codigo_numerico, 8);
-                const tipoEmision = padWithZeroes(config.tipo_emision, 1);
-
-                console.log('📊 Componentes de la clave:');
-                console.log('  - Fecha:', fecha, '(8)');
-                console.log('  - Tipo Comprobante:', tipoComprobante, '(2)');
-                console.log('  - RUC:', ruc, '(13)');
-                console.log('  - Ambiente:', ambiente, '(1)');
-                console.log('  - Establecimiento:', establecimiento, '(3)');
-                console.log('  - Punto Emisión:', puntoEmision, '(3)');
-                console.log('  - Comprobante:', comprobante, '(9)');
-                console.log('  - Código Numérico:', codigoNumerico, '(8)');
-                console.log('  - Tipo Emisión:', tipoEmision, '(1)');
-
-                const claveAcceso48 = fecha + tipoComprobante + ruc + ambiente + establecimiento + puntoEmision + comprobante + codigoNumerico + tipoEmision;
-
-                console.log('🔢 Clave 48 dígitos:', claveAcceso48);
-                console.log('📏 Longitud:', claveAcceso48.length);
-
-                const resultado = calcularDigitoVerificador(claveAcceso48);
-
-                if (resultado.success) {
-                    console.log('✅ Clave completa (49):', resultado.claveAcceso);
-                } else {
-                    console.error('❌ Error calculando dígito verificador:', resultado.error);
-                }
-
-                console.groupEnd();
-                return resultado;
-            } catch (error) {
-                console.error('❌ Error en generarClaveAcceso:', error);
-                console.groupEnd();
-                return { success: false, error: error.message };
-            }
-        }
-
-        function getTipoIdentificacion(identificacion) {
-            if (!identificacion) return "07"; // Consumidor final
-            const id = String(identificacion).trim();
-            if (id === "9999999999999") return "07"; // Consumidor final
-            if (id.length === 10) return "05"; // Cédula
-            if (id.length === 13) return "04"; // RUC
-            return "06"; // Pasaporte u otro
-        }
-
-        function formatIdentificacion(identificacion) {
-            if (!identificacion) return "9999999999999";
-            let id = String(identificacion).trim();
-
-            // Si es consumidor final
-            if (id === "9999999999999") return id;
-
-            // Si es cédula (10 dígitos)
-            if (id.length <= 10) {
-                return padWithZeroes(id, 10);
-            }
-
-            // Si es RUC (13 dígitos)
-            return id;
-        }
-
-        function formatearTelefonoEcuador(telefono) {
-            if (!telefono) return "S/N";
-            let tel = String(telefono).replace(/\D/g, ''); // Solo dígitos
-            if (tel.length === 0) return "S/N";
-            if (tel.length === 9) tel = '0' + tel; // Agregar 0 al inicio
-            return tel;
-        }
-
-        function generarJsonFacturacion(ventaData, configSRI, configServicios, claveAcceso, docNumber) {
-            try {
-                // Calcular totales
-                let subtotal = 0;
-                const productos = ventaData.productos.map(prod => {
-                    const subtotalProducto = prod.cantidad * prod.precio;
-                    subtotal += subtotalProducto;
-                    return {
-                        codigoPrincipal: prod.codigo || 'PROD',
-                        codigoAuxiliar: prod.codigo || 'PROD',
-                        descripcion: prod.nombre.replace(/,/g, '.'), // Sin comas
-                        cantidad: prod.cantidad.toFixed(2),
-                        precioUnitario: prod.precio.toFixed(2),
-                        subtotalSinIVA: subtotalProducto.toFixed(2),
-                        codigoPorcentaje: "0",
-                        tarifa: "0",
-                        iva: "0.00",
-                        descuento: "0.00"
-                    };
-                });
-
-                // Extraer partes del documento
-                const docParts = docNumber.split('-');
-                const estab = docParts[0];
-                const ptoEmi = docParts[1];
-                const secuencial = docParts[2];
-
-                // Fecha de emisión
-                const now = new Date(ventaData.fecha || Date.now());
-                const fechaEmision = now.toLocaleDateString('es-EC', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                });
-
-                // Datos del cliente
-                const cliente = ventaData.cliente;
-                const identificacionComprador = formatIdentificacion(cliente.cedula);
-                const tipoIdentificacionComprador = getTipoIdentificacion(identificacionComprador);
-                const telefonoCliente = formatearTelefonoEcuador(cliente.telefono);
-
-                // Construir JSON
-                const jsonFactura = {
-                    // Archivos
-                    archivo: `FACTURA-${estab}-${ptoEmi}-${secuencial}.xml`,
-                    facturaPDF: `FACTURA-${estab}-${ptoEmi}-${secuencial}.pdf`,
-
-                    // Correo del cliente
-                    correo: cliente.correo || "consumidor@final.com",
-
-                    // Configuración SRI
-                    ambiente: String(configSRI.ambiente),
-                    razonSocial: configServicios.empresa_razon_social,
-                    nombreComercial: configServicios.empresa_nombre_comercial,
-                    ruc: configServicios.empresa_ruc,
-                    claveAcceso: claveAcceso,
-                    estab: estab,
-                    ptoEmi: ptoEmi,
-                    secuencial: secuencial,
-
-                    // Direcciones
-                    dirMatriz: configServicios.empresa_dir_matriz,
-                    dirEstablecimiento: configServicios.empresa_dir_establecimiento,
-
-                    // Contribuyente
-                    contribuyenteRimpe: configServicios.empresa_contribuyente_rimpe || "",
-                    contribuyenteRIDE: configServicios.empresa_contribuyente_ride || "",
-                    obligadoContabilidad: configServicios.empresa_obligado_contabilidad,
-
-                    // Fecha
-                    fechaEmision: fechaEmision,
-
-                    // Cliente
-                    tipoIdentificacionComprador: tipoIdentificacionComprador,
-                    razonSocialComprador: cliente.razon_social,
-                    identificacionComprador: identificacionComprador,
-                    direccionComprador: cliente.direccion || "S/N",
-                    telefonoCliente: telefonoCliente,
-                    telefonoContribuyente: configServicios.empresa_telefono,
-
-                    // Documento
-                    factura: docNumber,
-                    formaPago: configServicios.factura_forma_pago_defecto || "01",
-                    formaPagoRIDE: configServicios.factura_forma_pago_ride || "01 SIN UTILIZACIÓN DEL SISTEMA FINANCIERO",
-
-                    // Totales
-                    codigoPorcentajeTotales: "0",
-                    baseImponibleTotales: subtotal.toFixed(2),
-                    valorTotales: "0.00",
-                    totalSinImpuestos: subtotal.toFixed(2),
-                    importeTotal: subtotal.toFixed(2),
-                    totalDescuento: "0.00",
-                    valor: "0.00",
-
-                    // Productos (arrays concatenados)
-                    codigoPrincipal: productos.map(p => p.codigoPrincipal).join(' , '),
-                    codigoAuxiliar: productos.map(p => p.codigoAuxiliar).join(' , '),
-                    descripcion: productos.map(p => p.descripcion).join(' , '),
-                    cantidad: productos.map(p => p.cantidad).join(' , '),
-                    precioUnitario: productos.map(p => p.precioUnitario).join('|'),
-                    subtotalSinIVA: productos.map(p => p.subtotalSinIVA).join('|'),
-                    codigoPorcentaje: productos.map(p => p.codigoPorcentaje).join(','),
-                    tarifa: productos.map(p => p.tarifa).join(','),
-                    iva: productos.map(p => p.iva).join('|'),
-                    descuento: productos.map(p => p.descuento).join('|'),
-
-                    // Subtotales IVA
-                    subtotal12: "0.00",
-                    subtotal0: subtotal.toFixed(2),
-                    subtotalNoObjeto: "0.00",
-                    subtotalExento: "0.00",
-
-                    // Campos adicionales
-                    campoAdicional: 'campoAdicional nombre="Correo de cliente"',
-                    codigoArtesano: configServicios.empresa_codigo_artesano || "",
-                    artesanoRide: configServicios.empresa_codigo_artesano ? configServicios.empresa_codigo_artesano : "-",
-
-                    // URLs y logos
-                    urlLogo: configServicios.url_logo_factura || "",
-                    urlLogoPieCorreo: configServicios.url_logo_pie_correo || "",
-
-                    // Ambiente SRI
-                    ambientesri: configSRI.ambiente === 1 ? "https://celcer.sri.gob.ec" : "https://cel.sri.gob.ec"
-                };
-
-                return {
-                    success: true,
-                    json: jsonFactura
-                };
-
-            } catch (error) {
-                console.error('❌ Error generando JSON de facturación:', error);
-                return {
-                    success: false,
-                    message: error.message
-                };
-            }
-        }
-
-        async function enviarFacturaAlServicioFirma({ url, payload, maxIntentos, timeoutMs }) {
-            console.log(`📡 Iniciando envío al servicio de firma (máx. ${maxIntentos} intentos, timeout: ${timeoutMs}ms)`);
-
-            for (let intento = 1; intento <= maxIntentos; intento++) {
-                console.log(`\n🔄 Intento ${intento}/${maxIntentos}...`);
-
-                try {
-                    const controller = new AbortController();
-                    const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
-
-                    const tiempoInicio = Date.now();
-
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload),
-                        signal: controller.signal
-                    });
-
-                    clearTimeout(timeoutHandle);
-
-                    const tiempoTranscurrido = Date.now() - tiempoInicio;
-                    console.log(`⏱️ Tiempo de respuesta: ${tiempoTranscurrido}ms`);
-                    console.log(`📊 Status HTTP: ${response.status} ${response.statusText}`);
-
-                    const text = await response.text();
-                    console.log(`📄 Respuesta raw (${text.length} caracteres):`, text.substring(0, 500));
-
-                    let data = null;
-
-                    try {
-                        data = JSON.parse(text);
-                        console.log('✅ JSON parseado exitosamente:', data);
-                    } catch (e) {
-                        console.warn('⚠️ No se pudo parsear como JSON:', e.message);
-                        data = { message: text };
-                    }
-
-                    if (response.ok) {
-                        console.log(`✅ Intento ${intento} EXITOSO`);
-                        return { success: true, statusCode: response.status, data, intento };
-                    } else {
-                        console.warn(`⚠️ Intento ${intento} falló con status ${response.status}`);
-
-                        if (intento < maxIntentos) {
-                            const esperaMs = 2000 * intento;
-                            console.log(`⏳ Esperando ${esperaMs}ms antes del siguiente intento...`);
-                            await new Promise(resolve => setTimeout(resolve, esperaMs));
-                            continue;
-                        }
-
-                        console.error(`❌ Todos los intentos fallaron`);
-                        return { success: false, statusCode: response.status, data, intento };
-                    }
-                } catch (error) {
-                    console.error(`❌ Error en intento ${intento}:`, error.message);
-
-                    if (error.name === 'AbortError') {
-                        console.error(`⏱️ Timeout después de ${timeoutMs}ms`);
-                    }
-
-                    if (intento < maxIntentos) {
-                        const esperaMs = 3000 * intento;
-                        console.log(`⏳ Esperando ${esperaMs}ms antes del siguiente intento...`);
-                        await new Promise(resolve => setTimeout(resolve, esperaMs));
-                        continue;
-                    }
-
-                    console.error(`❌ Todos los intentos agotados`);
-                    return { success: false, error: error.message, intento };
-                }
-            }
-        }
 
         // =====================================================
         // DASHBOARD EXPERTO

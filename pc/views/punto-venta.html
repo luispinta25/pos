@@ -845,7 +845,7 @@
                 </div>
                 <div class="email-error-message" id="updateClienteCorreoError"></div>
                 <small style="color: #666; display: block; margin-top: 5px;">
-                    Debe ser un correo válido (no puede terminar en @cambiar.com)
+                    Se permiten guion medio (-) y guion bajo (_). No cambie caracteres sin confirmar con el cliente.
                 </small>
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
                     <button type="button" id="btnNoCorreoUpdate" class="btn-no-correo"
@@ -896,6 +896,14 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="billingProcessOverlay" style="display: none;">
+    <div style="text-align: center; padding: 36px; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: min(420px, calc(100vw - 32px)); margin: auto;">
+        <div style="width: 56px; height: 56px; border: 6px solid #f3f3f3; border-top: 6px solid #d4a017; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+        <h3 style="color: #222; margin: 0 0 10px; font-size: 1.2em;">Procesando factura electrónica</h3>
+        <p id="billingProcessText" style="color: #555; margin: 0; font-size: 1em;">Preparando venta...</p>
+    </div>
+</div>
+
 <div class="modal-overlay" id="modalRegistroCliente">
     <div class="modal-box" style="max-width: 550px;">
         <div class="modal-header">
@@ -943,7 +951,7 @@
                 </div>
                 <div class="email-error-message" id="nuevoClienteCorreoError"></div>
                 <small style="color: #666; display: block; margin-top: 5px;">
-                    Debe ser un correo válido y real
+                    Se permiten guion medio (-) y guion bajo (_). No cambie caracteres sin confirmar con el cliente.
                 </small>
 
                 <!-- Botones de acción para correo -->
@@ -3546,7 +3554,7 @@
             return {
                 email: data.email || email,
                 mensaje: data.resultado?.mensaje || "Sin mensaje",
-                valido: valido   // preserva null para casos inciertos
+                valido
             };
 
         } catch (error) {
@@ -3624,8 +3632,7 @@
         }
 
         // Validación básica de formato de email
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
+        if (!esFormatoCorreoValido(email)) {
             actualizarUIValidacionCorreo(inputElement, errorElement, {
                 email,
                 mensaje: 'Formato de correo inválido',
@@ -3676,6 +3683,12 @@
                 });
             }
         }
+    }
+
+    function esFormatoCorreoValido(value) {
+        const email = String(value || '').trim();
+        const emailRegex = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/;
+        return email.length <= 254 && emailRegex.test(email);
     }
 
     async function validarWhatsapp(whatsapp) {
@@ -8293,10 +8306,10 @@ _Sistema de Gestión Ferrisoluciones_`;
         // Input de pago
         document.getElementById('pagadoCon').value = totalConIva.toFixed(2);
 
-        // Establecer tipo de comprobante por defecto (RECIBO)
-        if (!ventaState.tipoComprobante) {
-            ventaState.tipoComprobante = 'RECIBO';
-        }
+        // F1 propone factura para un cliente real y recibo para consumidor final.
+        // El usuario todavía puede cambiar esta selección antes de confirmar.
+        const esConsumidorFinal = !cliente || String(cliente.cedula || '') === '9999999999999';
+        ventaState.tipoComprobante = esConsumidorFinal ? 'RECIBO' : 'FACTURA';
 
         // Actualizar UI del selector de tipo
         const btnTipoSelector = document.querySelector(`[data-tipo="${ventaState.tipoComprobante}"]`);
@@ -9271,8 +9284,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         }
 
         // Validar formato de correo
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(correo)) {
+        if (!esFormatoCorreoValido(correo)) {
             window.app.showToast('<i class="fas fa-exclamation-triangle"></i> Por favor ingrese un correo electrónico válido', 'warning', 3000);
             document.getElementById('updateClienteCorreo').focus();
             return;
@@ -9487,8 +9499,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         }
 
         // Validar formato de correo
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(correo)) {
+        if (!esFormatoCorreoValido(correo)) {
             window.app.showToast('<i class="fas fa-exclamation-triangle"></i> Por favor ingrese un correo electrónico válido', 'warning', 3000);
             document.getElementById('nuevoClienteCorreo').focus();
             return;
@@ -9891,406 +9902,70 @@ _Sistema de Gestión Ferrisoluciones_`;
     }
 
 
-    function generarClaveAcceso(fecha, config) {
-        try {
-            // Validar fecha
-            if (!fecha || fecha.length !== 8 || !/^\d{8}$/.test(fecha)) {
-                return {
-                    success: false,
-                    message: "La fecha debe estar en formato ddMMyyyy (8 dígitos)"
-                };
-            }
 
-            // Tipo de comprobante: 01 = Factura
-            const tipoComprobante = "01";
-
-            // Formatear valores a longitudes requeridas
-            const ruc = padWithZeroes(config.ruc, 13);
-            const ambiente = padWithZeroes(config.ambiente, 1);
-            const establecimiento = padWithZeroes(config.establecimiento, 3);
-            const puntoEmision = padWithZeroes(config.punto_emision, 3);
-            const serie = establecimiento + puntoEmision; // 6 dígitos
-            const comprobante = padWithZeroes(config.comprobante_actual, 9);
-            const codigoNumerico = padWithZeroes(config.codigo_numerico, 8);
-            const tipoEmision = padWithZeroes(config.tipo_emision, 1);
-
-            // Componer clave de acceso (48 dígitos)
-            const claveAcceso48 =
-                fecha +                 // 8 dígitos
-                tipoComprobante +       // 2 dígitos
-                ruc +                   // 13 dígitos
-                ambiente +              // 1 dígito
-                serie +                 // 6 dígitos (establecimiento + punto emisión)
-                comprobante +           // 9 dígitos
-                codigoNumerico +        // 8 dígitos
-                tipoEmision;            // 1 dígito
-            // TOTAL: 48 dígitos
-
-            // Calcular dígito verificador
-            const resultado = calcularDigitoVerificador(claveAcceso48);
-
-            if (!resultado.success) {
-                return resultado;
-            }
-
-            return {
-                success: true,
-                claveAcceso: resultado.resultado,
-                digito: resultado.digito
-            };
-
-        } catch (error) {
-            return {
-                success: false,
-                message: "Error generando clave de acceso: " + error.message
-            };
-        }
-    }
-
-
-    function getTipoIdentificacion(identificacion) {
-        if (!identificacion) return "07"; // Consumidor final
-        const id = String(identificacion).trim();
-        if (id === "9999999999999") return "07"; // Consumidor final
-        if (id.length === 10) return "05"; // Cédula
-        if (id.length === 13) return "04"; // RUC
-        return "06"; // Pasaporte u otro
-    }
-
-
-    function formatIdentificacion(identificacion) {
-        if (!identificacion) return "9999999999999";
-        let id = String(identificacion).trim();
-
-        // Si es consumidor final
-        if (id === "9999999999999") return id;
-
-        // Si es cédula (10 dígitos)
-        if (id.length <= 10) {
-            return padWithZeroes(id, 10);
-        }
-
-        // Si es RUC (13 dígitos)
-        return id;
-    }
-
-
-    function formatearTelefonoEcuador(telefono) {
-        if (!telefono) return "S/N";
-        let tel = String(telefono).replace(/\D/g, ''); // Solo dígitos
-        if (tel.length === 0) return "S/N";
-        if (tel.length === 9) tel = '0' + tel; // Agregar 0 al inicio
-        return tel;
-    }
-
-
-    async function obtenerConfiguracionFacturacion() {
-        try {
-            const db = window.app.db;
-
-            // Obtener configuración SRI
-            const { data: configSRI, error: errorSRI } = await db
-                .from('ferre_facelectronicaconfig')
-                .select('id, ambiente, establecimiento, punto_emision, comprobante_actual, codigo_numerico, tipo_emision, ruc')
-                .single();
-
-            if (errorSRI) {
-                console.error('❌ Error obteniendo configuración SRI:', errorSRI);
-                throw new Error('No se pudo obtener configuración de facturación SRI');
-            }
-
-            if (typeof posApiRequest !== 'function') {
-                throw new Error('No se pudo obtener configuración de servicios');
-            }
-
-            const publicConfig = await posApiRequest('/api/billing/config-public', {
-                method: 'GET'
-            });
-            const configServicios = publicConfig?.data;
-
-            if (!configServicios) {
-                throw new Error('No se pudo obtener configuración pública de facturación');
-            }
-
-            return {
-                success: true,
-                configSRI: configSRI,
-                configServicios: configServicios
-            };
-
-        } catch (error) {
-            console.error('❌ Error en obtenerConfiguracionFacturacion:', error);
-            return {
-                success: false,
-                message: error.message
-            };
-        }
-    }
-
-
-    function generarJsonFacturacion(ventaData, configSRI, configServicios, claveAcceso, docNumber) {
-        try {
-            // Calcular totales
-            let subtotal = 0;
-            const productos = ventaData.productos.map(prod => {
-                const subtotalProducto = prod.cantidad * prod.precio;
-                subtotal += subtotalProducto;
-                return {
-                    codigoPrincipal: prod.codigo,
-                    codigoAuxiliar: prod.codigo,
-                    descripcion: prod.nombre.replace(/,/g, '.'), // Sin comas
-                    cantidad: prod.cantidad.toFixed(2),
-                    precioUnitario: prod.precio.toFixed(2),
-                    subtotalSinIVA: subtotalProducto.toFixed(2),
-                    codigoPorcentaje: "0",
-                    tarifa: "0",
-                    iva: "0.00",
-                    descuento: "0.00"
-                };
-            });
-
-            // Extraer partes del documento
-            const docParts = docNumber.split('-');
-            const estab = docParts[0];
-            const ptoEmi = docParts[1];
-            const secuencial = docParts[2];
-
-            // Fecha de emisión
-            const now = new Date();
-            const fechaEmision = now.toLocaleDateString('es-EC', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-
-            // Datos del cliente
-            const cliente = ventaData.cliente;
-            const identificacionComprador = formatIdentificacion(cliente.cedula);
-            const tipoIdentificacionComprador = getTipoIdentificacion(identificacionComprador);
-            const telefonoCliente = formatearTelefonoEcuador(cliente.telefono);
-
-            // Construir JSON
-            const jsonFactura = {
-                // Archivos
-                archivo: `FACTURA-${estab}-${ptoEmi}-${secuencial}.xml`,
-                facturaPDF: `FACTURA-${estab}-${ptoEmi}-${secuencial}.pdf`,
-
-                // Correo del cliente
-                correo: cliente.correo || "consumidor@final.com",
-
-                // Configuración SRI
-                ambiente: String(configSRI.ambiente),
-                razonSocial: configServicios.empresa_razon_social,
-                nombreComercial: configServicios.empresa_nombre_comercial,
-                ruc: configServicios.empresa_ruc,
-                claveAcceso: claveAcceso,
-                estab: estab,
-                ptoEmi: ptoEmi,
-                secuencial: secuencial,
-
-                // Direcciones
-                dirMatriz: configServicios.empresa_dir_matriz,
-                dirEstablecimiento: configServicios.empresa_dir_establecimiento,
-
-                // Contribuyente
-                contribuyenteRimpe: configServicios.empresa_contribuyente_rimpe || "",
-                contribuyenteRIDE: configServicios.empresa_contribuyente_ride || "",
-                obligadoContabilidad: configServicios.empresa_obligado_contabilidad,
-
-                // Fecha
-                fechaEmision: fechaEmision,
-
-                // Cliente
-                tipoIdentificacionComprador: tipoIdentificacionComprador,
-                razonSocialComprador: cliente.razon_social,
-                identificacionComprador: identificacionComprador,
-                direccionComprador: cliente.direccion || "S/N",
-                telefonoCliente: telefonoCliente,
-                telefonoContribuyente: configServicios.empresa_telefono,
-
-                // Documento
-                factura: docNumber,
-                formaPago: configServicios.factura_forma_pago_defecto || "01",
-                formaPagoRIDE: configServicios.factura_forma_pago_ride || "01 SIN UTILIZACIÓN DEL SISTEMA FINANCIERO",
-
-                // Totales
-                codigoPorcentajeTotales: "0",
-                baseImponibleTotales: subtotal.toFixed(2),
-                valorTotales: "0.00",
-                totalSinImpuestos: subtotal.toFixed(2),
-                importeTotal: subtotal.toFixed(2),
-                totalDescuento: "0.00",
-                valor: "0.00",
-
-                // Productos (arrays concatenados)
-                codigoPrincipal: productos.map(p => p.codigoPrincipal).join(' , '),
-                codigoAuxiliar: productos.map(p => p.codigoAuxiliar).join(' , '),
-                descripcion: productos.map(p => p.descripcion).join(' , '),
-                cantidad: productos.map(p => p.cantidad).join(' , '),
-                precioUnitario: productos.map(p => p.precioUnitario).join('|'),
-                subtotalSinIVA: productos.map(p => p.subtotalSinIVA).join('|'),
-                codigoPorcentaje: productos.map(p => p.codigoPorcentaje).join(','),
-                tarifa: productos.map(p => p.tarifa).join(','),
-                iva: productos.map(p => p.iva).join('|'),
-                descuento: productos.map(p => p.descuento).join('|'),
-
-                // Subtotales IVA
-                subtotal12: "0.00",
-                subtotal0: subtotal.toFixed(2),
-                subtotalNoObjeto: "0.00",
-                subtotalExento: "0.00",
-
-                // Campos adicionales
-                campoAdicional: 'campoAdicional nombre="Correo de cliente"',
-                codigoArtesano: (cliente.correo || "consumidor@final.com"),
-                artesanoRide: (cliente.correo || "consumidor@final.com"),
-
-                // URLs y logos
-                urlLogo: configServicios.url_logo_factura || "",
-                urlLogoPieCorreo: configServicios.url_logo_pie_correo || "",
-
-                // Ambiente SRI
-                ambientesri: configSRI.ambiente === 1 ? "https://celcer.sri.gob.ec" : "https://cel.sri.gob.ec"
-            };
-
-            return {
-                success: true,
-                json: jsonFactura
-            };
-
-        } catch (error) {
-            console.error('❌ Error generando JSON de facturación:', error);
-            return {
-                success: false,
-                message: error.message
-            };
-        }
-    }
-
-    async function enviarFacturaAlServicioFirma({ url, payload, maxIntentos = 3, timeoutMs = 30000 }) {
-        if (!url) {
-            throw new Error('No se configuró la URL del servicio de firma.');
-        }
-
-        const intentosTotales = Math.max(1, Number(maxIntentos) || 1);
-        const timeout = Math.max(5000, Number(timeoutMs) || 30000);
-        const cuerpo = JSON.stringify(payload);
-        let ultimoError = null;
-
-        for (let intento = 1; intento <= intentosTotales; intento++) {
-            let controller;
-            let timeoutHandle;
-
-            try {
-                controller = new AbortController();
-                timeoutHandle = setTimeout(() => controller.abort(), timeout);
-
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: cuerpo,
-                    signal: controller.signal
-                });
-
-                clearTimeout(timeoutHandle);
-
-                const raw = await response.text();
-                let data = null;
-
-                if (raw) {
-                    try {
-                        data = JSON.parse(raw);
-                    } catch (parseError) {
-                        console.warn('⚠️ Respuesta del servicio de firma no es JSON válido:', parseError);
-                    }
-                }
-
-                const statusValue = data?.status ?? data?.Status ?? data?.estado ?? data?.data?.status ?? null;
-                const detalleValue = data?.detalle ?? data?.Detalle ?? data?.data?.detalle ?? null;
-                const statusString = statusValue !== null && statusValue !== undefined
-                    ? String(statusValue).trim().toLowerCase()
-                    : null;
-                const detalleString = detalleValue !== null && detalleValue !== undefined
-                    ? String(detalleValue).trim().toLowerCase()
-                    : null;
-
-                const autorizado = response.ok && (
-                    statusString === '0' ||
-                    statusString === 'ok' ||
-                    statusString === 'autorizado' ||
-                    statusString === 'success' ||
-                    detalleString === 'autorizado'
-                );
-
-                const requiereReintento = !autorizado && response.ok && intento < intentosTotales && (
-                    statusString === '1' ||
-                    statusString === 'pendiente' ||
-                    statusString === 'pending'
-                );
-
-                if (requiereReintento) {
-                    await new Promise(resolve => setTimeout(resolve, intento * 1000));
-                    continue;
-                }
-
-                return {
-                    success: autorizado,
-                    statusCode: response.status,
-                    data,
-                    raw,
-                    intento,
-                    statusString,
-                    detalleString,
-                    message: data?.message || data?.detalle || data?.error || raw
-                };
-            } catch (error) {
-                if (timeoutHandle) {
-                    clearTimeout(timeoutHandle);
-                }
-
-                ultimoError = error;
-
-                if (intento === intentosTotales) {
-                    return {
-                        success: false,
-                        intento,
-                        error,
-                        message: error.name === 'AbortError' ? 'Tiempo de espera agotado' : error.message
-                    };
-                }
-
-                await new Promise(resolve => setTimeout(resolve, intento * 1000));
-            }
-        }
-
+    function iniciarProgresoEmision() {
+        const overlay = document.getElementById('billingProcessOverlay');
+        const text = document.getElementById('billingProcessText');
+        const timers = [];
+        const etapas = [
+            'Enviando factura al microservicio...',
+            'Esperando recepción del SRI...',
+            'Consultando autorización...',
+            'Generando RIDE y XML...',
+            'Finalizando correo y WhatsApp...'
+        ];
+        if (overlay) overlay.style.display = 'flex';
+        etapas.forEach((etapa, index) => {
+            const aplicar = () => { if (text) text.textContent = etapa; };
+            if (index === 0) aplicar();
+            else timers.push(setTimeout(aplicar, [2000, 5000, 9000, 15000][index - 1]));
+        });
         return {
-            success: false,
-            intento: intentosTotales,
-            error: ultimoError,
-            message: ultimoError ? ultimoError.message : 'Error desconocido al contactar servicio de firma'
+            actualizar(mensaje) {
+                timers.forEach(clearTimeout);
+                if (text) text.textContent = mensaje;
+            },
+            cerrar() {
+                timers.forEach(clearTimeout);
+                if (overlay) overlay.style.display = 'none';
+            }
         };
     }
 
-    async function procesarEnvioFacturaElectronica({ ventaId, ventaCodigo, docNumber }) {
+    async function procesarEnvioFacturaElectronica({ ventaId, ventaCodigo }) {
         if (typeof posApiRequest !== 'function') {
             throw new Error('Backend seguro no disponible para facturación.');
         }
 
+        const progreso = iniciarProgresoEmision();
         window.app?.showToast?.('⌛ Enviando factura al SRI desde backend seguro...', 'info', 3500);
-
-        const respuesta = await posApiRequest('/api/billing/emit', {
-            method: 'POST',
-            body: JSON.stringify({ ventaId })
-        });
-        const resultado = respuesta?.data?.result || {};
+        let resultado;
+        try {
+            const respuesta = await posApiRequest('/api/billing/emit', {
+                method: 'POST',
+                body: JSON.stringify({ ventaId, flowVersion: 'microservice-v1' })
+            });
+            resultado = respuesta?.data?.result || {};
+            progreso.actualizar(
+                resultado.success
+                    ? 'Factura autorizada. RIDE, correo y WhatsApp procesados.'
+                    : `Factura ${resultado.estado || 'pendiente'}. Puede reintentarse desde Ventas.`
+            );
+        } catch (error) {
+            progreso.actualizar('No se completó la autorización. La venta queda guardada para reintento.');
+            throw error;
+        } finally {
+            setTimeout(() => progreso.cerrar(), 900);
+        }
 
         window.lastFacturaFirmaResult = resultado;
         if (window.lastFacturaPayload) {
             window.lastFacturaPayload.result = resultado;
         }
 
+        const docNumber = resultado.doc || resultado.data?.doc || '';
         if (resultado.success) {
-            window.app?.showToast?.(`<i class="fas fa-check-circle"></i> Factura ${docNumber} autorizada por el SRI`, 'success', 6000);
+            window.app?.showToast?.(`<i class="fas fa-check-circle"></i> Factura ${docNumber} autorizada por el SRI y enviada al cliente`, 'success', 6000);
         } else {
             const detalle = resultado.message || resultado.data?.message || resultado.data?.detalle || 'Sin detalle de error.';
 
@@ -10304,7 +9979,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
         console.groupCollapsed('%c🚀 Servicio de firma SRI', 'color:#b5179e;font-weight:bold;');
         console.log('Venta ID:', ventaCodigo);
-        console.log('Documento:', docNumber);
+        console.log('Documento autorizado:', docNumber);
         console.log('Resultado de firma:', resultado);
         console.groupEnd();
 
@@ -10362,105 +10037,9 @@ _Sistema de Gestión Ferrisoluciones_`;
             // Determinar tipo de documento
             const tipoDocumento = ventaState.tipoComprobante || 'RECIBO';
 
-            // Variables para facturación electrónica
-            let docNumber = null;
-            let claveAcceso = null;
-            let jsonFactura = null;
-            let datosFacturaVenta = null;
-            let configSRIData = null;
-            let configServiciosData = null;
-
-            // Si es FACTURA, generar datos de facturación electrónica
+            // El microservicio es el único responsable del secuencial, clave y XML.
             if (tipoDocumento === 'FACTURA') {
-                logProcesandoVenta('Paso 2: preparando datos de factura electrónica', { traceId });
-
-                // Obtener configuración
-                const configResult = await obtenerConfiguracionFacturacion();
-
-                if (!configResult.success) {
-                    throw new Error('No se pudo obtener configuración de facturación: ' + configResult.message);
-                }
-
-                configSRIData = configResult.configSRI;
-                configServiciosData = configResult.configServicios;
-
-                // Incrementar número de comprobante (NOTA: En producción se debe usar bloqueo para evitar duplicados)
-                const nuevoComprobante = configSRIData.comprobante_actual + 1;
-
-                // Generar número de documento (formato: 001-001-000000015)
-                docNumber = `${padWithZeroes(configSRIData.establecimiento, 3)}-${padWithZeroes(configSRIData.punto_emision, 3)}-${padWithZeroes(nuevoComprobante, 9)}`;
-
-                // Generar clave de acceso
-                const now = new Date();
-                const fechaFormateada = now.toLocaleDateString('es-EC', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                }).split('/').join(''); // ddMMyyyy
-
-                const claveResult = generarClaveAcceso(fechaFormateada, {
-                    ...configSRIData,
-                    comprobante_actual: nuevoComprobante
-                });
-
-                if (!claveResult.success) {
-                    throw new Error('Error generando clave de acceso: ' + claveResult.message);
-                }
-
-                claveAcceso = claveResult.claveAcceso;
-
-
-                // Generar JSON completo de facturación
-                datosFacturaVenta = {
-                    cliente: ventaState.clienteSeleccionado || {
-                        cedula: '9999999999999',
-                        razon_social: 'CONSUMIDOR FINAL',
-                        direccion: 'S/N',
-                        telefono: 'S/N',
-                        correo: 'consumidor@final.com'
-                    },
-                    productos: ventaState.carrito.map(item => ({
-                        codigo: item.codigo,
-                        nombre: item.esObsequio ? `${item.nombre} (OBSEQUIO)` : item.nombre,
-                        cantidad: item.cantidad,
-                        precio: item.precio,
-                        esObsequio: item.esObsequio === true
-                    })),
-                    total: totalConIva,
-                    subtotal: totalConIva,
-                    descuento: 0,
-                    fecha: fechaActual
-                };
-
-                const jsonResult = generarJsonFacturacion(datosFacturaVenta, configSRIData, configServiciosData, claveAcceso, docNumber);
-
-                if (!jsonResult.success) {
-                    throw new Error('Error generando JSON de facturación: ' + jsonResult.message);
-                }
-
-                jsonFactura = jsonResult.json;
-                window.lastFacturaPayload = {
-                    docNumber,
-                    claveAcceso
-                };
-
-                console.groupCollapsed('%c🧾 Facturación electrónica', 'color:#0b7285;font-weight:bold;');
-                console.log('Documento:', docNumber);
-                console.log('Clave de acceso:', claveAcceso);
-                console.log('La firma y SMTP se procesan en backend seguro.');
-                console.groupEnd();
-
-
-                // Actualizar número de comprobante en la BD
-                const { error: updateConfigError } = await db
-                    .from('ferre_facelectronicaconfig')
-                    .update({ comprobante_actual: nuevoComprobante })
-                    .eq('id', configSRIData.id);
-
-                if (updateConfigError) {
-                    console.warn('⚠️ Advertencia: No se pudo actualizar número de comprobante:', updateConfigError);
-                    // No es crítico para la prueba, continuamos
-                }
+                logProcesandoVenta('Paso 2: factura delegada al microservicio', { traceId });
             }
 
             // PASO 1: Insertar venta principal (INCLUYENDO tipo_pago)
@@ -10475,9 +10054,9 @@ _Sistema de Gestión Ferrisoluciones_`;
                 tipo_pago: tipoPago, // <-- NUEVO: Guardamos tipo de pago
                 estado: tipoDocumento === 'FACTURA' ? 'PENDIENTE' : 'COMPLETADO',
                 usuario_email: userEmail,
-                doc: docNumber,
-                clave_acceso: claveAcceso,
-                fecha_factura: tipoDocumento === 'FACTURA' ? new Date().toISOString().split('T')[0] : null
+                doc: null,
+                clave_acceso: null,
+                fecha_factura: null
                 // ganancia se calculará después de insertar detalles
             };
 
@@ -10596,44 +10175,20 @@ _Sistema de Gestión Ferrisoluciones_`;
             }
 
             if (tipoDocumento === 'FACTURA') {
-                if (datosFacturaVenta && configSRIData && configServiciosData && docNumber && claveAcceso) {
-                    abrirFactura({
-                        venta: datosFacturaVenta,
-                        configServicios: configServiciosData,
-                        configSRI: configSRIData,
-                        docNumber,
-                        claveAcceso,
-                        usuarioEmail: userEmail
-                    });
-                } else {
-                    console.warn('⚠️ Datos incompletos para abrir factura electrónica', {
-                        datosFacturaVenta,
-                        configSRIData,
-                        configServiciosData,
-                        docNumber,
-                        claveAcceso
-                    });
-                }
-                window.app.showToast(`<i class="fas fa-check-circle"></i> Factura ${docNumber} generada exitosamente! Revisa la consola para ver el JSON`, 'success', 5000);
-
-                if (jsonFactura && configServiciosData) {
-                    const firmaPromise = procesarEnvioFacturaElectronica({
-                        db,
+                let resultado = { success: false, estado: 'PENDIENTE' };
+                try {
+                    resultado = await procesarEnvioFacturaElectronica({
                         ventaId: ventaInsertada.id,
-                        ventaCodigo: ventaIdText,
-                        docNumber
+                        ventaCodigo: ventaIdText
                     });
-                    window.lastFacturaFirmaPromise = firmaPromise;
-                    firmaPromise.catch(error => {
-                        console.error('❌ Error inesperado al procesar envío de factura al servicio de firma:', error);
-                        window.app?.showToast?.('No se pudo completar el envío al SRI. Revisa la consola para más detalles.', 'danger', 7000);
-                    });
+                } catch (error) {
+                    console.error('Emisión SRI pendiente de reintento:', error);
+                    window.app?.showToast?.('La venta fue guardada. La factura queda pendiente y puede reintentarse desde Ventas.', 'warning', 7000);
                 }
-
-                // Mostrar modal con datos para reimpresión
+                const docAutorizado = resultado.doc || resultado.data?.doc || '';
                 mostrarModalExitoVenta(ventaIdText, {
                     tipo: 'FACTURA',
-                    facturaData: datosFacturaVenta
+                    facturaData: { doc: docAutorizado, estado: resultado.estado || 'PENDIENTE' }
                 });
             } else {
                 // Preparar datos del recibo para todas las ventas
