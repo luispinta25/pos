@@ -2103,6 +2103,41 @@ function setWhatsappEstadoNuevoProveedorIngreso(tipo, texto, icono = 'fa-circle-
     estado.innerHTML = `<i class="fas ${icono}"></i> ${texto}`;
 }
 
+async function validarWhatsappProveedorIngreso(whatsapp) {
+    if (typeof window.validarWhatsappProveedor === 'function') {
+        return window.validarWhatsappProveedor(whatsapp);
+    }
+
+    try {
+        const respuesta = await fetch('https://lpn8nwebhook.luispintasolutions.com/webhook/e8d543f3-add4-47c1-bbe6-777122b0bc09', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ whatsapp })
+        });
+
+        if (!respuesta.ok) throw new Error(`Error HTTP: ${respuesta.status}`);
+        const data = await respuesta.json();
+        const item = Array.isArray(data) ? data[0]?.data?.[0] : data?.data?.[0];
+
+        return {
+            whatsapp,
+            exists: item?.exists === true,
+            number: item?.number || whatsapp,
+            jid: item?.jid || null,
+            mensaje: item?.exists === true ? 'WhatsApp confirmado' : 'Este numero no tiene WhatsApp'
+        };
+    } catch (error) {
+        console.error('Error validando WhatsApp proveedor:', error);
+        return {
+            whatsapp,
+            exists: null,
+            number: whatsapp,
+            mensaje: 'No fue posible verificar WhatsApp en este momento',
+            error: true
+        };
+    }
+}
+
 async function comprobarWhatsappNuevoProveedorIngreso() {
     const contactoInput = document.getElementById('contactoProveedorIngreso');
     const boton = document.getElementById('btnComprobarWhatsappIngreso');
@@ -2122,13 +2157,9 @@ async function comprobarWhatsappNuevoProveedorIngreso() {
         }
         setWhatsappEstadoNuevoProveedorIngreso('checking', 'Comprobando WhatsApp...', 'fa-spinner fa-spin');
 
-        const result = await posApiRequest('/api/whatsapp/check-number', {
-            method: 'POST',
-            body: JSON.stringify({ number: numero })
-        });
-
-        const exists = Boolean(result?.data?.exists);
-        const checkedNumber = result?.data?.number || numero;
+        const result = await validarWhatsappProveedorIngreso(numero);
+        const exists = Boolean(result?.exists);
+        const checkedNumber = result?.number || numero;
         ingresoFacturaState.nuevoProveedorWhatsapp = { valido: exists, numero: checkedNumber };
 
         if (exists) {

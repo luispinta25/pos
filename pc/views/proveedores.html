@@ -4900,6 +4900,37 @@ function setAgendaWhatsappEstado(tipo, texto, icono = 'fa-circle-info') {
     estado.innerHTML = `<i class="fas ${icono}"></i> ${escapeProveedorHtml(texto)}`;
 }
 
+async function validarWhatsappProveedor(whatsapp) {
+    try {
+        const respuesta = await fetch('https://lpn8nwebhook.luispintasolutions.com/webhook/e8d543f3-add4-47c1-bbe6-777122b0bc09', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ whatsapp })
+        });
+
+        if (!respuesta.ok) throw new Error(`Error HTTP: ${respuesta.status}`);
+        const data = await respuesta.json();
+        const item = Array.isArray(data) ? data[0]?.data?.[0] : data?.data?.[0];
+
+        return {
+            whatsapp,
+            exists: item?.exists === true,
+            number: item?.number || whatsapp,
+            jid: item?.jid || null,
+            mensaje: item?.exists === true ? 'WhatsApp confirmado' : 'Este numero no tiene WhatsApp'
+        };
+    } catch (error) {
+        console.error('Error validando WhatsApp proveedor:', error);
+        return {
+            whatsapp,
+            exists: null,
+            number: whatsapp,
+            mensaje: 'No fue posible verificar WhatsApp en este momento',
+            error: true
+        };
+    }
+}
+
 function renderAgendaProveedores() {
     const lista = document.getElementById('agendaProveedoresLista');
     if (!lista) return;
@@ -5009,14 +5040,10 @@ async function comprobarWhatsappAgenda() {
         }
         setAgendaWhatsappEstado('checking', 'Comprobando WhatsApp...', 'fa-spinner fa-spin');
 
-        const result = await posApiRequest('/api/whatsapp/check-number', {
-            method: 'POST',
-            body: JSON.stringify({ number: numero })
-        });
-
-        const exists = Boolean(result?.data?.exists);
+        const result = await validarWhatsappProveedor(numero);
+        const exists = Boolean(result?.exists);
         proveedoresData.agenda.whatsappValido = exists;
-        proveedoresData.agenda.numeroNormalizado = result?.data?.number || numero;
+        proveedoresData.agenda.numeroNormalizado = result?.number || numero;
 
         if (exists) {
             contactoInput.value = proveedoresData.agenda.numeroNormalizado;
@@ -5116,6 +5143,7 @@ window.seleccionarProveedorAgenda = seleccionarProveedorAgenda;
 window.comprobarWhatsappAgenda = comprobarWhatsappAgenda;
 window.guardarProveedorAgenda = guardarProveedorAgenda;
 window.normalizarTelefonoProveedor = normalizarTelefonoProveedor;
+window.validarWhatsappProveedor = validarWhatsappProveedor;
 
 // =====================================================
 // MODAL FACTURA EMERGENCIA
