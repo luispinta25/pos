@@ -3217,17 +3217,13 @@
             }
         }
 
-        async function reimprimirFacturaElectronica() {
+        async function reimprimirFacturaElectronica(targetWindow = null) {
             const { venta, detalles, productosMap } = window.ventaActual;
 
             try {
                 // Obtener configuraciones
                 const db = window.app.db;
-
-                const { data: configSRI } = await db
-                    .from('ferre_facelectronicaconfig')
-                    .select('ambiente, tipo_emision')
-                    .single();
+                const configSRI = { ambiente: 2, tipo_emision: 1 };
                 if (typeof posApiRequest !== 'function') {
                     throw new Error('Backend seguro no disponible para configuración pública');
                 }
@@ -3238,8 +3234,9 @@
                 const { data: clienteData } = await db.from('ferre_clientes').select('*').eq('cedula', venta.cliente_id).single();
 
                 if (!configSRI || !configServicios) {
+                    if (targetWindow && !targetWindow.closed) targetWindow.close();
                     window.app?.showToast?.('Error: Configuración de facturación no disponible', 'error', 3000);
-                    return;
+                    return false;
                 }
 
                 // Preparar productos
@@ -3314,13 +3311,24 @@
 
                 // Abrir factura en nueva pestaña
                 const facturaUrl = `/pc/views/factura.html?${params.toString()}`;
-                window.open(facturaUrl, '_blank');
+                const facturaWindow = targetWindow && !targetWindow.closed
+                    ? targetWindow
+                    : window.open('', '_blank');
+                if (facturaWindow) {
+                    facturaWindow.location.href = facturaUrl;
+                } else {
+                    window.app?.showToast?.('Habilita las ventanas emergentes para imprimir la factura', 'warning', 3500);
+                    return false;
+                }
 
                 window.app?.showToast?.('🖨️ Imprimiendo factura electrónica...', 'success', 2000);
+                return true;
 
             } catch (error) {
+                if (targetWindow && !targetWindow.closed) targetWindow.close();
                 console.error('Error al reimprimir factura:', error);
                 window.app?.showToast?.('Error al generar la factura', 'error', 3000);
+                return false;
             }
         }
 
@@ -3477,6 +3485,7 @@
             if (!confirmed) {
                 return;
             }
+            let facturaWindow = window.open('', '_blank');
 
             const loadingOverlay = document.getElementById('conversionLoadingOverlay');
             const progreso = iniciarProgresoFacturacion([
@@ -3503,8 +3512,7 @@
                     method: 'POST',
                     body: JSON.stringify({
                         ventaId: venta.id,
-                        clienteId: cliente.cedula,
-                        flowVersion: 'microservice-v1'
+                        clienteId: cliente.cedula
                     })
                 });
                 const data = respuesta?.data || {};
@@ -3520,7 +3528,17 @@
                 if (resultado.success) {
                     progreso.actualizar('Factura autorizada. Finalizando correo y WhatsApp...');
                     window.app?.showToast?.(`✅ Factura ${resultado.doc || data.venta?.doc || ''} autorizada y enviada al cliente`, 'success', 5000);
+                    if (data.venta) {
+                        window.ventaActual.venta = data.venta;
+                    }
+                    const impresionAbierta = await reimprimirFacturaElectronica(facturaWindow);
+                    facturaWindow = null;
+                    if (!impresionAbierta) {
+                        window.app?.showToast?.('Factura autorizada. Puede reimprimirla desde el detalle de Ventas.', 'warning', 5000);
+                    }
                 } else {
+                    if (facturaWindow && !facturaWindow.closed) facturaWindow.close();
+                    facturaWindow = null;
                     const mensaje = resultado.error || resultado.message || resultado.estado || 'Factura pendiente de autorización SRI';
                     const tipoToast = resultado.estado === 'RECHAZADO' ? 'error' : 'warning';
                     window.app?.showToast?.(`⚠️ ${mensaje}`, tipoToast, 5000);
@@ -3532,6 +3550,7 @@
                 cargarVentas();
 
             } catch (error) {
+                if (facturaWindow && !facturaWindow.closed) facturaWindow.close();
                 progreso.actualizar('No se completó la conversión. El recibo permanece intacto.');
                 console.error('Error convirtiendo recibo:', error);
                 window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
@@ -3564,6 +3583,7 @@
             if (!confirmed) {
                 return;
             }
+            let facturaWindow = window.open('', '_blank');
 
             let progreso = null;
             try {
@@ -3589,8 +3609,7 @@
                     method: 'POST',
                     body: JSON.stringify({
                         ventaId: venta.id,
-                        clienteId: venta.cliente_id,
-                        flowVersion: 'microservice-v1'
+                        clienteId: venta.cliente_id
                     })
                 });
                 const data = respuesta?.data || {};
@@ -3601,11 +3620,21 @@
                 if (esExitoso) {
                     progreso.actualizar('Factura autorizada. Finalizando correo y WhatsApp...');
                     window.app?.showToast?.('✅ Factura autorizada por el SRI', 'success', 4000);
+                    if (data.venta) {
+                        window.ventaActual.venta = data.venta;
+                    }
+                    const impresionAbierta = await reimprimirFacturaElectronica(facturaWindow);
+                    facturaWindow = null;
+                    if (!impresionAbierta) {
+                        window.app?.showToast?.('Factura autorizada. Puede reimprimirla desde el detalle de Ventas.', 'warning', 5000);
+                    }
                     cerrarModalDetalle();
 
                     await new Promise(resolve => setTimeout(resolve, 300));
                     cargarVentas();
                 } else {
+                    if (facturaWindow && !facturaWindow.closed) facturaWindow.close();
+                    facturaWindow = null;
                     const mensaje = resultado.error || resultado.message || resultado.estado || 'Comprobante pendiente o rechazado';
                     const tipoToast = resultado.estado === 'RECHAZADO' ? 'error' : 'warning';
                     window.app?.showToast?.(`⚠️ SRI: ${mensaje}`, tipoToast, 5000);
@@ -3614,6 +3643,7 @@
                 }
 
             } catch (error) {
+                if (facturaWindow && !facturaWindow.closed) facturaWindow.close();
                 console.error('Error reenviando al SRI:', error);
                 window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
             } finally {

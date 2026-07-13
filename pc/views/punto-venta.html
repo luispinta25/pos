@@ -9677,7 +9677,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
     function abrirBannerWhatsapp() {
         try {
-            const url = "/pc/views/whatsapp-banner.html?v=3.8.2";
+            const url = "/pc/views/whatsapp-banner.html?v=3.11.0";
             const ventanaImpresion = window.open(url, '_blank');
 
             if (!ventanaImpresion) {
@@ -9754,11 +9754,12 @@ _Sistema de Gestión Ferrisoluciones_`;
     // GENERAR FACTURA ELECTRÓNICA (VISTA TÉRMICA)
     // =====================================================
 
-    function abrirFactura({ venta, configServicios, configSRI, docNumber, claveAcceso, usuarioEmail }) {
+    function abrirFactura({ venta, configServicios, configSRI, docNumber, claveAcceso, usuarioEmail, targetWindow = null }) {
         try {
             if (!venta || !Array.isArray(venta.productos) || venta.productos.length === 0) {
                 console.warn('⚠️ No se encontraron productos para mostrar en la factura electrónica', venta);
-                return;
+                if (targetWindow && !targetWindow.closed) targetWindow.close();
+                return false;
             }
 
             const productos = venta.productos;
@@ -9831,17 +9832,28 @@ _Sistema de Gestión Ferrisoluciones_`;
             params.set('total_prices', totalesProducto.join(','));
 
             const facturaUrl = `/pc/views/factura.html?${params.toString()}`;
-            const facturaWindow = window.open(facturaUrl, '_blank');
+            const facturaWindow = targetWindow && !targetWindow.closed
+                ? targetWindow
+                : window.open('', '_blank');
+
+            if (facturaWindow) {
+                facturaWindow.location.href = facturaUrl;
+            }
 
             if (!facturaWindow) {
                 window.app.showToast('⚠️ Habilita las ventanas emergentes para visualizar la factura electrónica', 'warning', 4000);
+                return false;
             } else {
                 console.debug('Factura electrónica abierta:', facturaUrl);
             }
 
+            return true;
+
         } catch (error) {
+            if (targetWindow && !targetWindow.closed) targetWindow.close();
             console.error('❌ Error al abrir factura electrónica:', error);
             window.app.showToast('No se pudo abrir la vista de factura electrónica', 'danger', 4000);
+            return false;
         }
     }
 
@@ -9943,7 +9955,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         try {
             const respuesta = await posApiRequest('/api/billing/emit', {
                 method: 'POST',
-                body: JSON.stringify({ ventaId, flowVersion: 'microservice-v1' })
+                body: JSON.stringify({ ventaId })
             });
             resultado = respuesta?.data?.result || {};
             progreso.actualizar(
@@ -9997,6 +10009,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         const originalText = btnConfirmar ? btnConfirmar.innerHTML : '<i class="fas fa-check"></i> Confirmar Venta';
         const traceId = `venta-${Date.now()}`;
 
+        let ventanaFacturaPendiente = null;
         try {
             setEstadoProcesandoVenta(true, `confirmarVenta:inicio:${traceId}`);
             if (btnConfirmar) {
@@ -10036,6 +10049,12 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             // Determinar tipo de documento
             const tipoDocumento = ventaState.tipoComprobante || 'RECIBO';
+
+            // Reservar la pestaña durante el gesto del usuario. Solo se carga
+            // factura.html cuando el SRI confirma AUTORIZADO.
+            if (tipoDocumento === 'FACTURA') {
+                ventanaFacturaPendiente = window.open('', '_blank');
+            }
 
             // El microservicio es el único responsable del secuencial, clave y XML.
             if (tipoDocumento === 'FACTURA') {
@@ -10175,20 +10194,76 @@ _Sistema de Gestión Ferrisoluciones_`;
             }
 
             if (tipoDocumento === 'FACTURA') {
+                const facturaVenta = {
+                    fecha: fechaActual,
+                    subtotal: totalConIva,
+                    descuento: 0,
+                    total: totalConIva,
+                    cliente: ventaState.clienteSeleccionado || {
+                        cedula: '9999999999999',
+                        razon_social: 'CONSUMIDOR FINAL',
+                        direccion: 'S/N',
+                        telefono: 'S/N',
+                        correo: 'consumidor@final.com'
+                    },
+                    productos: ventaState.carrito.map(item => ({
+                        codigo: item.codigo,
+                        nombre: item.esObsequio ? `${item.nombre} (OBSEQUIO)` : item.nombre,
+                        cantidad: Number(item.cantidad),
+                        precio: Number(item.precio),
+                        subtotal: Number(item.cantidad) * Number(item.precio)
+                    }))
+                };
                 let resultado = { success: false, estado: 'PENDIENTE' };
+                let facturaData = null;
                 try {
                     resultado = await procesarEnvioFacturaElectronica({
                         ventaId: ventaInsertada.id,
                         ventaCodigo: ventaIdText
                     });
+
+                    if (resultado.success === true && resultado.estado === 'AUTORIZADO') {
+                        try {
+                            const publicConfig = await posApiRequest('/api/billing/config-public', {
+                                method: 'GET'
+                            });
+                            facturaData = {
+                                venta: facturaVenta,
+                                configServicios: publicConfig?.data || {},
+                                configSRI: { ambiente: 2, tipo_emision: 1 },
+                                docNumber: resultado.doc || resultado.data?.doc || '',
+                                claveAcceso: resultado.claveAcceso || resultado.data?.claveAcceso || '',
+                                usuarioEmail: userEmail || '---',
+                                targetWindow: ventanaFacturaPendiente
+                            };
+                            if (!abrirFactura(facturaData)) {
+                                throw new Error('No se pudo abrir factura.html');
+                            }
+                            ventanaFacturaPendiente = null;
+                        } catch (printError) {
+                            if (ventanaFacturaPendiente && !ventanaFacturaPendiente.closed) {
+                                ventanaFacturaPendiente.close();
+                                ventanaFacturaPendiente = null;
+                            }
+                            console.error('Factura autorizada, pero no se pudo abrir la impresión térmica:', printError);
+                            window.app?.showToast?.('Factura autorizada. No se pudo abrir la impresión automática; puede reimprimirla desde Ventas.', 'warning', 6000);
+                        }
+                    } else if (ventanaFacturaPendiente && !ventanaFacturaPendiente.closed) {
+                        ventanaFacturaPendiente.close();
+                        ventanaFacturaPendiente = null;
+                    }
                 } catch (error) {
+                    if (ventanaFacturaPendiente && !ventanaFacturaPendiente.closed) {
+                        ventanaFacturaPendiente.close();
+                        ventanaFacturaPendiente = null;
+                    }
                     console.error('Emisión SRI pendiente de reintento:', error);
                     window.app?.showToast?.('La venta fue guardada. La factura queda pendiente y puede reintentarse desde Ventas.', 'warning', 7000);
                 }
                 const docAutorizado = resultado.doc || resultado.data?.doc || '';
                 mostrarModalExitoVenta(ventaIdText, {
                     tipo: 'FACTURA',
-                    facturaData: { doc: docAutorizado, estado: resultado.estado || 'PENDIENTE' }
+                    facturaData: facturaData || { doc: docAutorizado, estado: resultado.estado || 'PENDIENTE' }
                 });
             } else {
                 // Preparar datos del recibo para todas las ventas
@@ -10254,6 +10329,9 @@ _Sistema de Gestión Ferrisoluciones_`;
             document.getElementById('searchInput').focus();
 
         } catch (error) {
+            if (ventanaFacturaPendiente && !ventanaFacturaPendiente.closed) {
+                ventanaFacturaPendiente.close();
+            }
             console.error('❌ Error procesando venta:', error);
             window.app.showToast('Error al procesar la venta: ' + error.message, 'danger', 5000);
             logProcesandoVenta('ERROR en confirmarVenta', { traceId, mensaje: error.message || String(error) });
@@ -10426,7 +10504,12 @@ _Sistema de Gestión Ferrisoluciones_`;
                 return;
             }
             // Reimprimir factura electrónica
-            abrirFacturaElectronica(datos.facturaData);
+            if (datos.facturaData.venta) {
+                abrirFactura({ ...datos.facturaData, targetWindow: null });
+            } else {
+                window.app?.showToast?.('La factura aún no está autorizada para imprimir', 'warning', 3000);
+                return;
+            }
             window.app?.showToast?.('Reabriendo factura...', 'info', 2000);
         } else {
             if (!datos.reciboData) {
