@@ -9677,7 +9677,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
     function abrirBannerWhatsapp() {
         try {
-            const url = "/pc/views/whatsapp-banner.html?v=3.11.0";
+            const url = "/pc/views/whatsapp-banner.html?v=3.11.1";
             const ventanaImpresion = window.open(url, '_blank');
 
             if (!ventanaImpresion) {
@@ -10009,7 +10009,6 @@ _Sistema de Gestión Ferrisoluciones_`;
         const originalText = btnConfirmar ? btnConfirmar.innerHTML : '<i class="fas fa-check"></i> Confirmar Venta';
         const traceId = `venta-${Date.now()}`;
 
-        let ventanaFacturaPendiente = null;
         try {
             setEstadoProcesandoVenta(true, `confirmarVenta:inicio:${traceId}`);
             if (btnConfirmar) {
@@ -10049,12 +10048,6 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             // Determinar tipo de documento
             const tipoDocumento = ventaState.tipoComprobante || 'RECIBO';
-
-            // Reservar la pestaña durante el gesto del usuario. Solo se carga
-            // factura.html cuando el SRI confirma AUTORIZADO.
-            if (tipoDocumento === 'FACTURA') {
-                ventanaFacturaPendiente = window.open('', '_blank');
-            }
 
             // El microservicio es el único responsable del secuencial, clave y XML.
             if (tipoDocumento === 'FACTURA') {
@@ -10233,30 +10226,17 @@ _Sistema de Gestión Ferrisoluciones_`;
                                 configSRI: { ambiente: 2, tipo_emision: 1 },
                                 docNumber: resultado.doc || resultado.data?.doc || '',
                                 claveAcceso: resultado.claveAcceso || resultado.data?.claveAcceso || '',
-                                usuarioEmail: userEmail || '---',
-                                targetWindow: ventanaFacturaPendiente
+                                usuarioEmail: userEmail || '---'
                             };
                             if (!abrirFactura(facturaData)) {
                                 throw new Error('No se pudo abrir factura.html');
                             }
-                            ventanaFacturaPendiente = null;
                         } catch (printError) {
-                            if (ventanaFacturaPendiente && !ventanaFacturaPendiente.closed) {
-                                ventanaFacturaPendiente.close();
-                                ventanaFacturaPendiente = null;
-                            }
                             console.error('Factura autorizada, pero no se pudo abrir la impresión térmica:', printError);
                             window.app?.showToast?.('Factura autorizada. No se pudo abrir la impresión automática; puede reimprimirla desde Ventas.', 'warning', 6000);
                         }
-                    } else if (ventanaFacturaPendiente && !ventanaFacturaPendiente.closed) {
-                        ventanaFacturaPendiente.close();
-                        ventanaFacturaPendiente = null;
                     }
                 } catch (error) {
-                    if (ventanaFacturaPendiente && !ventanaFacturaPendiente.closed) {
-                        ventanaFacturaPendiente.close();
-                        ventanaFacturaPendiente = null;
-                    }
                     console.error('Emisión SRI pendiente de reintento:', error);
                     window.app?.showToast?.('La venta fue guardada. La factura queda pendiente y puede reintentarse desde Ventas.', 'warning', 7000);
                 }
@@ -10329,9 +10309,6 @@ _Sistema de Gestión Ferrisoluciones_`;
             document.getElementById('searchInput').focus();
 
         } catch (error) {
-            if (ventanaFacturaPendiente && !ventanaFacturaPendiente.closed) {
-                ventanaFacturaPendiente.close();
-            }
             console.error('❌ Error procesando venta:', error);
             window.app.showToast('Error al procesar la venta: ' + error.message, 'danger', 5000);
             logProcesandoVenta('ERROR en confirmarVenta', { traceId, mensaje: error.message || String(error) });

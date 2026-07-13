@@ -3485,8 +3485,6 @@
             if (!confirmed) {
                 return;
             }
-            let facturaWindow = window.open('', '_blank');
-
             const loadingOverlay = document.getElementById('conversionLoadingOverlay');
             const progreso = iniciarProgresoFacturacion([
                 'Preparando datos de la factura...',
@@ -3525,20 +3523,17 @@
                 console.log('Resultado SRI:', resultado);
                 console.groupEnd();
 
-                if (resultado.success) {
+                if (resultado.success === true && resultado.estado === 'AUTORIZADO') {
                     progreso.actualizar('Factura autorizada. Finalizando correo y WhatsApp...');
                     window.app?.showToast?.(`✅ Factura ${resultado.doc || data.venta?.doc || ''} autorizada y enviada al cliente`, 'success', 5000);
                     if (data.venta) {
                         window.ventaActual.venta = data.venta;
                     }
-                    const impresionAbierta = await reimprimirFacturaElectronica(facturaWindow);
-                    facturaWindow = null;
+                    const impresionAbierta = await reimprimirFacturaElectronica();
                     if (!impresionAbierta) {
                         window.app?.showToast?.('Factura autorizada. Puede reimprimirla desde el detalle de Ventas.', 'warning', 5000);
                     }
                 } else {
-                    if (facturaWindow && !facturaWindow.closed) facturaWindow.close();
-                    facturaWindow = null;
                     const mensaje = resultado.error || resultado.message || resultado.estado || 'Factura pendiente de autorización SRI';
                     const tipoToast = resultado.estado === 'RECHAZADO' ? 'error' : 'warning';
                     window.app?.showToast?.(`⚠️ ${mensaje}`, tipoToast, 5000);
@@ -3550,7 +3545,6 @@
                 cargarVentas();
 
             } catch (error) {
-                if (facturaWindow && !facturaWindow.closed) facturaWindow.close();
                 progreso.actualizar('No se completó la conversión. El recibo permanece intacto.');
                 console.error('Error convirtiendo recibo:', error);
                 window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
@@ -3583,8 +3577,6 @@
             if (!confirmed) {
                 return;
             }
-            let facturaWindow = window.open('', '_blank');
-
             let progreso = null;
             try {
                 const loadingOverlay = document.getElementById('conversionLoadingOverlay');
@@ -3623,8 +3615,7 @@
                     if (data.venta) {
                         window.ventaActual.venta = data.venta;
                     }
-                    const impresionAbierta = await reimprimirFacturaElectronica(facturaWindow);
-                    facturaWindow = null;
+                    const impresionAbierta = await reimprimirFacturaElectronica();
                     if (!impresionAbierta) {
                         window.app?.showToast?.('Factura autorizada. Puede reimprimirla desde el detalle de Ventas.', 'warning', 5000);
                     }
@@ -3633,8 +3624,6 @@
                     await new Promise(resolve => setTimeout(resolve, 300));
                     cargarVentas();
                 } else {
-                    if (facturaWindow && !facturaWindow.closed) facturaWindow.close();
-                    facturaWindow = null;
                     const mensaje = resultado.error || resultado.message || resultado.estado || 'Comprobante pendiente o rechazado';
                     const tipoToast = resultado.estado === 'RECHAZADO' ? 'error' : 'warning';
                     window.app?.showToast?.(`⚠️ SRI: ${mensaje}`, tipoToast, 5000);
@@ -3643,7 +3632,6 @@
                 }
 
             } catch (error) {
-                if (facturaWindow && !facturaWindow.closed) facturaWindow.close();
                 console.error('Error reenviando al SRI:', error);
                 window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
             } finally {
