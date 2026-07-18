@@ -244,6 +244,13 @@
             color: #92400e;
         }
 
+        .chat-country {
+            margin-left: 7px;
+            color: #697386;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
         .chat-preview {
             margin-top: 3px;
             font-size: 0.82rem;
@@ -1216,9 +1223,11 @@ function initChat() {
     }
 
     function normalizeWhatsappNumber(value) {
-        const digits = String(value || '').replace(/\D/g, '');
-        const localNumber = digits.slice(-9);
-        return localNumber ? '593' + localNumber : '';
+        let digits = String(value || '').trim().split('@')[0].split(':')[0].replace(/\D/g, '');
+        if (digits.startsWith('00')) digits = digits.slice(2);
+        if (digits.startsWith('0') && digits.length === 10) return '593' + digits.slice(1);
+        if (digits.length === 9) return '593' + digits;
+        return digits.length >= 10 && digits.length <= 15 ? digits : '';
     }
 
     function formatWhatsappInput() {
@@ -1433,7 +1442,8 @@ function initChat() {
         const name = item.display_name || item.contact_name || item.phone || 'Cliente';
         const labelClass = item.display_label === 'cliente' ? ' client' : (item.display_label === 'bicliente' ? ' biclient' : '');
         const label = item.display_label ? '<span class="chat-contact-label' + labelClass + '">' + escapeHtml(item.display_label) + '</span>' : '';
-        els.selectedName.innerHTML = escapeHtml(name) + label;
+        const country = item.country_name ? '<span class="chat-country">· ' + escapeHtml(item.country_name) + '</span>' : '';
+        els.selectedName.innerHTML = escapeHtml(name) + country + label;
         els.selectedMeta.textContent = item.phone || item.remote_jid || '';
     }
 
@@ -1600,9 +1610,11 @@ function initChat() {
     }
 
     function normalizeLocalPhone(value) {
-        const digits = String(value || '').replace(/\D/g, '');
-        const local = digits.slice(-9);
-        return local ? '0' + local : '';
+        const normalized = normalizeWhatsappNumber(value);
+        if (!normalized) return '';
+        return normalized.startsWith('593') && normalized.length === 12
+            ? '0' + normalized.slice(3)
+            : '+' + normalized;
     }
 
     function closeQuoteModal() {
@@ -1898,11 +1910,12 @@ function initChat() {
             const name = item.display_name || item.contact_name || item.phone || 'Cliente';
             const labelClass = item.display_label === 'cliente' ? ' client' : (item.display_label === 'bicliente' ? ' biclient' : '');
             const label = item.display_label ? '<span class="chat-contact-label' + labelClass + '">' + escapeHtml(item.display_label) + '</span>' : '';
+            const country = item.country_name ? '<span class="chat-country">· ' + escapeHtml(item.country_name) + '</span>' : '';
             const preview = item.last_message || item.phone || '';
             const badge = Number(item.unread_count || 0) > 0 ? '<span class="chat-badge">' + Number(item.unread_count || 0) + '</span>' : '';
             return '<button class="chat-item' + active + '" type="button" data-id="' + escapeHtml(item.id) + '">' +
                 '<div class="chat-avatar">' + escapeHtml(initials(name, item.phone)) + '</div>' +
-                '<div><div class="chat-contact">' + escapeHtml(name) + label + '</div><div class="chat-preview">' + escapeHtml(preview) + '</div></div>' +
+                '<div><div class="chat-contact">' + escapeHtml(name) + country + label + '</div><div class="chat-preview">' + escapeHtml(preview) + '</div></div>' +
                 '<div>' + badge + '</div>' +
             '</button>';
         }).join('');
@@ -2104,8 +2117,8 @@ function initChat() {
             showCustomAlert('Ingresa un numero de WhatsApp.', 'warning', 'Nuevo chat');
             return;
         }
-        if (phone.length !== 12) {
-            showCustomAlert('Revisa el numero de WhatsApp. Debe tener 9 digitos locales.', 'warning', 'Nuevo chat');
+        if (phone.length < 10 || phone.length > 15) {
+            showCustomAlert('Revisa el numero e incluye el codigo de pais cuando no sea de Ecuador.', 'warning', 'Nuevo chat');
             return;
         }
 
