@@ -302,6 +302,64 @@
             font-weight: 650;
         }
 
+        .chat-ai-draft,
+        .chat-ai-controls,
+        .chat-ai-preview-label,
+        .chat-ai-status {
+            grid-column: 1 / -1;
+        }
+
+        .chat-ai-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-ai-tone,
+        .chat-ai-improve-btn {
+            height: 38px;
+            border-radius: 10px;
+            border: 1px solid rgba(31, 111, 235, 0.25);
+            font: inherit;
+            font-weight: 800;
+        }
+
+        .chat-ai-tone {
+            padding: 0 10px;
+            background: #fff;
+            color: #172033;
+        }
+
+        .chat-ai-improve-btn {
+            padding: 0 13px;
+            background: #1f6feb;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .chat-ai-improve-btn:disabled,
+        .chat-ai-tone:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .chat-ai-preview-label {
+            color: #0f766e;
+            font-size: 0.76rem;
+            font-weight: 850;
+            letter-spacing: 0.02em;
+        }
+
+        .chat-ai-status {
+            min-height: 18px;
+            color: #64748b;
+            font-size: 0.76rem;
+            font-weight: 650;
+        }
+
+        .chat-ai-status.ready { color: #0f766e; }
+        .chat-ai-status.error { color: #b91c1c; }
+
         .chat-refresh {
             color: #172033;
             background: #eef2f6;
@@ -1005,7 +1063,21 @@
                 </button>
             </div>
             <div id="chatQuickReplies" class="chat-quick-replies" aria-label="Respuestas rapidas"></div>
-            <textarea id="chatMessageInput" class="chat-composer-text" placeholder="Escribe una respuesta..." disabled></textarea>
+            <textarea id="chatAiDraftInput" class="chat-composer-text chat-ai-draft" placeholder="Escribe tu idea; la IA la preparará antes de enviar." disabled></textarea>
+            <div class="chat-ai-controls">
+                <select id="chatAiTone" class="chat-ai-tone" disabled aria-label="Tono del mensaje">
+                    <option value="profesional">Profesional</option>
+                    <option value="cercano">Cercano</option>
+                    <option value="formal">Formal</option>
+                    <option value="breve">Breve</option>
+                </select>
+                <button id="chatAiImproveBtn" class="chat-ai-improve-btn" type="button" disabled>
+                    <i class="fas fa-wand-magic-sparkles"></i> Mejorar con IA
+                </button>
+            </div>
+            <div id="chatAiStatus" class="chat-ai-status">Escribe un borrador para prepararlo antes de enviar.</div>
+            <div class="chat-ai-preview-label">Mensaje listo para revisar y editar</div>
+            <textarea id="chatMessageInput" class="chat-composer-text" placeholder="Aquí aparecerá el mensaje mejorado. Puedes editarlo antes de enviar." disabled></textarea>
             <button id="chatQuoteBtn" class="chat-attach-btn" type="button" disabled title="Atender cotizacion">
                 <i class="fas fa-clipboard-list"></i>
             </button>
@@ -1067,6 +1139,8 @@ function initChat() {
         messagesByConversation: {},
         pendingMessages: [],
         pendingImage: null,
+        aiReviewReady: false,
+        aiGenerating: false,
         forwardingMessage: null,
         forwardTargets: [],
         forwardSearchTimer: null,
@@ -1088,7 +1162,11 @@ function initChat() {
         selectedName: document.getElementById('chatSelectedName'),
         selectedMeta: document.getElementById('chatSelectedMeta'),
         composer: document.getElementById('chatComposer'),
+        draft: document.getElementById('chatAiDraftInput'),
         input: document.getElementById('chatMessageInput'),
+        tone: document.getElementById('chatAiTone'),
+        improve: document.getElementById('chatAiImproveBtn'),
+        aiStatus: document.getElementById('chatAiStatus'),
         send: document.getElementById('chatSendBtn'),
         quote: document.getElementById('chatQuoteBtn'),
         attach: document.getElementById('chatAttachBtn'),
@@ -1172,16 +1250,69 @@ function initChat() {
         return replies[type] || '';
     }
 
+    function setAiStatus(kind, message) {
+        els.aiStatus.className = 'chat-ai-status' + (kind ? ' ' + kind : '');
+        els.aiStatus.textContent = message;
+    }
+
+    function updateComposerAvailability() {
+        const hasConversation = Boolean(state.selected);
+        const hasDraft = Boolean(els.draft.value.trim());
+        const hasPreparedMessage = Boolean(state.aiReviewReady && els.input.value.trim());
+        const imageOnly = Boolean(state.pendingImage && !els.draft.value.trim() && !els.input.value.trim());
+
+        els.draft.disabled = !hasConversation || state.aiGenerating;
+        els.tone.disabled = !hasConversation || state.aiGenerating;
+        els.improve.disabled = !hasConversation || !hasDraft || state.aiGenerating;
+        els.input.disabled = !hasConversation || !state.aiReviewReady || state.aiGenerating;
+        els.send.disabled = !hasConversation || state.aiGenerating || (!hasPreparedMessage && !imageOnly);
+        els.quote.disabled = !hasConversation || state.aiGenerating;
+        els.attach.disabled = !hasConversation || state.aiGenerating;
+    }
+
+    function invalidateAiReview() {
+        state.aiReviewReady = false;
+        els.input.value = '';
+        if (state.selected) setAiStatus('', 'Pulsa “Mejorar con IA” para revisar el mensaje antes de enviarlo.');
+        updateComposerAvailability();
+    }
+
+    async function improveDraftWithAi() {
+        const draft = els.draft.value.trim();
+        if (!draft || !state.selected || state.aiGenerating) return;
+
+        state.aiGenerating = true;
+        state.aiReviewReady = false;
+        setAiStatus('', 'Mejorando redacción sin cambiar el sentido...');
+        updateComposerAvailability();
+        try {
+            const result = await posApiRequest('/api/chat/ai/improve-message', {
+                method: 'POST',
+                body: JSON.stringify({ draft: draft, tone: els.tone.value })
+            });
+            const data = result.data || {};
+            els.input.value = data.text || '';
+            state.aiReviewReady = Boolean(els.input.value.trim());
+            setAiStatus('ready', (data.changesSummary || 'Mensaje revisado por IA.') + ' Puedes editarlo antes de enviar.');
+        } catch (error) {
+            setAiStatus('error', 'No se pudo preparar el mensaje: ' + error.message);
+            showCustomAlert('No se pudo mejorar el mensaje. Revisa tu conexión e inténtalo otra vez.', 'error', 'Asistente de redacción');
+        } finally {
+            state.aiGenerating = false;
+            updateComposerAvailability();
+            if (state.aiReviewReady) els.input.focus();
+        }
+    }
+
     function insertQuickReply(type) {
         const text = getQuickReplyText(type);
         if (!text) return;
 
-        const current = els.input.value.trim();
-        els.input.value = current ? current + '\n\n' + text : text;
-        els.input.disabled = false;
-        els.send.disabled = false;
-        els.input.focus();
-        els.input.setSelectionRange(els.input.value.length, els.input.value.length);
+        const current = els.draft.value.trim();
+        els.draft.value = current ? current + '\n\n' + text : text;
+        invalidateAiReview();
+        els.draft.focus();
+        els.draft.setSelectionRange(els.draft.value.length, els.draft.value.length);
     }
 
     function renderQuickReplies() {
@@ -1315,10 +1446,7 @@ function initChat() {
             renderList();
             if (state.selected) {
                 setSelectedHeader(state.selected);
-                els.input.disabled = false;
-                els.send.disabled = false;
-                els.quote.disabled = false;
-                els.attach.disabled = false;
+                updateComposerAvailability();
                 renderQuickReplies();
                 renderMessages({ forceBottom: true });
             } else {
@@ -1784,7 +1912,8 @@ function initChat() {
 
     async function startQuoteFromChat() {
         if (!state.selected) return;
-        els.quote.disabled = true;
+        state.aiGenerating = true;
+        updateComposerAvailability();
         try {
             const result = await posApiRequest('/api/chat/conversations/' + encodeURIComponent(state.selected.id) + '/quote-context', { method: 'GET' });
             const context = result.data || {};
@@ -1801,7 +1930,8 @@ function initChat() {
         } catch (error) {
             showCustomAlert('No se pudo preparar la cotizacion: ' + error.message, 'error', 'Cotizaciones');
         } finally {
-            els.quote.disabled = false;
+            state.aiGenerating = false;
+            updateComposerAvailability();
         }
     }
 
@@ -1946,11 +2076,12 @@ function initChat() {
 
     async function selectConversation(item) {
         state.selected = item;
+        state.aiReviewReady = false;
+        els.draft.value = '';
+        els.input.value = '';
+        setAiStatus('', 'Escribe un borrador para prepararlo antes de enviar.');
         setSelectedHeader(item);
-        els.input.disabled = false;
-        els.send.disabled = false;
-        els.quote.disabled = false;
-        els.attach.disabled = false;
+        updateComposerAvailability();
         state.messages = state.messagesByConversation[item.id] || [];
         state.hasMoreMessages = false;
         renderList();
@@ -2022,6 +2153,11 @@ function initChat() {
         const text = els.input.value.trim();
         if (!text && !state.pendingImage) return;
 
+        if (text && !state.aiReviewReady) {
+            showCustomAlert('Primero prepara el mensaje con IA antes de enviarlo.', 'warning', 'Asistente de redacción');
+            return;
+        }
+
         if (state.pendingImage) {
             await sendImageMessage(text);
             return;
@@ -2038,9 +2174,12 @@ function initChat() {
         };
 
         state.pendingMessages.push(optimisticMessage);
+        els.draft.value = '';
         els.input.value = '';
+        state.aiReviewReady = false;
+        setAiStatus('', 'Escribe un borrador para preparar otro mensaje.');
         renderMessages();
-        els.send.disabled = true;
+        updateComposerAvailability();
         try {
             await posApiRequest('/api/chat/conversations/' + encodeURIComponent(state.selected.id) + '/send-text', {
                 method: 'POST',
@@ -2057,8 +2196,8 @@ function initChat() {
             renderMessages();
             showCustomAlert('No se pudo enviar el mensaje: ' + error.message, 'error', 'WhatsApp');
         } finally {
-            els.send.disabled = false;
-            els.input.focus();
+            updateComposerAvailability();
+            els.draft.focus();
         }
     }
 
@@ -2079,11 +2218,13 @@ function initChat() {
         };
 
         state.pendingMessages.push(optimisticMessage);
+        els.draft.value = '';
         els.input.value = '';
+        state.aiReviewReady = false;
+        setAiStatus('', 'Escribe un borrador para preparar otro mensaje.');
         clearPendingImage();
         renderMessages();
-        els.send.disabled = true;
-        els.attach.disabled = true;
+        updateComposerAvailability();
 
         try {
             await posApiRequest('/api/chat/conversations/' + encodeURIComponent(state.selected.id) + '/send-media', {
@@ -2105,9 +2246,8 @@ function initChat() {
             renderMessages();
             showCustomAlert('No se pudo enviar la imagen: ' + error.message, 'error', 'WhatsApp');
         } finally {
-            els.send.disabled = false;
-            els.attach.disabled = false;
-            els.input.focus();
+            updateComposerAvailability();
+            els.draft.focus();
         }
     }
 
@@ -2283,13 +2423,16 @@ function initChat() {
             els.imagePreviewImg.src = image.dataUrl;
             els.imagePreviewName.textContent = (file.name || 'Imagen seleccionada') + ' · ' + formatFileSize(image.compressedSize);
             els.imagePreview.classList.add('active');
-            els.input.focus();
+            els.draft.focus();
         } catch (error) {
             showCustomAlert('No se pudo cargar la imagen: ' + error.message, 'error', 'Imagen');
             clearPendingImage();
         }
     });
-    els.imagePreviewRemove.addEventListener('click', clearPendingImage);
+    els.imagePreviewRemove.addEventListener('click', function() {
+        clearPendingImage();
+        updateComposerAvailability();
+    });
     els.imageModal.addEventListener('click', function(event) {
         if (event.target === els.imageModal || event.target === els.imageModalImg) {
             els.imageModal.classList.remove('active');
@@ -2311,15 +2454,28 @@ function initChat() {
     els.quoteModal.addEventListener('click', function(event) {
         if (event.target === els.quoteModal) closeQuoteModal();
     });
+    els.draft.addEventListener('input', function() {
+        if (state.aiReviewReady || els.input.value) invalidateAiReview();
+        else updateComposerAvailability();
+    });
+    els.tone.addEventListener('change', function() {
+        if (state.aiReviewReady) invalidateAiReview();
+    });
+    els.improve.addEventListener('click', improveDraftWithAi);
+    els.input.addEventListener('input', function() {
+        if (state.aiReviewReady) setAiStatus('ready', 'Mensaje revisado por IA y editado manualmente.');
+        updateComposerAvailability();
+    });
     els.input.addEventListener('keydown', function(event) {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
-            els.composer.requestSubmit();
+            if (state.aiReviewReady) els.composer.requestSubmit();
         }
     });
 
     renderEmpty('Selecciona una conversacion');
     renderQuickReplies();
+    updateComposerAvailability();
     (async function bootstrapChat() {
         await setupCacheKey();
         hydrateCache();
