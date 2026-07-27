@@ -1283,12 +1283,16 @@ function initChat() {
 
         state.aiGenerating = true;
         state.aiReviewReady = false;
-        setAiStatus('', 'Mejorando redacción sin cambiar el sentido...');
+        setAiStatus('', 'Preparando una respuesta con el contexto de los últimos 5 mensajes...');
         updateComposerAvailability();
         try {
             const result = await posApiRequest('/api/chat/ai/improve-message', {
                 method: 'POST',
-                body: JSON.stringify({ draft: draft, tone: els.tone.value })
+                body: JSON.stringify({
+                    draft: draft,
+                    tone: els.tone.value,
+                    conversationId: state.selected.id
+                })
             });
             const data = result.data || {};
             els.input.value = data.text || '';
