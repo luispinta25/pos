@@ -10753,6 +10753,26 @@ _Sistema de Gestión Ferrisoluciones_`;
 
                 console.log('🚀 Enviando webhook cotizacion:', payload);
 
+                const transferenciaPayload = {
+                    id_venta: cotizacionIdText,
+                    monto: montoWebhook,
+                    motivo: `Cotización POS ${cotizacionIdText}`,
+                    caso: 'ingreso',
+                    id_message: null,
+                    subido_por: userEmail,
+                    user_id: window.auth?.getCurrentUser()?.id || null,
+                    fotografia: null,
+                    fechahora: new Date().toISOString()
+                };
+
+                const { error: transError } = await db
+                    .from('ferre_transferencias')
+                    .insert(transferenciaPayload);
+
+                if (transError) {
+                    console.error('Error al crear registro de transferencia:', transError);
+                }
+
                 // Fetch no bloqueante
                 fetch('https://lpn8nwebhook.luispintasolutions.com/webhook/7d2a34e2-84b5-4c84-aedc-7f82416ccadc', {
                     method: 'POST',
@@ -10765,20 +10785,11 @@ _Sistema de Gestión Ferrisoluciones_`;
                     const idMessage = (data && data.length > 0 && data[0].data && data[0].data.key) ? data[0].data.key.id : null;
                     
                     if (idMessage) {
-                        const { error: transError } = await db
+                        const { error: updateMessageError } = await db
                             .from('ferre_transferencias')
-                            .insert({
-                                id_cotizacion: cotizacionIdText,
-                                monto: montoWebhook,
-                                motivo: `Cotización POS ${cotizacionIdText}`,
-                                caso: 'ingreso',
-                                id_message: idMessage, // El ID de WhatsApp recibido
-                                subido_por: userEmail,
-                                user_id: window.auth?.getCurrentUser()?.id || null,
-                                fotografia: null,
-                                fechahora: new Date().toISOString()
-                            });
-                        if (transError) console.error('Error al crear registro de transferencia:', transError);
+                            .update({ id_message: idMessage })
+                            .eq('id_venta', cotizacionIdText);
+                        if (updateMessageError) console.error('Error actualizando id_message de transferencia:', updateMessageError);
                     }
                 })
                 .catch(err => console.error('Error webhook venta', err));
