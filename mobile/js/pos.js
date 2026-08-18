@@ -324,28 +324,12 @@ async function processSale() {
                 ? { monto_efectivo: _montoCashMixto.toFixed(2), monto_transferencia: _montoTransfMixto.toFixed(2) }
                 : {};
             const montoWebhook = currentTipoPago === 'MIXTO' ? _montoTransfMixto : total;
-            fetch('https://lpn8nwebhook.luispintasolutions.com/webhook/7d2a34e2-84b5-4c84-aedc-7f82416ccadc', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+
+            posApiRequest('/api/notifications/venta-transferencia', {
+                method: 'POST',
                 body: JSON.stringify({ idventa: ventaId, productos: prods, monto: montoWebhook.toFixed(2), tipo_pago: currentTipoPago, total_venta: total.toFixed(2), cliente: currentClient.razon_social, ...extra })
             })
-            .then(r => r.json())
-            .then(async data => {
-                const idMessage = (data && data.length > 0 && data[0].data && data[0].data.key)
-                    ? data[0].data.key.id : null;
-                const { error: transError } = await db.from('ferre_transferencias').insert({
-                    id_venta: ventaId,
-                    monto: montoWebhook,
-                    motivo: `Venta POS ${ventaId}`,
-                    caso: 'ingreso',
-                    id_message: idMessage || null,
-                    subido_por: currentUser?.email || null,
-                    user_id: currentUser?.id || null,
-                    fotografia: null,
-                    fechahora: new Date().toISOString()
-                });
-                if (transError) console.error('Error al crear registro de transferencia:', transError);
-            })
-            .catch(err => console.error('Error webhook venta', err));
+            .catch(err => console.error('Error notificando transferencia de venta', err));
         }
         cart = []; saveCartToStorage();
         $('ventaExitoMsg').textContent = '¡Venta registrada!';
