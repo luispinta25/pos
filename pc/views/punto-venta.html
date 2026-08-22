@@ -6711,7 +6711,8 @@ _Sistema de Gestión Ferrisoluciones_`;
                 pagado_con: normalizarMontoCredito(abono),
                 vuelto: 0,
                 tipo: 'RECIBO',
-                estado: 'COMPLETADO',
+                estado: 'GUARDANDO',
+                notas: 'Venta en proceso de guardado: pendiente de registrar detalles.',
                 usuario_email: usuario.email || null,
                 doc: null,
                 clave_acceso: null,
@@ -6743,6 +6744,15 @@ _Sistema de Gestión Ferrisoluciones_`;
                 estado: 'ACTIVO'
             }));
 
+            if (!detallesPayload.length) {
+                await db.from('ferre_ventas').update({
+                    estado: 'DEVUELTO',
+                    notas: 'DEVUELTO, Motivo: error de guardado - venta sin productos antes de insertar detalles.',
+                    updated_at: new Date().toISOString()
+                }).eq('id', ventaInsertada.id);
+                throw new Error('No se puede registrar una venta sin productos.');
+            }
+
             console.log('📦 Insertando detalles de venta:', detallesPayload);
 
             const { error: detalleError } = await db
@@ -6751,12 +6761,21 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             if (detalleError) {
                 console.error('❌ Error insertando detalles:', detalleError);
-                console.log('🔄 Rollback: eliminando venta...');
-                await db.from('ferre_ventas').delete().eq('id', ventaInsertada.id);
+                console.log('🔄 Rollback seguro: marcando venta como devuelta por error de guardado...');
+                await db.from('ferre_ventas').update({
+                    estado: 'DEVUELTO',
+                    notas: `DEVUELTO, Motivo: error de guardado - no se pudieron registrar productos. ${detalleError.message || ''}`.trim(),
+                    updated_at: new Date().toISOString()
+                }).eq('id', ventaInsertada.id);
                 throw new Error(detalleError.message || 'No se pudieron registrar los productos de la venta.');
             }
 
             console.log('✅ Detalles insertados correctamente');
+            await db.from('ferre_ventas').update({
+                estado: 'COMPLETADO',
+                notas: null,
+                updated_at: new Date().toISOString()
+            }).eq('id', ventaInsertada.id);
 
             const codigoCuenta = generarCodigoCuenta('VENTA');
             const estadoCuenta = saldo <= 0 ? 'PAGADO' : (saldo < total ? 'PARCIAL' : 'PENDIENTE');
@@ -6787,9 +6806,13 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             if (cuentaError) {
                 console.error('❌ Error insertando cuenta:', cuentaError);
-                console.log('🔄 Rollback: eliminando venta y detalles...');
+                console.log('🔄 Rollback seguro: marcando venta como devuelta por error de cuenta...');
                 await db.from('ferre_ventas_detalle').delete().eq('venta_id', ventaInsertada.id);
-                await db.from('ferre_ventas').delete().eq('id', ventaInsertada.id);
+                await db.from('ferre_ventas').update({
+                    estado: 'DEVUELTO',
+                    notas: `DEVUELTO, Motivo: error de guardado - no se pudo registrar la cuenta por cobrar. ${cuentaError.message || ''}`.trim(),
+                    updated_at: new Date().toISOString()
+                }).eq('id', ventaInsertada.id);
                 throw new Error(cuentaError.message || 'No se pudo registrar la cuenta por cobrar.');
             }
 
@@ -10064,7 +10087,8 @@ _Sistema de Gestión Ferrisoluciones_`;
                 vuelto: parseFloat(vuelto.toFixed(2)),
                 tipo: tipoDocumento,
                 tipo_pago: tipoPago, // <-- NUEVO: Guardamos tipo de pago
-                estado: tipoDocumento === 'FACTURA' ? 'PENDIENTE' : 'COMPLETADO',
+                estado: 'GUARDANDO',
+                notas: 'Venta en proceso de guardado: pendiente de registrar detalles.',
                 usuario_email: userEmail,
                 doc: null,
                 clave_acceso: null,
@@ -10103,6 +10127,15 @@ _Sistema de Gestión Ferrisoluciones_`;
                 // subtotal se calcula automáticamente (GENERATED COLUMN)
             }));
 
+            if (!detalles.length) {
+                await db.from('ferre_ventas').update({
+                    estado: 'DEVUELTO',
+                    notas: 'DEVUELTO, Motivo: error de guardado - venta sin productos antes de insertar detalles.',
+                    updated_at: new Date().toISOString()
+                }).eq('id', ventaInsertada.id);
+                throw new Error('No se puede registrar una venta sin productos.');
+            }
+
             const { data: detallesInsertados, error: detalleError } = await db
                 .from('ferre_ventas_detalle')
                 .insert(detalles)
@@ -10115,10 +10148,19 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             if (detalleError) {
                 console.error('Error insertando detalles:', detalleError);
-                // Intentar revertir la venta si fallan los detalles
-                await db.from('ferre_ventas').delete().eq('id', ventaInsertada.id);
+                await db.from('ferre_ventas').update({
+                    estado: 'DEVUELTO',
+                    notas: `DEVUELTO, Motivo: error de guardado - no se pudieron registrar productos. ${detalleError.message || ''}`.trim(),
+                    updated_at: new Date().toISOString()
+                }).eq('id', ventaInsertada.id);
                 throw new Error(`Error al registrar productos: ${detalleError.message}`);
             }
+
+            await db.from('ferre_ventas').update({
+                estado: tipoDocumento === 'FACTURA' ? 'PENDIENTE' : 'COMPLETADO',
+                notas: null,
+                updated_at: new Date().toISOString()
+            }).eq('id', ventaInsertada.id);
 
 
             // NOTA: La ganancia total se actualiza automáticamente por el trigger 

@@ -1546,6 +1546,12 @@
                             <span class="venta-info-value" style="color: #d4a017;">${window.app.formatCurrency(venta.ganancia)}</span>
                         </div>
                         ` : ''}
+                        ${venta.notas ? `
+                        <div class="venta-info-row">
+                            <span class="venta-info-label">Notas:</span>
+                            <span class="venta-info-value" style="font-size: 0.82rem; color: #b45309;">${String(venta.notas).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</span>
+                        </div>
+                        ` : ''}
                     </div>
                     <div class="venta-card-footer">
                         <div class="venta-hora"><i class="fas fa-clock"></i> ${hora}</div>
@@ -1562,9 +1568,10 @@
         }
 
         function actualizarEstadisticas() {
-            const total = ventasState.ventas.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
-            const ganancia = ventasState.ventas.reduce((sum, v) => sum + parseFloat(v.ganancia || 0), 0);
-            const cantidad = ventasState.ventas.length;
+            const ventasActivas = ventasState.ventas.filter(v => !['DEVUELTO', 'ANULADO', 'ANULADA'].includes(String(v.estado || '').toUpperCase()));
+            const total = ventasActivas.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+            const ganancia = ventasActivas.reduce((sum, v) => sum + parseFloat(v.ganancia || 0), 0);
+            const cantidad = ventasActivas.length;
 
             const statsTotal = document.getElementById('statsTotal');
             const statsGanancia = document.getElementById('statsGanancia');

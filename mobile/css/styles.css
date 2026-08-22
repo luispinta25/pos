@@ -193,6 +193,7 @@ input::placeholder { color: var(--text-muted); }
 .venta-id-text { font-size: .72rem; color: var(--text-muted); font-family: monospace; }
 .venta-total-text { font-size: 1.05rem; font-weight: 700; color: var(--primary); }
 .venta-card-bot { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.venta-notas-text { margin-top: .45rem; padding: .45rem .55rem; border-radius: 7px; background: rgba(214, 158, 46, .14); color: #b7791f; font-size: .78rem; line-height: 1.25; }
 .venta-cliente-text { font-size: .82rem; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .venta-hora-wrap { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
 .venta-hora-text { font-size: .72rem; color: var(--text-muted); }

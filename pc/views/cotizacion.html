@@ -7146,8 +7146,12 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             if (detalleError) {
                 console.error('❌ Error insertando detalles:', detalleError);
-                console.log('🔄 Rollback: eliminando venta...');
-                await db.from('ferre_ventas').delete().eq('id', ventaInsertada.id);
+                console.log('🔄 Rollback seguro: marcando registro como devuelto por error de guardado...');
+                await db.from('ferre_ventas').update({
+                    estado: 'DEVUELTO',
+                    notas: `DEVUELTO, Motivo: error de guardado - no se pudieron registrar productos. ${detalleError.message || ''}`.trim(),
+                    updated_at: new Date().toISOString()
+                }).eq('id', ventaInsertada.id);
                 throw new Error(detalleError.message || 'No se pudieron registrar los productos de la venta.');
             }
 
@@ -7182,9 +7186,13 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             if (cuentaError) {
                 console.error('❌ Error insertando cuenta:', cuentaError);
-                console.log('🔄 Rollback: eliminando cotización y detalles...');
+                console.log('🔄 Rollback seguro: marcando cotización como devuelta por error de cuenta...');
                 await db.from('ferre_ventas_detalle').delete().eq('venta_id', ventaInsertada.id);
-                await db.from('ferre_ventas').delete().eq('id', ventaInsertada.id);
+                await db.from('ferre_ventas').update({
+                    estado: 'DEVUELTO',
+                    notas: `DEVUELTO, Motivo: error de guardado - no se pudo registrar la cuenta por cobrar. ${cuentaError.message || ''}`.trim(),
+                    updated_at: new Date().toISOString()
+                }).eq('id', ventaInsertada.id);
                 throw new Error(cuentaError.message || 'No se pudo registrar la cuenta por cobrar.');
             }
 
@@ -10713,8 +10721,11 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             if (detalleError) {
                 console.error('Error insertando detalles:', detalleError);
-                // Intentar revertir la cotización si fallan los detalles
-                await db.from('ferre_ventas').delete().eq('id', ventaInsertada.id);
+                await db.from('ferre_ventas').update({
+                    estado: 'DEVUELTO',
+                    notas: `DEVUELTO, Motivo: error de guardado - no se pudieron registrar productos. ${detalleError.message || ''}`.trim(),
+                    updated_at: new Date().toISOString()
+                }).eq('id', ventaInsertada.id);
                 throw new Error(`Error al registrar productos: ${detalleError.message}`);
             }
 

@@ -20,7 +20,7 @@ async function loadHistorial() {
         const fecha = $('histDateFilter').value;
         const busq = $('histSearchInput').value.trim();
         let query = db.from('ferre_ventas')
-            .select('id, id_venta, fecha_hora_venta, cliente_id, total, tipo_pago, tipo, estado')
+            .select('id, id_venta, fecha_hora_venta, cliente_id, total, tipo_pago, tipo, estado, notas')
             .order('fecha_hora_venta', { ascending: false });
         if (busq) {
             query = query.ilike('id_venta', `%${busq}%`).limit(100);
@@ -57,8 +57,9 @@ function renderHistorial(ventas) {
         $('histSummary').classList.add('hidden');
         return;
     }
-    const totalSum = ventas.reduce((s, v) => s + (parseFloat(v.total) || 0), 0);
-    $('histSummaryCount').textContent = `${ventas.length} venta${ventas.length !== 1 ? 's' : ''}`;
+    const ventasActivas = ventas.filter(v => !['DEVUELTO', 'ANULADO', 'ANULADA'].includes(String(v.estado || '').toUpperCase()));
+    const totalSum = ventasActivas.reduce((s, v) => s + (parseFloat(v.total) || 0), 0);
+    $('histSummaryCount').textContent = `${ventasActivas.length} venta${ventasActivas.length !== 1 ? 's' : ''}`;
     $('histSummaryTotal').textContent = fmt(totalSum);
     $('histSummary').classList.remove('hidden');
     const list = $('histList');
@@ -84,6 +85,7 @@ function renderHistorial(ventas) {
         }
         const div = document.createElement('div');
         div.className = cardClass;
+        const notasHtml = v.notas ? `<div class="venta-notas-text">${escHtml(v.notas)}</div>` : '';
         div.innerHTML = `
             <div class="venta-card-top">
                 <span class="venta-id-text">${escHtml(v.id_venta || '')}</span>
@@ -95,7 +97,8 @@ function renderHistorial(ventas) {
                     <span class="venta-hora-text">${hora}</span>
                     <span class="badge ${bc}">${escHtml(tp)}</span>
                 </span>
-            </div>`;
+            </div>
+            ${notasHtml}`;
         div.addEventListener('click', () => verDetalleVenta(v.id, v));
         list.appendChild(div);
     });

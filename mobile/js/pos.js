@@ -307,16 +307,37 @@ async function processSale() {
         const ventaId = `S${Date.now()}`;
         const { data: venta, error: ve } = await db.from('ferre_ventas').insert([{
             id_venta: ventaId, fecha_hora_venta: new Date().toISOString(), cliente_id: currentClient.cedula,
-            total, pagado_con: pagadoCon, vuelto, tipo: 'RECIBO', tipo_pago: currentTipoPago, estado: 'COMPLETADO',
-            usuario_email: currentUser?.email || null, doc: null, clave_acceso: null, fecha_factura: null
+            total, pagado_con: pagadoCon, vuelto, tipo: 'RECIBO', tipo_pago: currentTipoPago, estado: 'GUARDANDO',
+            usuario_email: currentUser?.email || null, doc: null, clave_acceso: null, fecha_factura: null,
+            notas: 'Venta en proceso de guardado: pendiente de registrar detalles.'
         }]).select().single();
         if (ve) throw new Error(ve.message);
         const detalles = cart.map((item, i) => ({
             id_detalle: `${ventaId}_${i + 1}`, venta_id: venta.id, id_venta: ventaId,
             producto_id: item.code, cantidad: parseFloat(item.quantity), precio: parseFloat(item.price), estado: 'ACTIVO'
         }));
+        if (!detalles.length) {
+            await db.from('ferre_ventas').update({
+                estado: 'DEVUELTO',
+                notas: 'DEVUELTO, Motivo: error de guardado - venta sin productos antes de insertar detalles.',
+                updated_at: new Date().toISOString()
+            }).eq('id', venta.id);
+            throw new Error('No se puede registrar una venta sin productos.');
+        }
         const { error: de } = await db.from('ferre_ventas_detalle').insert(detalles);
-        if (de) { await db.from('ferre_ventas').delete().eq('id', venta.id); throw new Error(de.message); }
+        if (de) {
+            await db.from('ferre_ventas').update({
+                estado: 'DEVUELTO',
+                notas: `DEVUELTO, Motivo: error de guardado - no se pudieron registrar productos. ${de.message || ''}`.trim(),
+                updated_at: new Date().toISOString()
+            }).eq('id', venta.id);
+            throw new Error(de.message);
+        }
+        await db.from('ferre_ventas').update({
+            estado: 'COMPLETADO',
+            notas: null,
+            updated_at: new Date().toISOString()
+        }).eq('id', venta.id);
         detalles.forEach(d => { const p = allProducts.find(x => x.codigo === d.producto_id); if (p) p.stock = Math.max(0, p.stock - d.cantidad); });
         if (currentTipoPago === 'TRANSFERENCIA' || currentTipoPago === 'MIXTO') {
             const prods = detalles.map(d => { const c = cart.find(x => x.code === d.producto_id); return `${d.cantidad} x ${c ? c.name : d.producto_id}`; }).join('\n');
