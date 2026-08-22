@@ -1567,8 +1567,12 @@
             }).join('');
         }
 
+        function esVentaContabilizable(venta) {
+            return !['DEVUELTO', 'ANULADO', 'ANULADA'].includes(String(venta?.estado || '').toUpperCase());
+        }
+
         function actualizarEstadisticas() {
-            const ventasActivas = ventasState.ventas.filter(v => !['DEVUELTO', 'ANULADO', 'ANULADA'].includes(String(v.estado || '').toUpperCase()));
+            const ventasActivas = ventasState.ventas.filter(esVentaContabilizable);
             const total = ventasActivas.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
             const ganancia = ventasActivas.reduce((sum, v) => sum + parseFloat(v.ganancia || 0), 0);
             const cantidad = ventasActivas.length;
@@ -1635,7 +1639,7 @@
                 // Traer ventas de hoy hasta ahora
                 const { data: ventasHoy, error: errorHoy } = await db
                     .from('ferre_ventas')
-                    .select('total')
+                    .select('total, estado')
                     .gte('fecha_hora_venta', inicioHoy.toISOString())
                     .lte('fecha_hora_venta', finHoy.toISOString());
 
@@ -1644,15 +1648,17 @@
                 // Traer ventas de ayer hasta la misma hora
                 const { data: ventasAyer, error: errorAyer } = await db
                     .from('ferre_ventas')
-                    .select('total')
+                    .select('total, estado')
                     .gte('fecha_hora_venta', inicioAyer.toISOString())
                     .lte('fecha_hora_venta', finAyer.toISOString());
 
                 if (errorAyer) throw errorAyer;
 
                 // Calcular totales
-                const totalHoy = (ventasHoy || []).reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
-                const totalAyer = (ventasAyer || []).reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+                const totalHoy = (ventasHoy || []).filter(esVentaContabilizable)
+                    .reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+                const totalAyer = (ventasAyer || []).filter(esVentaContabilizable)
+                    .reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
 
                 // Calcular diferencia
                 const diferencia = totalHoy - totalAyer;
@@ -1776,7 +1782,7 @@
 
                 const { data: ventasMesActual, error: errorActual } = await db
                     .from('ferre_ventas')
-                    .select('total, fecha_hora_venta, id')
+                    .select('total, fecha_hora_venta, id, estado')
                     .gte('fecha_hora_venta', inicioMesActual.toISOString())
                     .lte('fecha_hora_venta', finHoy.toISOString());
 
@@ -1790,13 +1796,15 @@
 
                 const { data: ventasMesAnterior, error: errorAnterior } = await db
                     .from('ferre_ventas')
-                    .select('total, fecha_hora_venta')
+                    .select('total, fecha_hora_venta, estado')
                     .gte('fecha_hora_venta', inicioMesAnterior.toISOString())
                     .lte('fecha_hora_venta', finMesAnterior.toISOString());
 
                 if (errorAnterior) throw errorAnterior;
 
-                const totalMesAnterior = (ventasMesAnterior || []).reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+                const ventasMesActualActivas = (ventasMesActual || []).filter(esVentaContabilizable);
+                const ventasMesAnteriorActivas = (ventasMesAnterior || []).filter(esVentaContabilizable);
+                const totalMesAnterior = ventasMesAnteriorActivas.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
                 const statsMesPasado = document.getElementById('statsMesPasado');
                 if (statsMesPasado) statsMesPasado.textContent = window.app.formatCurrency(totalMesAnterior);
 
@@ -1807,13 +1815,13 @@
 
                 const { data: ventasConDetalles, error: errorVentasConDetalles } = await db
                     .from('ferre_ventas')
-                    .select('id, ventas_detalle:ferre_ventas_detalle(producto_id, cantidad, subtotal, precio)')
+                    .select('id, estado, ventas_detalle:ferre_ventas_detalle(producto_id, cantidad, subtotal, precio)')
                     .gte('fecha_hora_venta', hace15Dias.toISOString());
 
                 // Extraer y aplanar los detalles de las ventas
                 let detallesRecientes = [];
                 if (!errorVentasConDetalles && ventasConDetalles) {
-                    ventasConDetalles.forEach(venta => {
+                    ventasConDetalles.filter(esVentaContabilizable).forEach(venta => {
                         if (venta.ventas_detalle && Array.isArray(venta.ventas_detalle)) {
                             // Solo incluir productos con precio > 1 USD
                             const detallesFiltrados = venta.ventas_detalle.filter(d => 
@@ -1831,8 +1839,8 @@
 
                 // Calcular proyección con algoritmo complejo
                 const proyeccion = calcularProyeccionCompleja(
-                    ventasMesActual || [],
-                    ventasMesAnterior || [],
+                    ventasMesActualActivas,
+                    ventasMesAnteriorActivas,
                     diaActual,
                     ultimoDiaMes,
                     detallesRecientes,
