@@ -2896,6 +2896,7 @@
         window.mostrarTopProductos = mostrarTopProductos;
         window.cerrarModalTop = cerrarModalTop;
         window.verDetalleVenta = verDetalleVenta;
+        window.convertirVentaATransferencia = convertirVentaATransferencia;
         window.cerrarModalDetalle = cerrarModalDetalle;
         window.cerrarModalSeleccionCliente = cerrarModalSeleccionCliente;
 
@@ -3015,6 +3016,10 @@
                         <label>Estado</label>
                         <div class="value">${venta.estado}</div>
                     </div>
+                    <div class="detalle-info-item">
+                        <label>Tipo de pago</label>
+                        <div class="value">${venta.tipo_pago || 'SIN DEFINIR'}</div>
+                    </div>
                     ${venta.usuario_email ? `
                     <div class="detalle-info-item">
                         <label>Vendedor</label>
@@ -3029,6 +3034,12 @@
                         <label>Vuelto</label>
                         <div class="value">${window.app.formatCurrency(venta.vuelto)}</div>
                     </div>
+                    ${venta.notas ? `
+                    <div class="detalle-info-item" style="grid-column: 1 / -1;">
+                        <label>Notas</label>
+                        <div class="value">${String(venta.notas).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
 
@@ -3079,7 +3090,8 @@
 
         function generarBotonesAccion(venta) {
             const tipo = venta.tipo;
-            const estado = venta.estado;
+            const estado = String(venta.estado || '').toUpperCase();
+            const tipoPago = String(venta.tipo_pago || '').toUpperCase();
             let botones = '';
 
             if (tipo === 'FACTURA') {
@@ -3107,7 +3119,60 @@
             `;
             }
 
+            const estadoPermiteConversion = !['DEVUELTO', 'ANULADO', 'ANULADA', 'GUARDANDO'].includes(estado);
+            const pagoConvertible = ['', 'EFECTIVO'].includes(tipoPago);
+            if (estadoPermiteConversion && pagoConvertible && Number(venta.total) > 0) {
+                botones += `
+                <button class="btn btn-accent" onclick="convertirVentaATransferencia(this)">
+                    <i class="fas fa-money-bill-transfer"></i> Convertir a transferencia
+                </button>
+                `;
+            }
+
             return botones;
+        }
+
+        async function convertirVentaATransferencia(button) {
+            const venta = window.ventaActual?.venta;
+            if (!venta) return;
+
+            const confirmado = await showCustomConfirm(
+                `La venta <strong>${venta.id_venta}</strong> por <strong>${window.app.formatCurrency(venta.total)}</strong> se marcará como transferencia y se enviará el enlace al grupo para cargar el comprobante.`,
+                'Convertir a transferencia',
+                'Convertir y notificar',
+                'Cancelar'
+            );
+            if (!confirmado) return;
+
+            const original = button?.innerHTML;
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Convirtiendo...';
+            }
+
+            try {
+                const response = await posApiRequest('/api/notifications/venta-transferencia/convertir', {
+                    method: 'POST',
+                    body: JSON.stringify({ idVenta: venta.id_venta })
+                });
+                const updatedSale = response?.data?.venta;
+                window.app.showToast(
+                    response?.data?.alreadyConverted
+                        ? 'La venta ya estaba convertida y la transferencia fue verificada.'
+                        : 'Venta convertida a transferencia y notificada correctamente.',
+                    'success',
+                    5000
+                );
+                await cargarVentas();
+                await verDetalleVenta(updatedSale?.id || venta.id);
+            } catch (error) {
+                console.error('Error convirtiendo venta a transferencia:', error);
+                window.app.showToast(error.message || 'No se pudo convertir la venta', 'danger', 5000);
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = original;
+                }
+            }
         }
 
         function mostrarModalLoading() {
