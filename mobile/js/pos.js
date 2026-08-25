@@ -230,22 +230,25 @@ let metodosTransferenciaMovilCache = null;
 let cargaMetodosTransferenciaMovil = null;
 
 async function cargarMetodosTransferenciaMovil() {
-    const select = $('metodoTransferenciaMovil');
+    const grid = $('metodosTransferenciaMovilGrid');
     const estado = $('estadoMetodosTransferenciaMovil');
     if (metodosTransferenciaMovilCache) return metodosTransferenciaMovilCache;
     if (cargaMetodosTransferenciaMovil) return cargaMetodosTransferenciaMovil;
 
-    select.disabled = true;
     estado.textContent = 'Cargando cuentas disponibles...';
     cargaMetodosTransferenciaMovil = posApiRequest('/api/payment-methods/transfer', { method: 'GET' })
         .then(response => {
             metodosTransferenciaMovilCache = Array.isArray(response?.data) ? response.data : [];
-            select.innerHTML = '<option value="">Selecciona una cuenta</option>' +
-                metodosTransferenciaMovilCache.map(method =>
-                    `<option value="${escHtml(method.codigo)}">${escHtml(method.nombre)}</option>`
-                ).join('');
+            grid.innerHTML = metodosTransferenciaMovilCache.map(method => `
+                <button type="button" class="mobile-transfer-method-button" data-mobile-transfer-method="${escHtml(method.codigo)}"
+                    onclick="seleccionarEImprimirMetodoTransferenciaMovil(this.dataset.mobileTransferMethod)"
+                    title="Seleccionar ${escHtml(method.nombre)} y mostrar datos de cobro">
+                    <i class="fas fa-check-circle selection-check"></i>
+                    ${method.logo_url ? `<img src="${escHtml(method.logo_url)}" alt="${escHtml(method.nombre)}" referrerpolicy="no-referrer">` : '<i class="fas fa-university" style="font-size:2rem"></i>'}
+                    <span>${escHtml(method.nombre)}</span>
+                </button>`).join('');
             estado.textContent = metodosTransferenciaMovilCache.length
-                ? 'Los datos solo se muestran al solicitar el QR.'
+                ? 'Pulsa un logo para seleccionar y mostrar los datos.'
                 : 'No hay cuentas de cobro activas.';
             return metodosTransferenciaMovilCache;
         })
@@ -253,26 +256,21 @@ async function cargarMetodosTransferenciaMovil() {
             estado.textContent = error.message || 'No se pudieron cargar las cuentas.';
             throw error;
         })
-        .finally(() => {
-            select.disabled = false;
-            cargaMetodosTransferenciaMovil = null;
-        });
+        .finally(() => { cargaMetodosTransferenciaMovil = null; });
     return cargaMetodosTransferenciaMovil;
 }
 
 function actualizarLogoMetodoTransferenciaMovil() {
     const code = $('metodoTransferenciaMovil').value;
-    const logo = $('logoMetodoTransferenciaMovil');
-    const method = (metodosTransferenciaMovilCache || []).find(item => item.codigo === code);
-    if (method?.logo_url) {
-        logo.src = method.logo_url;
-        logo.alt = method.nombre || 'Banco seleccionado';
-        logo.style.display = 'block';
-    } else {
-        logo.removeAttribute('src');
-        logo.alt = '';
-        logo.style.display = 'none';
-    }
+    document.querySelectorAll('[data-mobile-transfer-method]').forEach(button => {
+        button.classList.toggle('selected', button.dataset.mobileTransferMethod === code);
+    });
+}
+
+function seleccionarEImprimirMetodoTransferenciaMovil(code) {
+    $('metodoTransferenciaMovil').value = code;
+    actualizarLogoMetodoTransferenciaMovil();
+    mostrarDatosTransferenciaMovil();
 }
 
 async function mostrarDatosTransferenciaMovil() {
@@ -298,17 +296,17 @@ async function mostrarDatosTransferenciaMovil() {
         const rows = [
             ['Titular', method.titular], ['Identificación', method.identificacion],
             ['Tipo de cuenta', method.tipo_cuenta], ['Número', method.numero_cuenta],
-            ['Correo', method.correo], ['Celular', method.celular]
+            ['Correo', method.correo]
         ].filter(([, value]) => value).map(([label, value]) =>
             `<div class="row"><span>${escHtml(label)}</span><strong>${escHtml(value)}</strong></div>`
         ).join('');
         view.document.open();
         view.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>Datos de cobro</title><style>
         @page{size:80mm auto;margin:0}*{box-sizing:border-box}body{margin:0;background:#fff;color:#111;font-family:Arial,sans-serif;text-align:center}main{max-width:80mm;margin:auto;padding:4mm 3mm}
-        h1{font-size:5mm}.amount{font-size:7mm;font-weight:800;border:1px solid #111;padding:2mm}.bank-logo{max-width:48mm;max-height:14mm;object-fit:contain}.payment-qr{width:55mm;height:55mm;object-fit:contain}.row{display:flex;justify-content:space-between;gap:3mm;border-bottom:1px solid #aaa;padding:1.5mm 0;text-align:left;font-size:3mm}.row strong{text-align:right;overflow-wrap:anywhere}.note{font-size:3mm;white-space:pre-wrap}.print{margin:16px;padding:12px 18px;border:0;background:#087f8c;color:#fff;font-weight:700;border-radius:6px}@media print{.print{display:none}}
-        </style></head><body><main><strong>FERRISOLUCIONES</strong><p>Datos para transferencia</p>${method.logo_url ? `<img class="bank-logo" src="${escHtml(method.logo_url)}" alt="${escHtml(method.nombre)}">` : ''}<h1>${escHtml(method.nombre)}</h1><div class="amount">${escHtml(amount)}</div>
+        h1{font-size:5mm}.amount{font-size:7mm;font-weight:800;border:1px solid #111;padding:2mm}.bank-logo{max-width:48mm;max-height:14mm;object-fit:contain}.payment-qr{width:55mm;height:55mm;object-fit:contain}.row{display:flex;justify-content:space-between;gap:3mm;border-bottom:1px solid #aaa;padding:1.5mm 0;text-align:left;font-size:3mm}.row strong{text-align:right;overflow-wrap:anywhere}.note{font-size:3mm;white-space:pre-wrap}
+        </style></head><body><main><strong>FERRISOLUCIONES</strong><p>Datos para transferencia</p>${(method.logo_print_url || method.logo_url) ? `<img class="bank-logo" src="${escHtml(method.logo_print_url || method.logo_url)}" alt="${escHtml(method.nombre)}">` : ''}<h1>${escHtml(method.nombre)}</h1><div class="amount">${escHtml(amount)}</div>
         ${method.qr_data_url ? `<img class="payment-qr" src="${method.qr_data_url}" alt="QR de cobro">` : ''}${rows}${method.instrucciones ? `<p class="note">${escHtml(method.instrucciones)}</p>` : ''}<p><strong>Confirma con el cajero que el pago fue recibido.</strong></p>
-        <button class="print" onclick="window.print()">Imprimir</button></main></body></html>`);
+        </main><script>function done(){setTimeout(()=>window.print(),100)}const waits=[...document.images].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true})}));Promise.all(waits).then(done);window.addEventListener('afterprint',()=>window.close());<\/script></body></html>`);
         view.document.close();
     } catch (error) {
         view.close();

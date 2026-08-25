@@ -200,6 +200,12 @@
                         </button>
                     </div>
                 </div>
+
+                <div class="venta-section transfer-methods-panel" id="metodosTransferenciaPanel" style="display:none;">
+                    <h3><i class="fas fa-building-columns"></i> Cuenta de cobro</h3>
+                    <div class="transfer-methods-grid" id="metodosTransferenciaGrid"></div>
+                    <small id="estadoMetodosTransferencia" class="transfer-methods-status"></small>
+                </div>
             </div>
 
 
@@ -254,24 +260,9 @@
                         style="display: none; margin-bottom: 15px; padding: 10px; background: #e3f2fd; border-radius: 8px; color: #0d47a1; font-weight: bold;">
                         <span style="display: block; font-size: 0.8em; opacity: 0.8;">Monto a Transferir</span>
                         <span id="montoTransferenciaDisplay" style="display: block; font-size: 1.2em; text-align: right;">$0.00</span>
-                        <label for="metodoTransferenciaVenta"
-                            style="display: block; margin: 10px 0 5px; font-size: 0.8em; opacity: 0.85;">Cuenta de cobro</label>
-                        <img id="logoMetodoTransferenciaVenta" alt="" referrerpolicy="no-referrer"
-                            style="display:none;max-width:150px;max-height:42px;object-fit:contain;margin:0 auto 8px;">
-                        <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;">
-                            <select id="metodoTransferenciaVenta" class="input-pago"
-                                onchange="actualizarLogoMetodoTransferencia()"
-                                style="min-width: 0; width: 100%; font-size: 0.9em; padding: 8px;">
-                                <option value="">Selecciona una cuenta</option>
-                            </select>
-                            <button type="button" id="btnImprimirTransferencia" onclick="imprimirDatosTransferencia()"
-                                title="Imprimir datos y QR de cobro"
-                                style="border: 0; border-radius: 6px; padding: 0 12px; background: #087f8c; color: white; cursor: pointer;">
-                                <i class="fas fa-print"></i>
-                            </button>
-                        </div>
-                        <small id="estadoMetodosTransferencia"
-                            style="display: block; margin-top: 6px; font-weight: normal;"></small>
+                        <input type="hidden" id="metodoTransferenciaVenta" value="">
+                        <span style="display:block;margin-top:10px;font-size:.8em;opacity:.8;">Cuenta seleccionada</span>
+                        <strong id="metodoTransferenciaSeleccionado" style="display:block;text-align:right;">Ninguna</strong>
                     </div>
 
                     <div class="vuelto-display" id="vueltoSection">
@@ -3060,6 +3051,77 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
+    }
+
+    .transfer-methods-panel {
+        margin-top: 2px;
+    }
+
+    .transfer-methods-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .transfer-method-button {
+        position: relative;
+        height: 118px;
+        padding: 12px;
+        border: 3px solid #e0e0e0;
+        border-radius: 8px;
+        background: #fff;
+        color: #333;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font: inherit;
+        font-weight: 700;
+        transition: border-color .15s ease, background .15s ease, transform .15s ease;
+    }
+
+    .transfer-method-button:hover {
+        border-color: #d4a017;
+        background: #fffef5;
+        transform: translateY(-2px);
+    }
+
+    .transfer-method-button.selected {
+        border-color: #d4a017;
+        background: #fff8e1;
+    }
+
+    .transfer-method-button img {
+        width: 76px;
+        height: 64px;
+        object-fit: contain;
+    }
+
+    .transfer-method-button span {
+        font-size: .88em;
+        line-height: 1.1;
+        text-align: center;
+    }
+
+    .transfer-method-button .selection-check {
+        display: none;
+        position: absolute;
+        top: 7px;
+        right: 7px;
+        color: #d4a017;
+        font-size: 1.15em;
+    }
+
+    .transfer-method-button.selected .selection-check {
+        display: block;
+    }
+
+    .transfer-methods-status {
+        min-height: 16px;
+        color: #666;
+        font-size: .78em;
     }
 
     .btn-tipo-comprobante {
@@ -8420,23 +8482,26 @@ _Sistema de Gestión Ferrisoluciones_`;
     }
 
     async function cargarMetodosTransferencia() {
-        const select = document.getElementById('metodoTransferenciaVenta');
+        const grid = document.getElementById('metodosTransferenciaGrid');
         const estado = document.getElementById('estadoMetodosTransferencia');
-        if (!select) return [];
+        if (!grid) return [];
         if (metodosTransferenciaCache) return metodosTransferenciaCache;
         if (cargaMetodosTransferencia) return cargaMetodosTransferencia;
 
         estado.textContent = 'Cargando cuentas disponibles...';
-        select.disabled = true;
         cargaMetodosTransferencia = posApiRequest('/api/payment-methods/transfer', { method: 'GET' })
             .then((response) => {
                 metodosTransferenciaCache = Array.isArray(response?.data) ? response.data : [];
-                select.innerHTML = '<option value="">Selecciona una cuenta</option>' +
-                    metodosTransferenciaCache.map((method) =>
-                        `<option value="${escapeTransferPrint(method.codigo)}">${escapeTransferPrint(method.nombre)}</option>`
-                    ).join('');
+                grid.innerHTML = metodosTransferenciaCache.map((method) => `
+                    <button type="button" class="transfer-method-button" data-transfer-method="${escapeTransferPrint(method.codigo)}"
+                        onclick="seleccionarEImprimirMetodoTransferencia(this.dataset.transferMethod)"
+                        title="Seleccionar ${escapeTransferPrint(method.nombre)} e imprimir">
+                        <i class="fas fa-check-circle selection-check"></i>
+                        ${method.logo_url ? `<img src="${escapeTransferPrint(method.logo_url)}" alt="${escapeTransferPrint(method.nombre)}" referrerpolicy="no-referrer">` : '<i class="fas fa-building-columns" style="font-size:2.7em"></i>'}
+                        <span>${escapeTransferPrint(method.nombre)}</span>
+                    </button>`).join('');
                 estado.textContent = metodosTransferenciaCache.length
-                    ? 'Los datos solo se muestran al imprimir.'
+                    ? 'Pulsa un logo para seleccionar e imprimir.'
                     : 'No hay cuentas de cobro activas.';
                 return metodosTransferenciaCache;
             })
@@ -8445,7 +8510,6 @@ _Sistema de Gestión Ferrisoluciones_`;
                 throw error;
             })
             .finally(() => {
-                select.disabled = false;
                 cargaMetodosTransferencia = null;
             });
         return cargaMetodosTransferencia;
@@ -8453,21 +8517,25 @@ _Sistema de Gestión Ferrisoluciones_`;
 
     function actualizarLogoMetodoTransferencia() {
         const code = document.getElementById('metodoTransferenciaVenta')?.value || '';
-        const logo = document.getElementById('logoMetodoTransferenciaVenta');
         const method = (metodosTransferenciaCache || []).find(item => item.codigo === code);
-        if (!logo) return;
-        if (method?.logo_url) {
-            logo.src = method.logo_url;
-            logo.alt = method.nombre || 'Banco seleccionado';
-            logo.style.display = 'block';
-        } else {
-            logo.removeAttribute('src');
-            logo.alt = '';
-            logo.style.display = 'none';
-        }
+        document.querySelectorAll('[data-transfer-method]').forEach((button) => {
+            button.classList.toggle('selected', button.dataset.transferMethod === code);
+        });
+        const selectedLabel = document.getElementById('metodoTransferenciaSeleccionado');
+        if (selectedLabel) selectedLabel.textContent = method?.nombre || 'Ninguna';
     }
 
     window.actualizarLogoMetodoTransferencia = actualizarLogoMetodoTransferencia;
+
+    function seleccionarEImprimirMetodoTransferencia(code) {
+        const input = document.getElementById('metodoTransferenciaVenta');
+        if (!input) return;
+        input.value = code;
+        actualizarLogoMetodoTransferencia();
+        imprimirDatosTransferencia();
+    }
+
+    window.seleccionarEImprimirMetodoTransferencia = seleccionarEImprimirMetodoTransferencia;
 
     async function imprimirDatosTransferencia() {
         const select = document.getElementById('metodoTransferenciaVenta');
@@ -8504,8 +8572,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 ['Identificación', method.identificacion],
                 ['Tipo de cuenta', method.tipo_cuenta],
                 ['Número', method.numero_cuenta],
-                ['Correo', method.correo],
-                ['Celular', method.celular]
+                ['Correo', method.correo]
             ].filter(([, value]) => value);
             const rowsHtml = detailRows.map(([label, value]) =>
                 `<div class="row"><span>${escapeTransferPrint(label)}</span><strong>${escapeTransferPrint(value)}</strong></div>`
@@ -8523,7 +8590,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 @media print{main{width:78mm}}
                 </style></head><body><main>
                 <div class="store">FERRISOLUCIONES</div><div class="subtitle">Datos para transferencia</div>
-                ${method.logo_url ? `<img class="bank-logo" src="${escapeTransferPrint(method.logo_url)}" alt="${escapeTransferPrint(method.nombre)}">` : ''}
+                ${(method.logo_print_url || method.logo_url) ? `<img class="bank-logo" src="${escapeTransferPrint(method.logo_print_url || method.logo_url)}" alt="${escapeTransferPrint(method.nombre)}">` : ''}
                 <h1>${escapeTransferPrint(method.nombre)}</h1><div class="amount">${escapeTransferPrint(amount)}</div>
                 ${method.qr_data_url ? `<img id="paymentQr" class="payment-qr" src="${method.qr_data_url}" alt="QR de cobro">` : ''}${rowsHtml}
                 ${method.instrucciones ? `<div class="instructions">${escapeTransferPrint(method.instrucciones)}</div>` : ''}
@@ -8546,6 +8613,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         const tipo = radio.value;
         const pagoGroup = document.getElementById('pagoGroupEfectivo');
         const infoTransfer = document.getElementById('infoTransferencia');
+        const metodosPanel = document.getElementById('metodosTransferenciaPanel');
         const vueltoSection = document.getElementById('vueltoSection');
         const inputPagado = document.getElementById('pagadoCon');
         const labelPagado = document.getElementById('labelPagadoCon');
@@ -8553,11 +8621,13 @@ _Sistema de Gestión Ferrisoluciones_`;
         if (tipo === 'EFECTIVO') {
             if (pagoGroup) pagoGroup.style.display = 'block';
             if (infoTransfer) infoTransfer.style.display = 'none';
+            if (metodosPanel) metodosPanel.style.display = 'none';
             if (vueltoSection) vueltoSection.style.display = 'flex';
             if (inputPagado) inputPagado.disabled = false;
         } else if (tipo === 'TRANSFERENCIA') {
             if (pagoGroup) pagoGroup.style.display = 'none';
             if (infoTransfer) infoTransfer.style.display = 'block';
+            if (metodosPanel) metodosPanel.style.display = 'block';
             if (vueltoSection) vueltoSection.style.display = 'none';
             // Para transferencia, asumimos monto exacto
             if (inputPagado) {
@@ -8568,6 +8638,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         } else if (tipo === 'MIXTO') {
             if (pagoGroup) pagoGroup.style.display = 'block';
             if (infoTransfer) infoTransfer.style.display = 'block';
+            if (metodosPanel) metodosPanel.style.display = 'block';
             if (vueltoSection) vueltoSection.style.display = 'none';
             if (inputPagado) {
                 inputPagado.disabled = false;

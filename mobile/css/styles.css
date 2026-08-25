@@ -109,6 +109,14 @@ input::placeholder { color: var(--text-muted); }
 .payment-type-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: .7rem; background: var(--bg3); border: 2px solid var(--border); border-radius: 10px; color: var(--text-muted); font-size: .82rem; cursor: pointer; transition: all .15s; font-weight: 600; }
 .payment-type-btn i { font-size: 1.25rem; }
 .payment-type-btn.active { border-color: var(--primary); color: var(--primary); background: rgba(212,160,23,.1); }
+.mobile-transfer-methods-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.mobile-transfer-method-button { position: relative; min-height: 96px; padding: 9px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg3); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: inherit; }
+.mobile-transfer-method-button.selected { border-color: var(--primary); background: rgba(212,160,23,.12); color: var(--primary); }
+.mobile-transfer-method-button img { width: 76px; height: 52px; object-fit: contain; }
+.mobile-transfer-method-button span { font-size: .76rem; line-height: 1.15; text-align: center; }
+.mobile-transfer-method-button .selection-check { display: none; position: absolute; top: 6px; right: 6px; color: var(--primary); }
+.mobile-transfer-method-button.selected .selection-check { display: block; }
+.mobile-transfer-methods-status { display: block; min-height: 16px; margin-top: 5px; color: var(--text-muted); font-size: .73rem; }
 .cambio-display { text-align: center; font-size: 1.05rem; font-weight: 700; margin: .7rem 0; color: var(--success); }
 .cambio-display span { color: var(--text-muted); font-weight: 400; font-size: .82rem; }
 .venta-exito { text-align: center; padding: 1rem 0; }
