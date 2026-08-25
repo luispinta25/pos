@@ -251,9 +251,27 @@
                     </div>
 
                     <div id="infoTransferencia"
-                        style="display: none; margin-bottom: 15px; padding: 10px; background: #e3f2fd; border-radius: 8px; color: #0d47a1; font-weight: bold; text-align: right;">
+                        style="display: none; margin-bottom: 15px; padding: 10px; background: #e3f2fd; border-radius: 8px; color: #0d47a1; font-weight: bold;">
                         <span style="display: block; font-size: 0.8em; opacity: 0.8;">Monto a Transferir</span>
-                        <span id="montoTransferenciaDisplay" style="font-size: 1.2em;">$0.00</span>
+                        <span id="montoTransferenciaDisplay" style="display: block; font-size: 1.2em; text-align: right;">$0.00</span>
+                        <label for="metodoTransferenciaVenta"
+                            style="display: block; margin: 10px 0 5px; font-size: 0.8em; opacity: 0.85;">Cuenta de cobro</label>
+                        <img id="logoMetodoTransferenciaVenta" alt="" referrerpolicy="no-referrer"
+                            style="display:none;max-width:150px;max-height:42px;object-fit:contain;margin:0 auto 8px;">
+                        <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px;">
+                            <select id="metodoTransferenciaVenta" class="input-pago"
+                                onchange="actualizarLogoMetodoTransferencia()"
+                                style="min-width: 0; width: 100%; font-size: 0.9em; padding: 8px;">
+                                <option value="">Selecciona una cuenta</option>
+                            </select>
+                            <button type="button" id="btnImprimirTransferencia" onclick="imprimirDatosTransferencia()"
+                                title="Imprimir datos y QR de cobro"
+                                style="border: 0; border-radius: 6px; padding: 0 12px; background: #087f8c; color: white; cursor: pointer;">
+                                <i class="fas fa-print"></i>
+                            </button>
+                        </div>
+                        <small id="estadoMetodosTransferencia"
+                            style="display: block; margin-top: 6px; font-weight: normal;"></small>
                     </div>
 
                     <div class="vuelto-display" id="vueltoSection">
@@ -8328,6 +8346,9 @@ _Sistema de Gestión Ferrisoluciones_`;
 
         // Input de pago
         document.getElementById('pagadoCon').value = totalConIva.toFixed(2);
+        const metodoTransferenciaSelect = document.getElementById('metodoTransferenciaVenta');
+        if (metodoTransferenciaSelect) metodoTransferenciaSelect.value = '';
+        actualizarLogoMetodoTransferencia();
 
         // F1 propone factura para un cliente real y recibo para consumidor final.
         // El usuario todavía puede cambiar esta selección antes de confirmar.
@@ -8386,6 +8407,139 @@ _Sistema de Gestión Ferrisoluciones_`;
 
     window.cambiarTipoPagoVenta = cambiarTipoPagoVenta;
 
+    let metodosTransferenciaCache = null;
+    let cargaMetodosTransferencia = null;
+
+    function escapeTransferPrint(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    async function cargarMetodosTransferencia() {
+        const select = document.getElementById('metodoTransferenciaVenta');
+        const estado = document.getElementById('estadoMetodosTransferencia');
+        if (!select) return [];
+        if (metodosTransferenciaCache) return metodosTransferenciaCache;
+        if (cargaMetodosTransferencia) return cargaMetodosTransferencia;
+
+        estado.textContent = 'Cargando cuentas disponibles...';
+        select.disabled = true;
+        cargaMetodosTransferencia = posApiRequest('/api/payment-methods/transfer', { method: 'GET' })
+            .then((response) => {
+                metodosTransferenciaCache = Array.isArray(response?.data) ? response.data : [];
+                select.innerHTML = '<option value="">Selecciona una cuenta</option>' +
+                    metodosTransferenciaCache.map((method) =>
+                        `<option value="${escapeTransferPrint(method.codigo)}">${escapeTransferPrint(method.nombre)}</option>`
+                    ).join('');
+                estado.textContent = metodosTransferenciaCache.length
+                    ? 'Los datos solo se muestran al imprimir.'
+                    : 'No hay cuentas de cobro activas.';
+                return metodosTransferenciaCache;
+            })
+            .catch((error) => {
+                estado.textContent = error.message || 'No se pudieron cargar las cuentas.';
+                throw error;
+            })
+            .finally(() => {
+                select.disabled = false;
+                cargaMetodosTransferencia = null;
+            });
+        return cargaMetodosTransferencia;
+    }
+
+    function actualizarLogoMetodoTransferencia() {
+        const code = document.getElementById('metodoTransferenciaVenta')?.value || '';
+        const logo = document.getElementById('logoMetodoTransferenciaVenta');
+        const method = (metodosTransferenciaCache || []).find(item => item.codigo === code);
+        if (!logo) return;
+        if (method?.logo_url) {
+            logo.src = method.logo_url;
+            logo.alt = method.nombre || 'Banco seleccionado';
+            logo.style.display = 'block';
+        } else {
+            logo.removeAttribute('src');
+            logo.alt = '';
+            logo.style.display = 'none';
+        }
+    }
+
+    window.actualizarLogoMetodoTransferencia = actualizarLogoMetodoTransferencia;
+
+    async function imprimirDatosTransferencia() {
+        const select = document.getElementById('metodoTransferenciaVenta');
+        const code = select?.value || '';
+        if (!code) {
+            window.app.showToast('Selecciona la cuenta de cobro que utilizará el cliente.', 'warning', 3000);
+            return;
+        }
+
+        const printWindow = window.open('', '_blank', 'width=500,height=760');
+        if (!printWindow) {
+            window.app.showToast('Habilita las ventanas emergentes para imprimir los datos de cobro.', 'warning', 3500);
+            return;
+        }
+        printWindow.document.write('<!doctype html><title>Preparando datos de cobro</title><p style="font-family:Arial;padding:24px">Preparando impresión segura...</p>');
+        printWindow.document.close();
+
+        try {
+            const total = Math.round(ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0) * 100) / 100;
+            const pagado = Math.round((parseFloat(document.getElementById('pagadoCon')?.value) || 0) * 100) / 100;
+            const tipoPago = document.querySelector('input[name="tipoPagoVenta"]:checked')?.value || 'EFECTIVO';
+            const transferAmount = tipoPago === 'MIXTO' ? Math.max(0, total - pagado) : total;
+            if (transferAmount <= 0) throw new Error('No existe un monto pendiente por transferir.');
+            const response = await posApiRequest(`/api/payment-methods/transfer/${encodeURIComponent(code)}/slip`, {
+                method: 'POST',
+                body: JSON.stringify({ amount: transferAmount })
+            });
+            const method = response?.data;
+            if (!method) throw new Error('No se pudieron cargar los datos de la cuenta.');
+
+            const amount = window.app.formatCurrency(transferAmount);
+            const detailRows = [
+                ['Titular', method.titular],
+                ['Identificación', method.identificacion],
+                ['Tipo de cuenta', method.tipo_cuenta],
+                ['Número', method.numero_cuenta],
+                ['Correo', method.correo],
+                ['Celular', method.celular]
+            ].filter(([, value]) => value);
+            const rowsHtml = detailRows.map(([label, value]) =>
+                `<div class="row"><span>${escapeTransferPrint(label)}</span><strong>${escapeTransferPrint(value)}</strong></div>`
+            ).join('');
+
+            printWindow.document.open();
+            printWindow.document.write(`<!doctype html>
+                <html lang="es"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer">
+                <title>Datos de cobro</title><style>
+                @page{size:80mm auto;margin:0}*{box-sizing:border-box}body{margin:0;background:#fff;color:#111;font-family:Arial,sans-serif;text-align:center}
+                main{width:78mm;margin:0 auto;padding:4mm 3mm}.store{font-size:5mm;font-weight:800}.subtitle{font-size:3mm;margin:1mm 0 3mm}
+                h1{font-size:5mm;margin:2mm 0}.amount{font-size:7mm;font-weight:800;margin:2mm 0 4mm;padding:2mm;border:1px solid #111}
+                .bank-logo{display:block;max-width:48mm;max-height:14mm;object-fit:contain;margin:2mm auto}.payment-qr{display:block;width:55mm;height:55mm;object-fit:contain;margin:2mm auto}.row{display:flex;justify-content:space-between;gap:3mm;border-bottom:1px solid #aaa;padding:1.5mm 0;text-align:left;font-size:3mm}
+                .row strong{text-align:right;overflow-wrap:anywhere}.instructions{font-size:3mm;line-height:1.3;white-space:pre-wrap;margin-top:3mm}.notice{font-size:2.7mm;font-weight:700;margin-top:4mm;border-top:1px dashed #111;padding-top:3mm}
+                @media print{main{width:78mm}}
+                </style></head><body><main>
+                <div class="store">FERRISOLUCIONES</div><div class="subtitle">Datos para transferencia</div>
+                ${method.logo_url ? `<img class="bank-logo" src="${escapeTransferPrint(method.logo_url)}" alt="${escapeTransferPrint(method.nombre)}">` : ''}
+                <h1>${escapeTransferPrint(method.nombre)}</h1><div class="amount">${escapeTransferPrint(amount)}</div>
+                ${method.qr_data_url ? `<img id="paymentQr" class="payment-qr" src="${method.qr_data_url}" alt="QR de cobro">` : ''}${rowsHtml}
+                ${method.instrucciones ? `<div class="instructions">${escapeTransferPrint(method.instrucciones)}</div>` : ''}
+                <div class="notice">Confirma con el cajero que el pago fue recibido antes de retirarte.</div>
+                </main><script>function done(){setTimeout(()=>window.print(),100)}const waits=[...document.images].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true})}));Promise.all(waits).then(done);window.addEventListener('afterprint',()=>window.close());<\/script>
+                </body></html>`);
+            printWindow.document.close();
+        } catch (error) {
+            printWindow.close();
+            console.error('Error imprimiendo datos de transferencia:', error);
+            window.app.showToast(error.message || 'No se pudieron imprimir los datos de cobro.', 'error', 3500);
+        }
+    }
+
+    window.imprimirDatosTransferencia = imprimirDatosTransferencia;
+
     function cambiarTipoPagoVenta() {
         const radio = document.querySelector('input[name="tipoPagoVenta"]:checked');
         if (!radio) return;
@@ -8410,6 +8564,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 const totalConIva = Math.round(ventaState.carrito.reduce((sum, item) => sum + (item.cantidad * item.precio), 0) * 100) / 100;
                 inputPagado.value = totalConIva.toFixed(2);
             }
+            cargarMetodosTransferencia().catch((error) => console.error('Error cargando cuentas de cobro:', error));
         } else if (tipo === 'MIXTO') {
             if (pagoGroup) pagoGroup.style.display = 'block';
             if (infoTransfer) infoTransfer.style.display = 'block';
@@ -8422,6 +8577,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 inputPagado.focus();
                 inputPagado.select();
             }
+            cargarMetodosTransferencia().catch((error) => console.error('Error cargando cuentas de cobro:', error));
         }
         calcularVuelto();
     }
@@ -10049,11 +10205,22 @@ _Sistema de Gestión Ferrisoluciones_`;
             // Obtener tipo de pago
             const radio = document.querySelector('input[name="tipoPagoVenta"]:checked');
             const tipoPago = radio ? radio.value : 'EFECTIVO';
+            const montoTransferencia = tipoPago === 'TRANSFERENCIA'
+                ? totalConIva
+                : tipoPago === 'MIXTO'
+                    ? Math.max(0, totalConIva - pagadoCon)
+                    : 0;
+            const metodoSeleccionado = document.getElementById('metodoTransferenciaVenta')?.value || null;
+            const metodoTransferencia = montoTransferencia > 0 ? metodoSeleccionado : null;
 
             // Validación con tolerancia de 1 centavo para evitar errores de redondeo
             // SOLO validamos monto completo si es EFECTIVO.
             if (tipoPago === 'EFECTIVO' && pagadoCon < totalConIva - 0.01) {
                 window.app.showToast(`El monto pagado ($${pagadoCon.toFixed(2)}) debe ser igual o mayor al total ($${totalConIva.toFixed(2)})`, 'warning', 3000);
+                return;
+            }
+            if (montoTransferencia > 0 && !metodoTransferencia) {
+                window.app.showToast('Selecciona la cuenta donde se recibirá la transferencia.', 'warning', 3000);
                 return;
             }
 
@@ -10087,6 +10254,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 vuelto: parseFloat(vuelto.toFixed(2)),
                 tipo: tipoDocumento,
                 tipo_pago: tipoPago, // <-- NUEVO: Guardamos tipo de pago
+                metodo_transferencia_codigo: metodoTransferencia,
                 estado: 'GUARDANDO',
                 notas: 'Venta en proceso de guardado: pendiente de registrar detalles.',
                 usuario_email: userEmail,
@@ -10174,8 +10342,8 @@ _Sistema de Gestión Ferrisoluciones_`;
                 tipoPago
             });
 
-            // NUEVO: Enviar Webhook si NO es efectivo (Transferencia o Mixto)
-            if (tipoPago !== 'EFECTIVO') {
+            // Registrar y notificar solamente cuando existe un monto real transferido.
+            if (montoTransferencia > 0) {
                 const productosLista = ventaState.carrito.map(item => `${item.cantidad} x ${item.nombre}${item.esObsequio ? ' (OBSEQUIO)' : ''}`).join('\n');
                 let montoWebhook = totalConIva;
 
@@ -10192,7 +10360,8 @@ _Sistema de Gestión Ferrisoluciones_`;
                     monto: montoWebhook.toFixed(2),
                     tipo_pago: tipoPago,
                     total_venta: totalConIva.toFixed(2),
-                    cliente: clienteNombre
+                    cliente: clienteNombre,
+                    metodo_transferencia_codigo: metodoTransferencia
                 };
 
                 console.log('🚀 Enviando webhook venta:', payload);

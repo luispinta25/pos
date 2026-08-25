@@ -226,6 +226,96 @@ async function guardarCliente() {
 }
 
 // ── Pago ───────────────────────────────────────────────
+let metodosTransferenciaMovilCache = null;
+let cargaMetodosTransferenciaMovil = null;
+
+async function cargarMetodosTransferenciaMovil() {
+    const select = $('metodoTransferenciaMovil');
+    const estado = $('estadoMetodosTransferenciaMovil');
+    if (metodosTransferenciaMovilCache) return metodosTransferenciaMovilCache;
+    if (cargaMetodosTransferenciaMovil) return cargaMetodosTransferenciaMovil;
+
+    select.disabled = true;
+    estado.textContent = 'Cargando cuentas disponibles...';
+    cargaMetodosTransferenciaMovil = posApiRequest('/api/payment-methods/transfer', { method: 'GET' })
+        .then(response => {
+            metodosTransferenciaMovilCache = Array.isArray(response?.data) ? response.data : [];
+            select.innerHTML = '<option value="">Selecciona una cuenta</option>' +
+                metodosTransferenciaMovilCache.map(method =>
+                    `<option value="${escHtml(method.codigo)}">${escHtml(method.nombre)}</option>`
+                ).join('');
+            estado.textContent = metodosTransferenciaMovilCache.length
+                ? 'Los datos solo se muestran al solicitar el QR.'
+                : 'No hay cuentas de cobro activas.';
+            return metodosTransferenciaMovilCache;
+        })
+        .catch(error => {
+            estado.textContent = error.message || 'No se pudieron cargar las cuentas.';
+            throw error;
+        })
+        .finally(() => {
+            select.disabled = false;
+            cargaMetodosTransferenciaMovil = null;
+        });
+    return cargaMetodosTransferenciaMovil;
+}
+
+function actualizarLogoMetodoTransferenciaMovil() {
+    const code = $('metodoTransferenciaMovil').value;
+    const logo = $('logoMetodoTransferenciaMovil');
+    const method = (metodosTransferenciaMovilCache || []).find(item => item.codigo === code);
+    if (method?.logo_url) {
+        logo.src = method.logo_url;
+        logo.alt = method.nombre || 'Banco seleccionado';
+        logo.style.display = 'block';
+    } else {
+        logo.removeAttribute('src');
+        logo.alt = '';
+        logo.style.display = 'none';
+    }
+}
+
+async function mostrarDatosTransferenciaMovil() {
+    const code = $('metodoTransferenciaMovil').value;
+    if (!code) { showToast('Selecciona una cuenta de cobro', 'warning'); return; }
+    const view = window.open('', '_blank');
+    if (!view) { showToast('Habilita las ventanas emergentes para mostrar el QR', 'warning'); return; }
+    view.document.write('<!doctype html><title>Preparando QR</title><p style="font-family:Arial;padding:24px">Preparando QR seguro...</p>');
+    view.document.close();
+    try {
+        const total = Math.round(cart.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100;
+        const cash = currentTipoPago === 'MIXTO'
+            ? Math.round((parseFloat($('montoEfectivoMixto').value) || 0) * 100) / 100
+            : 0;
+        const transferAmount = currentTipoPago === 'MIXTO' ? Math.max(0, total - cash) : total;
+        if (transferAmount <= 0) throw new Error('No existe un monto pendiente por transferir.');
+        const response = await posApiRequest(`/api/payment-methods/transfer/${encodeURIComponent(code)}/slip`, {
+            method: 'POST', body: JSON.stringify({ amount: transferAmount })
+        });
+        const method = response?.data;
+        if (!method) throw new Error('No se pudieron cargar los datos de la cuenta.');
+        const amount = fmt(transferAmount);
+        const rows = [
+            ['Titular', method.titular], ['Identificación', method.identificacion],
+            ['Tipo de cuenta', method.tipo_cuenta], ['Número', method.numero_cuenta],
+            ['Correo', method.correo], ['Celular', method.celular]
+        ].filter(([, value]) => value).map(([label, value]) =>
+            `<div class="row"><span>${escHtml(label)}</span><strong>${escHtml(value)}</strong></div>`
+        ).join('');
+        view.document.open();
+        view.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>Datos de cobro</title><style>
+        @page{size:80mm auto;margin:0}*{box-sizing:border-box}body{margin:0;background:#fff;color:#111;font-family:Arial,sans-serif;text-align:center}main{max-width:80mm;margin:auto;padding:4mm 3mm}
+        h1{font-size:5mm}.amount{font-size:7mm;font-weight:800;border:1px solid #111;padding:2mm}.bank-logo{max-width:48mm;max-height:14mm;object-fit:contain}.payment-qr{width:55mm;height:55mm;object-fit:contain}.row{display:flex;justify-content:space-between;gap:3mm;border-bottom:1px solid #aaa;padding:1.5mm 0;text-align:left;font-size:3mm}.row strong{text-align:right;overflow-wrap:anywhere}.note{font-size:3mm;white-space:pre-wrap}.print{margin:16px;padding:12px 18px;border:0;background:#087f8c;color:#fff;font-weight:700;border-radius:6px}@media print{.print{display:none}}
+        </style></head><body><main><strong>FERRISOLUCIONES</strong><p>Datos para transferencia</p>${method.logo_url ? `<img class="bank-logo" src="${escHtml(method.logo_url)}" alt="${escHtml(method.nombre)}">` : ''}<h1>${escHtml(method.nombre)}</h1><div class="amount">${escHtml(amount)}</div>
+        ${method.qr_data_url ? `<img class="payment-qr" src="${method.qr_data_url}" alt="QR de cobro">` : ''}${rows}${method.instrucciones ? `<p class="note">${escHtml(method.instrucciones)}</p>` : ''}<p><strong>Confirma con el cajero que el pago fue recibido.</strong></p>
+        <button class="print" onclick="window.print()">Imprimir</button></main></body></html>`);
+        view.document.close();
+    } catch (error) {
+        view.close();
+        showToast(error.message || 'No se pudo mostrar el QR', 'error');
+    }
+}
+
 function setTipoPago(tipo) {
     currentTipoPago = tipo;
     $('btnTipoEfectivo').classList.toggle('active', tipo === 'EFECTIVO');
@@ -234,15 +324,18 @@ function setTipoPago(tipo) {
     $('efectivoSection').classList.toggle('hidden', tipo !== 'EFECTIVO');
     $('transferenciaSection').classList.toggle('hidden', tipo !== 'TRANSFERENCIA');
     $('mixtoSection').classList.toggle('hidden', tipo !== 'MIXTO');
+    $('metodoTransferenciaSection').classList.toggle('hidden', tipo === 'EFECTIVO');
     const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
     if (tipo === 'TRANSFERENCIA') {
         $('montoTransfDisplay').textContent = fmt(total);
         const btn = $('btnConfirmarVenta'); btn.disabled = false; btn.style.opacity = '1';
+        cargarMetodosTransferenciaMovil().catch(error => console.error('Error cargando cuentas de cobro:', error));
     } else if (tipo === 'MIXTO') {
         $('montoEfectivoMixto').value = '';
         $('montoTransfMixto').textContent = fmt(total);
         const btn = $('btnConfirmarVenta'); btn.disabled = true; btn.style.opacity = '.5';
         setTimeout(() => { $('montoEfectivoMixto').focus(); }, 100);
+        cargarMetodosTransferenciaMovil().catch(error => console.error('Error cargando cuentas de cobro:', error));
     } else {
         calcularCambio();
     }
@@ -267,6 +360,8 @@ function showPaymentModal() {
     $('cambioDisplay').textContent = '$0.00';
     $('montoTransfDisplay').textContent = fmt(total);
     $('postSaveSection').classList.add('hidden');
+    $('metodoTransferenciaMovil').value = '';
+    actualizarLogoMetodoTransferenciaMovil();
     $('paymentFooter').classList.remove('hidden');
     setTipoPago('EFECTIVO');
     calcularCambio();
@@ -304,10 +399,17 @@ async function processSale() {
         } else {
             pagadoCon = total; vuelto = 0;
         }
+        const montoTransferencia = currentTipoPago === 'TRANSFERENCIA' ? total : _montoTransfMixto;
+        const metodoTransferencia = montoTransferencia > 0 ? $('metodoTransferenciaMovil').value : null;
+        if (montoTransferencia > 0 && !metodoTransferencia) {
+            showToast('Selecciona la cuenta donde se recibirá la transferencia', 'warning');
+            return;
+        }
         const ventaId = `S${Date.now()}`;
         const { data: venta, error: ve } = await db.from('ferre_ventas').insert([{
             id_venta: ventaId, fecha_hora_venta: new Date().toISOString(), cliente_id: currentClient.cedula,
-            total, pagado_con: pagadoCon, vuelto, tipo: 'RECIBO', tipo_pago: currentTipoPago, estado: 'GUARDANDO',
+            total, pagado_con: pagadoCon, vuelto, tipo: 'RECIBO', tipo_pago: currentTipoPago,
+            metodo_transferencia_codigo: metodoTransferencia, estado: 'GUARDANDO',
             usuario_email: currentUser?.email || null, doc: null, clave_acceso: null, fecha_factura: null,
             notas: 'Venta en proceso de guardado: pendiente de registrar detalles.'
         }]).select().single();
@@ -348,7 +450,7 @@ async function processSale() {
 
             posApiRequest('/api/notifications/venta-transferencia', {
                 method: 'POST',
-                body: JSON.stringify({ idventa: ventaId, productos: prods, monto: montoWebhook.toFixed(2), tipo_pago: currentTipoPago, total_venta: total.toFixed(2), cliente: currentClient.razon_social, ...extra })
+                body: JSON.stringify({ idventa: ventaId, productos: prods, monto: montoWebhook.toFixed(2), tipo_pago: currentTipoPago, total_venta: total.toFixed(2), cliente: currentClient.razon_social, metodo_transferencia_codigo: metodoTransferencia, ...extra })
             })
             .catch(err => console.error('Error notificando transferencia de venta', err));
         }
