@@ -228,6 +228,46 @@ async function guardarCliente() {
 // ── Pago ───────────────────────────────────────────────
 let metodosTransferenciaMovilCache = null;
 let cargaMetodosTransferenciaMovil = null;
+const METODOS_TRANSFERENCIA_STORAGE_KEY = 'ferrisoluciones.transferMethods.v1';
+const METODOS_TRANSFERENCIA_TTL_MS = 15 * 60 * 1000;
+
+function renderMetodosTransferenciaMovil(methods) {
+    const grid = $('metodosTransferenciaMovilGrid');
+    const estado = $('estadoMetodosTransferenciaMovil');
+    grid.innerHTML = methods.map(method => `
+        <button type="button" class="mobile-transfer-method-button" data-mobile-transfer-method="${escHtml(method.codigo)}"
+            onclick="seleccionarEImprimirMetodoTransferenciaMovil(this.dataset.mobileTransferMethod)"
+            title="Seleccionar ${escHtml(method.nombre)} y mostrar datos de cobro">
+            <i class="fas fa-check-circle selection-check"></i>
+            ${method.logo_url ? `<img src="${escHtml(method.logo_url)}" alt="${escHtml(method.nombre)}" referrerpolicy="no-referrer">` : '<i class="fas fa-university" style="font-size:2rem"></i>'}
+            <span>${escHtml(method.nombre)}</span>
+        </button>`).join('');
+    methods.forEach(method => {
+        if (method.logo_url) new Image().src = method.logo_url;
+    });
+    estado.textContent = methods.length
+        ? 'Pulsa un logo para seleccionar y mostrar los datos.'
+        : 'No hay cuentas de cobro activas.';
+    actualizarLogoMetodoTransferenciaMovil();
+}
+
+function leerCacheMetodosTransferenciaMovil() {
+    try {
+        const cached = JSON.parse(localStorage.getItem(METODOS_TRANSFERENCIA_STORAGE_KEY) || 'null');
+        if (!cached || Date.now() - cached.savedAt > METODOS_TRANSFERENCIA_TTL_MS || !Array.isArray(cached.data)) return null;
+        return cached.data;
+    } catch {
+        return null;
+    }
+}
+
+function guardarCacheMetodosTransferenciaMovil(methods) {
+    try {
+        localStorage.setItem(METODOS_TRANSFERENCIA_STORAGE_KEY, JSON.stringify({ savedAt: Date.now(), data: methods }));
+    } catch {
+        // La caché es una optimización; el flujo funciona aunque el navegador la bloquee.
+    }
+}
 
 async function cargarMetodosTransferenciaMovil() {
     const grid = $('metodosTransferenciaMovilGrid');
@@ -235,21 +275,19 @@ async function cargarMetodosTransferenciaMovil() {
     if (metodosTransferenciaMovilCache) return metodosTransferenciaMovilCache;
     if (cargaMetodosTransferenciaMovil) return cargaMetodosTransferenciaMovil;
 
+    const cachedMethods = leerCacheMetodosTransferenciaMovil();
+    if (cachedMethods) {
+        metodosTransferenciaMovilCache = cachedMethods;
+        renderMetodosTransferenciaMovil(cachedMethods);
+        return cachedMethods;
+    }
+
     estado.textContent = 'Cargando cuentas disponibles...';
     cargaMetodosTransferenciaMovil = posApiRequest('/api/payment-methods/transfer', { method: 'GET' })
         .then(response => {
             metodosTransferenciaMovilCache = Array.isArray(response?.data) ? response.data : [];
-            grid.innerHTML = metodosTransferenciaMovilCache.map(method => `
-                <button type="button" class="mobile-transfer-method-button" data-mobile-transfer-method="${escHtml(method.codigo)}"
-                    onclick="seleccionarEImprimirMetodoTransferenciaMovil(this.dataset.mobileTransferMethod)"
-                    title="Seleccionar ${escHtml(method.nombre)} y mostrar datos de cobro">
-                    <i class="fas fa-check-circle selection-check"></i>
-                    ${method.logo_url ? `<img src="${escHtml(method.logo_url)}" alt="${escHtml(method.nombre)}" referrerpolicy="no-referrer">` : '<i class="fas fa-university" style="font-size:2rem"></i>'}
-                    <span>${escHtml(method.nombre)}</span>
-                </button>`).join('');
-            estado.textContent = metodosTransferenciaMovilCache.length
-                ? 'Pulsa un logo para seleccionar y mostrar los datos.'
-                : 'No hay cuentas de cobro activas.';
+            guardarCacheMetodosTransferenciaMovil(metodosTransferenciaMovilCache);
+            renderMetodosTransferenciaMovil(metodosTransferenciaMovilCache);
             return metodosTransferenciaMovilCache;
         })
         .catch(error => {
@@ -294,8 +332,8 @@ async function mostrarDatosTransferenciaMovil() {
         if (!method) throw new Error('No se pudieron cargar los datos de la cuenta.');
         const amount = fmt(transferAmount);
         const rows = [
-            ['Titular', method.titular, false], ['Identificación', method.identificacion, false],
             ['Tipo de cuenta', method.tipo_cuenta, true], ['Número de cuenta', method.numero_cuenta, true],
+            ['Titular', method.titular, false], ['Identificación', method.identificacion, false],
             ['Correo', method.correo, false]
         ].filter(([, value]) => value).map(([label, value, highlighted]) =>
             `<div class="row${highlighted ? ' account-highlight' : ''}"><span>${escHtml(label)}</span><strong>${escHtml(value)}</strong></div>`
@@ -362,6 +400,7 @@ function showPaymentModal() {
     actualizarLogoMetodoTransferenciaMovil();
     $('paymentFooter').classList.remove('hidden');
     setTipoPago('EFECTIVO');
+    cargarMetodosTransferenciaMovil().catch(error => console.error('Error precargando cuentas de cobro:', error));
     calcularCambio();
     showModal('paymentModal');
     setTimeout(() => { const i = $('montoRecibido'); i.focus(); i.select(); }, 200);

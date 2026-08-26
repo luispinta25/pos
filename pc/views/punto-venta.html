@@ -8428,6 +8428,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
         // Mostrar modal
         document.getElementById('modalVenta').classList.add('active');
+        cargarMetodosTransferencia().catch((error) => console.error('Error precargando cuentas de cobro:', error));
 
         // Initial Payment Type State (Default to Effective)
         const radioEfectivo = document.querySelector('input[name="tipoPagoVenta"][value="EFECTIVO"]');
@@ -8471,6 +8472,8 @@ _Sistema de Gestión Ferrisoluciones_`;
 
     let metodosTransferenciaCache = null;
     let cargaMetodosTransferencia = null;
+    const METODOS_TRANSFERENCIA_STORAGE_KEY = 'ferrisoluciones.transferMethods.v1';
+    const METODOS_TRANSFERENCIA_TTL_MS = 15 * 60 * 1000;
 
     function escapeTransferPrint(value) {
         return String(value ?? '')
@@ -8481,6 +8484,45 @@ _Sistema de Gestión Ferrisoluciones_`;
             .replace(/'/g, '&#039;');
     }
 
+    function renderMetodosTransferencia(methods) {
+        const grid = document.getElementById('metodosTransferenciaGrid');
+        const estado = document.getElementById('estadoMetodosTransferencia');
+        if (!grid || !estado) return;
+        grid.innerHTML = methods.map((method) => `
+            <button type="button" class="transfer-method-button" data-transfer-method="${escapeTransferPrint(method.codigo)}"
+                onclick="seleccionarEImprimirMetodoTransferencia(this.dataset.transferMethod)"
+                title="Seleccionar ${escapeTransferPrint(method.nombre)} e imprimir">
+                <i class="fas fa-check-circle selection-check"></i>
+                ${method.logo_url ? `<img src="${escapeTransferPrint(method.logo_url)}" alt="${escapeTransferPrint(method.nombre)}" referrerpolicy="no-referrer">` : '<i class="fas fa-building-columns" style="font-size:2.7em"></i>'}
+                <span>${escapeTransferPrint(method.nombre)}</span>
+            </button>`).join('');
+        methods.forEach((method) => {
+            if (method.logo_url) new Image().src = method.logo_url;
+        });
+        estado.textContent = methods.length
+            ? 'Pulsa un logo para seleccionar e imprimir.'
+            : 'No hay cuentas de cobro activas.';
+        actualizarLogoMetodoTransferencia();
+    }
+
+    function leerCacheMetodosTransferencia() {
+        try {
+            const cached = JSON.parse(localStorage.getItem(METODOS_TRANSFERENCIA_STORAGE_KEY) || 'null');
+            if (!cached || Date.now() - cached.savedAt > METODOS_TRANSFERENCIA_TTL_MS || !Array.isArray(cached.data)) return null;
+            return cached.data;
+        } catch {
+            return null;
+        }
+    }
+
+    function guardarCacheMetodosTransferencia(methods) {
+        try {
+            localStorage.setItem(METODOS_TRANSFERENCIA_STORAGE_KEY, JSON.stringify({ savedAt: Date.now(), data: methods }));
+        } catch {
+            // La caché es una optimización; el flujo funciona aunque el navegador la bloquee.
+        }
+    }
+
     async function cargarMetodosTransferencia() {
         const grid = document.getElementById('metodosTransferenciaGrid');
         const estado = document.getElementById('estadoMetodosTransferencia');
@@ -8488,21 +8530,19 @@ _Sistema de Gestión Ferrisoluciones_`;
         if (metodosTransferenciaCache) return metodosTransferenciaCache;
         if (cargaMetodosTransferencia) return cargaMetodosTransferencia;
 
+        const cachedMethods = leerCacheMetodosTransferencia();
+        if (cachedMethods) {
+            metodosTransferenciaCache = cachedMethods;
+            renderMetodosTransferencia(cachedMethods);
+            return cachedMethods;
+        }
+
         estado.textContent = 'Cargando cuentas disponibles...';
         cargaMetodosTransferencia = posApiRequest('/api/payment-methods/transfer', { method: 'GET' })
             .then((response) => {
                 metodosTransferenciaCache = Array.isArray(response?.data) ? response.data : [];
-                grid.innerHTML = metodosTransferenciaCache.map((method) => `
-                    <button type="button" class="transfer-method-button" data-transfer-method="${escapeTransferPrint(method.codigo)}"
-                        onclick="seleccionarEImprimirMetodoTransferencia(this.dataset.transferMethod)"
-                        title="Seleccionar ${escapeTransferPrint(method.nombre)} e imprimir">
-                        <i class="fas fa-check-circle selection-check"></i>
-                        ${method.logo_url ? `<img src="${escapeTransferPrint(method.logo_url)}" alt="${escapeTransferPrint(method.nombre)}" referrerpolicy="no-referrer">` : '<i class="fas fa-building-columns" style="font-size:2.7em"></i>'}
-                        <span>${escapeTransferPrint(method.nombre)}</span>
-                    </button>`).join('');
-                estado.textContent = metodosTransferenciaCache.length
-                    ? 'Pulsa un logo para seleccionar e imprimir.'
-                    : 'No hay cuentas de cobro activas.';
+                guardarCacheMetodosTransferencia(metodosTransferenciaCache);
+                renderMetodosTransferencia(metodosTransferenciaCache);
                 return metodosTransferenciaCache;
             })
             .catch((error) => {
@@ -8568,10 +8608,10 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             const amount = window.app.formatCurrency(transferAmount);
             const detailRows = [
-                ['Titular', method.titular, false],
-                ['Identificación', method.identificacion, false],
                 ['Tipo de cuenta', method.tipo_cuenta, true],
                 ['Número de cuenta', method.numero_cuenta, true],
+                ['Titular', method.titular, false],
+                ['Identificación', method.identificacion, false],
                 ['Correo', method.correo, false]
             ].filter(([, value]) => value);
             const rowsHtml = detailRows.map(([label, value, highlighted]) =>
