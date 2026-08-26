@@ -294,16 +294,16 @@ async function mostrarDatosTransferenciaMovil() {
         if (!method) throw new Error('No se pudieron cargar los datos de la cuenta.');
         const amount = fmt(transferAmount);
         const rows = [
-            ['Titular', method.titular], ['Identificación', method.identificacion],
-            ['Tipo de cuenta', method.tipo_cuenta], ['Número', method.numero_cuenta],
-            ['Correo', method.correo]
-        ].filter(([, value]) => value).map(([label, value]) =>
-            `<div class="row"><span>${escHtml(label)}</span><strong>${escHtml(value)}</strong></div>`
+            ['Titular', method.titular, false], ['Identificación', method.identificacion, false],
+            ['Tipo de cuenta', method.tipo_cuenta, true], ['Número de cuenta', method.numero_cuenta, true],
+            ['Correo', method.correo, false]
+        ].filter(([, value]) => value).map(([label, value, highlighted]) =>
+            `<div class="row${highlighted ? ' account-highlight' : ''}"><span>${escHtml(label)}</span><strong>${escHtml(value)}</strong></div>`
         ).join('');
         view.document.open();
         view.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>Datos de cobro</title><style>
         @page{size:80mm auto;margin:0}*{box-sizing:border-box}body{margin:0;background:#fff;color:#111;font-family:Arial,sans-serif;text-align:center}main{max-width:80mm;margin:auto;padding:4mm 3mm}
-        h1{font-size:5mm}.amount{font-size:7mm;font-weight:800;border:1px solid #111;padding:2mm}.bank-logo{max-width:48mm;max-height:14mm;object-fit:contain}.payment-qr{width:55mm;height:55mm;object-fit:contain}.row{display:flex;justify-content:space-between;gap:3mm;border-bottom:1px solid #aaa;padding:1.5mm 0;text-align:left;font-size:3mm}.row strong{text-align:right;overflow-wrap:anywhere}.note{font-size:3mm;white-space:pre-wrap}
+        h1{font-size:5mm}.amount{font-size:7mm;font-weight:800;border:1px solid #111;padding:2mm}.bank-logo{max-width:48mm;max-height:14mm;object-fit:contain}.payment-qr{width:55mm;height:55mm;object-fit:contain}.row{display:flex;justify-content:space-between;gap:3mm;border-bottom:1px solid #aaa;padding:1.5mm 0;text-align:left;font-size:3mm}.row strong{text-align:right;overflow-wrap:anywhere}.row.account-highlight{display:block;border:2px solid #111;margin:2mm 0;padding:2mm;text-align:center}.row.account-highlight span{display:block;font-size:3mm;font-weight:800;text-transform:uppercase}.row.account-highlight strong{display:block;margin-top:1mm;text-align:center;font-size:5mm;line-height:1.1}.note{font-size:3mm;white-space:pre-wrap}
         </style></head><body><main><strong>FERRISOLUCIONES</strong><p>Datos para transferencia</p>${(method.logo_print_url || method.logo_url) ? `<img class="bank-logo" src="${escHtml(method.logo_print_url || method.logo_url)}" alt="${escHtml(method.nombre)}">` : ''}<h1>${escHtml(method.nombre)}</h1><div class="amount">${escHtml(amount)}</div>
         ${method.qr_data_url ? `<img class="payment-qr" src="${method.qr_data_url}" alt="QR de cobro">` : ''}${rows}${method.instrucciones ? `<p class="note">${escHtml(method.instrucciones)}</p>` : ''}<p><strong>Confirma con el cajero que el pago fue recibido.</strong></p>
         </main><script>function done(){setTimeout(()=>window.print(),100)}const waits=[...document.images].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true})}));Promise.all(waits).then(done);window.addEventListener('afterprint',()=>window.close());<\/script></body></html>`);

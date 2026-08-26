@@ -8568,14 +8568,14 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             const amount = window.app.formatCurrency(transferAmount);
             const detailRows = [
-                ['Titular', method.titular],
-                ['Identificación', method.identificacion],
-                ['Tipo de cuenta', method.tipo_cuenta],
-                ['Número', method.numero_cuenta],
-                ['Correo', method.correo]
+                ['Titular', method.titular, false],
+                ['Identificación', method.identificacion, false],
+                ['Tipo de cuenta', method.tipo_cuenta, true],
+                ['Número de cuenta', method.numero_cuenta, true],
+                ['Correo', method.correo, false]
             ].filter(([, value]) => value);
-            const rowsHtml = detailRows.map(([label, value]) =>
-                `<div class="row"><span>${escapeTransferPrint(label)}</span><strong>${escapeTransferPrint(value)}</strong></div>`
+            const rowsHtml = detailRows.map(([label, value, highlighted]) =>
+                `<div class="row${highlighted ? ' account-highlight' : ''}"><span>${escapeTransferPrint(label)}</span><strong>${escapeTransferPrint(value)}</strong></div>`
             ).join('');
 
             printWindow.document.open();
@@ -8586,7 +8586,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 main{width:78mm;margin:0 auto;padding:4mm 3mm}.store{font-size:5mm;font-weight:800}.subtitle{font-size:3mm;margin:1mm 0 3mm}
                 h1{font-size:5mm;margin:2mm 0}.amount{font-size:7mm;font-weight:800;margin:2mm 0 4mm;padding:2mm;border:1px solid #111}
                 .bank-logo{display:block;max-width:48mm;max-height:14mm;object-fit:contain;margin:2mm auto}.payment-qr{display:block;width:55mm;height:55mm;object-fit:contain;margin:2mm auto}.row{display:flex;justify-content:space-between;gap:3mm;border-bottom:1px solid #aaa;padding:1.5mm 0;text-align:left;font-size:3mm}
-                .row strong{text-align:right;overflow-wrap:anywhere}.instructions{font-size:3mm;line-height:1.3;white-space:pre-wrap;margin-top:3mm}.notice{font-size:2.7mm;font-weight:700;margin-top:4mm;border-top:1px dashed #111;padding-top:3mm}
+                .row strong{text-align:right;overflow-wrap:anywhere}.row.account-highlight{display:block;border:2px solid #111;margin:2mm 0;padding:2mm;text-align:center}.row.account-highlight span{display:block;font-size:3mm;font-weight:800;text-transform:uppercase}.row.account-highlight strong{display:block;margin-top:1mm;text-align:center;font-size:5mm;line-height:1.1}.instructions{font-size:3mm;line-height:1.3;white-space:pre-wrap;margin-top:3mm}.notice{font-size:2.7mm;font-weight:700;margin-top:4mm;border-top:1px dashed #111;padding-top:3mm}
                 @media print{main{width:78mm}}
                 </style></head><body><main>
                 <div class="store">FERRISOLUCIONES</div><div class="subtitle">Datos para transferencia</div>

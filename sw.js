@@ -1,17 +1,17 @@
 // =====================================================
 // SERVICE WORKER - FERRISOLUCIONES POS
-// Version: 3.11.9
+// Version: 3.11.10
 // Strategy: Network First
 // =====================================================
 
-const CACHE_NAME = 'ferrisoluciones-pos-v3-11-9';
-const RUNTIME_CACHE = 'ferrisoluciones-runtime-v3-11-9';
+const CACHE_NAME = 'ferrisoluciones-pos-v3-11-10';
+const RUNTIME_CACHE = 'ferrisoluciones-runtime-v3-11-10';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/pc/index.html',
     '/pc/manifest.json',
-    '/pc/css/styles.css?v=3.11.9',
+    '/pc/css/styles.css?v=3.11.10',
     '/pc/css/cxc-styles.css',
     '/pc/css/print.css',
     '/pc/views/whatsapp-banner.html',
@@ -29,7 +29,7 @@ const STATIC_ASSETS = [
 // =====================================================
 
 self.addEventListener('install', (event) => {
-    console.log('🔧 [SW] Installing Service Worker v3.11.9...');
+    console.log('🔧 [SW] Installing Service Worker v3.11.10...');
     
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -57,7 +57,7 @@ self.addEventListener('install', (event) => {
 // =====================================================
 
 self.addEventListener('activate', (event) => {
-    console.log('🚀 [SW] Activating Service Worker v3.11.9...');
+    console.log('🚀 [SW] Activating Service Worker v3.11.10...');
     
     event.waitUntil(
         caches.keys()
@@ -178,11 +178,11 @@ self.addEventListener('message', (event) => {
                     event.ports[0].postMessage({ 
                         success: true, 
                         size: requests.length,
-                        version: '3.11.9'
+                        version: '3.11.10'
                     });
                 });
             });
     }
 });
 
-console.log('✅ Service Worker v3.11.9 loaded (Network First Strategy)');
+console.log('✅ Service Worker v3.11.10 loaded (Network First Strategy)');
