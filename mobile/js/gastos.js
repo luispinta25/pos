@@ -26,7 +26,7 @@ async function loadGastos() {
 function renderMobileFixed() {
     const templates = new Map((mgData.templates || []).map(item => [item.id, item]));
     const periods = (mgData.periods || []).map(p => ({ ...p, template: templates.get(p.gasto_fijo_id) }))
-        .filter(p => { const days = mgDays(mgData.today, p.fecha_vencimiento); return (mgOutstanding(p) && days <= 45) || (p.estado === 'PAGADO' && days >= -31); })
+        .filter(p => mgOutstanding(p) && mgDays(mgData.today, p.fecha_vencimiento) <= 7)
         .sort((a, b) => (mgOutstanding(a) ? 0 : 1) - (mgOutstanding(b) ? 0 : 1) || a.fecha_vencimiento.localeCompare(b.fecha_vencimiento));
     const overdue = periods.filter(p => mgOutstanding(p) && p.fecha_vencimiento < mgData.today);
     const upcoming = periods.filter(p => { const d = mgDays(mgData.today, p.fecha_vencimiento); return mgOutstanding(p) && d >= 0 && d <= 7; });
@@ -40,7 +40,7 @@ function renderMobileFixed() {
         const amountInput = p.monto_esperado == null ? `<div class="mg-inline"><input type="number" data-mg-amount="${p.id}" min=".01" step=".01" placeholder="Monto de la planilla"><button data-mg-save="${p.id}"><i class="fas fa-save"></i></button></div>` : '';
         const pay = pending && p.monto_esperado != null ? `<button class="mg-pay" data-mg-pay="${p.id}"><i class="fas fa-wallet"></i> ${p.template?.permite_abonos ? 'Abonar' : 'Pagar'}</button>` : '';
         return `<article class="mg-fixed ${cls}"><div class="mg-fixed-head"><div><h3>${escHtml(p.template?.nombre || 'Gasto fijo')}</h3><small>${escHtml(p.template?.beneficiario || 'Sin beneficiario')} · ${escHtml(p.fecha_vencimiento)}</small></div><b>${state}</b></div><div class="mg-money"><span>Valor<strong>${p.monto_esperado == null ? 'Por confirmar' : mgMoney(p.monto_esperado)}</strong></span><span>Pagado<strong>${mgMoney(p.monto_pagado)}</strong></span><span>Saldo<strong>${p.saldo == null ? 'Por confirmar' : mgMoney(p.saldo)}</strong></span></div>${p.notas ? `<p>${escHtml(p.notas)}</p>` : ''}${amountInput}${pay}</article>`;
-    }).join('') : '<div class="gastos-empty">No hay obligaciones para mostrar.</div>';
+    }).join('') : '<div class="gastos-empty">No hay gastos vencidos ni próximos en los siguientes 7 días.</div>';
 }
 
 function renderGastos(gastos) {
