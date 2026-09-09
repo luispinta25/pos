@@ -308,6 +308,29 @@ input::placeholder { color: var(--text-muted); }
 .mg-money span:last-child { text-align:right; }
 .mg-pay { margin-top:.25rem; border-radius:6px; }
 
+/* Gastos diarios */
+#mgDailyView .gastos-summary { background:var(--bg2); border-color:var(--border); border-radius:7px; padding:.75rem .85rem; gap:9px; }
+.gastos-summary-icon { display:grid; place-items:center; width:36px; height:36px; flex:0 0 36px; border-radius:6px; background:rgba(229,62,62,.13); color:var(--danger); }
+.gastos-summary .sum-copy { display:flex; flex:1; flex-direction:column; min-width:0; }
+.gastos-summary .sum-copy small { color:var(--text-muted); font-size:.58rem; font-weight:800; }
+.gastos-summary .sum-copy strong { color:var(--text); font-size:.78rem; }
+.gastos-summary .sum-total { color:var(--danger); font-size:1.18rem; }
+.gasto-card { display:grid; grid-template-columns:36px minmax(0,1fr) auto; align-items:center; border-radius:7px; padding:.8rem; gap:10px; box-shadow:0 3px 10px rgba(0,0,0,.15); }
+.gasto-method-icon { display:grid; place-items:center; width:36px; height:36px; border-radius:6px; background:var(--bg3); color:var(--text-muted); }
+.gasto-method-icon.transfer { background:rgba(49,130,206,.13); color:var(--info); }
+.gasto-motivo-text { font-size:.85rem; margin-bottom:5px; }
+.gasto-meta { gap:5px; }
+.gasto-meta b { background:var(--bg3); border-radius:4px; padding:3px 5px; color:var(--text-muted); font-size:.6rem; }
+.gasto-meta span { display:flex; align-items:center; gap:4px; font-size:.64rem; }
+.gasto-card-right { gap:3px; }
+.gasto-card-right small { color:var(--text-muted); font-size:.61rem; white-space:nowrap; }
+.gasto-monto-text { font-size:1rem; }
+.btn-del-gasto { margin-top:5px; width:30px; height:28px; padding:0; display:grid; place-items:center; }
+#nuevoGastoModal .modal-content { border-top:4px solid var(--danger); border-radius:8px; }
+#nuevoGastoModal .modal-header h2 { font-size:1.05rem; }
+#nuevoGastoModal .modal-body { background:var(--bg); }
+#nuevoGastoModal input:focus,#nuevoGastoModal textarea:focus,#nuevoGastoModal select:focus { outline:2px solid rgba(229,62,62,.18); border-color:var(--danger); }
+
 /* ── Utilidades screen ── */
 #utilidadesScreen { display: flex; flex-direction: column; height: 100dvh; }
 .util-header { background: var(--bg2); border-bottom: 2px solid var(--info); padding: .6rem 1rem; display: flex; align-items: center; gap: 10px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,.4); }

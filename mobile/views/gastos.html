@@ -4,7 +4,7 @@
   <div class="gastos-tabs"><button class="active" data-mobile-gasto-tab="fixed"><i class="fas fa-calendar-check"></i> Fijos <b id="mgPendingCount">0</b></button><button data-mobile-gasto-tab="daily"><i class="fas fa-receipt"></i> Del día</button></div>
   <div class="gastos-content">
     <section id="mgFixedView"><div class="mg-summary"><div class="danger"><i class="fas fa-circle-exclamation"></i><span>Saldo vencido<strong id="mgOverdue">$0,00</strong></span></div><div class="warning"><i class="fas fa-calendar-day"></i><span>Próximos 7 días<strong id="mgUpcoming">$0,00</strong></span></div></div><div class="mg-list-heading"><span>ATENCIÓN REQUERIDA</span><small>Ordenado por vencimiento</small></div><div id="mgFixedList"><div class="gastos-empty"><i class="fas fa-spinner fa-spin"></i>Cargando...</div></div></section>
-    <section id="mgDailyView" class="hidden"><div id="gastosSummary" class="gastos-summary hidden"><span class="sum-count" id="gastosSummaryCount"></span><span class="sum-total" id="gastosSummaryTotal"></span></div><div id="gastosList"></div></section>
+    <section id="mgDailyView" class="hidden"><div id="gastosSummary" class="gastos-summary hidden"><span class="gastos-summary-icon"><i class="fas fa-arrow-trend-down"></i></span><span class="sum-copy"><small>GASTOS DE HOY</small><strong class="sum-count" id="gastosSummaryCount"></strong></span><span class="sum-total" id="gastosSummaryTotal"></span></div><div class="mg-list-heading"><span>MOVIMIENTOS REGISTRADOS</span><small>Más reciente primero</small></div><div id="gastosList"></div></section>
   </div>
   <button class="gastos-fab hidden" id="nuevoGastoFab" title="Nuevo gasto"><i class="fas fa-plus"></i></button>
 </div>

@@ -2,6 +2,8 @@
 let mgData = null, mgPeriod = null, mgTab = 'fixed', mgDailyMethod = 'EFECTIVO', mgFixedMethod = 'EFECTIVO';
 const mgMoney = value => new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(Number(value || 0));
 const mgDate = value => new Intl.DateTimeFormat('es-EC', { weekday: 'short', day: '2-digit', month: 'short' }).format(new Date(`${value}T12:00:00`));
+const mgTime = value => value ? new Intl.DateTimeFormat('es-EC', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Guayaquil' }).format(new Date(value)) : '';
+const mgCategoryName = code => (mgData?.categories || []).find(item => item.codigo === code)?.nombre || code || 'Otros';
 const mgDays = (from, to) => Math.round((new Date(`${to}T12:00:00`) - new Date(`${from}T12:00:00`)) / 86400000);
 const mgOutstanding = period => !['PAGADO', 'OMITIDO', 'ANULADO'].includes(period.estado);
 
@@ -50,7 +52,11 @@ function renderGastos(gastos) {
     $('gastosSummaryCount').textContent = `${active.length} gasto${active.length === 1 ? '' : 's'}`;
     $('gastosSummaryTotal').textContent = mgMoney(active.reduce((sum, g) => sum + Number(g.monto || 0), 0));
     $('gastosSummary').classList.toggle('hidden', !gastos.length);
-    $('gastosList').innerHTML = gastos.length ? gastos.map(g => `<div class="gasto-card ${g.estado === 'ANULADO' ? 'mg-cancelled' : ''}"><div class="gasto-card-left"><div class="gasto-motivo-text">${escHtml(g.motivo)}</div><div class="gasto-meta"><span>${escHtml(g.categoria_codigo)}</span><span>${escHtml(g.metodo_pago)}</span>${g.estado === 'ANULADO' ? '<span>ANULADO</span>' : ''}</div></div><div class="gasto-card-right"><span class="gasto-monto-text">${mgMoney(g.monto)}</span>${g.estado !== 'ANULADO' && ['admin','administrador'].includes(String(mgData.role).toLowerCase()) ? `<button class="btn-del-gasto" data-mg-cancel="${g.idigasto}"><i class="fas fa-ban"></i></button>` : ''}</div></div>`).join('') : '<div class="gastos-empty"><i class="fas fa-receipt"></i>Sin gastos registrados hoy.</div>';
+    $('gastosList').innerHTML = gastos.length ? gastos.map(g => {
+        const cancelled = g.estado === 'ANULADO', transfer = g.metodo_pago === 'TRANSFERENCIA', time = mgTime(g.fechayhora);
+        const beneficiary = g.beneficiario ? `<span><i class="fas fa-user"></i>${escHtml(g.beneficiario)}</span>` : '';
+        return `<article class="gasto-card ${cancelled ? 'mg-cancelled' : ''}"><span class="gasto-method-icon ${transfer ? 'transfer' : ''}"><i class="fas ${transfer ? 'fa-building-columns' : 'fa-money-bill-wave'}"></i></span><div class="gasto-card-left"><div class="gasto-motivo-text">${escHtml(g.motivo)}</div><div class="gasto-meta"><b>${escHtml(mgCategoryName(g.categoria_codigo))}</b>${beneficiary}${cancelled ? '<b>ANULADO</b>' : ''}</div></div><div class="gasto-card-right"><span class="gasto-monto-text">${mgMoney(g.monto)}</span><small>${escHtml(transfer ? 'Transferencia' : 'Efectivo')}${time ? ` · ${escHtml(time)}` : ''}</small>${!cancelled && ['admin','administrador'].includes(String(mgData.role).toLowerCase()) ? `<button class="btn-del-gasto" data-mg-cancel="${g.idigasto}" title="Anular gasto"><i class="fas fa-ban"></i></button>` : ''}</div></article>`;
+    }).join('') : '<div class="gastos-empty"><i class="fas fa-receipt"></i>Sin movimientos registrados hoy.</div>';
 }
 
 function fillMobileExpenseOptions() {
