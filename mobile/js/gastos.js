@@ -1,6 +1,7 @@
 'use strict';
 let mgData = null, mgPeriod = null, mgTab = 'fixed', mgDailyMethod = 'EFECTIVO', mgFixedMethod = 'EFECTIVO';
 const mgMoney = value => new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(Number(value || 0));
+const mgDate = value => new Intl.DateTimeFormat('es-EC', { weekday: 'short', day: '2-digit', month: 'short' }).format(new Date(`${value}T12:00:00`));
 const mgDays = (from, to) => Math.round((new Date(`${to}T12:00:00`) - new Date(`${from}T12:00:00`)) / 86400000);
 const mgOutstanding = period => !['PAGADO', 'OMITIDO', 'ANULADO'].includes(period.estado);
 
@@ -37,9 +38,10 @@ function renderMobileFixed() {
         const days = mgDays(mgData.today, p.fecha_vencimiento), pending = mgOutstanding(p);
         const state = !pending ? 'PAGADO' : days < 0 ? `VENCIDO ${Math.abs(days)} DÍAS` : days === 0 ? 'VENCE HOY' : `EN ${days} DÍAS`;
         const cls = !pending ? 'paid' : days < 0 ? 'overdue' : days <= 7 ? 'upcoming' : '';
-        const amountInput = p.monto_esperado == null ? `<div class="mg-inline"><input type="number" data-mg-amount="${p.id}" min=".01" step=".01" placeholder="Monto de la planilla"><button data-mg-save="${p.id}"><i class="fas fa-save"></i></button></div>` : '';
+        const expected = Number(p.monto_esperado || 0), paid = Number(p.monto_pagado || 0), progress = expected ? Math.min(100, Math.round(paid / expected * 100)) : 0;
+        const amountInput = p.monto_esperado == null ? `<div class="mg-inline"><input type="number" data-mg-amount="${p.id}" min=".01" step=".01" placeholder="Monto de la planilla"><button data-mg-save="${p.id}" title="Confirmar monto"><i class="fas fa-check"></i></button></div>` : '';
         const pay = pending && p.monto_esperado != null ? `<button class="mg-pay" data-mg-pay="${p.id}"><i class="fas fa-wallet"></i> ${p.template?.permite_abonos ? 'Abonar' : 'Pagar'}</button>` : '';
-        return `<article class="mg-fixed ${cls}"><div class="mg-fixed-head"><div><h3>${escHtml(p.template?.nombre || 'Gasto fijo')}</h3><small>${escHtml(p.template?.beneficiario || 'Sin beneficiario')} · ${escHtml(p.fecha_vencimiento)}</small></div><b>${state}</b></div><div class="mg-money"><span>Valor<strong>${p.monto_esperado == null ? 'Por confirmar' : mgMoney(p.monto_esperado)}</strong></span><span>Pagado<strong>${mgMoney(p.monto_pagado)}</strong></span><span>Saldo<strong>${p.saldo == null ? 'Por confirmar' : mgMoney(p.saldo)}</strong></span></div>${p.notas ? `<p>${escHtml(p.notas)}</p>` : ''}${amountInput}${pay}</article>`;
+        return `<article class="mg-fixed ${cls}"><div class="mg-fixed-head"><div class="mg-fixed-title"><span><i class="fas ${days < 0 ? 'fa-triangle-exclamation' : 'fa-calendar-day'}"></i></span><div><h3>${escHtml(p.template?.nombre || 'Gasto fijo')}</h3><small>${escHtml(p.template?.beneficiario || 'Sin beneficiario')}</small></div></div><b>${state}</b></div><div class="mg-due"><span>Saldo pendiente<strong>${p.saldo == null ? 'Por confirmar' : mgMoney(p.saldo)}</strong></span><time>${escHtml(mgDate(p.fecha_vencimiento))}</time></div><div class="mg-progress"><span style="width:${progress}%"></span></div><div class="mg-money"><span>Obligación<strong>${p.monto_esperado == null ? 'Por confirmar' : mgMoney(p.monto_esperado)}</strong></span><span>Pagado<strong>${mgMoney(p.monto_pagado)}</strong></span></div>${p.notas ? `<p><i class="fas fa-note-sticky"></i> ${escHtml(p.notas)}</p>` : ''}${amountInput}${pay}</article>`;
     }).join('') : '<div class="gastos-empty">No hay gastos vencidos ni próximos en los siguientes 7 días.</div>';
 }
 
