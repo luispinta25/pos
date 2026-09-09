@@ -33,6 +33,38 @@ async function initApp() {
     updateClientDisplay();
     hideLoader();
     startTransfAlertPolling();
+    startExpenseAlertPollingMobile();
+}
+
+let expenseAlertPollingMobile = null;
+async function checkExpenseAlertsMobile() {
+    try {
+        const response = await posApiRequest('/api/expenses/overview', { method: 'GET' });
+        const data = response?.data;
+        if (!data?.periods) return;
+        const outstanding = data.periods.filter(period => !['PAGADO', 'OMITIDO', 'ANULADO'].includes(period.estado));
+        const overdue = outstanding.filter(period => period.fecha_vencimiento < data.today);
+        const upcoming = outstanding.filter(period => {
+            const days = Math.round((new Date(`${period.fecha_vencimiento}T12:00:00`) - new Date(`${data.today}T12:00:00`)) / 86400000);
+            return days >= 0 && days <= 7;
+        });
+        const lastOverdue = Number(localStorage.getItem('ferre_expense_overdue_notice_at') || 0);
+        if (overdue.length && Date.now() - lastOverdue >= 60 * 60 * 1000) {
+            localStorage.setItem('ferre_expense_overdue_notice_at', String(Date.now()));
+            showConfirm(`Hay ${overdue.length} gasto${overdue.length === 1 ? '' : 's'} fijo${overdue.length === 1 ? '' : 's'} vencido${overdue.length === 1 ? '' : 's'}. Revísalos en Gastos.`, () => navigateTo('gastos'));
+        }
+        if (!overdue.length && upcoming.length && localStorage.getItem('ferre_expense_upcoming_notice_date') !== data.today) {
+            localStorage.setItem('ferre_expense_upcoming_notice_date', data.today);
+            showToast(`${upcoming.length} pago${upcoming.length === 1 ? '' : 's'} fijo${upcoming.length === 1 ? '' : 's'} próximo${upcoming.length === 1 ? '' : 's'}.`, 'info', 5000);
+        }
+    } catch (error) {
+        console.warn('No se pudieron consultar recordatorios de gastos:', error.message);
+    }
+}
+function startExpenseAlertPollingMobile() {
+    if (expenseAlertPollingMobile) clearInterval(expenseAlertPollingMobile);
+    checkExpenseAlertsMobile();
+    expenseAlertPollingMobile = setInterval(checkExpenseAlertsMobile, 15 * 60 * 1000);
 }
 
 async function loadProducts() {

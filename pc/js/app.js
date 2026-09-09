@@ -654,6 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 !mutation.target.classList.contains('hidden')) {
                 loadModule('punto-venta');
                 startTransfAlertPollingPC();
+                startExpenseAlertPollingPC();
                 startGlobalChatStream();
                 observer.disconnect();
             }
@@ -763,6 +764,39 @@ function showCustomAlert(message, type = 'info', title = null) {
         closeBtn.addEventListener('click', closeModal);
         document.addEventListener('keydown', handleKeys);
     });
+}
+
+// ── Recordatorios de gastos fijos ─────────────────────
+let expenseAlertPollingPC = null;
+async function checkExpenseAlertsPC() {
+    try {
+        const response = await posApiRequest('/api/expenses/overview', { method: 'GET' });
+        const data = response?.data;
+        if (!data?.periods) return;
+        const outstanding = data.periods.filter(period => !['PAGADO', 'OMITIDO', 'ANULADO'].includes(period.estado));
+        const overdue = outstanding.filter(period => period.fecha_vencimiento < data.today);
+        const upcoming = outstanding.filter(period => {
+            const days = Math.round((new Date(`${period.fecha_vencimiento}T12:00:00`) - new Date(`${data.today}T12:00:00`)) / 86400000);
+            return days >= 0 && days <= 7;
+        });
+        const lastOverdue = Number(localStorage.getItem('ferre_expense_overdue_notice_at') || 0);
+        if (overdue.length && Date.now() - lastOverdue >= 60 * 60 * 1000) {
+            localStorage.setItem('ferre_expense_overdue_notice_at', String(Date.now()));
+            await showCustomAlert(`Hay ${overdue.length} gasto${overdue.length === 1 ? '' : 's'} fijo${overdue.length === 1 ? '' : 's'} vencido${overdue.length === 1 ? '' : 's'}. Revísalos en el módulo Gastos.`, 'warning', 'Pagos vencidos');
+        }
+        const todayNotice = localStorage.getItem('ferre_expense_upcoming_notice_date');
+        if (!overdue.length && upcoming.length && todayNotice !== data.today) {
+            localStorage.setItem('ferre_expense_upcoming_notice_date', data.today);
+            showToast(`${upcoming.length} gasto${upcoming.length === 1 ? '' : 's'} fijo${upcoming.length === 1 ? '' : 's'} vence${upcoming.length === 1 ? '' : 'n'} durante los próximos 7 días.`, 'warning', 6000);
+        }
+    } catch (error) {
+        console.warn('No se pudieron consultar recordatorios de gastos:', error.message);
+    }
+}
+function startExpenseAlertPollingPC() {
+    if (expenseAlertPollingPC) clearInterval(expenseAlertPollingPC);
+    checkExpenseAlertsPC();
+    expenseAlertPollingPC = setInterval(checkExpenseAlertsPC, 15 * 60 * 1000);
 }
 
 /**

@@ -1,164 +1,113 @@
 'use strict';
-// =====================================================
-// Ferrisoluciones - POS Móvil - Módulo Gastos
-// =====================================================
+let mgData = null, mgPeriod = null, mgTab = 'fixed', mgDailyMethod = 'EFECTIVO', mgFixedMethod = 'EFECTIVO';
+const mgMoney = value => new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(Number(value || 0));
+const mgDays = (from, to) => Math.round((new Date(`${to}T12:00:00`) - new Date(`${from}T12:00:00`)) / 86400000);
+const mgOutstanding = period => !['PAGADO', 'OMITIDO', 'ANULADO'].includes(period.estado);
 
-let gastosLoading = false;
-
-function initGastosDate() {
-    if (!$('gastosDateFilter').value) {
-        $('gastosDateFilter').value = localDateStr();
-    }
+function initGastosDate() {}
+function mgSetTab(tab) {
+    mgTab = tab;
+    document.querySelectorAll('[data-mobile-gasto-tab]').forEach(btn => btn.classList.toggle('active', btn.dataset.mobileGastoTab === tab));
+    $('mgFixedView').classList.toggle('hidden', tab !== 'fixed');
+    $('mgDailyView').classList.toggle('hidden', tab !== 'daily');
+    $('nuevoGastoFab').classList.toggle('hidden', tab !== 'daily');
 }
 
 async function loadGastos() {
-    if (gastosLoading) return;
-    gastosLoading = true;
-    $('gastosSummary').classList.add('hidden');
-    $('gastosList').innerHTML = '<div class="gastos-empty"><i class="fas fa-spinner fa-spin"></i>Cargando gastos\u2026</div>';
+    $('mgFixedList').innerHTML = '<div class="gastos-empty"><i class="fas fa-spinner fa-spin"></i>Actualizando...</div>';
     try {
-        const fecha = $('gastosDateFilter').value || localDateStr();
-        const { data, error } = await db.from('ferre_gastos')
-            .select('*')
-            .gte('fechayhora', `${fecha}T00:00:00-05:00`)
-            .lte('fechayhora', `${fecha}T23:59:59-05:00`)
-            .order('fechayhora', { ascending: false });
-        if (error) throw error;
-        renderGastos(data || []);
-    } catch (err) {
-        $('gastosList').innerHTML = `<div class="gastos-empty" style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i>Error: ${escHtml(err.message)}</div>`;
-    } finally {
-        gastosLoading = false;
+        mgData = (await posApiRequest('/api/expenses/overview', { method: 'GET' })).data;
+        renderMobileFixed(); renderGastos(mgData.paymentsToday || []); fillMobileExpenseOptions();
+    } catch (error) {
+        $('mgFixedList').innerHTML = `<div class="gastos-empty" style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i>${escHtml(error.message)}</div>`;
     }
+}
+
+function renderMobileFixed() {
+    const templates = new Map((mgData.templates || []).map(item => [item.id, item]));
+    const periods = (mgData.periods || []).map(p => ({ ...p, template: templates.get(p.gasto_fijo_id) }))
+        .filter(p => { const days = mgDays(mgData.today, p.fecha_vencimiento); return (mgOutstanding(p) && days <= 45) || (p.estado === 'PAGADO' && days >= -31); })
+        .sort((a, b) => (mgOutstanding(a) ? 0 : 1) - (mgOutstanding(b) ? 0 : 1) || a.fecha_vencimiento.localeCompare(b.fecha_vencimiento));
+    const overdue = periods.filter(p => mgOutstanding(p) && p.fecha_vencimiento < mgData.today);
+    const upcoming = periods.filter(p => { const d = mgDays(mgData.today, p.fecha_vencimiento); return mgOutstanding(p) && d >= 0 && d <= 7; });
+    $('mgPendingCount').textContent = periods.filter(mgOutstanding).length;
+    $('mgOverdue').textContent = mgMoney(overdue.reduce((sum, p) => sum + Number(p.saldo || 0), 0));
+    $('mgUpcoming').textContent = mgMoney(upcoming.reduce((sum, p) => sum + Number(p.saldo || 0), 0));
+    $('mgFixedList').innerHTML = periods.length ? periods.map(p => {
+        const days = mgDays(mgData.today, p.fecha_vencimiento), pending = mgOutstanding(p);
+        const state = !pending ? 'PAGADO' : days < 0 ? `VENCIDO ${Math.abs(days)} DÍAS` : days === 0 ? 'VENCE HOY' : `EN ${days} DÍAS`;
+        const cls = !pending ? 'paid' : days < 0 ? 'overdue' : days <= 7 ? 'upcoming' : '';
+        const amountInput = p.monto_esperado == null ? `<div class="mg-inline"><input type="number" data-mg-amount="${p.id}" min=".01" step=".01" placeholder="Monto de la planilla"><button data-mg-save="${p.id}"><i class="fas fa-save"></i></button></div>` : '';
+        const pay = pending && p.monto_esperado != null ? `<button class="mg-pay" data-mg-pay="${p.id}"><i class="fas fa-wallet"></i> ${p.template?.permite_abonos ? 'Abonar' : 'Pagar'}</button>` : '';
+        return `<article class="mg-fixed ${cls}"><div class="mg-fixed-head"><div><h3>${escHtml(p.template?.nombre || 'Gasto fijo')}</h3><small>${escHtml(p.template?.beneficiario || 'Sin beneficiario')} · ${escHtml(p.fecha_vencimiento)}</small></div><b>${state}</b></div><div class="mg-money"><span>Valor<strong>${p.monto_esperado == null ? 'Por confirmar' : mgMoney(p.monto_esperado)}</strong></span><span>Pagado<strong>${mgMoney(p.monto_pagado)}</strong></span><span>Saldo<strong>${p.saldo == null ? 'Por confirmar' : mgMoney(p.saldo)}</strong></span></div>${p.notas ? `<p>${escHtml(p.notas)}</p>` : ''}${amountInput}${pay}</article>`;
+    }).join('') : '<div class="gastos-empty">No hay obligaciones para mostrar.</div>';
 }
 
 function renderGastos(gastos) {
-    if (!gastos.length) {
-        $('gastosList').innerHTML = '<div class="gastos-empty"><i class="fas fa-money-bill-wave"></i>Sin gastos en esta fecha.</div>';
-        $('gastosSummary').classList.add('hidden');
-        return;
-    }
-    const total = gastos.reduce((s, g) => s + parseFloat(g.monto || 0), 0);
-    $('gastosSummaryCount').textContent = `${gastos.length} gasto${gastos.length !== 1 ? 's' : ''}`;
-    $('gastosSummaryTotal').textContent = fmt(total);
-    $('gastosSummary').classList.remove('hidden');
-    const list = $('gastosList');
-    list.innerHTML = '';
-    gastos.forEach(g => {
-        const fecha = new Date(g.fechayhora);
-        const hora = fecha.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true });
-        const usuarioLabel = g.usuario ? g.usuario.split('@')[0] : 'desconocido';
-        const div = document.createElement('div');
-        div.className = 'gasto-card';
-        div.innerHTML = `
-            <div class="gasto-card-left">
-                <div class="gasto-motivo-text">${escHtml(g.motivo || '')}</div>
-                <div class="gasto-meta">
-                    <span><i class="fas fa-clock"></i> ${hora}</span>
-                    <span><i class="fas fa-user"></i> ${escHtml(usuarioLabel)}</span>
-                    ${g.messageid ? '<span style="color:var(--success);"><i class="fas fa-check-circle"></i> Notificado</span>' : '<span style="color:var(--text-muted);"><i class="fas fa-exclamation-circle"></i> Sin notificar</span>'}
-                </div>
-            </div>
-            <div class="gasto-card-right">
-                <span class="gasto-monto-text">${fmt(g.monto)}</span>
-                <button class="btn-del-gasto" onclick="confirmarEliminarGasto('${escHtml(String(g.idigasto))}','${escHtml(String(g.messageid || ''))}','${escHtml(String(g.remotejid || ''))}')"><i class="fas fa-trash-alt"></i></button>
-            </div>`;
-        list.appendChild(div);
-    });
+    const active = gastos.filter(g => g.estado !== 'ANULADO');
+    $('gastosSummaryCount').textContent = `${active.length} gasto${active.length === 1 ? '' : 's'}`;
+    $('gastosSummaryTotal').textContent = mgMoney(active.reduce((sum, g) => sum + Number(g.monto || 0), 0));
+    $('gastosSummary').classList.toggle('hidden', !gastos.length);
+    $('gastosList').innerHTML = gastos.length ? gastos.map(g => `<div class="gasto-card ${g.estado === 'ANULADO' ? 'mg-cancelled' : ''}"><div class="gasto-card-left"><div class="gasto-motivo-text">${escHtml(g.motivo)}</div><div class="gasto-meta"><span>${escHtml(g.categoria_codigo)}</span><span>${escHtml(g.metodo_pago)}</span>${g.estado === 'ANULADO' ? '<span>ANULADO</span>' : ''}</div></div><div class="gasto-card-right"><span class="gasto-monto-text">${mgMoney(g.monto)}</span>${g.estado !== 'ANULADO' && ['admin','administrador'].includes(String(mgData.role).toLowerCase()) ? `<button class="btn-del-gasto" data-mg-cancel="${g.idigasto}"><i class="fas fa-ban"></i></button>` : ''}</div></div>`).join('') : '<div class="gastos-empty"><i class="fas fa-receipt"></i>Sin gastos registrados hoy.</div>';
+}
+
+function fillMobileExpenseOptions() {
+    $('gastoCategoriaInput').innerHTML = (mgData.categories || []).map(c => `<option value="${escHtml(c.codigo)}">${escHtml(c.nombre)}</option>`).join('');
+    const options = '<option value="">Selecciona una cuenta</option>' + (mgData.accounts || []).map(a => `<option value="${escHtml(a.codigo)}">${escHtml(a.nombre)}</option>`).join('');
+    $('mgDailyAccount').innerHTML = options; $('mgFixedAccount').innerHTML = options;
+}
+
+function mgSelectMethod(kind, method) {
+    if (kind === 'daily') mgDailyMethod = method; else mgFixedMethod = method;
+    document.querySelectorAll(`[data-mg-${kind}-method]`).forEach(btn => btn.classList.toggle('active', btn.dataset[`mg${kind[0].toUpperCase()}${kind.slice(1)}Method`] === method));
+    $(`mg${kind[0].toUpperCase()}${kind.slice(1)}AccountWrap`).classList.toggle('hidden', method !== 'TRANSFERENCIA');
+}
+
+async function saveMobileExpense(body) {
+    const result = await posApiRequest('/api/expenses/payments', { method: 'POST', body: JSON.stringify(body) });
+    showToast(result.data?.codigo_transferencia ? `Registrado. ${result.data.codigo_transferencia} espera comprobante.` : 'Gasto registrado', 'success', 4500);
+    await loadGastos();
 }
 
 async function guardarGasto() {
-    const monto = parseFloat($('gastoMontoInput').value);
-    const motivo = $('gastoMotivoInput').value.trim();
-    if (!monto || monto <= 0) { showToast('El monto debe ser mayor a 0', 'warning'); return; }
-    if (!motivo) { showToast('El motivo es obligatorio', 'warning'); return; }
-    const btn = $('btnGuardarGasto');
-    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando…';
-    try {
-        const { data: userData } = await db.from('ferre_usuarios_ferreteria')
-            .select('nombres, apellidos').eq('email', currentUser.email).single();
-        const nomcompleto = userData ? `${userData.nombres} ${userData.apellidos}` : currentUser.email;
-
-        let totalActual = 0;
-        document.querySelectorAll('.gasto-monto-text').forEach(el => {
-            totalActual += parseFloat(el.textContent.replace(/[^0-9.]/g, '')) || 0;
-        });
-        const totalConNuevo = totalActual + monto;
-        const fechayhora = new Date().toISOString();
-
-        const whatsapp = await enviarNotificacionGasto({ monto, motivo, fechayhora, totalDia: totalConNuevo }, nomcompleto);
-
-        const { error } = await db.from('ferre_gastos').insert([{
-            monto, motivo, usuario: currentUser.email,
-            messageid: whatsapp?.messageId || null,
-            remotejid: whatsapp?.remoteJid || null
-        }]);
-        if (error) throw error;
-
-        hideModal('nuevoGastoModal');
-        showToast('Gasto registrado' + (whatsapp ? ' y notificado' : ''), 'success');
-        loadGastos();
-    } catch (err) {
-        showToast('Error: ' + err.message, 'error', 4000);
-    } finally {
-        btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Guardar';
-    }
+    const body = { monto: Number($('gastoMontoInput').value), motivo: $('gastoMotivoInput').value.trim(), categoria_codigo: $('gastoCategoriaInput').value, beneficiario: $('gastoBeneficiarioInput').value.trim(), metodo_pago: mgDailyMethod, metodo_transferencia_codigo: $('mgDailyAccount').value || null, aplicaciones: [] };
+    if (!body.monto || !body.motivo) return showToast('Completa monto y motivo', 'error');
+    if (mgDailyMethod === 'TRANSFERENCIA' && !body.metodo_transferencia_codigo) return showToast('Selecciona la cuenta de origen', 'error');
+    try { await saveMobileExpense(body); hideModal('nuevoGastoModal'); } catch (error) { showToast(error.message, 'error', 4500); }
 }
 
-async function enviarNotificacionGasto(gasto, nomcompleto) {
-    try {
-        const fecha = new Date(gasto.fechayhora);
-        const fechaFmt = fecha.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const horaFmt  = fecha.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-        const texto = `\u{1F4B8} *Nuevo Gasto Registrado*\n\n*DETALLES DEL GASTO*\n\n\u{1F4C5} *Fecha:* ${fechaFmt}\n\u{1F550} *Hora:* ${horaFmt}\n\n\u{1F4B5} *Monto:* $${parseFloat(gasto.monto).toFixed(2)}\n\n\u{1F4DD} *Motivo:*\n${gasto.motivo}\n\n\u{1F464} *Registrado por:*\n${nomcompleto}\n\n\u{1F4CA} *Total Gastos del D\u00eda:* $${parseFloat(gasto.totalDia).toFixed(2)}\n\n_Sistema de Gesti\u00f3n Ferrisoluciones_\n_Powered by Ferrisoluciones Tech_`;
-        const result = await posApiRequest('/api/whatsapp/send-text', {
-            method: 'POST',
-            body: JSON.stringify({ text: texto, delay: 1000, linkPreview: false })
-        });
-        const key = result?.data?.key || result?.data?.data?.key;
-        if (key?.id) return { messageId: key.id, remoteJid: key.remoteJid };
-        return null;
-    } catch (_) { return null; }
+function openMobileFixedPayment(id) {
+    const period = (mgData.periods || []).find(p => p.id === id); if (!period) return;
+    const template = (mgData.templates || []).find(t => t.id === period.gasto_fijo_id) || {};
+    mgPeriod = { ...period, template }; $('mgPayTitle').textContent = template.nombre; $('mgPayBalance').textContent = `Saldo pendiente: ${mgMoney(period.saldo)}`;
+    $('mgPayAmount').value = Number(period.saldo).toFixed(2); $('mgPayAmount').max = Number(period.saldo).toFixed(2); $('mgPayAmount').readOnly = !template.permite_abonos;
+    mgSelectMethod('fixed', template.metodo_pago_predeterminado || 'EFECTIVO'); showModal('gastoFijoPagoModal');
 }
 
-function confirmarEliminarGasto(idigasto, messageid, remotejid) {
-    showConfirm('\u00bfEliminar este gasto?', async () => {
-        showLoader();
-        try {
-            if (messageid && messageid !== 'null' && remotejid && remotejid !== 'null') {
-                await eliminarMensajeWhatsApp(messageid, remotejid);
-            }
-            const { error } = await db.from('ferre_gastos').delete().eq('idigasto', idigasto);
-            if (error) throw error;
-            showToast('Gasto eliminado', 'success');
-            loadGastos();
-        } catch (err) {
-            showToast('Error: ' + err.message, 'error', 4000);
-        } finally {
-            hideLoader();
-        }
-    });
+async function confirmMobileFixedPayment() {
+    if (!mgPeriod) return; const amount = Number($('mgPayAmount').value), account = $('mgFixedAccount').value, note = $('mgPayNote').value.trim();
+    if (!amount || amount > Number(mgPeriod.saldo) + .005) return showToast('El monto supera el saldo', 'error');
+    if (mgFixedMethod === 'TRANSFERENCIA' && !account) return showToast('Selecciona la cuenta de origen', 'error');
+    try { await saveMobileExpense({ monto: amount, motivo: `Pago ${mgPeriod.template.nombre}${note ? ` - ${note}` : ''}`, categoria_codigo: mgPeriod.template.categoria_codigo, beneficiario: mgPeriod.template.beneficiario, metodo_pago: mgFixedMethod, metodo_transferencia_codigo: account || null, aplicaciones: [{ programado_id: mgPeriod.id, monto: amount }] }); hideModal('gastoFijoPagoModal'); mgPeriod = null; } catch (error) { showToast(error.message, 'error', 4500); }
 }
 
-async function eliminarMensajeWhatsApp(messageid, remotejid) {
-    try {
-        await posApiRequest('/api/whatsapp/delete-message', {
-            method: 'POST',
-            body: JSON.stringify({ messageId: messageid, remoteJid: remotejid })
-        });
-    } catch (_) {}
+async function saveMobileVariableAmount(id) {
+    const amount = Number(document.querySelector(`[data-mg-amount="${id}"]`)?.value); if (!amount) return showToast('Ingresa el monto', 'error');
+    try { await posApiRequest(`/api/expenses/periods/${encodeURIComponent(id)}/amount`, { method: 'PATCH', body: JSON.stringify({ monto: amount }) }); await loadGastos(); } catch (error) { showToast(error.message, 'error'); }
 }
 
-// ── Registro de event listeners ────────────────────────
+async function cancelMobileExpense(id) {
+    const reason = prompt('Motivo obligatorio de la anulación:'); if (!reason?.trim()) return;
+    try { await posApiRequest(`/api/expenses/payments/${id}/cancel`, { method: 'POST', body: JSON.stringify({ motivo: reason.trim() }) }); await loadGastos(); } catch (error) { showToast(error.message, 'error'); }
+}
+
 function initGastos_eventListeners() {
-    $('gastosBackBtn').addEventListener('click', () => navigateTo('pos'));
-    $('gastosRefreshBtn').addEventListener('click', loadGastos);
-    $('gastosDateFilter').addEventListener('change', loadGastos);
-    $('nuevoGastoFab').addEventListener('click', () => {
-        $('gastoMontoInput').value = '';
-        $('gastoMotivoInput').value = '';
-        showModal('nuevoGastoModal');
-        setTimeout(() => $('gastoMontoInput').focus(), 200);
-    });
-    $('btnGuardarGasto').addEventListener('click', guardarGasto);
+    $('gastosBackBtn').addEventListener('click', () => navigateTo('pos')); $('gastosRefreshBtn').addEventListener('click', loadGastos);
+    document.querySelectorAll('[data-mobile-gasto-tab]').forEach(btn => btn.addEventListener('click', () => mgSetTab(btn.dataset.mobileGastoTab)));
+    document.querySelectorAll('[data-mg-daily-method]').forEach(btn => btn.addEventListener('click', () => mgSelectMethod('daily', btn.dataset.mgDailyMethod)));
+    document.querySelectorAll('[data-mg-fixed-method]').forEach(btn => btn.addEventListener('click', () => mgSelectMethod('fixed', btn.dataset.mgFixedMethod)));
+    $('nuevoGastoFab').addEventListener('click', () => { $('gastoMontoInput').value=''; $('gastoMotivoInput').value=''; $('gastoBeneficiarioInput').value=''; mgSelectMethod('daily','EFECTIVO'); showModal('nuevoGastoModal'); });
+    $('btnGuardarGasto').addEventListener('click', guardarGasto); $('mgConfirmPay').addEventListener('click', confirmMobileFixedPayment);
+    $('gastosScreen').addEventListener('click', event => { const pay=event.target.closest('[data-mg-pay]'), save=event.target.closest('[data-mg-save]'), cancel=event.target.closest('[data-mg-cancel]'); if(pay)openMobileFixedPayment(pay.dataset.mgPay); if(save)saveMobileVariableAmount(save.dataset.mgSave); if(cancel)cancelMobileExpense(cancel.dataset.mgCancel); });
+    mgSetTab('fixed');
 }
