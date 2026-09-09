@@ -8,7 +8,11 @@ const SUPABASE_URL = 'https://lpsupabase.luispintasolutions.com';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzE1MDUwODAwLAogICJleHAiOiAxODcyODE3MjAwCn0.LJEZ3yyGRxLBmCKM9z3EW-Yla1SszwbmvQMngMe3IWA';
 const POS_API_BASE_URL = 'https://api.ferrisoluciones.com';
 const { createClient } = window.supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Clave de almacenamiento propia del POS: su sesión no se pisa con la de
+// Inventario y Compras aunque compartan Supabase y dominio.
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { storageKey: 'ferri-pos-auth', persistSession: true, autoRefreshToken: true }
+});
 
 // ── Estado compartido ──────────────────────────────────
 let allProducts = [], filteredProducts = [], cart = [], allClients = [];

@@ -19,7 +19,15 @@ function initSupabase() {
 
     if (typeof window.supabase !== 'undefined') {
         const { createClient } = window.supabase;
-        supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                // Clave de almacenamiento propia del POS: su sesión no se pisa
+                // con la de Inventario y Compras aunque compartan Supabase y dominio.
+                storageKey: 'ferri-pos-auth',
+                persistSession: true,
+                autoRefreshToken: true
+            }
+        });
         return supabaseClient;
     } else {
         return null;

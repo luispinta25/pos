@@ -63,14 +63,6 @@ function updateNavbarCounter(moduleName, value = null) {
             // Si no hay valor, no modificar (el módulo lo actualizará después)
             break;
         
-        case 'proveedores':
-            totalLabel.textContent = 'Facturas:';
-            if (value !== null && value !== undefined) {
-                totalAmount.textContent = String(value);
-            } else {
-                totalAmount.textContent = '-';
-            }
-            break;
         case 'cxc':
             totalLabel.textContent = 'Deudas activas:';
             if (typeof value === 'number') {
@@ -192,9 +184,6 @@ async function loadModule(moduleName) {
                 wrapper += 'try{ if (typeof ' + initFunctionName + ' === "function") window["' + initFunctionName + '"] = ' + initFunctionName + '; }catch(e){}\n';
                 wrapper += 'try{ if (typeof showAppLoader === "function") window.showAppLoader = showAppLoader; }catch(e){}\n';
                 wrapper += 'try{ if (typeof hideAppLoader === "function") window.hideAppLoader = hideAppLoader; }catch(e){}\n';
-                wrapper += 'try{ if (typeof proveedoresAlert === "function") window.proveedoresAlert = proveedoresAlert; }catch(e){}\n';
-                wrapper += 'try{ if (typeof proveedoresConfirm === "function") window.proveedoresConfirm = proveedoresConfirm; }catch(e){}\n';
-                wrapper += 'try{ if (typeof mostrarNotificacionProveedor === "function") window.mostrarNotificacionProveedor = mostrarNotificacionProveedor; }catch(e){}\n';
                 wrapper += 'try{ if (typeof mostrarNotificacionIngreso === "function") window.mostrarNotificacionIngreso = mostrarNotificacionIngreso; }catch(e){}\n';
                 wrapper += '})();';
                 
