@@ -447,6 +447,8 @@ async function processSale() {
             id_venta: ventaId, fecha_hora_venta: new Date().toISOString(), cliente_id: currentClient.cedula,
             total, pagado_con: pagadoCon, vuelto, tipo: 'RECIBO', tipo_pago: currentTipoPago,
             metodo_transferencia_codigo: metodoTransferencia, estado: 'GUARDANDO',
+            monto_efectivo: currentTipoPago === 'EFECTIVO' ? total : _montoCashMixto,
+            monto_transferencia: montoTransferencia,
             usuario_email: currentUser?.email || null, doc: null, clave_acceso: null, fecha_factura: null,
             notas: 'Venta en proceso de guardado: pendiente de registrar detalles.'
         }]).select().single();

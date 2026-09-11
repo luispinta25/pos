@@ -1,7 +1,7 @@
 
 <div class="container-full" style="height: calc(100vh - 80px); overflow: hidden; padding: 20px;">
 
-    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; height: 100%;">
+    <div style="display:grid;grid-template-columns:minmax(360px,420px) minmax(0,1fr);gap:20px;height:100%;">
 
         <!-- Panel izquierdo: Resumen -->
         <div style="overflow-y: auto; padding-right: 6px; height: 100%; scrollbar-width: thin;">
@@ -20,6 +20,16 @@
                     </div>
                 </div>
                 <div style="font-size:.82em; color:#888; text-align:center;" id="cvFechaLabel"></div>
+                <div id="cvBankBalanceControls" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid #edf2f7;gap:10px;flex-direction:column;">
+                    <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-size:.82em;font-weight:700;color:#4a5568;">
+                        <span><i class="fas fa-eye" style="color:#3182ce;margin-right:6px;"></i> Mostrar saldos bancarios</span>
+                        <input id="cvShowBankBalances" type="checkbox" role="switch" style="width:38px;height:20px;accent-color:#3182ce;cursor:pointer;flex:0 0 auto;">
+                    </label>
+                    <label id="cvConsolidateBanksControl" style="display:none;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-size:.78em;color:#718096;">
+                        <span>Consolidar Pichincha + Deuna</span>
+                        <input id="cvConsolidateBanks" type="checkbox" role="switch" style="width:34px;height:18px;accent-color:#d69e2e;cursor:pointer;flex:0 0 auto;">
+                    </label>
+                </div>
             </div>
 
             <div class="card" id="cvResumenCard" style="display:none;">
@@ -41,6 +51,14 @@
                     </div>
                     <div style="font-size:.8em; color:#888; text-align:center; margin-top:2px;" id="cvConteo"></div>
                 </div>
+            </div>
+
+            <div class="card" id="cvBankBalancesCard" style="display:none;margin-top:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <h4 style="margin:0;font-size:.9em;color:#555;"><i class="fas fa-building-columns" style="color:#3182ce;"></i> Saldos por banco</h4>
+                    <small id="cvBankBalanceMode" style="color:#888;"></small>
+                </div>
+                <div id="cvBankBalances" style="display:grid;gap:8px;"></div>
             </div>
         </div>
 
@@ -81,6 +99,11 @@
                     <div style="font-size:.82em;opacity:.9;font-weight:400;margin-top:3px;"><u>DEJA</u> en caja</div>
                 </button>
             </div>
+
+            <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Banco *</label>
+            <select id="cvCambioBanco" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.92em;margin-bottom:12px;box-sizing:border-box;">
+                <option value="">Selecciona el banco</option>
+            </select>
 
             <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Nombre del solicitante *</label>
             <input id="cvCambioSolicitante" type="text" placeholder="Quien solicita el movimiento" autocomplete="off" style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.92em;margin-bottom:12px;box-sizing:border-box;">
@@ -131,6 +154,15 @@
 <script>
 var cvCambioTipo = 'ingreso';
 var cvVerifyPinExpected = null, cvVerifyItemTarget = null;
+var cvBankMethods = [], cvBankMethodNames = {};
+var cvBankBalancesData = [];
+var cvShowBalancesStorageKey = 'ferrisoluciones.cv.showBalances.v1';
+var cvConsolidateStorageKey = 'ferrisoluciones.cv.consolidatePichinchaDeuna.v1';
+
+function cvIsAdmin() {
+    var role = String(localStorage.getItem('userRole') || '').toLowerCase();
+    return role === 'admin' || role === 'administrador';
+}
 
 function initCajaVirtual() {
     var hoy = new Date();
@@ -139,6 +171,26 @@ function initCajaVirtual() {
 
     document.getElementById('cvRefreshBtn').addEventListener('click', cvLoad);
     document.getElementById('cvCambioBtn').addEventListener('click', cvOpenCambio);
+
+    var balanceControls = document.getElementById('cvBankBalanceControls');
+    var showBalances = document.getElementById('cvShowBankBalances');
+    var consolidateBanks = document.getElementById('cvConsolidateBanks');
+    if (cvIsAdmin()) {
+        balanceControls.style.display = 'flex';
+        showBalances.checked = localStorage.getItem(cvShowBalancesStorageKey) === 'true';
+        consolidateBanks.checked = localStorage.getItem(cvConsolidateStorageKey) !== 'false';
+        cvUpdateConsolidateControl();
+        showBalances.addEventListener('change', function() {
+            localStorage.setItem(cvShowBalancesStorageKey, String(this.checked));
+            cvUpdateConsolidateControl();
+            if (this.checked) cvLoadBankBalances();
+            else document.getElementById('cvBankBalancesCard').style.display = 'none';
+        });
+        consolidateBanks.addEventListener('change', function() {
+            localStorage.setItem(cvConsolidateStorageKey, String(this.checked));
+            cvRenderBankBalances();
+        });
+    }
 
     document.getElementById('cvDetalleCloseBtn').addEventListener('click', cvCloseDetalle);
     document.getElementById('cvDetalleModal').addEventListener('click', function(e) {
@@ -189,7 +241,98 @@ function cvOpenCambio() {
     document.getElementById('cvCambioRealizador').value  = localStorage.getItem('userNombres') || '';
     document.getElementById('cvCambioMotivo').value      = '';
     document.getElementById('cvCambioMonto').value       = '';
+    cvLoadBankMethods();
     document.getElementById('cvCambioModal').style.display = 'flex';
+}
+
+async function cvLoadBankMethods() {
+    try {
+        var response = await posApiRequest('/api/payment-methods/transfer', { method:'GET' });
+        cvBankMethods = Array.isArray(response && response.data) ? response.data : [];
+        cvBankMethodNames = {};
+        cvBankMethods.forEach(function(method){ cvBankMethodNames[method.codigo] = method.nombre; });
+        var select = document.getElementById('cvCambioBanco');
+        var selected = select.value;
+        select.innerHTML = '<option value="">Selecciona el banco</option>' + cvBankMethods.map(function(method){
+            return '<option value="' + cvEsc(method.codigo) + '">' + cvEsc(method.nombre) + '</option>';
+        }).join('');
+        if (cvBankMethods.some(function(method){ return method.codigo === selected; })) select.value = selected;
+    } catch (error) {
+        console.error('No se pudieron cargar los bancos', error);
+    }
+}
+
+async function cvLoadBankBalances() {
+    var card = document.getElementById('cvBankBalancesCard');
+    if (!cvIsAdmin() || !document.getElementById('cvShowBankBalances').checked) {
+        card.style.display = 'none';
+        return;
+    }
+    try {
+        var response = await posApiRequest('/api/payment-methods/transfer/balances', { method:'GET' });
+        cvBankBalancesData = Array.isArray(response && response.data) ? response.data : [];
+        cvRenderBankBalances();
+    } catch (error) {
+        card.style.display = 'none';
+    }
+}
+
+function cvUpdateConsolidateControl() {
+    var visible = cvIsAdmin() && document.getElementById('cvShowBankBalances').checked;
+    document.getElementById('cvConsolidateBanksControl').style.display = visible ? 'flex' : 'none';
+}
+
+function cvConsolidatedBankBalances(balances) {
+    if (!document.getElementById('cvConsolidateBanks').checked) return balances.slice();
+
+    var combined = null;
+    var others = [];
+    balances.forEach(function(item) {
+        var code = String(item.metodo_transferencia_codigo || '').toUpperCase();
+        if (code !== 'PICHINCHA' && code !== 'DEUNA') {
+            others.push(item);
+            return;
+        }
+        if (!combined) {
+            combined = {
+                metodo_transferencia_codigo: 'PICHINCHA_DEUNA',
+                nombre: 'Banco Pichincha / Deuna',
+                logo_url: null,
+                saldo: 0,
+                ingresos: 0,
+                egresos: 0,
+                movimientos: 0
+            };
+        }
+        if (code === 'PICHINCHA' && item.logo_url) combined.logo_url = item.logo_url;
+        if (!combined.logo_url && item.logo_url) combined.logo_url = item.logo_url;
+        combined.saldo += Number(item.saldo || 0);
+        combined.ingresos += Number(item.ingresos || 0);
+        combined.egresos += Number(item.egresos || 0);
+        combined.movimientos += Number(item.movimientos || 0);
+    });
+    if (combined) others.unshift(combined);
+    return others;
+}
+
+function cvRenderBankBalances() {
+    var card = document.getElementById('cvBankBalancesCard');
+    if (!cvIsAdmin() || !document.getElementById('cvShowBankBalances').checked) {
+        card.style.display = 'none';
+        return;
+    }
+    var balances = cvConsolidatedBankBalances(cvBankBalancesData);
+    card.style.display = 'block';
+    document.getElementById('cvBankBalanceMode').textContent = document.getElementById('cvConsolidateBanks').checked ? 'Vista consolidada' : 'Por cuenta';
+    document.getElementById('cvBankBalances').innerHTML = balances.map(function(item){
+            var unassigned = !item.metodo_transferencia_codigo;
+            var logo = item.logo_url
+                ? '<img src="' + cvEsc(item.logo_url) + '" alt="" style="width:42px;height:34px;object-fit:contain;flex:0 0 42px;">'
+                : '<span style="display:grid;place-items:center;width:42px;height:34px;color:' + (unassigned ? '#c53030' : '#718096') + '"><i class="fas ' + (unassigned ? 'fa-triangle-exclamation' : 'fa-building-columns') + '"></i></span>';
+            return '<div style="display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px 10px;border:1px solid ' + (unassigned ? '#fed7d7' : '#e2e8f0') + ';border-radius:6px;background:' + (unassigned ? '#fff5f5' : '#fff') + '">' + logo
+                + '<span style="min-width:0"><strong style="display:block;font-size:.84em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + cvEsc(item.nombre) + '</strong><small style="color:#888">' + Number(item.movimientos || 0) + ' movimientos</small></span>'
+                + '<strong style="font-size:1em;color:' + (Number(item.saldo) < 0 ? '#c53030' : '#2f855a') + '">' + formatCurrency(item.saldo) + '</strong></div>';
+        }).join('') || '<div style="padding:16px;text-align:center;color:#888;font-size:.82em;">Sin movimientos bancarios</div>';
 }
 
 function cvCloseCambio() {
@@ -215,7 +358,9 @@ async function cvGuardarCambio() {
     var realizador  = document.getElementById('cvCambioRealizador').value.trim();
     var motivo      = document.getElementById('cvCambioMotivo').value.trim();
     var monto       = parseFloat(document.getElementById('cvCambioMonto').value);
+    var banco       = document.getElementById('cvCambioBanco').value;
 
+    if (!banco)      { alert('Selecciona el banco'); return; }
     if (!solicitante) { alert('Ingresa el nombre del solicitante'); return; }
     if (!realizador)  { alert('Ingresa el nombre del realizador'); return; }
     if (!motivo)      { alert('Ingresa el motivo'); return; }
@@ -242,7 +387,8 @@ async function cvGuardarCambio() {
             motivo:     motivoFinal,
             id_venta:   codigo,
             subido_por: realizador,
-            fotografia: null
+            fotografia: null,
+            metodo_transferencia_codigo: banco
         });
         if (ins.error) throw ins.error;
 
@@ -297,6 +443,8 @@ async function cvLoad() {
     document.getElementById('cvListContainer').innerHTML =
         '<div style="text-align:center;padding:60px 20px;color:#888;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;display:block;margin-bottom:12px;"></i>Cargando...</div>';
     document.getElementById('cvResumenCard').style.display = 'none';
+    await cvLoadBankMethods();
+    await cvLoadBankBalances();
 
     try {
         var hoy = new Date();
@@ -397,13 +545,14 @@ function cvSection(t) {
     var wrap = document.createElement('div');
     wrap.style.cssText = 'margin-bottom:6px;border-radius:10px;overflow:hidden;';
     var tieneFoto = t.fotografia && t.fotografia.trim() !== '';
-    var isAdmin = localStorage.getItem('userRole') === 'admin';
+    var isAdmin = cvIsAdmin();
     var hora = new Date(t.fechahora).toLocaleTimeString('es-EC', { hour:'2-digit', minute:'2-digit' });
     var esCaso = (t.caso||'').toLowerCase();
     var mc = esCaso === 'egreso' ? '#e53e3e' : '#38a169';
     var metaExtra = '';
     if (t.subido_por) metaExtra += ' &middot; ' + cvEsc(t.subido_por.split('@')[0]);
     if (t.id_venta)   metaExtra += ' &middot; <span style="color:#3182ce;font-family:monospace;">' + cvEsc(t.id_venta) + '</span>';
+    if (t.metodo_transferencia_codigo) metaExtra += ' &middot; <strong style="color:#4a5568;">' + cvEsc(cvBankMethodNames[t.metodo_transferencia_codigo] || t.metodo_transferencia_codigo) + '</strong>';
     var estadoHtml = tieneFoto
         ? '<span style="color:#38a169;"><i class="fas fa-image"></i> Comprobante</span>'
         : '<span style="color:#e53e3e;"><i class="fas fa-clock"></i> Pendiente</span>';
@@ -448,10 +597,11 @@ async function cvOpenDetalle(t) {
     var esVenta = (t.id_venta || '').toUpperCase().startsWith('S');
     var codigoLabel = esVenta ? 'Venta' : 'Código';
     var ventaRow  = t.id_venta   ? '<tr><td style="padding:6px 0;color:#888;">' + codigoLabel + '</td><td style="font-family:monospace;color:#3182ce;font-weight:700;">' + cvEsc(t.id_venta) + '</td></tr>' : '';
+    var bancoRow = '<tr><td style="padding:6px 0;color:#888;">Banco</td><td style="font-weight:700;">' + cvEsc(cvBankMethodNames[t.metodo_transferencia_codigo] || t.metodo_transferencia_codigo || 'Sin asignar') + '</td></tr>';
     var ventaDetalle = esVenta ? '<div id="cvDetVentaDetalle" style="margin-top:16px;border-top:1px solid #eee;padding-top:14px;"><p style="color:#888;text-align:center;"><i class="fas fa-spinner fa-spin"></i> Cargando detalle de venta...</p></div>' : '';
 
     body.innerHTML = '<div style="text-align:center;margin-bottom:20px;"><div style="font-size:2rem;font-weight:800;color:' + mc + ';">' + formatCurrency(t.monto) + '</div><div style="color:#888;font-size:.9em;margin-top:4px;">' + cvEsc(t.motivo||'') + '</div></div>'
-        + '<table style="width:100%;border-collapse:collapse;font-size:.88em;margin-bottom:16px;"><tr><td style="padding:6px 0;color:#888;width:110px;">Fecha</td><td style="font-weight:600;">' + fecha + '</td></tr><tr><td style="padding:6px 0;color:#888;">Caso</td><td><span style="background:' + mc + '18;color:' + mc + ';padding:2px 8px;border-radius:6px;font-weight:700;">' + cvEsc(t.caso||'') + '</span></td></tr>' + subidoRow + ventaRow + '</table>'
+        + '<table style="width:100%;border-collapse:collapse;font-size:.88em;margin-bottom:16px;"><tr><td style="padding:6px 0;color:#888;width:110px;">Fecha</td><td style="font-weight:600;">' + fecha + '</td></tr><tr><td style="padding:6px 0;color:#888;">Caso</td><td><span style="background:' + mc + '18;color:' + mc + ';padding:2px 8px;border-radius:6px;font-weight:700;">' + cvEsc(t.caso||'') + '</span></td></tr>' + bancoRow + subidoRow + ventaRow + '</table>'
         + fotoHtml + ventaDetalle;
 
     if (!esVenta) return;

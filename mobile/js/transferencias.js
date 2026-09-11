@@ -4,6 +4,7 @@
 // =====================================================
 
 let transfLoading = false;
+let transfBankNames = {};
 
 async function loadTransferencias() {
     if (transfLoading) return;
@@ -13,6 +14,12 @@ async function loadTransferencias() {
     $('transfPendientesSection').classList.add('hidden');
 
     try {
+        try {
+            const methods = await cargarMetodosTransferenciaMovil();
+            transfBankNames = Object.fromEntries((methods || []).map(method => [method.codigo, method.nombre]));
+        } catch (bankError) {
+            console.warn('No se pudieron precargar los bancos', bankError);
+        }
         const hoy = new Date();
         const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
         const finHoy    = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
@@ -124,6 +131,7 @@ function buildTransfCard(t, isPendiente) {
                 <span class="transf-hora">${fechaLabel}</span>
                 ${t.subido_por ? `<span class="transf-user">${escHtml(t.subido_por.split('@')[0])}</span>` : ''}
                 ${t.id_venta ? `<span class="transf-venta-id">${escHtml(t.id_venta)}</span>` : ''}
+                <span class="transf-bank"><i class="fas fa-building-columns"></i> ${escHtml(transfBankNames[t.metodo_transferencia_codigo] || t.metodo_transferencia_codigo || 'Sin banco')}</span>
             </div>
             <div class="transf-card-estado">
                 ${tieneFoto
@@ -162,6 +170,7 @@ async function verDetalleTransferencia(t) {
             ${t.subido_por ? `<div class="transf-detalle-row"><span>Subido por</span><strong>${escHtml(t.subido_por)}</strong></div>` : ''}
             ${t.id_venta ? `<div class="transf-detalle-row"><span>${esVenta ? 'Venta' : 'Código'}</span><strong style="font-family:monospace;">${escHtml(t.id_venta)}</strong></div>` : ''}
             <div class="transf-detalle-row"><span>Caso</span><strong>${escHtml(t.caso || '')}</strong></div>
+            <div class="transf-detalle-row"><span>Banco</span><strong>${escHtml(transfBankNames[t.metodo_transferencia_codigo] || t.metodo_transferencia_codigo || 'Sin asignar')}</strong></div>
             ${tieneFoto
                 ? `<div class="transf-foto-wrap"><img src="${escHtml(t.fotografia)}" alt="Comprobante" class="transf-foto-img" onerror="this.style.display='none'"></div>`
                 : `<div class="transf-no-foto"><i class="fas fa-image"></i><span>Sin comprobante adjunto</span></div>`
@@ -263,7 +272,7 @@ async function generarCodigoCambio() {
     return 'C' + String(num).padStart(5, '0');
 }
 
-function openCambioModal() {
+async function openCambioModal() {
     cambioSelectedCaso = 'ingreso';
     $('btnCambioIngreso').classList.add('active');
     $('btnCambioEgreso').classList.remove('active');
@@ -271,6 +280,14 @@ function openCambioModal() {
     $('cambioRealizadorInput').value = currentUserName || '';
     $('cambioMotivoInput').value = '';
     $('cambioMontoInput').value = '';
+    try {
+        const methods = await cargarMetodosTransferenciaMovil();
+        $('cambioBancoInput').innerHTML = '<option value="">Selecciona el banco</option>' + (methods || []).map(method =>
+            `<option value="${escHtml(method.codigo)}">${escHtml(method.nombre)}</option>`
+        ).join('');
+    } catch (error) {
+        $('cambioBancoInput').innerHTML = '<option value="">No fue posible cargar los bancos</option>';
+    }
     showModal('cambioDineroModal');
 }
 
@@ -279,7 +296,9 @@ async function guardarCambio() {
     const realizador  = $('cambioRealizadorInput').value.trim();
     const motivo      = $('cambioMotivoInput').value.trim();
     const monto       = parseFloat($('cambioMontoInput').value);
+    const banco       = $('cambioBancoInput').value;
 
+    if (!banco)      { showToast('Selecciona el banco', 'error'); return; }
     if (!solicitante) { showToast('Ingresa el nombre del solicitante', 'error'); return; }
     if (!realizador)  { showToast('Ingresa el nombre del realizador', 'error'); return; }
     if (!motivo)      { showToast('Ingresa el motivo', 'error'); return; }
@@ -307,7 +326,8 @@ async function guardarCambio() {
             id_venta:  codigo,
             subido_por: realizador,
             fotografia: null,
-            user_id:   currentUser?.id || null
+            user_id:   currentUser?.id || null,
+            metodo_transferencia_codigo: banco
         });
         if (error) throw error;
 

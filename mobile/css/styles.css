@@ -390,6 +390,7 @@ input::placeholder { color: var(--text-muted); }
 .transf-card-monto { font-size: 1rem; font-weight: 700; color: #3182ce; white-space: nowrap; }
 .transf-card-bot { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .transf-card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.transf-bank { color: var(--info); font-weight: 700; }
 .transf-hora { font-size: .75rem; color: var(--text-muted); }
 .transf-user { font-size: .72rem; background: var(--bg3); color: var(--text-muted); padding: 1px 7px; border-radius: 8px; }
 .transf-venta-id { font-size: .72rem; color: var(--info); }

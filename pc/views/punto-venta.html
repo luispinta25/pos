@@ -3065,7 +3065,7 @@
 
     .transfer-method-button {
         position: relative;
-        height: 118px;
+        height: 108px;
         padding: 12px;
         border: 3px solid #e0e0e0;
         border-radius: 8px;
@@ -3094,9 +3094,19 @@
     }
 
     .transfer-method-button img {
-        width: 76px;
-        height: 64px;
+        width: 64px;
+        height: 52px;
         object-fit: contain;
+    }
+
+    .transfer-method-button.featured-transfer-method {
+        grid-column: 1 / -1;
+        height: 88px;
+    }
+
+    .transfer-method-button.featured-transfer-method img {
+        width: min(190px, 62%);
+        height: 42px;
     }
 
     .transfer-method-button span {
@@ -8472,7 +8482,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
     let metodosTransferenciaCache = null;
     let cargaMetodosTransferencia = null;
-    const METODOS_TRANSFERENCIA_STORAGE_KEY = 'ferrisoluciones.transferMethods.v1';
+    const METODOS_TRANSFERENCIA_STORAGE_KEY = 'ferrisoluciones.transferMethods.v2';
     const METODOS_TRANSFERENCIA_TTL_MS = 15 * 60 * 1000;
 
     function escapeTransferPrint(value) {
@@ -8488,8 +8498,12 @@ _Sistema de Gestión Ferrisoluciones_`;
         const grid = document.getElementById('metodosTransferenciaGrid');
         const estado = document.getElementById('estadoMetodosTransferencia');
         if (!grid || !estado) return;
-        grid.innerHTML = methods.map((method) => `
-            <button type="button" class="transfer-method-button" data-transfer-method="${escapeTransferPrint(method.codigo)}"
+        const visualOrder = { DEUNA: 0, PICHINCHA: 1, GUAYAQUIL: 2, PRODUBANCO: 3, PACIFICO: 4 };
+        const orderedMethods = methods.slice().sort((a, b) =>
+            (visualOrder[a.codigo] ?? 100) - (visualOrder[b.codigo] ?? 100)
+        );
+        grid.innerHTML = orderedMethods.map((method) => `
+            <button type="button" class="transfer-method-button${method.codigo === 'DEUNA' ? ' featured-transfer-method' : ''}" data-transfer-method="${escapeTransferPrint(method.codigo)}"
                 onclick="seleccionarEImprimirMetodoTransferencia(this.dataset.transferMethod)"
                 title="Seleccionar ${escapeTransferPrint(method.nombre)} e imprimir">
                 <i class="fas fa-check-circle selection-check"></i>
@@ -10366,6 +10380,10 @@ _Sistema de Gestión Ferrisoluciones_`;
                 tipo: tipoDocumento,
                 tipo_pago: tipoPago, // <-- NUEVO: Guardamos tipo de pago
                 metodo_transferencia_codigo: metodoTransferencia,
+                monto_efectivo: tipoPago === 'EFECTIVO'
+                    ? parseFloat(totalConIva.toFixed(2))
+                    : tipoPago === 'MIXTO' ? parseFloat(pagadoCon.toFixed(2)) : 0,
+                monto_transferencia: parseFloat(montoTransferencia.toFixed(2)),
                 estado: 'GUARDANDO',
                 notas: 'Venta en proceso de guardado: pendiente de registrar detalles.',
                 usuario_email: userEmail,

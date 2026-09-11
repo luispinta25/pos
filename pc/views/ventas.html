@@ -3132,12 +3132,62 @@
             return botones;
         }
 
+        async function seleccionarBancoParaConversion() {
+            const response = await posApiRequest('/api/payment-methods/transfer', { method: 'GET' });
+            const methods = Array.isArray(response?.data) ? response.data : [];
+            if (!methods.length) throw new Error('No hay cuentas bancarias disponibles para recibir el cobro.');
+
+            return new Promise((resolve) => {
+                const esc = (value) => String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:fixed;inset:0;z-index:12050;background:rgba(15,18,20,.68);display:grid;place-items:center;padding:20px';
+                overlay.innerHTML = `<section role="dialog" aria-modal="true" aria-labelledby="conversionBankTitle" style="width:min(620px,100%);max-height:88vh;overflow:auto;background:#fff;border-radius:8px;padding:22px;box-shadow:0 20px 55px rgba(0,0,0,.28)">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid #e2e6ea;padding-bottom:14px;margin-bottom:16px">
+                        <div><small style="display:block;color:#936b00;font-weight:800">CUENTA DE DESTINO</small><h3 id="conversionBankTitle" style="margin:3px 0 0">¿En qué banco se recibió?</h3></div>
+                        <button type="button" data-bank-cancel title="Cerrar" style="width:38px;height:38px;border:1px solid #d4d9de;background:#fff;border-radius:6px;cursor:pointer"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+                        ${methods.map((method) => `<button type="button" data-bank-code="${esc(method.codigo)}" style="min-height:112px;border:2px solid #d9dee3;background:#fff;border-radius:7px;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;cursor:pointer;font-weight:800">
+                            ${method.logo_url ? `<img src="${esc(method.logo_url)}" alt="" style="width:72px;height:48px;object-fit:contain">` : '<i class="fas fa-building-columns" style="font-size:2rem"></i>'}
+                            <span>${esc(method.nombre)}</span>
+                        </button>`).join('')}
+                    </div>
+                </section>`;
+
+                const finish = (value) => {
+                    document.removeEventListener('keydown', onKeyDown);
+                    overlay.remove();
+                    resolve(value);
+                };
+                const onKeyDown = (event) => { if (event.key === 'Escape') finish(null); };
+                overlay.addEventListener('click', (event) => {
+                    const option = event.target.closest('[data-bank-code]');
+                    if (option) finish(methods.find((method) => method.codigo === option.dataset.bankCode) || null);
+                    else if (event.target === overlay || event.target.closest('[data-bank-cancel]')) finish(null);
+                });
+                document.addEventListener('keydown', onKeyDown);
+                document.body.appendChild(overlay);
+            });
+        }
+
         async function convertirVentaATransferencia(button) {
             const venta = window.ventaActual?.venta;
             if (!venta) return;
 
+            let banco;
+            try {
+                banco = await seleccionarBancoParaConversion();
+            } catch (error) {
+                window.app.showToast(error.message || 'No se pudieron cargar los bancos', 'danger', 5000);
+                return;
+            }
+            if (!banco) return;
+            const bancoNombre = String(banco.nombre || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
             const confirmado = await showCustomConfirm(
-                `La venta <strong>${venta.id_venta}</strong> por <strong>${window.app.formatCurrency(venta.total)}</strong> se marcará como transferencia y se enviará el enlace al grupo para cargar el comprobante.`,
+                `La venta <strong>${venta.id_venta}</strong> por <strong>${window.app.formatCurrency(venta.total)}</strong> se registrará en <strong>${bancoNombre}</strong> y se enviará el enlace al grupo para cargar el comprobante.`,
                 'Convertir a transferencia',
                 'Convertir y notificar',
                 'Cancelar'
@@ -3153,7 +3203,10 @@
             try {
                 const response = await posApiRequest('/api/notifications/venta-transferencia/convertir', {
                     method: 'POST',
-                    body: JSON.stringify({ idVenta: venta.id_venta })
+                    body: JSON.stringify({
+                        idVenta: venta.id_venta,
+                        metodo_transferencia_codigo: banco.codigo
+                    })
                 });
                 const updatedSale = response?.data?.venta;
                 window.app.showToast(
