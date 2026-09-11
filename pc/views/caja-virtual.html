@@ -22,7 +22,7 @@
                 <div style="font-size:.82em; color:#888; text-align:center;" id="cvFechaLabel"></div>
                 <div id="cvBankBalanceControls" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid #edf2f7;gap:10px;flex-direction:column;">
                     <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-size:.82em;font-weight:700;color:#4a5568;">
-                        <span><i class="fas fa-eye" style="color:#3182ce;margin-right:6px;"></i> Mostrar saldos bancarios</span>
+                        <span><i class="fas fa-eye" style="color:#3182ce;margin-right:6px;"></i> Mostrar saldos bancarios a todo el personal</span>
                         <input id="cvShowBankBalances" type="checkbox" role="switch" style="width:38px;height:20px;accent-color:#3182ce;cursor:pointer;flex:0 0 auto;">
                     </label>
                     <label id="cvConsolidateBanksControl" style="display:none;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-size:.78em;color:#718096;">
@@ -156,8 +156,7 @@ var cvCambioTipo = 'ingreso';
 var cvVerifyPinExpected = null, cvVerifyItemTarget = null;
 var cvBankMethods = [], cvBankMethodNames = {};
 var cvBankBalancesData = [];
-var cvShowBalancesStorageKey = 'ferrisoluciones.cv.showBalances.v1';
-var cvBalanceSettings = { consolidar_pichincha_deuna: true };
+var cvBalanceSettings = { consolidar_pichincha_deuna: true, mostrar_saldos_bancarios: false };
 
 function cvIsAdmin() {
     var role = String(localStorage.getItem('userRole') || '').toLowerCase();
@@ -177,15 +176,7 @@ function initCajaVirtual() {
     var consolidateBanks = document.getElementById('cvConsolidateBanks');
     if (cvIsAdmin()) {
         balanceControls.style.display = 'flex';
-        showBalances.checked = localStorage.getItem(cvShowBalancesStorageKey) === 'true';
-        consolidateBanks.checked = cvBalanceSettings.consolidar_pichincha_deuna;
-        cvUpdateConsolidateControl();
-        showBalances.addEventListener('change', function() {
-            localStorage.setItem(cvShowBalancesStorageKey, String(this.checked));
-            cvUpdateConsolidateControl();
-            if (this.checked) cvLoadBankBalances();
-            else document.getElementById('cvBankBalancesCard').style.display = 'none';
-        });
+        showBalances.addEventListener('change', cvSaveShowBalances);
         consolidateBanks.addEventListener('change', cvSaveConsolidation);
     }
 
@@ -261,20 +252,58 @@ async function cvLoadBankMethods() {
 
 async function cvLoadBankBalances() {
     var card = document.getElementById('cvBankBalancesCard');
-    if (!cvIsAdmin() || !document.getElementById('cvShowBankBalances').checked) {
-        card.style.display = 'none';
-        return;
-    }
     try {
         var response = await posApiRequest('/api/payment-methods/transfer/balances', { method:'GET' });
         cvBankBalancesData = Array.isArray(response && response.data) ? response.data : [];
         cvBalanceSettings.consolidar_pichincha_deuna = response && response.settings
             ? response.settings.consolidar_pichincha_deuna === true
             : false;
-        document.getElementById('cvConsolidateBanks').checked = cvBalanceSettings.consolidar_pichincha_deuna;
+        cvBalanceSettings.mostrar_saldos_bancarios = response && response.settings
+            ? response.settings.mostrar_saldos_bancarios === true
+            : false;
+        if (cvIsAdmin()) {
+            document.getElementById('cvConsolidateBanks').checked = cvBalanceSettings.consolidar_pichincha_deuna;
+            document.getElementById('cvShowBankBalances').checked = cvBalanceSettings.mostrar_saldos_bancarios;
+            cvUpdateConsolidateControl();
+        }
         cvRenderBankBalances();
     } catch (error) {
+        // 403 = el backend decidio que este usuario no puede ver saldos (no es
+        // admin/contador y el admin no activo "mostrar a todo el personal").
         card.style.display = 'none';
+    }
+}
+
+async function cvSaveShowBalances() {
+    var toggle = document.getElementById('cvShowBankBalances');
+    var previous = cvBalanceSettings.mostrar_saldos_bancarios;
+    var requested = toggle.checked;
+    toggle.disabled = true;
+    try {
+        var response = await posApiRequest('/api/payment-methods/transfer/balance-settings', {
+            method: 'PATCH',
+            body: JSON.stringify({ mostrar_saldos_bancarios: requested })
+        });
+        cvBalanceSettings.mostrar_saldos_bancarios = response && response.settings
+            ? response.settings.mostrar_saldos_bancarios === true
+            : requested;
+        toggle.checked = cvBalanceSettings.mostrar_saldos_bancarios;
+        cvUpdateConsolidateControl();
+        if (cvBalanceSettings.mostrar_saldos_bancarios) await cvLoadBankBalances();
+        else document.getElementById('cvBankBalancesCard').style.display = 'none';
+        if (window.app && typeof window.app.showToast === 'function') {
+            window.app.showToast('Configuración bancaria guardada', 'success', 2200);
+        }
+    } catch (error) {
+        cvBalanceSettings.mostrar_saldos_bancarios = previous;
+        toggle.checked = previous;
+        if (window.app && typeof window.app.showToast === 'function') {
+            window.app.showToast(error.message || 'No se pudo guardar la configuración', 'error', 3200);
+        } else {
+            alert(error.message || 'No se pudo guardar la configuración');
+        }
+    } finally {
+        toggle.disabled = false;
     }
 }
 
@@ -311,12 +340,12 @@ async function cvSaveConsolidation() {
 }
 
 function cvUpdateConsolidateControl() {
-    var visible = cvIsAdmin() && document.getElementById('cvShowBankBalances').checked;
+    var visible = cvIsAdmin() && cvBalanceSettings.mostrar_saldos_bancarios;
     document.getElementById('cvConsolidateBanksControl').style.display = visible ? 'flex' : 'none';
 }
 
 function cvConsolidatedBankBalances(balances) {
-    if (!document.getElementById('cvConsolidateBanks').checked) return balances.slice();
+    if (!cvBalanceSettings.consolidar_pichincha_deuna) return balances.slice();
 
     var combined = null;
     var others = [];
@@ -350,13 +379,9 @@ function cvConsolidatedBankBalances(balances) {
 
 function cvRenderBankBalances() {
     var card = document.getElementById('cvBankBalancesCard');
-    if (!cvIsAdmin() || !document.getElementById('cvShowBankBalances').checked) {
-        card.style.display = 'none';
-        return;
-    }
     var balances = cvConsolidatedBankBalances(cvBankBalancesData);
     card.style.display = 'block';
-    document.getElementById('cvBankBalanceMode').textContent = document.getElementById('cvConsolidateBanks').checked ? 'Vista consolidada' : 'Por cuenta';
+    document.getElementById('cvBankBalanceMode').textContent = cvBalanceSettings.consolidar_pichincha_deuna ? 'Vista consolidada' : 'Por cuenta';
     document.getElementById('cvBankBalances').innerHTML = balances.map(function(item){
             var unassigned = !item.metodo_transferencia_codigo;
             var logo = item.logo_url
