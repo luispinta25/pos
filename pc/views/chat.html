@@ -1594,6 +1594,13 @@ function initChat() {
         const messages = state.messages.concat(pending);
 
         if (!messages.length) {
+            // Todavia no llega la respuesta (primera carga de esta conversacion,
+            // sin nada en cache): animacion de carga, no "sin mensajes" - eso
+            // seria falso mientras viaja la respuesta con internet lento.
+            if (state.loadingMessages && !state.messagesByConversation[selectedId]) {
+                els.messages.innerHTML = '<div class="chat-empty"><div><div class="chat-empty-icon"><i class="fas fa-circle-notch fa-spin"></i></div><strong>Cargando mensajes...</strong></div></div>';
+                return;
+            }
             const older = state.hasMoreMessages ? '<div class="chat-load-older-wrap"><button id="chatLoadOlderBtn" class="chat-load-older-btn" type="button">Cargar anteriores</button></div>' : '';
             els.messages.innerHTML = older + '<div class="chat-empty"><div><div class="chat-empty-icon"><i class="fab fa-whatsapp"></i></div><strong>Sin mensajes en esta conversacion</strong></div></div>';
             wireLoadOlderButton();
@@ -2088,11 +2095,23 @@ function initChat() {
         updateComposerAvailability();
         state.messages = state.messagesByConversation[item.id] || [];
         state.hasMoreMessages = false;
+        // Sin cache para esta conversacion: se marca "cargando" ANTES del primer
+        // render para no mostrar "sin mensajes" mientras todavia viajan (red
+        // lenta = facil de ver mal).
+        state.loadingMessages = !state.messagesByConversation[item.id];
         renderList();
         renderQuickReplies();
         renderMessages({ forceBottom: true });
         saveCache();
-        await loadMessages({ forceBottom: true });
+        try {
+            await loadMessages({ forceBottom: true });
+        } catch (error) {
+            // No dejar la animacion de carga pegada para siempre si la carga
+            // falla (red inestable): se cae al estado vacio normal.
+            state.loadingMessages = false;
+            if (state.selected && state.selected.id === item.id) renderMessages({ forceBottom: true });
+            showCustomAlert('No se pudieron cargar los mensajes: ' + error.message, 'error', 'WhatsApp');
+        }
     }
 
     async function loadMessages(options) {
