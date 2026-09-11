@@ -333,7 +333,6 @@ async function mostrarDatosTransferenciaMovil() {
         const amount = fmt(transferAmount);
         const rows = [
             ['Tipo de cuenta', method.tipo_cuenta, true], ['Número de cuenta', method.numero_cuenta, true],
-            ['Titular', method.titular, false], ['Identificación', method.identificacion, false],
             ['Correo', method.correo, false]
         ].filter(([, value]) => value).map(([label, value, highlighted]) =>
             `<div class="row${highlighted ? ' account-highlight' : ''}"><span>${escHtml(label)}</span><strong>${escHtml(value)}</strong></div>`
