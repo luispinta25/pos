@@ -157,7 +157,7 @@ var cvVerifyPinExpected = null, cvVerifyItemTarget = null;
 var cvBankMethods = [], cvBankMethodNames = {};
 var cvBankBalancesData = [];
 var cvShowBalancesStorageKey = 'ferrisoluciones.cv.showBalances.v1';
-var cvConsolidateStorageKey = 'ferrisoluciones.cv.consolidatePichinchaDeuna.v1';
+var cvBalanceSettings = { consolidar_pichincha_deuna: true };
 
 function cvIsAdmin() {
     var role = String(localStorage.getItem('userRole') || '').toLowerCase();
@@ -178,7 +178,7 @@ function initCajaVirtual() {
     if (cvIsAdmin()) {
         balanceControls.style.display = 'flex';
         showBalances.checked = localStorage.getItem(cvShowBalancesStorageKey) === 'true';
-        consolidateBanks.checked = localStorage.getItem(cvConsolidateStorageKey) !== 'false';
+        consolidateBanks.checked = cvBalanceSettings.consolidar_pichincha_deuna;
         cvUpdateConsolidateControl();
         showBalances.addEventListener('change', function() {
             localStorage.setItem(cvShowBalancesStorageKey, String(this.checked));
@@ -186,10 +186,7 @@ function initCajaVirtual() {
             if (this.checked) cvLoadBankBalances();
             else document.getElementById('cvBankBalancesCard').style.display = 'none';
         });
-        consolidateBanks.addEventListener('change', function() {
-            localStorage.setItem(cvConsolidateStorageKey, String(this.checked));
-            cvRenderBankBalances();
-        });
+        consolidateBanks.addEventListener('change', cvSaveConsolidation);
     }
 
     document.getElementById('cvDetalleCloseBtn').addEventListener('click', cvCloseDetalle);
@@ -271,9 +268,45 @@ async function cvLoadBankBalances() {
     try {
         var response = await posApiRequest('/api/payment-methods/transfer/balances', { method:'GET' });
         cvBankBalancesData = Array.isArray(response && response.data) ? response.data : [];
+        cvBalanceSettings.consolidar_pichincha_deuna = response && response.settings
+            ? response.settings.consolidar_pichincha_deuna === true
+            : false;
+        document.getElementById('cvConsolidateBanks').checked = cvBalanceSettings.consolidar_pichincha_deuna;
         cvRenderBankBalances();
     } catch (error) {
         card.style.display = 'none';
+    }
+}
+
+async function cvSaveConsolidation() {
+    var toggle = document.getElementById('cvConsolidateBanks');
+    var previous = cvBalanceSettings.consolidar_pichincha_deuna;
+    var requested = toggle.checked;
+    toggle.disabled = true;
+    try {
+        var response = await posApiRequest('/api/payment-methods/transfer/balance-settings', {
+            method: 'PATCH',
+            body: JSON.stringify({ consolidar_pichincha_deuna: requested })
+        });
+        cvBalanceSettings.consolidar_pichincha_deuna = response && response.settings
+            ? response.settings.consolidar_pichincha_deuna === true
+            : requested;
+        toggle.checked = cvBalanceSettings.consolidar_pichincha_deuna;
+        cvRenderBankBalances();
+        if (window.app && typeof window.app.showToast === 'function') {
+            window.app.showToast('Configuración bancaria guardada', 'success', 2200);
+        }
+    } catch (error) {
+        cvBalanceSettings.consolidar_pichincha_deuna = previous;
+        toggle.checked = previous;
+        cvRenderBankBalances();
+        if (window.app && typeof window.app.showToast === 'function') {
+            window.app.showToast(error.message || 'No se pudo guardar la configuración', 'error', 3200);
+        } else {
+            alert(error.message || 'No se pudo guardar la configuración');
+        }
+    } finally {
+        toggle.disabled = false;
     }
 }
 

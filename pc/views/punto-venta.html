@@ -8624,8 +8624,6 @@ _Sistema de Gestión Ferrisoluciones_`;
             const detailRows = [
                 ['Tipo de cuenta', method.tipo_cuenta, true],
                 ['Número de cuenta', method.numero_cuenta, true],
-                ['Titular', method.titular, false],
-                ['Identificación', method.identificacion, false],
                 ['Correo', method.correo, false]
             ].filter(([, value]) => value);
             const rowsHtml = detailRows.map(([label, value, highlighted]) =>
