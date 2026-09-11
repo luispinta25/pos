@@ -2102,6 +2102,10 @@ function initChat() {
             return;
         }
 
+        // Se captura ANTES del await: si el usuario cambia de conversacion
+        // mientras esta respuesta viaja (red lenta), se descarta al volver en
+        // vez de pintarla bajo la conversacion equivocada.
+        const requestedId = state.selected.id;
         state.loadingMessages = true;
         const wasNearBottom = isNearBottom();
         const params = new URLSearchParams();
@@ -2110,7 +2114,10 @@ function initChat() {
 
         const previousScrollHeight = els.messages.scrollHeight;
         const previousScrollTop = els.messages.scrollTop;
-        const result = await posApiRequest('/api/chat/conversations/' + encodeURIComponent(state.selected.id) + '/messages?' + params.toString(), { method: 'GET' });
+        const result = await posApiRequest('/api/chat/conversations/' + encodeURIComponent(requestedId) + '/messages?' + params.toString(), { method: 'GET' });
+
+        if (!state.selected || state.selected.id !== requestedId) return;
+
         const rows = result.data || [];
 
         if (opts.appendOlder) {
@@ -2120,7 +2127,7 @@ function initChat() {
         }
 
         state.hasMoreMessages = Boolean(result.hasMore);
-        state.messagesByConversation[state.selected.id] = state.messages.slice(-CACHE_MESSAGE_LIMIT);
+        state.messagesByConversation[requestedId] = state.messages.slice(-CACHE_MESSAGE_LIMIT);
         state.loadingMessages = false;
         saveCache();
 

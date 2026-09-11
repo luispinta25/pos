@@ -7241,6 +7241,10 @@ _Sistema de Gestión Ferrisoluciones_`;
 
     function actualizarCarrito() {
         const tbody = document.getElementById('carritoBody');
+        // La vista de Punto de Venta puede no estar montada en el DOM todavia
+        // (se llama desde init aunque el usuario este en otra pestaña): no hay
+        // nada que pintar, se sale sin tronar.
+        if (!tbody) return;
         ventaState.carrito.forEach(normalizarItemCarrito);
 
         const obsequioBtn = document.getElementById('obsequioToggleBtn');
