@@ -521,6 +521,54 @@ function showToast(message, type = 'info', duration = 3000) {
 }
 
 /**
+ * Bloqueador de pantalla "Guardando…". Un doble clic en un botón de
+ * guardar mientras la primera petición todavía está en curso puede crear
+ * el mismo registro dos veces (ej. un gasto duplicado): esto bloquea toda
+ * la pantalla (pointer-events) apenas se llama, ANTES de que arranque la
+ * petición, así el segundo clic no llega a ningún botón. Cuenta referencias
+ * (savingBlockerDepth) por si dos guardados se solapan por otra razón.
+ */
+let savingBlockerEl = null;
+let savingBlockerDepth = 0;
+
+function ensureSavingBlockerEl() {
+    if (savingBlockerEl && document.body.contains(savingBlockerEl)) return savingBlockerEl;
+    const el = document.createElement('div');
+    el.id = 'savingBlockerOverlay';
+    el.className = 'saving-blocker-overlay';
+    el.innerHTML = '<div class="saving-blocker-box"><i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i><span class="saving-blocker-text">Guardando…</span></div>';
+    document.body.appendChild(el);
+    savingBlockerEl = el;
+    return el;
+}
+
+function showSavingBlocker(message = 'Guardando…') {
+    savingBlockerDepth += 1;
+    const el = ensureSavingBlockerEl();
+    el.querySelector('.saving-blocker-text').textContent = message;
+    el.classList.add('active');
+}
+
+function hideSavingBlocker() {
+    savingBlockerDepth = Math.max(0, savingBlockerDepth - 1);
+    if (savingBlockerDepth === 0 && savingBlockerEl) savingBlockerEl.classList.remove('active');
+}
+
+/**
+ * Envuelve una acción que guarda algo (POST/PATCH/DELETE): bloquea la
+ * pantalla ANTES de ejecutarla y la desbloquea siempre al terminar, sea
+ * éxito o error, para nunca dejarla trabada.
+ */
+async function withSavingBlocker(action, message) {
+    showSavingBlocker(message);
+    try {
+        return await action();
+    } finally {
+        hideSavingBlocker();
+    }
+}
+
+/**
  * Confirmar acción
  */
 async function confirmAction(message) {
@@ -963,7 +1011,10 @@ window.app = {
     executeQuery,
     showCustomAlert,
     showCustomConfirm,
-    showCustomPrompt
+    showCustomPrompt,
+    showSavingBlocker,
+    hideSavingBlocker,
+    withSavingBlocker
 };
 
 // Removed debug scroll helper and floating debug button

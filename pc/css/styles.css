@@ -1975,3 +1975,48 @@ body.loaded {
     filter: grayscale(0);
     transform: scale(1.05);
 }
+
+/* ── Bloqueador de pantalla "Guardando" ──────────────────────────────────
+   Se muestra apenas se envía un formulario que escribe datos (gastos,
+   pagos, etc.) para que un doble clic mientras se guarda no dispare dos
+   registros. Se agrega directo a <body> (no dentro de una vista/tab) y con
+   el z-index más alto de la app para que nunca quede detrás de otra cosa;
+   pointer-events solo se activa junto con .active, así nunca bloquea clics
+   estando oculto. Ver window.app.withSavingBlocker en js/app.js. */
+.saving-blocker-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: rgba(15, 23, 32, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+}
+
+.saving-blocker-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+}
+
+.saving-blocker-box {
+    background: #ffffff;
+    color: #1f2937;
+    border-radius: 12px;
+    padding: 18px 30px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.saving-blocker-box i {
+    font-size: 1.4rem;
+    color: var(--color-accent, #2f6f8f);
+}
