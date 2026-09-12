@@ -1,17 +1,17 @@
 // =====================================================
 // SERVICE WORKER - FERRISOLUCIONES POS
-// Version: 3.11.23
+// Version: 3.11.24
 // Strategy: Network First
 // =====================================================
 
-const CACHE_NAME = 'ferrisoluciones-pos-v3-11-23';
-const RUNTIME_CACHE = 'ferrisoluciones-runtime-v3-11-23';
+const CACHE_NAME = 'ferrisoluciones-pos-v3-11-24';
+const RUNTIME_CACHE = 'ferrisoluciones-runtime-v3-11-24';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/pc/index.html',
     '/pc/manifest.json',
-    '/pc/css/styles.css?v=3.11.23',
+    '/pc/css/styles.css?v=3.11.24',
     '/pc/css/cxc-styles.css',
     '/pc/css/print.css',
     '/pc/views/whatsapp-banner.html',
@@ -29,7 +29,7 @@ const STATIC_ASSETS = [
 // =====================================================
 
 self.addEventListener('install', (event) => {
-    console.log('🔧 [SW] Installing Service Worker v3.11.23...');
+    console.log('🔧 [SW] Installing Service Worker v3.11.24...');
     
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -57,7 +57,7 @@ self.addEventListener('install', (event) => {
 // =====================================================
 
 self.addEventListener('activate', (event) => {
-    console.log('🚀 [SW] Activating Service Worker v3.11.23...');
+    console.log('🚀 [SW] Activating Service Worker v3.11.24...');
     
     event.waitUntil(
         caches.keys()
@@ -91,9 +91,13 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Network First Strategy
+    // Network First Strategy. 'no-store' fuerza a saltar el cache HTTP del
+    // navegador (no solo el de este service worker): sin esto, fetch(request)
+    // puede resolverse con una copia en disco vieja de app.js/styles.css sin
+    // ni siquiera tocar la red, y una actualizacion nueva no se nota hasta
+    // que esa copia expira (GitHub Pages manda Cache-Control: max-age=600).
     event.respondWith(
-        fetch(request)
+        fetch(request, { cache: 'no-store' })
             .then(response => {
                 // Check if valid response
                 if (!response || response.status !== 200 || response.type === 'basic' && response.url.includes('chrome-extension')) {
@@ -178,11 +182,11 @@ self.addEventListener('message', (event) => {
                     event.ports[0].postMessage({ 
                         success: true, 
                         size: requests.length,
-                        version: '3.11.23'
+                        version: '3.11.24'
                     });
                 });
             });
     }
 });
 
-console.log('✅ Service Worker v3.11.23 loaded (Network First Strategy)');
+console.log('✅ Service Worker v3.11.24 loaded (Network First Strategy)');
