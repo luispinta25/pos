@@ -11009,11 +11009,14 @@ _Sistema de Gestión Ferrisoluciones_`;
                 descripcion: query,
                 usuario_id: userId
             });
-            
+
             if (error) throw error;
 
             window.app?.showToast?.('Eventualidad registrada correctamente', 'success', 2000);
             cerrarModalEventualidad();
+            avisarEventualidadAlGrupo(query).catch((avisoError) => {
+                console.error('No se pudo avisar la eventualidad al grupo:', avisoError);
+            });
         } catch (error) {
             console.error('Error al guardar eventualidad:', error);
             window.app?.showToast?.('Error al registrar registro', 'error', 3000);
@@ -11021,6 +11024,176 @@ _Sistema de Gestión Ferrisoluciones_`;
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-check-circle"></i> REGISTRAR';
         }
+    }
+
+    // Lunes 00:00 (hora local) de la semana de `fecha`. La lista de
+    // eventualidades de "esta semana" es siempre [inicioSemana, ahora] — no
+    // se guarda en la base de datos, se recalcula cada vez con este límite,
+    // así se "reinicia" solo cada lunes sin tocar el esquema.
+    function inicioSemanaEventualidad(fecha) {
+        const d = new Date(fecha);
+        const dia = d.getDay();
+        const diff = (dia === 0 ? -6 : 1) - dia;
+        d.setDate(d.getDate() + diff);
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+
+    async function obtenerEventualidadesSemana() {
+        const db = window.app?.db;
+        const inicio = inicioSemanaEventualidad(new Date());
+        const { data, error } = await db
+            .from('ferre_eventualidades')
+            .select('descripcion, created_at')
+            .gte('created_at', inicio.toISOString())
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return (data || []).map((fila) => fila.descripcion);
+    }
+
+    function evCanvasLS(ctx, px) { try { ctx.letterSpacing = px + 'px'; } catch (e) { /* navegador sin soporte */ } }
+
+    function evFitCanvasFont(ctx, text, family, weight, maxPx, maxWidth) {
+        let px = maxPx;
+        while (px > 22) {
+            ctx.font = `${weight} ${px}px ${family}`;
+            if (ctx.measureText(text).width <= maxWidth) break;
+            px -= 2;
+        }
+        ctx.font = `${weight} ${px}px ${family}`;
+    }
+
+    function evWrapCanvasText(ctx, text, maxWidth, maxLines) {
+        const words = String(text).split(/\s+/).filter(Boolean);
+        const lines = [];
+        let current = '';
+        words.forEach((word) => {
+            const next = current ? current + ' ' + word : word;
+            if (ctx.measureText(next).width <= maxWidth) { current = next; return; }
+            if (current) lines.push(current);
+            current = word;
+        });
+        if (current) lines.push(current);
+        if (maxLines && lines.length > maxLines) {
+            lines.length = maxLines;
+            let last = lines[maxLines - 1];
+            while (ctx.measureText(last + '…').width > maxWidth && last.length > 1) {
+                last = last.slice(0, -1);
+            }
+            lines[maxLines - 1] = last + '…';
+        }
+        return lines;
+    }
+
+    function buildEventualidadImage(descripcion, contador, registrador) {
+        const S = 1080;
+        const canvas = document.createElement('canvas');
+        canvas.width = S;
+        canvas.height = S;
+        const ctx = canvas.getContext('2d');
+        const COND = 'Impact, Haettenschweiler, "Arial Narrow Bold", "Arial Narrow", "Helvetica Neue", sans-serif';
+        const SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+        const INK = '#171410';
+        const MUTED = '#6a6456';
+        const ACCENT = '#6c5ce7';
+        const ALERTA = '#e53e3e';
+
+        ctx.fillStyle = '#f4f1e9';
+        ctx.fillRect(0, 0, S, S);
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(41, 41, S - 82, S - 82);
+        ctx.fillStyle = ALERTA;
+        ctx.fillRect(41, 41, S - 82, 12);
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = MUTED;
+        evCanvasLS(ctx, 4);
+        ctx.font = `600 26px ${SANS}`;
+        ctx.fillText('FERRISOLUCIONES · MACHACHI', S / 2, 112);
+        evCanvasLS(ctx, 0);
+
+        ctx.fillStyle = ALERTA;
+        ctx.font = `800 34px ${SANS}`;
+        ctx.fillText('⚠ ALERTA', S / 2, 168);
+
+        ctx.fillStyle = INK;
+        evCanvasLS(ctx, 2);
+        evFitCanvasFont(ctx, 'NUEVA EVENTUALIDAD', COND, '400', 68, S - 140);
+        ctx.fillText('NUEVA EVENTUALIDAD', S / 2, 232);
+        evCanvasLS(ctx, 0);
+
+        ctx.strokeStyle = 'rgba(23,20,16,.32)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(160, 278);
+        ctx.lineTo(S - 160, 278);
+        ctx.stroke();
+
+        ctx.fillStyle = INK;
+        ctx.font = `700 42px ${SANS}`;
+        const lineas = evWrapCanvasText(ctx, descripcion, S - 200, 5);
+        let ny = 420 - (lineas.length - 1) * 28;
+        lineas.forEach((linea) => {
+            ctx.fillText(linea, S / 2, ny);
+            ny += 56;
+        });
+
+        ctx.fillStyle = MUTED;
+        ctx.font = `500 26px ${SANS}`;
+        ctx.fillText('Registra: ' + (registrador || '-'), S / 2, Math.max(ny + 26, 660));
+
+        ctx.fillStyle = ACCENT;
+        ctx.fillRect(0, 900, S, 180);
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 900);
+        ctx.lineTo(S, 900);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `700 20px ${SANS}`;
+        evCanvasLS(ctx, 2);
+        ctx.fillText('EVENTUALIDADES ESTA SEMANA', S / 2, 948);
+        evCanvasLS(ctx, 0);
+        ctx.font = `800 92px ${COND}`;
+        ctx.fillText(String(contador), S / 2, 1032);
+
+        return canvas.toDataURL('image/png');
+    }
+
+    function buildEventualidadMessage(registrador, lista) {
+        const lines = [
+            '🚨 *Nueva eventualidad registrada*',
+            '━━━━━━━━━━━━━━━━',
+            '📝 ' + (lista[0] || ''),
+            '🙋 *Registra:* ' + (registrador || '-'),
+            '',
+            `📋 *Eventualidades de esta semana (${lista.length}):*`
+        ];
+        lista.forEach((item) => lines.push('- ' + item));
+        return lines.join('\n');
+    }
+
+    async function avisarEventualidadAlGrupo(descripcion) {
+        if (typeof posApiRequest !== 'function') return;
+        const usuario = obtenerUsuarioActual();
+        const lista = await obtenerEventualidadesSemana();
+        const contador = lista.length;
+        const dataUrl = buildEventualidadImage(descripcion, contador, usuario?.nombre);
+        const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+        const mensaje = buildEventualidadMessage(usuario?.nombre, lista);
+        await posApiRequest('/api/whatsapp/send-media', {
+            method: 'POST',
+            body: JSON.stringify({
+                media: {
+                    mediatype: 'image', mimetype: 'image/png', media: base64,
+                    fileName: 'eventualidad.png', caption: mensaje, delay: 1000
+                }
+            })
+        });
     }
 
     // Exportar funciones

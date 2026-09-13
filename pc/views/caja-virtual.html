@@ -840,6 +840,13 @@ async function cvBuildTransferImage(p) {
     return canvas.toDataURL('image/png');
 }
 
+// No pide comprobante: no existe un comprobante bancario real de terceros
+// para una reclasificación entre cuentas propias (a diferencia de "Cambio de
+// dinero" o una venta por transferencia). Por eso las filas se guardan con
+// CV_TRANSFER_PLACEHOLDER_FOTO ya puesta y el mensaje no enlaza a
+// transferencias.ferrisoluciones.com.
+var CV_TRANSFER_PLACEHOLDER_FOTO = 'https://lpsupabase.luispintasolutions.com/storage/v1/object/public/ferrisoluciones/transferencias/placeholder-correccion-interna.png';
+
 function cvTransferMessageText(p) {
     var lines = [
         '🔄 *Transferencia entre cuentas*',
@@ -852,11 +859,7 @@ function cvTransferMessageText(p) {
     lines.push('📝 *Motivo:* ' + p.motivo);
     lines.push('👷 *Realiza:* ' + (p.realizador || '-'));
     lines.push('');
-    lines.push('📎 Verificar comprobante:');
-    lines.push('https://transferencias.ferrisoluciones.com/?v=' + p.codigoOrigen);
-    lines.push('https://transferencias.ferrisoluciones.com/?v=' + p.codigoDestino);
-    lines.push('');
-    lines.push('🔴 ⚠️ *VERIFICAR ESTE MOVIMIENTO CON COMPROBANTE O NO SE PODRÁ HACER EL CIERRE DE CAJA DIARIO*');
+    lines.push('ℹ️ Corrección interna entre cuentas propias — no requiere comprobante bancario.');
     return lines.join('\n');
 }
 
@@ -897,7 +900,7 @@ async function cvGuardarTransferCuentas() {
                 motivo: motivoFinal,
                 id_venta: codigoOrigen,
                 subido_por: realizador,
-                fotografia: null,
+                fotografia: CV_TRANSFER_PLACEHOLDER_FOTO,
                 metodo_transferencia_codigo: origen
             },
             {
@@ -907,7 +910,7 @@ async function cvGuardarTransferCuentas() {
                 motivo: motivoFinal,
                 id_venta: codigoDestino,
                 subido_por: realizador,
-                fotografia: null,
+                fotografia: CV_TRANSFER_PLACEHOLDER_FOTO,
                 metodo_transferencia_codigo: destino
             }
         ]);
