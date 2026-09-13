@@ -703,6 +703,7 @@ async function confirmarDevolucion() {
     const diferencia = Math.round((totalCambio - totalDevuelto) * 100) / 100;
     const tipo = devCambioItems.length > 0 ? 'CAMBIO' : 'DEVOLUCION';
 
+    let devolucionIdCreada = null;
     try {
         // 1. Crear cabecera ferre_devoluciones
         const idDevolucion = `DEV${Date.now()}`;
@@ -722,6 +723,7 @@ async function confirmarDevolucion() {
         if (devErr) throw devErr;
 
         const devolucionId = devData.id;
+        devolucionIdCreada = devolucionId;
 
         // 2. Insertar ferre_historial_devoluciones_detalle
         //    Los triggers DB se encargan de: subir stock y actualizar ventas_detalle.estado
@@ -746,6 +748,12 @@ async function confirmarDevolucion() {
         });
         const { error: ddErr } = await db.from('ferre_historial_devoluciones_detalle').insert(devDetalleRows);
         if (ddErr) throw ddErr;
+        // Ya se insertó el detalle real (stock/estado ya cambiaron vía
+        // trigger): de aquí en adelante un fallo ya no debe borrar la
+        // cabecera, sería ocultar un cambio real. Solo se revierte cuando
+        // el paso 2 falla y la cabecera quedaría huérfana sin efecto real
+        // (ver incidente venta S1789316109400, documentacion/cambios).
+        devolucionIdCreada = null;
 
         // 3. Insertar ferre_cambios_detalle (trigger DB baja el stock)
         if (devCambioItems.length > 0) {
@@ -786,6 +794,10 @@ async function confirmarDevolucion() {
         loadDevoluciones();
 
     } catch (err) {
+        if (devolucionIdCreada) {
+            const { error: cleanupErr } = await db.from('ferre_devoluciones').delete().eq('id', devolucionIdCreada);
+            if (cleanupErr) console.error('No se pudo limpiar la cabecera de devolución huérfana:', cleanupErr);
+        }
         showToast(`Error: ${err.message}`, 'error', 5000);
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmar'; }
     }
