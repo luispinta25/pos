@@ -11,6 +11,9 @@
                         <i class="fas fa-university" style="color:#3182ce;"></i> Caja Virtual
                     </h3>
                     <div style="display:flex;gap:6px;">
+                        <button id="cvTransferCuentasBtn" class="btn btn-sm" title="Transferir entre cuentas" style="display:none;background:#2b6cb0;color:#fff;border:none;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:.82em;">
+                            <i class="fas fa-right-left"></i> Transferir
+                        </button>
                         <button id="cvCambioBtn" class="btn btn-sm" title="Cambio de dinero" style="background:#9f7aea;color:#fff;border:none;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:.82em;">
                             <i class="fas fa-exchange-alt"></i> Cambio
                         </button>
@@ -124,6 +127,39 @@
         </div>
     </div>
 
+    <!-- Modal transferencia entre cuentas (solo admin) -->
+    <div id="cvTransferModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:16px; padding:28px; max-width:460px; width:92%; position:relative;">
+            <button id="cvTransferCloseBtn" style="position:absolute; top:14px; right:16px; background:none; border:none; font-size:1.3rem; color:#888; cursor:pointer;">×</button>
+            <h3 style="margin:0 0 6px; font-size:1.1em;"><i class="fas fa-right-left" style="color:#2b6cb0;"></i> Transferencia entre Cuentas</h3>
+            <p style="margin:0 0 18px; font-size:.8em; color:#888;">Corrige un movimiento registrado en la cuenta equivocada moviendo el dinero real entre tus bancos.</p>
+
+            <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Cuenta origen (de donde sale) *</label>
+            <select id="cvTransferOrigen" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.92em;margin-bottom:12px;box-sizing:border-box;">
+                <option value="">Selecciona la cuenta origen</option>
+            </select>
+
+            <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Cuenta destino (a donde entra) *</label>
+            <select id="cvTransferDestino" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.92em;margin-bottom:12px;box-sizing:border-box;">
+                <option value="">Selecciona la cuenta destino</option>
+            </select>
+
+            <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Monto ($) *</label>
+            <input id="cvTransferMonto" type="number" placeholder="0.00" step="0.01" min="0.01" style="width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:8px;font-size:1.3em;text-align:center;margin-bottom:12px;box-sizing:border-box;">
+
+            <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Venta u operación relacionada (opcional)</label>
+            <input id="cvTransferReferencia" type="text" placeholder="Ej: S1784333429121" autocomplete="off" style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.92em;margin-bottom:12px;box-sizing:border-box;">
+
+            <label style="font-size:.8em;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Motivo *</label>
+            <textarea id="cvTransferMotivo" rows="2" placeholder="Ej: la venta se registró en Pichincha por error, el cliente transfirió a Deuna" style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.9em;margin-bottom:20px;box-sizing:border-box;resize:vertical;"></textarea>
+
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button id="cvTransferCancelBtn" style="padding:9px 20px;border:1px solid #e2e8f0;background:#fff;border-radius:8px;cursor:pointer;font-size:.9em;">Cancelar</button>
+                <button id="cvTransferSaveBtn" style="padding:9px 20px;background:#2b6cb0;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.9em;font-weight:600;"><i class="fas fa-right-left"></i> Transferir</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal detalle -->
     <div id="cvDetalleModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; align-items:center; justify-content:center;">
         <div style="background:#fff; border-radius:16px; padding:28px; max-width:520px; width:92%; max-height:88vh; overflow-y:auto; position:relative;">
@@ -178,7 +214,20 @@ function initCajaVirtual() {
         balanceControls.style.display = 'flex';
         showBalances.addEventListener('change', cvSaveShowBalances);
         consolidateBanks.addEventListener('change', cvSaveConsolidation);
+
+        document.getElementById('cvTransferCuentasBtn').style.display = 'inline-flex';
+        document.getElementById('cvTransferCuentasBtn').addEventListener('click', cvOpenTransferCuentas);
     }
+
+    document.getElementById('cvTransferCloseBtn').addEventListener('click', cvCloseTransferCuentas);
+    document.getElementById('cvTransferCancelBtn').addEventListener('click', cvCloseTransferCuentas);
+    document.getElementById('cvTransferModal').addEventListener('click', function(e) {
+        if (e.target === this) cvCloseTransferCuentas();
+    });
+    document.getElementById('cvTransferOrigen').addEventListener('change', function() {
+        cvPopulateTransferDestino();
+    });
+    document.getElementById('cvTransferSaveBtn').addEventListener('click', cvGuardarTransferCuentas);
 
     document.getElementById('cvDetalleCloseBtn').addEventListener('click', cvCloseDetalle);
     document.getElementById('cvDetalleModal').addEventListener('click', function(e) {
@@ -494,6 +543,428 @@ async function cvGuardarCambio() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save"></i> Registrar';
+    }
+}
+
+// =====================================================
+// TRANSFERENCIA ENTRE CUENTAS (solo admin)
+// Corrige un movimiento (p. ej. una venta) que quedó registrado en el banco
+// equivocado: mueve el monto real entre dos cuentas propias, dejando un
+// egreso en la cuenta origen y un ingreso en la destino (nunca toca caja
+// física, por eso usa el prefijo 'T' y no 'C' — ver getCambiosDineroResumen
+// en Caja Diaria, que solo trata como movimiento de efectivo los códigos 'C').
+// =====================================================
+
+function cvOpenTransferCuentas() {
+    document.getElementById('cvTransferMonto').value = '';
+    document.getElementById('cvTransferReferencia').value = '';
+    document.getElementById('cvTransferMotivo').value = '';
+    cvPopulateTransferOrigen();
+    cvPopulateTransferDestino();
+    document.getElementById('cvTransferModal').style.display = 'flex';
+}
+
+function cvCloseTransferCuentas() {
+    document.getElementById('cvTransferModal').style.display = 'none';
+}
+
+function cvTransferAccounts() {
+    return cvBankBalancesData.filter(function(b) { return b.metodo_transferencia_codigo; });
+}
+
+function cvTransferOptionsHtml(accounts, excludeCode) {
+    return '<option value="">Selecciona la cuenta</option>' + accounts
+        .filter(function(b) { return b.metodo_transferencia_codigo !== excludeCode; })
+        .map(function(b) {
+            return '<option value="' + cvEsc(b.metodo_transferencia_codigo) + '">' + cvEsc(b.nombre) + ' (' + formatCurrency(b.saldo) + ')</option>';
+        }).join('');
+}
+
+function cvPopulateTransferOrigen() {
+    var select = document.getElementById('cvTransferOrigen');
+    var previous = select.value;
+    var accounts = cvTransferAccounts();
+    select.innerHTML = cvTransferOptionsHtml(accounts, null);
+    if (accounts.some(function(b) { return b.metodo_transferencia_codigo === previous; })) select.value = previous;
+}
+
+function cvPopulateTransferDestino() {
+    var origen = document.getElementById('cvTransferOrigen').value;
+    var select = document.getElementById('cvTransferDestino');
+    var previous = select.value;
+    var accounts = cvTransferAccounts();
+    select.innerHTML = cvTransferOptionsHtml(accounts, origen || null);
+    if (previous !== origen && accounts.some(function(b) { return b.metodo_transferencia_codigo === previous; })) select.value = previous;
+}
+
+async function cvGenCodigosTransfer(cantidad) {
+    var res = await db.from('ferre_transferencias')
+        .select('id_venta')
+        .like('id_venta', 'T%')
+        .order('id_venta', { ascending: false })
+        .limit(1);
+    var num = 1;
+    if (res.data && res.data.length && res.data[0].id_venta) {
+        var parsed = parseInt(res.data[0].id_venta.slice(1), 10);
+        if (!isNaN(parsed)) num = parsed + 1;
+    }
+    var codigos = [];
+    for (var i = 0; i < cantidad; i++) codigos.push('T' + String(num + i).padStart(5, '0'));
+    return codigos;
+}
+
+// Busca el id_message de WhatsApp ya guardado para la venta/operación
+// relacionada (columna id_venta en ferre_transferencias), para poder
+// responder EN ese hilo en vez de mandar un mensaje suelto.
+async function cvFindReferenceMessageId(referencia) {
+    if (!referencia) return null;
+    try {
+        var res = await db.from('ferre_transferencias')
+            .select('id_message')
+            .eq('id_venta', referencia)
+            .not('id_message', 'is', null)
+            .limit(1);
+        if (res.error || !res.data || !res.data.length) return null;
+        return res.data[0].id_message || null;
+    } catch (e) {
+        console.error('No se pudo buscar el mensaje relacionado', e);
+        return null;
+    }
+}
+
+// ---- Imagen del aviso (canvas): logos de banco + flecha, instructivo -------
+// Mismo estilo de "ficha" que usa Inventario y Compras para sus avisos al
+// grupo (fondo crema, filete superior, tipografía condensada, franja inferior
+// con saldos antes/después).
+function cvCanvasLS(ctx, px) { try { ctx.letterSpacing = px + 'px'; } catch (e) { /* navegador sin soporte */ } }
+
+function cvInkOn(hex) {
+    var rgb = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)]
+        .map(function(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) < 0.45 ? '#ffffff' : '#171410';
+}
+
+function cvFitCanvasFont(ctx, text, family, weight, maxPx, maxWidth) {
+    var px = maxPx;
+    while (px > 22) {
+        ctx.font = weight + ' ' + px + 'px ' + family;
+        if (ctx.measureText(text).width <= maxWidth) break;
+        px -= 2;
+    }
+    ctx.font = weight + ' ' + px + 'px ' + family;
+}
+
+function cvWrapCanvasText(ctx, text, maxWidth) {
+    var words = String(text).split(/\s+/).filter(Boolean);
+    var lines = [];
+    var current = '';
+    words.forEach(function(word) {
+        var next = current ? current + ' ' + word : word;
+        if (ctx.measureText(next).width <= maxWidth) { current = next; return; }
+        if (current) lines.push(current);
+        current = word;
+    });
+    if (current) lines.push(current);
+    return lines;
+}
+
+function cvLoadImageSafe(url) {
+    return new Promise(function(resolve) {
+        if (!url) { resolve(null); return; }
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        var done = false;
+        var timer = setTimeout(function() { if (!done) { done = true; resolve(null); } }, 4000);
+        img.onload = function() { if (!done) { done = true; clearTimeout(timer); resolve(img); } };
+        img.onerror = function() { if (!done) { done = true; clearTimeout(timer); resolve(null); } };
+        img.src = url;
+    });
+}
+
+function cvDrawLogoCircle(ctx, img, cx, cy, r, fallbackLabel, fallbackColor) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r - 4, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    if (img) {
+        var size = (r - 4) * 2;
+        var scale = Math.max(size / img.width, size / img.height);
+        var w = img.width * scale, h = img.height * scale;
+        ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
+    } else {
+        ctx.fillStyle = fallbackColor || '#3182ce';
+        ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '700 34px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(fallbackLabel || '?').charAt(0).toUpperCase(), cx, cy + 2);
+    }
+    ctx.restore();
+}
+
+function cvDrawArrow(ctx, x1, x2, y, color) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 7;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2 - 20, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2 - 24, y - 16);
+    ctx.lineTo(x2, y);
+    ctx.lineTo(x2 - 24, y + 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+async function cvBuildTransferImage(p) {
+    var S = 1080;
+    var canvas = document.createElement('canvas');
+    canvas.width = S;
+    canvas.height = S;
+    var ctx = canvas.getContext('2d');
+    var COND = 'Impact, Haettenschweiler, "Arial Narrow Bold", "Arial Narrow", "Helvetica Neue", sans-serif';
+    var SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+    var INK = '#171410';
+    var MUTED = '#6a6456';
+    var ACCENT = '#2b6cb0';
+
+    ctx.fillStyle = '#f4f1e9';
+    ctx.fillRect(0, 0, S, S);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(41, 41, S - 82, S - 82);
+    ctx.fillStyle = '#d4a017';
+    ctx.fillRect(41, 41, S - 82, 12);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = MUTED;
+    cvCanvasLS(ctx, 4);
+    ctx.font = '600 26px ' + SANS;
+    ctx.fillText('FERRISOLUCIONES · MACHACHI', S / 2, 110);
+
+    ctx.fillStyle = INK;
+    cvCanvasLS(ctx, 3);
+    cvFitCanvasFont(ctx, 'TRANSFERENCIA ENTRE CUENTAS', COND, '400', 66, S - 140);
+    ctx.fillText('TRANSFERENCIA ENTRE CUENTAS', S / 2, 180);
+    cvCanvasLS(ctx, 0);
+
+    var logoY = 380;
+    var r = 85;
+    var images = await Promise.all([
+        cvLoadImageSafe(p.origen && p.origen.logo_url),
+        cvLoadImageSafe(p.destino && p.destino.logo_url)
+    ]);
+    ctx.fillStyle = MUTED;
+    ctx.font = '600 22px ' + SANS;
+    ctx.fillText('SALE', 260, logoY - r - 30);
+    ctx.fillText('ENTRA', S - 260, logoY - r - 30);
+
+    cvDrawLogoCircle(ctx, images[0], 260, logoY, r, p.origen && p.origen.nombre, '#3182ce');
+    cvDrawLogoCircle(ctx, images[1], S - 260, logoY, r, p.destino && p.destino.nombre, '#38a169');
+    cvDrawArrow(ctx, 260 + r + 26, S - 260 - r - 26, logoY, ACCENT);
+
+    ctx.fillStyle = INK;
+    ctx.font = '700 28px ' + SANS;
+    ctx.fillText(String((p.origen && p.origen.nombre) || '-').toUpperCase(), 260, logoY + r + 42);
+    ctx.fillText(String((p.destino && p.destino.nombre) || '-').toUpperCase(), S - 260, logoY + r + 42);
+
+    ctx.strokeStyle = 'rgba(23,20,16,.32)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(180, 545);
+    ctx.lineTo(S - 180, 545);
+    ctx.stroke();
+
+    ctx.fillStyle = ACCENT;
+    cvCanvasLS(ctx, 1);
+    cvFitCanvasFont(ctx, formatCurrency(p.monto), COND, '400', 130, S - 220);
+    ctx.fillText(formatCurrency(p.monto), S / 2, 625);
+    cvCanvasLS(ctx, 0);
+
+    var textY = 705;
+    if (p.referencia) {
+        ctx.fillStyle = MUTED;
+        ctx.font = '600 26px ' + SANS;
+        ctx.fillText('Relacionado a: ' + p.referencia, S / 2, textY);
+        textY += 40;
+    }
+    ctx.fillStyle = INK;
+    ctx.font = '500 25px ' + SANS;
+    cvWrapCanvasText(ctx, p.motivo || '', S - 220).slice(0, 3).forEach(function(line) {
+        ctx.fillText(line, S / 2, textY);
+        textY += 32;
+    });
+
+    ctx.fillStyle = ACCENT;
+    ctx.fillRect(0, 900, S, 180);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 900);
+    ctx.lineTo(S, 900);
+    ctx.stroke();
+
+    var ink = cvInkOn(ACCENT);
+    ctx.fillStyle = ink;
+    ctx.textAlign = 'left';
+    cvCanvasLS(ctx, 2);
+    ctx.font = '700 18px ' + SANS;
+    ctx.fillText('SALDO ORIGEN', 70, 942);
+    ctx.fillText('SALDO DESTINO', 70, 1030);
+    cvCanvasLS(ctx, 0);
+
+    ctx.textAlign = 'right';
+    ctx.font = '600 32px ' + COND;
+    if (p.saldoOrigenAntes !== null && p.saldoOrigenDespues !== null) {
+        ctx.fillText(formatCurrency(p.saldoOrigenAntes) + ' → ' + formatCurrency(p.saldoOrigenDespues), S - 70, 942);
+    }
+    if (p.saldoDestinoAntes !== null && p.saldoDestinoDespues !== null) {
+        ctx.fillText(formatCurrency(p.saldoDestinoAntes) + ' → ' + formatCurrency(p.saldoDestinoDespues), S - 70, 1030);
+    }
+
+    return canvas.toDataURL('image/png');
+}
+
+function cvTransferMessageText(p) {
+    var lines = [
+        '🔄 *Transferencia entre cuentas*',
+        '━━━━━━━━━━━━━━━━',
+        '📤 *Sale de:* ' + (p.origenNombre || '-'),
+        '📥 *Entra a:* ' + (p.destinoNombre || '-'),
+        '💵 *Monto:* ' + formatCurrency(p.monto)
+    ];
+    if (p.referencia) lines.push('🔗 *Relacionado a:* ' + p.referencia);
+    lines.push('📝 *Motivo:* ' + p.motivo);
+    lines.push('👷 *Realiza:* ' + (p.realizador || '-'));
+    lines.push('');
+    lines.push('📎 Verificar comprobante:');
+    lines.push('https://transferencias.ferrisoluciones.com/?v=' + p.codigoOrigen);
+    lines.push('https://transferencias.ferrisoluciones.com/?v=' + p.codigoDestino);
+    lines.push('');
+    lines.push('🔴 ⚠️ *VERIFICAR ESTE MOVIMIENTO CON COMPROBANTE O NO SE PODRÁ HACER EL CIERRE DE CAJA DIARIO*');
+    return lines.join('\n');
+}
+
+async function cvGuardarTransferCuentas() {
+    var origen    = document.getElementById('cvTransferOrigen').value;
+    var destino   = document.getElementById('cvTransferDestino').value;
+    var monto     = parseFloat(document.getElementById('cvTransferMonto').value);
+    var referencia = document.getElementById('cvTransferReferencia').value.trim();
+    var motivo    = document.getElementById('cvTransferMotivo').value.trim();
+
+    if (!origen)  { alert('Selecciona la cuenta origen'); return; }
+    if (!destino) { alert('Selecciona la cuenta destino'); return; }
+    if (origen === destino) { alert('La cuenta origen y destino deben ser distintas'); return; }
+    if (!monto || monto <= 0) { alert('Ingresa un monto válido'); return; }
+    if (!motivo) { alert('Ingresa el motivo de la transferencia'); return; }
+
+    var btn = document.getElementById('cvTransferSaveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Transfiriendo...';
+
+    try {
+        var cuentaOrigen  = cvBankBalancesData.find(function(b) { return b.metodo_transferencia_codigo === origen; });
+        var cuentaDestino = cvBankBalancesData.find(function(b) { return b.metodo_transferencia_codigo === destino; });
+        var realizador = localStorage.getItem('userNombres') || '';
+        var ahora = new Date();
+        var codigos = await cvGenCodigosTransfer(2);
+        var codigoOrigen = codigos[0], codigoDestino = codigos[1];
+        var motivoFinal = 'Transferencia entre cuentas ' + (cuentaOrigen ? cuentaOrigen.nombre : origen)
+            + ' → ' + (cuentaDestino ? cuentaDestino.nombre : destino)
+            + (referencia ? ', relacionado a ' + referencia : '')
+            + '. Motivo: ' + motivo + '. Realiza: ' + realizador + '.';
+
+        var ins = await db.from('ferre_transferencias').insert([
+            {
+                fechahora: ahora.toISOString(),
+                caso: 'egreso',
+                monto: monto,
+                motivo: motivoFinal,
+                id_venta: codigoOrigen,
+                subido_por: realizador,
+                fotografia: null,
+                metodo_transferencia_codigo: origen
+            },
+            {
+                fechahora: ahora.toISOString(),
+                caso: 'ingreso',
+                monto: monto,
+                motivo: motivoFinal,
+                id_venta: codigoDestino,
+                subido_por: realizador,
+                fotografia: null,
+                metodo_transferencia_codigo: destino
+            }
+        ]);
+        if (ins.error) throw ins.error;
+
+        cvCloseTransferCuentas();
+        cvLoad();
+        if (window.app && typeof window.app.showToast === 'function') {
+            window.app.showToast('Transferencia entre cuentas registrada', 'success', 2200);
+        }
+
+        // Aviso al grupo con imagen (logos + flecha) — no bloqueante: si falla,
+        // el movimiento ya quedó registrado.
+        try {
+            var saldoOrigenAntes  = cuentaOrigen  ? Number(cuentaOrigen.saldo)  : null;
+            var saldoDestinoAntes = cuentaDestino ? Number(cuentaDestino.saldo) : null;
+            var imgParams = {
+                origen: cuentaOrigen, destino: cuentaDestino, monto: monto, motivo: motivo, referencia: referencia,
+                saldoOrigenAntes: saldoOrigenAntes,
+                saldoOrigenDespues: saldoOrigenAntes !== null ? saldoOrigenAntes - monto : null,
+                saldoDestinoAntes: saldoDestinoAntes,
+                saldoDestinoDespues: saldoDestinoAntes !== null ? saldoDestinoAntes + monto : null
+            };
+            var dataUrl = await cvBuildTransferImage(imgParams);
+            var base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+            var mensaje = cvTransferMessageText({
+                origenNombre: cuentaOrigen ? cuentaOrigen.nombre : origen,
+                destinoNombre: cuentaDestino ? cuentaDestino.nombre : destino,
+                monto: monto, motivo: motivo, referencia: referencia, realizador: realizador,
+                codigoOrigen: codigoOrigen, codigoDestino: codigoDestino
+            });
+            // Si la venta/operación relacionada ya tiene su propio aviso en el
+            // grupo, la corrección responde a ESE mensaje (mismo mecanismo que
+            // usa transfer-proof.js al confirmar un comprobante) — así queda
+            // junto al mensaje original en la conversación, no suelta.
+            var quotedId = await cvFindReferenceMessageId(referencia);
+            await posApiRequest('/api/whatsapp/send-media', {
+                method: 'POST',
+                body: JSON.stringify(Object.assign({
+                    media: {
+                        mediatype: 'image', mimetype: 'image/png', media: base64,
+                        fileName: 'transferencia-cuentas.png', caption: mensaje, delay: 1000
+                    },
+                    linkTransferCodigos: [codigoOrigen, codigoDestino]
+                }, quotedId ? { quoted: { key: { id: quotedId } } } : {}))
+            });
+        } catch (avisoErr) {
+            console.error('Error aviso transferencia entre cuentas', avisoErr);
+            if (window.app && typeof window.app.showToast === 'function') {
+                window.app.showToast('Transferencia registrada, pero falló el aviso al grupo.', 'error', 3200);
+            }
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-right-left"></i> Transferir';
     }
 }
 
