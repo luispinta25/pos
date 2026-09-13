@@ -4593,13 +4593,19 @@
             modal.classList.add('active');
         }
 
+        // Se elimina del DOM (no solo se oculta): estos modales se anexan a
+        // document.body (fuera de #moduleContainer) para tener el z-index
+        // correcto, así que si solo se les quitara la clase "active"
+        // sobrevivirían al cambio de módulo -- al reemplazarse el HTML de
+        // ventas.html (con su <style> del modal) por el del siguiente módulo,
+        // quedarían huérfanos y sin estilo, mostrando la imagen cruda debajo
+        // del contenido nuevo. Ver también la limpieza defensiva en
+        // loadModule() (app.js) para cuando se navega sin cerrar el modal.
         function cerrarModalComprobante() {
-            const modal = document.getElementById('modalComprobanteTransfer');
-            if (modal) modal.classList.remove('active');
+            document.getElementById('modalComprobanteTransfer')?.remove();
         }
         function cerrarModalSinComprobante() {
-            const modal = document.getElementById('modalSinComprobante');
-            if (modal) modal.classList.remove('active');
+            document.getElementById('modalSinComprobante')?.remove();
         }
 
         // =====================================================

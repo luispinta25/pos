@@ -122,6 +122,14 @@ async function loadModule(moduleName) {
         // Mostrar loading rediseñado
         const container = document.getElementById('moduleContainer');
         document.getElementById('btnWhatsappBannerFlotante')?.remove();
+        // Modales de "ver comprobante" (ventas.html) se anexan a document.body
+        // para el z-index correcto y quedan fuera de #moduleContainer -- si el
+        // usuario navega a otro módulo sin cerrarlos explícitamente, sobreviven
+        // al cambio de módulo y, al perder el <style> que traía la vista
+        // anterior, se ven como una imagen cruda sin overlay debajo del
+        // contenido nuevo. Se limpian aquí en cada cambio de módulo por si acaso.
+        document.getElementById('modalComprobanteTransfer')?.remove();
+        document.getElementById('modalSinComprobante')?.remove();
         document.body.classList.toggle('chat-module-active', moduleName === 'chat');
         if (window.__posChatRefreshInterval && moduleName !== 'chat') {
             clearInterval(window.__posChatRefreshInterval);
