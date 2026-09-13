@@ -2982,12 +2982,24 @@
                     }
                 }
 
+                // Nombres de banco para mostrar en el detalle (si la venta
+                // tiene metodo_transferencia_codigo). Un fallo aquí no debe
+                // impedir ver la venta -- nombreBancoPorCodigo cae al código.
+                if (venta.metodo_transferencia_codigo) {
+                    try { await obtenerMetodosTransferencia(); } catch (e) { /* usa el código tal cual */ }
+                }
+
                 // Renderizar modal
                 mostrarModalDetalle(venta, detalles, productosMap);
 
             } catch (error) {
                 window.app.showToast('Error al cargar detalle de venta', 'danger', 3000);
             }
+        }
+
+        function nombreBancoPorCodigo(codigo) {
+            const metodo = (_metodosTransferenciaCache || []).find((m) => m.codigo === codigo);
+            return metodo ? metodo.nombre : codigo;
         }
 
         function mostrarModalDetalle(venta, detalles, productosMap) {
@@ -3020,6 +3032,12 @@
                         <label>Tipo de pago</label>
                         <div class="value">${venta.tipo_pago || 'SIN DEFINIR'}</div>
                     </div>
+                    ${venta.metodo_transferencia_codigo ? `
+                    <div class="detalle-info-item">
+                        <label>Banco</label>
+                        <div class="value">${nombreBancoPorCodigo(venta.metodo_transferencia_codigo)}</div>
+                    </div>
+                    ` : ''}
                     ${venta.usuario_email ? `
                     <div class="detalle-info-item">
                         <label>Vendedor</label>
@@ -3088,6 +3106,11 @@
             document.getElementById('modalDetalleVenta').classList.add('active');
         }
 
+        function esAdminVentas() {
+            const role = String(localStorage.getItem('userRole') || '').toLowerCase();
+            return role === 'admin' || role === 'administrador';
+        }
+
         function generarBotonesAccion(venta) {
             const tipo = venta.tipo;
             const estado = String(venta.estado || '').toUpperCase();
@@ -3120,8 +3143,9 @@
             }
 
             const estadoPermiteConversion = !['DEVUELTO', 'ANULADO', 'ANULADA', 'GUARDANDO'].includes(estado);
+            const esAdmin = esAdminVentas();
             const pagoConvertible = ['', 'EFECTIVO'].includes(tipoPago);
-            if (estadoPermiteConversion && pagoConvertible && Number(venta.total) > 0) {
+            if (estadoPermiteConversion && pagoConvertible && Number(venta.total) > 0 && esAdmin) {
                 botones += `
                 <button class="btn btn-accent" onclick="convertirVentaATransferencia(this)">
                     <i class="fas fa-money-bill-transfer"></i> Convertir a transferencia
@@ -3129,19 +3153,44 @@
                 `;
             }
 
+            // Corregir banco: la venta ya se registró como transferencia pero
+            // el vendedor eligió la cuenta equivocada. A diferencia de
+            // "Transferencia entre cuentas" (Caja Virtual), aquí NO se mueve
+            // dinero real -- es un error de digitación, el cliente sí
+            // transfirió a la cuenta correcta. Solo cambia el dato; el
+            // trigger ferre_sincronizar_transferencia_venta propaga el nuevo
+            // banco a la fila de ferre_transferencias ya existente.
+            const tieneBanco = tipoPago === 'TRANSFERENCIA' || tipoPago === 'MIXTO';
+            if (estadoPermiteConversion && tieneBanco && esAdmin) {
+                botones += `
+                <button class="btn btn-secondary" onclick="corregirBancoVenta(this)">
+                    <i class="fas fa-building-columns"></i> Corregir banco
+                </button>
+                `;
+            }
+
             return botones;
         }
 
-        async function seleccionarBancoParaConversion() {
+        let _metodosTransferenciaCache = null;
+
+        async function obtenerMetodosTransferencia() {
+            if (_metodosTransferenciaCache) return _metodosTransferenciaCache;
             const response = await posApiRequest('/api/payment-methods/transfer', { method: 'GET' });
-            const methods = Array.isArray(response?.data) ? response.data : [];
+            _metodosTransferenciaCache = Array.isArray(response?.data) ? response.data : [];
+            return _metodosTransferenciaCache;
+        }
+
+        async function seleccionarBancoParaConversion(excluirCodigo) {
+            const todos = await obtenerMetodosTransferencia();
+            const methods = excluirCodigo ? todos.filter((m) => m.codigo !== excluirCodigo) : todos;
             if (!methods.length) throw new Error('No hay cuentas bancarias disponibles para recibir el cobro.');
 
             return new Promise((resolve) => {
                 const esc = (value) => String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
                 const overlay = document.createElement('div');
-                overlay.style.cssText = 'position:fixed;inset:0;z-index:12050;background:rgba(15,18,20,.68);display:grid;place-items:center;padding:20px';
+                overlay.style.cssText = 'position:fixed;inset:0;z-index:2000000;background:rgba(15,18,20,.68);display:grid;place-items:center;padding:20px';
                 overlay.innerHTML = `<section role="dialog" aria-modal="true" aria-labelledby="conversionBankTitle" style="width:min(620px,100%);max-height:88vh;overflow:auto;background:#fff;border-radius:8px;padding:22px;box-shadow:0 20px 55px rgba(0,0,0,.28)">
                     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid #e2e6ea;padding-bottom:14px;margin-bottom:16px">
                         <div><small style="display:block;color:#936b00;font-weight:800">CUENTA DE DESTINO</small><h3 id="conversionBankTitle" style="margin:3px 0 0">¿En qué banco se recibió?</h3></div>
@@ -3221,6 +3270,63 @@
             } catch (error) {
                 console.error('Error convirtiendo venta a transferencia:', error);
                 window.app.showToast(error.message || 'No se pudo convertir la venta', 'danger', 5000);
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = original;
+                }
+            }
+        }
+
+        // Corrige el banco de una venta que YA es transferencia/mixto pero se
+        // digitó con la cuenta equivocada (el cliente sí transfirió a la
+        // cuenta correcta -- no hay dinero real que mover, a diferencia de
+        // "Transferencia entre cuentas" en Caja Virtual). Solo cambia
+        // ferre_ventas.metodo_transferencia_codigo; el trigger
+        // ferre_sincronizar_transferencia_venta propaga el cambio a la fila
+        // ya existente en ferre_transferencias.
+        async function corregirBancoVenta(button) {
+            const venta = window.ventaActual?.venta;
+            if (!venta) return;
+
+            let banco;
+            try {
+                banco = await seleccionarBancoParaConversion(venta.metodo_transferencia_codigo);
+            } catch (error) {
+                window.app.showToast(error.message || 'No se pudieron cargar los bancos', 'danger', 5000);
+                return;
+            }
+            if (!banco) return;
+
+            const bancoAnterior = nombreBancoPorCodigo(venta.metodo_transferencia_codigo);
+            const bancoNombre = String(banco.nombre || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const confirmado = await showCustomConfirm(
+                `La venta <strong>${venta.id_venta}</strong> quedará registrada en <strong>${bancoNombre}</strong> en vez de <strong>${bancoAnterior}</strong>. Es solo una corrección de datos: no mueve dinero real entre bancos.`,
+                'Corregir banco',
+                'Corregir',
+                'Cancelar'
+            );
+            if (!confirmado) return;
+
+            const original = button?.innerHTML;
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Corrigiendo...';
+            }
+
+            try {
+                const db = window.app.db;
+                const { error } = await db.from('ferre_ventas')
+                    .update({ metodo_transferencia_codigo: banco.codigo })
+                    .eq('id', venta.id);
+                if (error) throw error;
+
+                window.app.showToast('Banco corregido correctamente', 'success', 3500);
+                await cargarVentas();
+                await verDetalleVenta(venta.id);
+            } catch (error) {
+                console.error('Error corrigiendo banco de la venta:', error);
+                window.app.showToast(error.message || 'No se pudo corregir el banco', 'danger', 5000);
                 if (button) {
                     button.disabled = false;
                     button.innerHTML = original;
@@ -4854,6 +4960,7 @@
         window.filtrarDashboard = filtrarDashboard;
         window.mostrarTopProductos = mostrarTopProductos;
         window.cerrarModalTop = cerrarModalTop;
+        window.corregirBancoVenta = corregirBancoVenta;
         window.verComprobanteTransferencia = verComprobanteTransferencia;
         window.mostrarModalComprobante = mostrarModalComprobante;
         window.mostrarModalSinComprobante = mostrarModalSinComprobante;
