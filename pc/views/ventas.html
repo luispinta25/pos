@@ -1407,6 +1407,89 @@
         }
 
         // =====================================================
+        // TOTAL AJUSTADO POR DEVOLUCIONES
+        // =====================================================
+        // ferre_ventas.total NUNCA se actualiza cuando hay una devolución
+        // parcial (el flujo de devoluciones solo inserta historial, no hace
+        // UPDATE sobre la venta) -- así que "total" siempre queda con el
+        // valor original, aunque parte se haya devuelto. El "total ajustado"
+        // se calcula al vuelo como total + SUM(ferre_devoluciones.diferencia)
+        // para esa venta (diferencia = total_cobrado - total_devuelto, ya
+        // existe en la tabla y cubre tanto devoluciones puras como cambios).
+        // Se anexa como venta._totalAjustado a cada fila para no tener que
+        // repetir la consulta/cálculo en cada función que muestra o suma
+        // totales. Ver documentacion/incidentes/devoluciones/20260913_devolucion_parcial_triplicada.md.
+        function _aplicarDiferencias(lista, devoluciones) {
+            lista.forEach(v => { v._totalAjustado = parseFloat(v.total || 0); });
+            const diferenciaPorVenta = new Map();
+            (devoluciones || []).forEach(d => {
+                diferenciaPorVenta.set(d.id_venta, (diferenciaPorVenta.get(d.id_venta) || 0) + parseFloat(d.diferencia || 0));
+            });
+            lista.forEach(v => {
+                const diferencia = diferenciaPorVenta.get(v.id_venta);
+                if (diferencia) v._totalAjustado = Math.round((parseFloat(v.total || 0) + diferencia) * 100) / 100;
+            });
+            return lista;
+        }
+
+        async function anexarTotalesAjustados(ventasArray) {
+            const lista = ventasArray || [];
+            const idVentas = [...new Set(lista.map(v => v.id_venta).filter(Boolean))];
+            if (!idVentas.length) { lista.forEach(v => { v._totalAjustado = parseFloat(v.total || 0); }); return lista; }
+            try {
+                const { data, error } = await window.app.db
+                    .from('ferre_devoluciones')
+                    .select('id_venta, diferencia')
+                    .in('id_venta', idVentas);
+                if (error) throw error;
+                _aplicarDiferencias(lista, data);
+            } catch (error) {
+                console.error('No se pudieron cargar devoluciones para ajustar totales:', error);
+                lista.forEach(v => { v._totalAjustado = parseFloat(v.total || 0); });
+            }
+            return lista;
+        }
+
+        // Variante para listas grandes (histórico de varios meses): en vez de
+        // un .in(id_venta) con potencialmente miles de valores (riesgo de URL
+        // demasiado larga), trae las devoluciones por rango de fecha -- ya
+        // que la consulta de ventas tampoco tiene límite superior de fecha,
+        // toda devolución posterior a `desde` queda cubierta igual.
+        async function anexarTotalesAjustadosPorRango(ventasArray, desdeISO) {
+            const lista = ventasArray || [];
+            try {
+                const { data, error } = await window.app.db
+                    .from('ferre_devoluciones')
+                    .select('id_venta, diferencia')
+                    .gte('created_at', desdeISO);
+                if (error) throw error;
+                _aplicarDiferencias(lista, data);
+            } catch (error) {
+                console.error('No se pudieron cargar devoluciones para ajustar totales (rango):', error);
+                lista.forEach(v => { v._totalAjustado = parseFloat(v.total || 0); });
+            }
+            return lista;
+        }
+
+        function totalVenta(venta) {
+            return venta && venta._totalAjustado !== undefined ? venta._totalAjustado : parseFloat(venta?.total || 0);
+        }
+
+        function ventaTieneAjuste(venta) {
+            return venta && venta._totalAjustado !== undefined && Math.abs(venta._totalAjustado - parseFloat(venta.total || 0)) > 0.004;
+        }
+
+        // Devuelve el HTML del total: si hubo devolución, precio original
+        // tachado + total ajustado en su lugar; si no, solo el total normal.
+        function renderTotalConAjuste(venta, claseNormal, claseTachado, claseAjustado) {
+            if (!ventaTieneAjuste(venta)) {
+                return `<span class="${claseNormal}">${window.app.formatCurrency(venta.total)}</span>`;
+            }
+            return `<span class="${claseTachado}" style="text-decoration:line-through;opacity:.6;font-size:.85em;">${window.app.formatCurrency(venta.total)}</span> `
+                + `<span class="${claseAjustado}" style="color:#c53030;">${window.app.formatCurrency(venta._totalAjustado)}</span>`;
+        }
+
+        // =====================================================
         // CARGA DE DATOS
         // =====================================================
 
@@ -1446,7 +1529,7 @@
 
                 if (error) throw error;
 
-                ventasState.ventas = data || [];
+                ventasState.ventas = await anexarTotalesAjustados(data || []);
 
                 // Renderizar gallery
                 renderizarVentasGallery();
@@ -1560,7 +1643,7 @@
                             <i class="fas fa-file-image"></i>
                         </button>
                         ` : ''}
-                        <div class="venta-total">${window.app.formatCurrency(venta.total)}</div>
+                        <div class="venta-total">${renderTotalConAjuste(venta, 'venta-total-normal', 'venta-total-original', 'venta-total-ajustado')}</div>
                     </div>
                 </div>
             `;
@@ -1571,9 +1654,21 @@
             return !['DEVUELTO', 'ANULADO', 'ANULADA'].includes(String(venta?.estado || '').toUpperCase());
         }
 
+        // Para el TOTAL (a diferencia de la ganancia) solo se descartan las
+        // anuladas: una venta DEVUELTO puede ser en realidad una devolución
+        // PARCIAL de una venta de una sola línea (el trigger de BD marca toda
+        // la venta como DEVUELTO aunque solo se haya devuelto parte) -- si se
+        // excluyera aquí igual que en esVentaContabilizable, ese total
+        // ajustado (ya neto de la devolución) desaparecería del resumen en
+        // vez de contarse por su valor real restante.
+        function esVentaAnulada(venta) {
+            return ['ANULADO', 'ANULADA'].includes(String(venta?.estado || '').toUpperCase());
+        }
+
         function actualizarEstadisticas() {
             const ventasActivas = ventasState.ventas.filter(esVentaContabilizable);
-            const total = ventasActivas.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+            const ventasParaTotal = ventasState.ventas.filter(v => !esVentaAnulada(v));
+            const total = ventasParaTotal.reduce((sum, v) => sum + totalVenta(v), 0);
             const ganancia = ventasActivas.reduce((sum, v) => sum + parseFloat(v.ganancia || 0), 0);
             const cantidad = ventasActivas.length;
 
@@ -1639,7 +1734,7 @@
                 // Traer ventas de hoy hasta ahora
                 const { data: ventasHoy, error: errorHoy } = await db
                     .from('ferre_ventas')
-                    .select('total, estado')
+                    .select('id_venta, total, estado')
                     .gte('fecha_hora_venta', inicioHoy.toISOString())
                     .lte('fecha_hora_venta', finHoy.toISOString());
 
@@ -1648,17 +1743,21 @@
                 // Traer ventas de ayer hasta la misma hora
                 const { data: ventasAyer, error: errorAyer } = await db
                     .from('ferre_ventas')
-                    .select('total, estado')
+                    .select('id_venta, total, estado')
                     .gte('fecha_hora_venta', inicioAyer.toISOString())
                     .lte('fecha_hora_venta', finAyer.toISOString());
 
                 if (errorAyer) throw errorAyer;
 
-                // Calcular totales
-                const totalHoy = (ventasHoy || []).filter(esVentaContabilizable)
-                    .reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
-                const totalAyer = (ventasAyer || []).filter(esVentaContabilizable)
-                    .reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+                await anexarTotalesAjustados(ventasHoy || []);
+                await anexarTotalesAjustados(ventasAyer || []);
+
+                // Calcular totales (ajustados por devoluciones, solo se
+                // descartan las anuladas -- ver esVentaAnulada)
+                const totalHoy = (ventasHoy || []).filter(v => !esVentaAnulada(v))
+                    .reduce((sum, v) => sum + totalVenta(v), 0);
+                const totalAyer = (ventasAyer || []).filter(v => !esVentaAnulada(v))
+                    .reduce((sum, v) => sum + totalVenta(v), 0);
 
                 // Calcular diferencia
                 const diferencia = totalHoy - totalAyer;
@@ -1782,11 +1881,12 @@
 
                 const { data: ventasMesActual, error: errorActual } = await db
                     .from('ferre_ventas')
-                    .select('total, fecha_hora_venta, id, estado')
+                    .select('id_venta, total, fecha_hora_venta, id, estado')
                     .gte('fecha_hora_venta', inicioMesActual.toISOString())
                     .lte('fecha_hora_venta', finHoy.toISOString());
 
                 if (errorActual) throw errorActual;
+                await anexarTotalesAjustados(ventasMesActual || []);
 
                 // Obtener ventas del mes anterior completo
                 const inicioMesAnterior = new Date(anioActual, mesActual - 1, 1);
@@ -1796,15 +1896,16 @@
 
                 const { data: ventasMesAnterior, error: errorAnterior } = await db
                     .from('ferre_ventas')
-                    .select('total, fecha_hora_venta, estado')
+                    .select('id_venta, total, fecha_hora_venta, estado')
                     .gte('fecha_hora_venta', inicioMesAnterior.toISOString())
                     .lte('fecha_hora_venta', finMesAnterior.toISOString());
 
                 if (errorAnterior) throw errorAnterior;
+                await anexarTotalesAjustados(ventasMesAnterior || []);
 
                 const ventasMesActualActivas = (ventasMesActual || []).filter(esVentaContabilizable);
                 const ventasMesAnteriorActivas = (ventasMesAnterior || []).filter(esVentaContabilizable);
-                const totalMesAnterior = ventasMesAnteriorActivas.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+                const totalMesAnterior = ventasMesAnteriorActivas.reduce((sum, v) => sum + totalVenta(v), 0);
                 const statsMesPasado = document.getElementById('statsMesPasado');
                 if (statsMesPasado) statsMesPasado.textContent = window.app.formatCurrency(totalMesAnterior);
 
@@ -1865,7 +1966,7 @@
 
         function calcularProyeccionCompleja(ventasMesActual, ventasMesAnterior, diaActual, ultimoDiaMes, detallesRecientes, inventario) {
             // Total de ventas mes actual hasta hoy
-            const totalMesActual = ventasMesActual.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+            const totalMesActual = ventasMesActual.reduce((sum, v) => sum + totalVenta(v), 0);
 
             // Días restantes del mes
             const diasRestantes = ultimoDiaMes - diaActual;
@@ -1893,7 +1994,7 @@
                 if (!ventasPorDiaMesAnterior[dia]) {
                     ventasPorDiaMesAnterior[dia] = 0;
                 }
-                ventasPorDiaMesAnterior[dia] += parseFloat(venta.total || 0);
+                ventasPorDiaMesAnterior[dia] += totalVenta(venta);
             });
 
             // Calcular patrón de distribución del mes anterior
@@ -2950,6 +3051,7 @@
                     .single();
 
                 if (ventaError) throw ventaError;
+                await anexarTotalesAjustados([venta]);
 
                 // Obtener detalles de la venta
                 const { data: detalles, error: detallesError } = await db
@@ -3090,8 +3192,14 @@
                 ` : ''}
                 <div class="detalle-total-row total-final">
                     <span>TOTAL:</span>
-                    <strong>${window.app.formatCurrency(venta.total)}</strong>
+                    <strong>${renderTotalConAjuste(venta, 'total-normal', 'total-original', 'total-ajustado')}</strong>
                 </div>
+                ${ventaTieneAjuste(venta) ? `
+                <div class="detalle-total-row" style="font-size:.82em;color:#888;">
+                    <span><i class="fas fa-rotate-left"></i> Incluye devolución/cambio</span>
+                    <span>${window.app.formatCurrency(venta.total - venta._totalAjustado)} devuelto</span>
+                </div>
+                ` : ''}
             </div>
 
             <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap;">
@@ -3970,13 +4078,17 @@
                     .lte('fecha_hora_venta', fechaFin.toISOString());
 
                 if (error) throw error;
+                await anexarTotalesAjustadosPorRango(todasLasVentas || [], fechaInicioPrev.toISOString());
 
-                // Partition sales into current and previous period
+                // Partition sales into current and previous period (se
+                // descartan las anuladas -- nunca ocurrieron; DEVUELTO/
+                // CAMBIADO se quedan con su total ajustado, que ya neta la
+                // devolución/cambio, sea total o parcial)
                 const ventas = [];
                 const ventasPrev = [];
                 const isoInicio = fechaInicio.toISOString();
 
-                (todasLasVentas || []).forEach(v => {
+                (todasLasVentas || []).filter(v => !esVentaAnulada(v)).forEach(v => {
                     if (v.fecha_hora_venta >= isoInicio) {
                         ventas.push(v);
                     } else {
@@ -3985,8 +4097,8 @@
                 });
 
                 // Calculate total sales actual & prev
-                const totalVentasActual = ventas.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
-                const totalVentasPrev = ventasPrev.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+                const totalVentasActual = ventas.reduce((acc, v) => acc + totalVenta(v), 0);
+                const totalVentasPrev = ventasPrev.reduce((acc, v) => acc + totalVenta(v), 0);
 
                 // Partition between Facturas and Recibos
                 let totalFacturas = 0;
@@ -3995,7 +4107,7 @@
                 let cantRecibos = 0;
 
                 ventas.forEach(v => {
-                    const total = parseFloat(v.total || 0);
+                    const total = totalVenta(v);
                     if (v.tipo === 'FACTURA') {
                         totalFacturas += total;
                         cantFacturas++;
@@ -4208,7 +4320,7 @@
                 if (timeInMins >= 480 && timeInMins <= 1200) {
                     const index = hour - 8;
                     if (index >= 0 && index < hourlyData.length) {
-                        hourlyData[index] += parseFloat(v.total);
+                        hourlyData[index] += totalVenta(v);
                     }
                 }
             });
@@ -4245,7 +4357,7 @@
                         dayIndex: dateObj.getDay()
                     };
                 }
-                salesByDate[dateKey].total += parseFloat(v.total);
+                salesByDate[dateKey].total += totalVenta(v);
             });
 
             // Populate totals and details
@@ -4661,6 +4773,7 @@
                     .order('fecha_hora_venta', { ascending: true });
 
                 if (error) throw error;
+                await anexarTotalesAjustadosPorRango(ventas || [], startRange.toISOString());
                 historicoVentasCache = ventas || [];
 
                 const grid = document.getElementById('historicoMensualGrid');
@@ -4685,25 +4798,25 @@
                     
                     const daysInM = endOfM.getDate();
                     
-                    // Sales in target month M
+                    // Sales in target month M (se descartan las anuladas)
                     const salesInM = historicoVentasCache.filter(v => {
                         const date = new Date(v.fecha_hora_venta);
-                        return date >= startOfM && date <= endOfM;
+                        return date >= startOfM && date <= endOfM && !esVentaAnulada(v);
                     });
-                    
-                    const totalVentasM = salesInM.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+
+                    const totalVentasM = salesInM.reduce((acc, v) => acc + totalVenta(v), 0);
                     const cantComprobantes = salesInM.length;
 
                     // Previous comparison period of same length
                     const startOfPrev = new Date(startOfM.getTime() - daysInM * 24 * 60 * 60 * 1000);
                     const endOfPrev = new Date(startOfM.getTime() - 1);
-                    
+
                     const salesInPrev = historicoVentasCache.filter(v => {
                         const date = new Date(v.fecha_hora_venta);
-                        return date >= startOfPrev && date <= endOfPrev;
+                        return date >= startOfPrev && date <= endOfPrev && !esVentaAnulada(v);
                     });
-                    
-                    const totalVentasPrev = salesInPrev.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+
+                    const totalVentasPrev = salesInPrev.reduce((acc, v) => acc + totalVenta(v), 0);
 
                     // Calculate growth
                     let growthText = "0.0%";
@@ -4804,10 +4917,10 @@
 
             const salesInM = historicoVentasCache.filter(v => {
                 const date = new Date(v.fecha_hora_venta);
-                return date >= startOfM && date <= endOfM;
+                return date >= startOfM && date <= endOfM && !esVentaAnulada(v);
             });
 
-            const totalVentasM = salesInM.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+            const totalVentasM = salesInM.reduce((acc, v) => acc + totalVenta(v), 0);
             const cantComprobantes = salesInM.length;
 
             const startOfPrev = new Date(startOfM.getTime() - daysInM * 24 * 60 * 60 * 1000);
@@ -4815,10 +4928,10 @@
 
             const salesInPrev = historicoVentasCache.filter(v => {
                 const date = new Date(v.fecha_hora_venta);
-                return date >= startOfPrev && date <= endOfPrev;
+                return date >= startOfPrev && date <= endOfPrev && !esVentaAnulada(v);
             });
 
-            const totalVentasPrev = salesInPrev.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+            const totalVentasPrev = salesInPrev.reduce((acc, v) => acc + totalVenta(v), 0);
 
             document.getElementById('detTotalVentasMes').textContent = window.app.formatCurrency(totalVentasM);
             document.getElementById('detComprobantesMes').textContent = cantComprobantes;
@@ -4856,7 +4969,7 @@
             salesInM.forEach(v => {
                 const date = new Date(v.fecha_hora_venta);
                 const day = date.getDate();
-                dailyDataM[day - 1] += parseFloat(v.total || 0);
+                dailyDataM[day - 1] += totalVenta(v);
             });
 
             const dailyDataPrev = new Array(daysInM).fill(0);
@@ -4865,7 +4978,7 @@
                 const diffTime = date.getTime() - startOfPrev.getTime();
                 const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000));
                 if (diffDays >= 0 && diffDays < daysInM) {
-                    dailyDataPrev[diffDays] += parseFloat(v.total || 0);
+                    dailyDataPrev[diffDays] += totalVenta(v);
                 }
             });
 

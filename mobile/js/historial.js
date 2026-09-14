@@ -5,6 +5,47 @@
 
 let histLoading = false;
 
+// ferre_ventas.total nunca se actualiza tras una devolución/cambio parcial
+// (el flujo de devoluciones solo inserta historial, no hace UPDATE sobre la
+// venta). "Total ajustado" = total + SUM(ferre_devoluciones.diferencia) para
+// ese id_venta -- se anexa como v._totalAjustado a cada fila cargada. Ver
+// documentacion/incidentes/devoluciones/20260913_devolucion_parcial_triplicada.md
+async function anexarTotalesAjustados(ventasArray) {
+    const lista = ventasArray || [];
+    lista.forEach(v => { v._totalAjustado = parseFloat(v.total || 0); });
+    const idVentas = [...new Set(lista.map(v => v.id_venta).filter(Boolean))];
+    if (!idVentas.length) return lista;
+    try {
+        const { data, error } = await db.from('ferre_devoluciones').select('id_venta, diferencia').in('id_venta', idVentas);
+        if (error) throw error;
+        const diferenciaPorVenta = new Map();
+        (data || []).forEach(d => {
+            diferenciaPorVenta.set(d.id_venta, (diferenciaPorVenta.get(d.id_venta) || 0) + parseFloat(d.diferencia || 0));
+        });
+        lista.forEach(v => {
+            const diferencia = diferenciaPorVenta.get(v.id_venta);
+            if (diferencia) v._totalAjustado = Math.round((parseFloat(v.total || 0) + diferencia) * 100) / 100;
+        });
+    } catch (err) {
+        console.error('No se pudieron cargar devoluciones para ajustar totales:', err);
+    }
+    return lista;
+}
+
+function totalVenta(venta) {
+    return venta && venta._totalAjustado !== undefined ? venta._totalAjustado : parseFloat(venta?.total || 0);
+}
+
+function ventaTieneAjuste(venta) {
+    return venta && venta._totalAjustado !== undefined && Math.abs(venta._totalAjustado - parseFloat(venta.total || 0)) > 0.004;
+}
+
+function htmlTotalConAjuste(venta) {
+    if (!ventaTieneAjuste(venta)) return fmt(venta.total);
+    return `<span style="text-decoration:line-through;opacity:.6;font-size:.85em;">${fmt(venta.total)}</span> `
+        + `<span style="color:var(--danger, #c53030);">${fmt(venta._totalAjustado)}</span>`;
+}
+
 function initHistorialDate() {
     if (!$('histDateFilter').value) {
         $('histDateFilter').value = localDateStr();
@@ -36,6 +77,7 @@ async function loadHistorial() {
         }
         const { data, error } = await query;
         if (error) throw error;
+        await anexarTotalesAjustados(data || []);
         renderHistorial(data || []);
     } catch (err) {
         $('histList').innerHTML = `<div class="hist-empty" style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i>Error: ${escHtml(err.message)}</div>`;
@@ -58,7 +100,11 @@ function renderHistorial(ventas) {
         return;
     }
     const ventasActivas = ventas.filter(v => !['DEVUELTO', 'ANULADO', 'ANULADA'].includes(String(v.estado || '').toUpperCase()));
-    const totalSum = ventasActivas.reduce((s, v) => s + (parseFloat(v.total) || 0), 0);
+    // El total, a diferencia del conteo, no descarta DEVUELTO -- una venta de
+    // una sola línea con devolución PARCIAL queda con estado DEVUELTO igual
+    // (lo marca un trigger de BD), pero su total ajustado ya no es cero.
+    const ventasParaTotal = ventas.filter(v => !['ANULADO', 'ANULADA'].includes(String(v.estado || '').toUpperCase()));
+    const totalSum = ventasParaTotal.reduce((s, v) => s + totalVenta(v), 0);
     $('histSummaryCount').textContent = `${ventasActivas.length} venta${ventasActivas.length !== 1 ? 's' : ''}`;
     $('histSummaryTotal').textContent = fmt(totalSum);
     $('histSummary').classList.remove('hidden');
@@ -89,7 +135,7 @@ function renderHistorial(ventas) {
         div.innerHTML = `
             <div class="venta-card-top">
                 <span class="venta-id-text">${escHtml(v.id_venta || '')}</span>
-                <span class="venta-total-text">${fmt(v.total)}</span>
+                <span class="venta-total-text">${htmlTotalConAjuste(v)}</span>
             </div>
             <div class="venta-card-bot">
                 <span class="venta-cliente-text">${escHtml(clienteLabel)}</span>
@@ -147,7 +193,7 @@ async function verDetalleVenta(ventaId, v) {
             <div class="detalle-info-row"><label>Fecha</label><span>${fecha.toLocaleString('es-EC')}</span></div>
             <div class="detalle-info-row"><label>Cliente</label><span>${escHtml(clienteLabel)}</span></div>
             <div class="detalle-info-row"><label>Pago</label><span><span class="badge ${bc}">${escHtml(tp)}</span></span></div>
-            <div class="detalle-info-row"><label>Total</label><span style="color:var(--primary);font-size:1.05rem;">${fmt(v.total)}</span></div>
+            <div class="detalle-info-row"><label>Total</label><span style="color:var(--primary);font-size:1.05rem;">${htmlTotalConAjuste(v)}</span></div>
             <p class="detalle-section-title">PRODUCTOS (${(detalles || []).length})</p>
             ${detHtml || '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0;">Sin productos registrados</p>'}
             ${btnDevolucion}`;
