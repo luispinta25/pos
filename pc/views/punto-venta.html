@@ -816,6 +816,39 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="modalSeleccionIdentidad">
+    <div class="modal-box" style="max-width: 680px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-address-card"></i> Esta cédula tiene RUC</h3>
+            <button class="modal-close" onclick="cerrarModalSeleccionIdentidad()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="color: #555; margin: 0 0 16px;">¿Prefiere registrar al cliente con su cédula o con su RUC?</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+                <button type="button" class="btn" onclick="seleccionarIdentidadPreferida('cedula')"
+                    style="display: block; height: auto; padding: 16px; text-align: left; border: 2px solid #d8dde3; background: #fff; color: #222;">
+                    <strong style="display: block; color: #9a7000; margin-bottom: 8px;"><i class="fas fa-id-card"></i> Continuar con cédula</strong>
+                    <span id="opcionCedulaNumero" style="display: block; font-family: monospace; margin-bottom: 5px;"></span>
+                    <span id="opcionCedulaNombre" style="display: block; font-weight: 700;"></span>
+                    <span id="opcionCedulaCorreo" style="display: block; color: #666; margin-top: 5px;"></span>
+                </button>
+                <button type="button" class="btn" onclick="seleccionarIdentidadPreferida('ruc')"
+                    style="display: block; height: auto; padding: 16px; text-align: left; border: 2px solid #d4a017; background: #fffaf0; color: #222;">
+                    <strong style="display: block; color: #9a7000; margin-bottom: 8px;"><i class="fas fa-building"></i> Continuar con RUC</strong>
+                    <span id="opcionRucNumero" style="display: block; font-family: monospace; margin-bottom: 5px;"></span>
+                    <span id="opcionRucNombre" style="display: block; font-weight: 700;"></span>
+                    <span id="opcionRucCorreo" style="display: block; color: #666; margin-top: 5px;"></span>
+                </button>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="cerrarModalSeleccionIdentidad()">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="billingProcessOverlay" style="display: none;">
     <div style="text-align: center; padding: 36px; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); width: min(420px, calc(100vw - 32px)); margin: auto;">
         <div style="width: 56px; height: 56px; border: 6px solid #f3f3f3; border-top: 6px solid #d4a017; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
@@ -4463,8 +4496,6 @@
     }
 
     async function consultarCedula(cedula) {
-        iniciarTimerConsulta();
-        actualizarServicioConsulta('Backend protegido');
         try {
             if (typeof posApiRequest !== 'function') return null;
             const result = await posApiRequest(`/api/identity/cedula/${encodeURIComponent(cedula)}`, {
@@ -4474,25 +4505,20 @@
         } catch (error) {
             console.warn('Consulta protegida de cédula:', error.message);
             return null;
-        } finally {
-            detenerTimerConsulta();
         }
     }
 
-    async function consultarRuc(ruc) {
-        iniciarTimerConsulta();
-        actualizarServicioConsulta('Backend protegido');
+    async function consultarRuc(ruc, enriquecerCorreo = true) {
         try {
             if (typeof posApiRequest !== 'function') return null;
-            const result = await posApiRequest(`/api/identity/ruc/${encodeURIComponent(ruc)}`, {
+            const query = enriquecerCorreo ? '' : '?enrichCedulaEmail=false';
+            const result = await posApiRequest(`/api/identity/ruc/${encodeURIComponent(ruc)}${query}`, {
                 method: 'GET'
             });
             return result?.ok ? result.data : null;
         } catch (error) {
             console.warn('Consulta protegida de RUC:', error.message);
             return null;
-        } finally {
-            detenerTimerConsulta();
         }
     }
 
@@ -5154,6 +5180,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 const customConfirm = document.getElementById('custom-confirm-overlay');
                 const modalActualizarCliente = document.getElementById('modalActualizarCliente');
                 const modalRegistroCliente = document.getElementById('modalRegistroCliente');
+                const modalSeleccionIdentidad = document.getElementById('modalSeleccionIdentidad');
                 const modalCajaInicial = document.getElementById('modalCajaInicial');
 
                 const hayModalAbierto = (modalCantidad && modalCantidad.classList.contains('active')) ||
@@ -5162,6 +5189,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                     (customConfirm && customConfirm.classList.contains('active')) ||
                     (modalActualizarCliente && modalActualizarCliente.classList.contains('active')) ||
                     (modalRegistroCliente && modalRegistroCliente.classList.contains('active')) ||
+                    (modalSeleccionIdentidad && modalSeleccionIdentidad.classList.contains('active')) ||
                     (modalCajaInicial && modalCajaInicial.classList.contains('active'));
 
                 // ESC cierra modales
@@ -5173,6 +5201,11 @@ _Sistema de Gestión Ferrisoluciones_`;
                     if (modalRegistroCliente && modalRegistroCliente.classList.contains('active')) {
                         e.preventDefault();
                         cerrarModalRegistroCliente();
+                        return;
+                    }
+                    if (modalSeleccionIdentidad && modalSeleccionIdentidad.classList.contains('active')) {
+                        e.preventDefault();
+                        cerrarModalSeleccionIdentidad();
                         return;
                     }
                     if (modalActualizarCliente && modalActualizarCliente.classList.contains('active')) {
@@ -7213,33 +7246,106 @@ _Sistema de Gestión Ferrisoluciones_`;
         }
     }
 
+    let identidadAlternativasPendientes = null;
+
+    function construirDatosCedula(cedula, response, correoCompartido = '') {
+        return {
+            cedula,
+            razon_social: response.response.nombreCompleto,
+            direccion: '',
+            telefono: '',
+            correo: correoCompartido || response.response.email || '',
+            ingresoManual: false,
+            tieneRuc: false
+        };
+    }
+
+    function construirDatosRuc(ruc, response, correoCompartido = '') {
+        const establecimientos = Array.isArray(response.data?.addit) ? response.data.addit : [];
+        return {
+            cedula: ruc,
+            razon_social: response.data.main[0].razonSocial,
+            direccion: establecimientos.find(est => est.tipoEstablecimiento === 'MAT')?.direccionCompleta || '',
+            telefono: '',
+            correo: correoCompartido || response.email || '',
+            ingresoManual: false,
+            tieneRuc: true
+        };
+    }
+
+    function mostrarModalSeleccionIdentidad(datosCedula, datosRuc) {
+        identidadAlternativasPendientes = { cedula: datosCedula, ruc: datosRuc };
+        document.getElementById('opcionCedulaNumero').textContent = datosCedula.cedula;
+        document.getElementById('opcionCedulaNombre').textContent = datosCedula.razon_social;
+        document.getElementById('opcionCedulaCorreo').textContent = datosCedula.correo || 'Sin correo recuperado';
+        document.getElementById('opcionRucNumero').textContent = datosRuc.cedula;
+        document.getElementById('opcionRucNombre').textContent = datosRuc.razon_social;
+        document.getElementById('opcionRucCorreo').textContent = datosRuc.correo || 'Sin correo recuperado';
+        document.getElementById('modalSeleccionIdentidad').classList.add('active');
+    }
+
+    function seleccionarIdentidadPreferida(tipo) {
+        const datos = identidadAlternativasPendientes?.[tipo];
+        if (!datos) return;
+        document.getElementById('modalSeleccionIdentidad').classList.remove('active');
+        identidadAlternativasPendientes = null;
+        mostrarModalRegistroCliente(datos);
+    }
+
+    function cerrarModalSeleccionIdentidad() {
+        document.getElementById('modalSeleccionIdentidad').classList.remove('active');
+        identidadAlternativasPendientes = null;
+        setTimeout(() => document.getElementById('clienteCedula')?.focus(), 100);
+    }
+
+    window.seleccionarIdentidadPreferida = seleccionarIdentidadPreferida;
+    window.cerrarModalSeleccionIdentidad = cerrarModalSeleccionIdentidad;
+
     // Consultar e iniciar registro de cliente
     async function consultarYRegistrarCliente(numero) {
-        // Mostrar overlay de carga con animación
         const loadingOverlay = document.getElementById('loadingConsultaAPI');
         if (loadingOverlay) {
             loadingOverlay.style.display = 'flex';
         }
+        iniciarTimerConsulta();
+        actualizarServicioConsulta('Backend protegido');
 
         try {
             const isCedula = numero.length === 10;
+            let datosCliente = null;
 
-            // Consultar API externa
-            const response = isCedula ?
-                await consultarCedula(numero) :
-                await consultarRuc(numero);
+            if (isCedula) {
+                const rucDerivado = `${numero}001`;
+                const [cedulaResponse, rucResponse] = await Promise.all([
+                    consultarCedula(numero),
+                    consultarRuc(rucDerivado, false)
+                ]);
+                const cedulaEncontrada = Boolean(cedulaResponse?.response?.nombreCompleto);
+                const rucEncontrado = Boolean(rucResponse?.data?.main?.[0]?.razonSocial);
+                const correoCompartido = cedulaResponse?.response?.email || rucResponse?.email || '';
 
-            // Ocultar loading
-            if (loadingOverlay) {
-                loadingOverlay.style.display = 'none';
+                if (cedulaEncontrada && rucEncontrado) {
+                    mostrarModalSeleccionIdentidad(
+                        construirDatosCedula(numero, cedulaResponse, correoCompartido),
+                        construirDatosRuc(rucDerivado, rucResponse, correoCompartido)
+                    );
+                    return;
+                }
+                if (cedulaEncontrada) {
+                    datosCliente = construirDatosCedula(numero, cedulaResponse, correoCompartido);
+                } else if (rucEncontrado) {
+                    datosCliente = construirDatosRuc(rucDerivado, rucResponse, correoCompartido);
+                }
+            } else {
+                const rucResponse = await consultarRuc(numero);
+                if (rucResponse?.data?.main?.[0]?.razonSocial) {
+                    datosCliente = construirDatosRuc(numero, rucResponse);
+                }
             }
 
-            // Si la API falla o no devuelve datos, activar ingreso manual
-            if (!response || (isCedula ? !response.response : !response.data)) {
+            if (!datosCliente) {
                 console.warn('⚠️ API no respondió correctamente, activando ingreso manual');
                 window.app.showToast('⚠️ Servicio de consulta no disponible. Ingrese los datos manualmente.', 'warning', 4000);
-
-                // Mostrar modal con campos vacíos para ingreso manual
                 const datosClienteManual = {
                     cedula: numero,
                     razon_social: '',
@@ -7254,33 +7360,9 @@ _Sistema de Gestión Ferrisoluciones_`;
                 return;
             }
 
-            // Extraer datos según tipo
-            const datosCliente = {
-                cedula: numero,
-                razon_social: isCedula ?
-                    response.response.nombreCompleto :
-                    response.data.main[0].razonSocial,
-                direccion: !isCedula ?
-                    (response.data.addit.find(est => est.tipoEstablecimiento === 'MAT')?.direccionCompleta || '') :
-                    '',
-                telefono: '',
-                correo: isCedula ? (response.response.email || '') : '',
-                ingresoManual: false,
-                tieneRuc: !isCedula // Flag para saber si es RUC
-            };
-
-            // Mostrar modal de registro con datos pre-llenados
             mostrarModalRegistroCliente(datosCliente);
-
         } catch (error) {
             console.error('❌ Error en consulta:', error);
-
-            // Ocultar loading
-            if (loadingOverlay) {
-                loadingOverlay.style.display = 'none';
-            }
-
-            // Fallback: Activar ingreso manual en caso de error
             window.app.showToast('⚠️ Servicio de consulta no disponible. Ingrese los datos manualmente.', 'warning', 4000);
 
             const isCedula = numero.length === 10;
@@ -7295,6 +7377,11 @@ _Sistema de Gestión Ferrisoluciones_`;
             };
 
             mostrarModalRegistroCliente(datosClienteManual);
+        } finally {
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
+            }
+            detenerTimerConsulta();
         }
     }
 
