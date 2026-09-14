@@ -4440,51 +4440,6 @@
         }
     }
 
-    async function obtenerServicios() {
-        try {
-            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
-            if (!db) return null;
-
-            const { data, error } = await db
-                .from('servicios')
-                .select('nombre, base_url, endpoint')
-                .eq('activo', true);
-
-            if (error) throw error;
-            return data ? data.reduce((acc, srv) => { acc[srv.nombre] = srv; return acc; }, {}) : {};
-        } catch (error) {
-            console.error('Error cargando servicios:', error);
-            return {};
-        }
-    }
-
-    function normalizarRespuestaCedula(data, origen) {
-        if (origen === 'nuevo') {
-            return {
-                data: {
-                    response: {
-                        nombreCompleto: data.resultado.nombre
-                    }
-                }
-            };
-        }
-        return data;
-    }
-
-    function normalizarRespuestaRuc(data, origen) {
-        if (origen === 'nuevo') {
-            const contrib = data.resultado.contribuyente[0];
-            const establos = data.resultado.establecimientos;
-            return {
-                data: {
-                    main: [{ razonSocial: contrib.razonSocial }],
-                    addit: establos
-                }
-            };
-        }
-        return data;
-    }
-
     function iniciarTimerConsulta() {
         consultaInicio = Date.now();
         if (consultaTimerInterval) clearInterval(consultaTimerInterval);
@@ -4507,126 +4462,38 @@
         document.getElementById('consultaServicio').textContent = `Servidor: ${nombreServicio}`;
     }
 
-    function crearTimeoutAbort(ms) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), ms);
-        return { controller, timeoutId };
-    }
-
-    async function consultarCedulaNuevo(cedula, servicios) {
-        try {
-            const srv = servicios?.consulta_cedula;
-            if (!srv) return { tipo: 'no-disponible' };
-            const url = `${srv.base_url}${srv.endpoint.replace('{cedula}', cedula)}`;
-            actualizarServicioConsulta('Propio');
-            const { controller, timeoutId } = crearTimeoutAbort(15000);
-            try {
-                const res = await fetch(url, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await res.json();
-                if (data.ok) return { tipo: 'exito', data, origen: 'nuevo' };
-                const error = data.error ? data.error.toLowerCase() : '';
-                if (error.includes('no encontrado')) return { tipo: 'no-encontrado', data };
-                return { tipo: 'error', data };
-            } catch (e) {
-                clearTimeout(timeoutId);
-                throw e;
-            }
-        } catch (error) {
-            console.warn('Nuevo servicio cédula:', error.message);
-            return { tipo: 'timeout' };
-        }
-    }
-
-    async function consultarRucNuevo(ruc, servicios) {
-        try {
-            const srv = servicios?.consulta_ruc;
-            if (!srv) return { tipo: 'no-disponible' };
-            const url = `${srv.base_url}${srv.endpoint.replace('{ruc}', ruc)}`;
-            actualizarServicioConsulta('Propio');
-            const { controller, timeoutId } = crearTimeoutAbort(15000);
-            try {
-                const res = await fetch(url, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                const data = await res.json();
-                if (data.ok) return { tipo: 'exito', data, origen: 'nuevo' };
-                const error = data.error ? data.error.toLowerCase() : '';
-                if (error.includes('no encontrado')) return { tipo: 'no-encontrado', data };
-                return { tipo: 'error', data };
-            } catch (e) {
-                clearTimeout(timeoutId);
-                throw e;
-            }
-        } catch (error) {
-            console.warn('Nuevo servicio RUC:', error.message);
-            return { tipo: 'timeout' };
-        }
-    }
-
-    async function consultarCedulaFallback(cedula) {
-        try {
-            actualizarServicioConsulta('Fallback');
-            if (typeof posApiRequest !== 'function') return null;
-            const result = await posApiRequest(`/api/identity/cedula/${cedula}`, {
-                method: 'GET'
-            });
-            return result?.ok ? { tipo: 'exito', data: result.data, origen: 'fallback' } : null;
-        } catch (error) {
-            console.warn('Fallback cédula:', error.message);
-            return null;
-        }
-    }
-
-    async function consultarRucFallback(ruc) {
-        try {
-            actualizarServicioConsulta('Fallback');
-            if (typeof posApiRequest !== 'function') return null;
-            const result = await posApiRequest(`/api/identity/ruc/${ruc}`, {
-                method: 'GET'
-            });
-            return result?.ok ? { tipo: 'exito', data: result.data, origen: 'fallback' } : null;
-        } catch (error) {
-            console.warn('Fallback RUC:', error.message);
-            return null;
-        }
-    }
-
     async function consultarCedula(cedula) {
         iniciarTimerConsulta();
-        const servicios = await obtenerServicios();
-        const resultado = await consultarCedulaNuevo(cedula, servicios);
-        let respuesta = null;
-
-        if (resultado.tipo === 'exito') {
-            respuesta = { origen: resultado.origen, data: resultado.data };
-        } else if (resultado.tipo !== 'no-encontrado') {
-            const fallback = await consultarCedulaFallback(cedula);
-            if (fallback?.tipo === 'exito') {
-                respuesta = { origen: fallback.origen, data: fallback.data };
-            }
+        actualizarServicioConsulta('Backend protegido');
+        try {
+            if (typeof posApiRequest !== 'function') return null;
+            const result = await posApiRequest(`/api/identity/cedula/${encodeURIComponent(cedula)}`, {
+                method: 'GET'
+            });
+            return result?.ok ? result.data : null;
+        } catch (error) {
+            console.warn('Consulta protegida de cédula:', error.message);
+            return null;
+        } finally {
+            detenerTimerConsulta();
         }
-
-        detenerTimerConsulta();
-        return respuesta ? normalizarRespuestaCedula(respuesta.data, respuesta.origen) : null;
     }
 
     async function consultarRuc(ruc) {
         iniciarTimerConsulta();
-        const servicios = await obtenerServicios();
-        const resultado = await consultarRucNuevo(ruc, servicios);
-        let respuesta = null;
-
-        if (resultado.tipo === 'exito') {
-            respuesta = { origen: resultado.origen, data: resultado.data };
-        } else if (resultado.tipo !== 'no-encontrado') {
-            const fallback = await consultarRucFallback(ruc);
-            if (fallback?.tipo === 'exito') {
-                respuesta = { origen: fallback.origen, data: fallback.data };
-            }
+        actualizarServicioConsulta('Backend protegido');
+        try {
+            if (typeof posApiRequest !== 'function') return null;
+            const result = await posApiRequest(`/api/identity/ruc/${encodeURIComponent(ruc)}`, {
+                method: 'GET'
+            });
+            return result?.ok ? result.data : null;
+        } catch (error) {
+            console.warn('Consulta protegida de RUC:', error.message);
+            return null;
+        } finally {
+            detenerTimerConsulta();
         }
-
-        detenerTimerConsulta();
-        return respuesta ? normalizarRespuestaRuc(respuesta.data, respuesta.origen) : null;
     }
 
     // Cargar inventario completo al inicializar
@@ -7368,7 +7235,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             }
 
             // Si la API falla o no devuelve datos, activar ingreso manual
-            if (!response || !response.data) {
+            if (!response || (isCedula ? !response.response : !response.data)) {
                 console.warn('⚠️ API no respondió correctamente, activando ingreso manual');
                 window.app.showToast('⚠️ Servicio de consulta no disponible. Ingrese los datos manualmente.', 'warning', 4000);
 
@@ -7391,13 +7258,13 @@ _Sistema de Gestión Ferrisoluciones_`;
             const datosCliente = {
                 cedula: numero,
                 razon_social: isCedula ?
-                    response.data.response.nombreCompleto :
+                    response.response.nombreCompleto :
                     response.data.main[0].razonSocial,
                 direccion: !isCedula ?
                     (response.data.addit.find(est => est.tipoEstablecimiento === 'MAT')?.direccionCompleta || '') :
                     '',
                 telefono: '',
-                correo: '',
+                correo: isCedula ? (response.response.email || '') : '',
                 ingresoManual: false,
                 tieneRuc: !isCedula // Flag para saber si es RUC
             };
