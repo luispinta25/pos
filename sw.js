@@ -4,8 +4,8 @@
 // Strategy: Network First
 // =====================================================
 
-const CACHE_NAME = 'ferrisoluciones-pos-v3-11-31';
-const RUNTIME_CACHE = 'ferrisoluciones-runtime-v3-11-31';
+const CACHE_NAME = 'ferrisoluciones-pos-v3-11-32';
+const RUNTIME_CACHE = 'ferrisoluciones-runtime-v3-11-32';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
