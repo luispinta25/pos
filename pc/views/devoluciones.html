@@ -1114,6 +1114,24 @@ async function devConfirmar() {
 
     let devolucionIdCreada = null;
     try {
+        // 0. ¿Esta venta tiene una cuenta por cobrar (venta a crédito) pendiente?
+        // Si sí, lo devuelto no salió como efectivo real de caja: reduce la
+        // deuda del cliente en vez de contarse como salida de caja física.
+        let cuentaCxc = null;
+        let montoAplicadoCxc = 0;
+        const { data: cxcRow, error: cxcLookupErr } = await db.from('ferre_cuentas_por_cobrar')
+            .select('id, saldo_pendiente, estado')
+            .eq('venta_id', _devVentaActual.id)
+            .eq('tipo', 'VENTA')
+            .in('estado', ['PENDIENTE', 'PARCIAL', 'VENCIDO'])
+            .limit(1)
+            .maybeSingle();
+        if (cxcLookupErr) throw cxcLookupErr;
+        if (cxcRow && parseFloat(cxcRow.saldo_pendiente) > 0.009) {
+            cuentaCxc = cxcRow;
+            montoAplicadoCxc = Math.round(Math.min(totalDev, parseFloat(cxcRow.saldo_pendiente)) * 100) / 100;
+        }
+
         // 1. Cabecera
         const { data: { user } } = await db.auth.getUser();
         const userEmail = user?.email || '';
@@ -1130,12 +1148,29 @@ async function devConfirmar() {
             diferencia,
             tipo_pago_diferencia: diferencia > 0.009 ? _devTipoPago : null,
             estado: 'COMPLETADO',
-            usuario_email: userEmail
+            usuario_email: userEmail,
+            monto_aplicado_cxc: montoAplicadoCxc
         }).select('id').single();
         if (devErr) throw devErr;
 
         const devolucionId = devData.id;
         devolucionIdCreada = devolucionId;
+
+        // 1.5 Si aplica, reducir la cuenta por cobrar (aún no se tocó stock:
+        // si esto falla, el catch de abajo borra la cabecera huérfana sin
+        // dejar ningún efecto real a medias).
+        if (montoAplicadoCxc > 0) {
+            const { error: cxcPagoErr } = await db.from('ferre_pagos_cuentas_por_cobrar').insert({
+                cuenta_id: cuentaCxc.id,
+                monto_pago: montoAplicadoCxc,
+                forma_pago: 'DEVOLUCION',
+                numero_referencia: idDevolucion,
+                fecha_pago: new Date().toISOString(),
+                recibido_por: userEmail,
+                notas: `Reducción automática por ${tipo === 'CAMBIO' ? 'cambio' : 'devolución'} ${idDevolucion} de la venta ${_devVentaActual.id_venta}`
+            });
+            if (cxcPagoErr) throw cxcPagoErr;
+        }
 
         // 2. Detalle de lo devuelto (triggers DB actualizan stock e inventario)
         const devRows = sel.map(x => {
@@ -1188,10 +1223,13 @@ async function devConfirmar() {
         });
 
         // 5. Éxito
+        const notaCxc = montoAplicadoCxc > 0
+            ? `<br>Se redujo $${montoAplicadoCxc.toFixed(2)} de la cuenta por cobrar de esta venta.`
+            : '';
         await showCustomAlert(
-            tipo === 'DEVOLUCION'
+            (tipo === 'DEVOLUCION'
                 ? `✅ Devolución registrada correctamente.<br>Inventario actualizado automáticamente.`
-                : `✅ Cambio registrado correctamente.<br>Inventario actualizado automáticamente.`,
+                : `✅ Cambio registrado correctamente.<br>Inventario actualizado automáticamente.`) + notaCxc,
             'success'
         );
 

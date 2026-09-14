@@ -705,6 +705,24 @@ async function confirmarDevolucion() {
 
     let devolucionIdCreada = null;
     try {
+        // 0. ¿Esta venta tiene una cuenta por cobrar (venta a crédito) pendiente?
+        // Si sí, lo devuelto no salió como efectivo real de caja: reduce la
+        // deuda del cliente en vez de contarse como salida de caja física.
+        let cuentaCxc = null;
+        let montoAplicadoCxc = 0;
+        const { data: cxcRow, error: cxcLookupErr } = await db.from('ferre_cuentas_por_cobrar')
+            .select('id, saldo_pendiente, estado')
+            .eq('venta_id', devCurrentVenta.id)
+            .eq('tipo', 'VENTA')
+            .in('estado', ['PENDIENTE', 'PARCIAL', 'VENCIDO'])
+            .limit(1)
+            .maybeSingle();
+        if (cxcLookupErr) throw cxcLookupErr;
+        if (cxcRow && parseFloat(cxcRow.saldo_pendiente) > 0.009) {
+            cuentaCxc = cxcRow;
+            montoAplicadoCxc = Math.round(Math.min(totalDevuelto, parseFloat(cxcRow.saldo_pendiente)) * 100) / 100;
+        }
+
         // 1. Crear cabecera ferre_devoluciones
         const idDevolucion = `DEV${Date.now()}`;
         const { data: devData, error: devErr } = await db.from('ferre_devoluciones').insert({
@@ -718,12 +736,29 @@ async function confirmarDevolucion() {
             diferencia,
             tipo_pago_diferencia: diferencia > 0.009 ? devTipoPago : null,
             estado: 'COMPLETADO',
-            usuario_email: currentUser?.email || ''
+            usuario_email: currentUser?.email || '',
+            monto_aplicado_cxc: montoAplicadoCxc
         }).select('id').single();
         if (devErr) throw devErr;
 
         const devolucionId = devData.id;
         devolucionIdCreada = devolucionId;
+
+        // 1.5 Si aplica, reducir la cuenta por cobrar (aún no se tocó stock:
+        // si esto falla, el catch de abajo borra la cabecera huérfana sin
+        // dejar ningún efecto real a medias).
+        if (montoAplicadoCxc > 0) {
+            const { error: cxcPagoErr } = await db.from('ferre_pagos_cuentas_por_cobrar').insert({
+                cuenta_id: cuentaCxc.id,
+                monto_pago: montoAplicadoCxc,
+                forma_pago: 'DEVOLUCION',
+                numero_referencia: idDevolucion,
+                fecha_pago: new Date().toISOString(),
+                recibido_por: currentUser?.email || '',
+                notas: `Reducción automática por ${tipo === 'CAMBIO' ? 'cambio' : 'devolución'} ${idDevolucion} de la venta ${devCurrentVenta.id_venta}`
+            });
+            if (cxcPagoErr) throw cxcPagoErr;
+        }
 
         // 2. Insertar ferre_historial_devoluciones_detalle
         //    Los triggers DB se encargan de: subir stock y actualizar ventas_detalle.estado
@@ -784,8 +819,9 @@ async function confirmarDevolucion() {
 
         // 5. Éxito
         hideModal('devGestionModal');
+        const notaCxc = montoAplicadoCxc > 0 ? ` (se redujo $${montoAplicadoCxc.toFixed(2)} de su cuenta por cobrar)` : '';
         showToast(
-            tipo === 'DEVOLUCION' ? 'Devolución procesada correctamente' : 'Cambio procesado correctamente',
+            (tipo === 'DEVOLUCION' ? 'Devolución procesada correctamente' : 'Cambio procesado correctamente') + notaCxc,
             'success', 3500
         );
 
