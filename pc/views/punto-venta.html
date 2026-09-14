@@ -4736,7 +4736,11 @@
     // Control de actualizaciones automáticas
     let actualizacionTimer = null;
     let ultimaBusqueda = Date.now();
-    let cargaInicialCompleta = false;
+    // Si el script de este módulo se re-ejecuta (por ejemplo al volver a Punto de
+    // Venta desde otro módulo) pero window.inventarioCache ya tenía productos
+    // cargados de antes, no debe tratarse como si no hubiera caché: eso forzaba
+    // una recarga completa innecesaria del inventario en cada reingreso.
+    let cargaInicialCompleta = window.inventarioCache.productos.length > 0;
     let cargaClientesCompleta = false;
 
     // Compatibilidad: las consultas externas ahora se hacen por backend seguro.
@@ -5054,9 +5058,14 @@
 
     // Iniciar actualizaciones periódicas
     function iniciarActualizacionesPeriodicas() {
-        if (actualizacionTimer) return; // Ya está activo
+        // window.inventarioCache.timerActivo cubre el caso en que el script de este
+        // módulo se re-ejecutó (reingreso a Punto de Venta) mientras un timer de una
+        // ejecución anterior seguía vivo en segundo plano: sin este chequeo se
+        // acumulaba un intervalo de 60s adicional por cada reingreso al módulo.
+        if (actualizacionTimer || window.inventarioCache.timerActivo) return; // Ya está activo
 
         console.log('▶️ Iniciando actualizaciones automáticas (cada 60s)');
+        window.inventarioCache.timerActivo = true;
 
         // Actualizar badge cada 5 segundos para mostrar tiempo transcurrido
         setInterval(() => {
@@ -5072,6 +5081,7 @@
             if (tiempoInactivo > 60000) {
                 clearInterval(actualizacionTimer);
                 actualizacionTimer = null;
+                window.inventarioCache.timerActivo = false;
                 console.log('⏸️ Actualizaciones pausadas (60s de inactividad)');
                 return;
             }
@@ -5086,6 +5096,7 @@
         if (actualizacionTimer) {
             clearInterval(actualizacionTimer);
             actualizacionTimer = null;
+            window.inventarioCache.timerActivo = false;
             console.log('⏹️ Actualizaciones detenidas');
         }
     }
@@ -10617,6 +10628,11 @@ _Sistema de Gestión Ferrisoluciones_`;
             actualizarCarrito();
             mostrarClienteSeleccionado();
 
+            // La venta bajó stock en la BD (vía backend/trigger); refrescar el
+            // caché de inventario ahora en vez de esperar hasta 60s, para que la
+            // próxima búsqueda ya muestre el stock real. No bloqueante.
+            actualizarCacheSilencioso();
+
             // Limpiar búsqueda de cliente
             document.getElementById('clienteCedula').value = '';
 
@@ -10928,6 +10944,9 @@ _Sistema de Gestión Ferrisoluciones_`;
     window.calcularStockRestante = calcularStockRestante;
     window.guardarCarritoEnCache = guardarCarritoEnCache;
     window.limpiarCarritoCache = limpiarCarritoCache;
+    // Para que otros módulos (devoluciones, cambios) puedan refrescar el caché
+    // compartido de inventario en cuanto afectan stock, sin esperar los 60s.
+    window.actualizarCacheSilencioso = actualizarCacheSilencioso;
     window.mostrarConfirmacion = mostrarConfirmacion;
     window.toggleModoEdicion = toggleModoEdicion;
     window.buscarProductos = buscarProductos;

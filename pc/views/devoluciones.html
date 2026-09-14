@@ -1199,6 +1199,13 @@ async function devConfirmar() {
         const { data: prods } = await db.from('ferre_inventario').select('*').order('producto');
         _devAllProducts = prods || [];
 
+        // La devolución/cambio bajó o subió stock en la BD (vía trigger). Refrescar
+        // también el caché compartido de Punto de Venta/Cotización ahora mismo, sin
+        // esperar hasta 60s, para que la próxima búsqueda ya muestre el stock real.
+        if (typeof window.actualizarCacheSilencioso === 'function') {
+            window.actualizarCacheSilencioso();
+        }
+
         // Resetear panel y recargar lista
         _devVentaActual = null;
         document.getElementById('devGestionPanel').innerHTML = `

@@ -4982,7 +4982,9 @@
     // Control de actualizaciones automáticas
     let actualizacionTimer = null;
     let ultimaBusqueda = Date.now();
-    let cargaInicialCompleta = false;
+    // Igual que en punto-venta.html: si el script se re-ejecuta al volver a este
+    // módulo pero window.inventarioCache ya tenía productos, no perder ese estado.
+    let cargaInicialCompleta = window.inventarioCache.productos.length > 0;
     let cargaClientesCompleta = false;
 
     // Compatibilidad: las consultas externas ahora se hacen por backend seguro.

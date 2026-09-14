@@ -972,9 +972,16 @@ async function cvGuardarTransferCuentas() {
 }
 
 async function cvLoad() {
-    document.getElementById('cvListContainer').innerHTML =
+    // caja-virtual.html sigue corriendo en segundo plano aunque el usuario esté
+    // en otro módulo (mismo patrón que initPuntoVenta); si su contenedor ya no
+    // está en el DOM, no seguir (ver fix de actualizarCarrito, 20260911).
+    var listEl = document.getElementById('cvListContainer');
+    if (!listEl) return;
+
+    listEl.innerHTML =
         '<div style="text-align:center;padding:60px 20px;color:#888;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;display:block;margin-bottom:12px;"></i>Cargando...</div>';
-    document.getElementById('cvResumenCard').style.display = 'none';
+    var resumenCard = document.getElementById('cvResumenCard');
+    if (resumenCard) resumenCard.style.display = 'none';
     await cvLoadBankMethods();
     await cvLoadBankBalances();
 
@@ -991,7 +998,9 @@ async function cvLoad() {
         if (res.error) throw res.error;
         cvRender(res.data || []);
     } catch (err) {
-        document.getElementById('cvListContainer').innerHTML =
+        listEl = document.getElementById('cvListContainer');
+        if (!listEl) return;
+        listEl.innerHTML =
             '<div style="color:#e53e3e;text-align:center;padding:40px;"><i class="fas fa-exclamation-triangle"></i> ' + cvEsc(err.message) + '</div>';
     }
 }
