@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#1a1a1a">
     <link rel="icon" href="../pc/img/favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles.css?v=3.11.35">
+    <link rel="stylesheet" href="css/styles.css?v=3.11.36">
     <script>
         (function () {
             var ua = navigator.userAgent || '';
@@ -301,6 +301,37 @@
   </div>
 </div>
 
+<!-- ── MODAL NUEVO INGRESO ── -->
+<div id="nuevoIngresoModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-plus-circle" style="color:#1a7f37;"></i> Nuevo Ingreso</h2>
+            <button class="modal-close" onclick="hideModal('nuevoIngresoModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <label class="label-form" style="margin-top:.5rem;">Motivo / Descripción *</label>
+            <textarea id="ingresoMotivoInput" rows="3" placeholder="¿De dónde vino el dinero?" style="resize:none;"></textarea>
+            <label class="label-form">Monto ($) *</label><input type="number" id="ingresoMontoInput" class="modal-input-big" placeholder="0.00" inputmode="decimal" step="0.01" min="0.01">
+            <label class="label-form">Categoría *</label><select id="ingresoCategoriaInput"></select>
+            <label class="label-form">Pagado por</label><input type="text" id="ingresoPagadorInput" placeholder="Persona o empresa">
+            <div class="mg-method"><button type="button" class="active" data-ix-daily-method="EFECTIVO"><i class="fas fa-money-bill-wave"></i> Efectivo</button><button type="button" data-ix-daily-method="TRANSFERENCIA"><i class="fas fa-building-columns"></i> Transferencia</button></div>
+            <div id="ixDailyAccountWrap" class="hidden"><label class="label-form">Cuenta de destino *</label><select id="ixDailyAccount"></select></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="hideModal('nuevoIngresoModal')">Cancelar</button>
+            <button class="btn-confirm" id="btnGuardarIngreso" style="background:#1a7f37;"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL COBRO FIJO ── -->
+<div id="ingresoFijoCobroModal" class="modal">
+  <div class="modal-content"><div class="modal-header"><h2 id="ixPayTitle">Registrar cobro</h2><button class="modal-close" onclick="hideModal('ingresoFijoCobroModal')">×</button></div>
+    <div class="modal-body"><div id="ixPayBalance" class="mg-pay-balance"></div><label class="label-form">Monto *</label><input type="number" id="ixPayAmount" inputmode="decimal" step="0.01" min="0.01"><label class="label-form">Nota</label><textarea id="ixPayNote" rows="2" placeholder="Detalle opcional"></textarea><div class="mg-method"><button type="button" class="active" data-ix-fixed-method="EFECTIVO"><i class="fas fa-money-bill-wave"></i> Efectivo</button><button type="button" data-ix-fixed-method="TRANSFERENCIA"><i class="fas fa-building-columns"></i> Transferencia</button></div><div id="ixFixedAccountWrap" class="hidden"><label class="label-form">Cuenta de destino *</label><select id="ixFixedAccount"></select></div></div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="hideModal('ingresoFijoCobroModal')">Cancelar</button><button class="btn-confirm" id="ixConfirmPay" style="background:#1a7f37;"><i class="fas fa-check"></i> Confirmar</button></div>
+  </div>
+</div>
+
 <!-- ── MODAL BUSCAR PRODUCTO (utilidades) ── -->
 <div id="utilBuscarProdModal" class="modal">
     <div class="modal-content" style="max-height:85dvh;">
@@ -424,13 +455,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js?v=3.11.35"></script>
-<script src="js/pos.js?v=3.11.35"></script>
-<script src="js/historial.js?v=3.11.35"></script>
-<script src="js/gastos.js?v=3.11.35"></script>
-<script src="js/utilidades.js?v=3.11.35"></script>
-<script src="js/transferencias.js?v=3.11.35"></script>
-<script src="js/devoluciones.js?v=3.11.35"></script>
-<script src="js/app.js?v=3.11.35"></script>
+<script src="js/config.js?v=3.11.36"></script>
+<script src="js/pos.js?v=3.11.36"></script>
+<script src="js/historial.js?v=3.11.36"></script>
+<script src="js/gastos.js?v=3.11.36"></script>
+<script src="js/utilidades.js?v=3.11.36"></script>
+<script src="js/transferencias.js?v=3.11.36"></script>
+<script src="js/devoluciones.js?v=3.11.36"></script>
+<script src="js/app.js?v=3.11.36"></script>
 </body>
 </html>

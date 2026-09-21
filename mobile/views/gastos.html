@@ -1,10 +1,23 @@
 <!-- ── GASTOS SCREEN ── -->
 <div id="gastosScreen" class="hidden">
-  <header class="gastos-header"><button class="hist-back-btn" id="gastosBackBtn"><i class="fas fa-chevron-left"></i></button><span class="gastos-header-title"><small>CONTROL DE EGRESOS</small>Gastos</span><button class="hist-refresh-btn" id="gastosRefreshBtn"><i class="fas fa-sync-alt"></i></button></header>
+  <header class="gastos-header"><button class="hist-back-btn" id="gastosBackBtn"><i class="fas fa-chevron-left"></i></button><span class="gastos-header-title"><small id="mgKicker">CONTROL DE EGRESOS</small><span id="mgTitle">Gastos</span></span><button class="hist-refresh-btn" id="gastosRefreshBtn"><i class="fas fa-sync-alt"></i></button></header>
+  <div class="gastos-sections"><button class="active" data-mg-section="gastos"><i class="fas fa-arrow-trend-down"></i> Gastos</button><button data-mg-section="ingresos"><i class="fas fa-arrow-trend-up"></i> Ingresos</button></div>
+
+  <div id="mgSectionGastos">
   <div class="gastos-tabs"><button class="active" data-mobile-gasto-tab="fixed"><i class="fas fa-calendar-check"></i> Fijos <b id="mgPendingCount">0</b></button><button data-mobile-gasto-tab="daily"><i class="fas fa-receipt"></i> Del día</button></div>
   <div class="gastos-content">
     <section id="mgFixedView"><div class="mg-summary"><div class="danger"><i class="fas fa-circle-exclamation"></i><span>Saldo vencido<strong id="mgOverdue">$0,00</strong></span></div><div class="warning"><i class="fas fa-calendar-day"></i><span>Próximos 7 días<strong id="mgUpcoming">$0,00</strong></span></div></div><div class="mg-list-heading"><span>ATENCIÓN REQUERIDA</span><small>Ordenado por vencimiento</small></div><div id="mgFixedList"><div class="gastos-empty"><i class="fas fa-spinner fa-spin"></i>Cargando...</div></div></section>
     <section id="mgDailyView" class="hidden"><div id="gastosSummary" class="gastos-summary hidden"><span class="gastos-summary-icon"><i class="fas fa-arrow-trend-down"></i></span><span class="sum-copy"><small>GASTOS DE HOY</small><strong class="sum-count" id="gastosSummaryCount"></strong></span><span class="sum-total" id="gastosSummaryTotal"></span></div><div class="mg-list-heading"><span>MOVIMIENTOS REGISTRADOS</span><small>Más reciente primero</small></div><div id="gastosList"></div></section>
   </div>
   <button class="gastos-fab hidden" id="nuevoGastoFab" title="Nuevo gasto"><i class="fas fa-plus"></i></button>
+  </div>
+
+  <div id="mgSectionIngresos" class="hidden">
+  <div class="gastos-tabs"><button class="active" data-mobile-ingreso-tab="fixed"><i class="fas fa-calendar-check"></i> Fijos <b id="ixPendingCount">0</b></button><button data-mobile-ingreso-tab="daily"><i class="fas fa-receipt"></i> Del día</button></div>
+  <div class="gastos-content">
+    <section id="ixFixedView"><div class="mg-summary"><div class="danger"><i class="fas fa-circle-exclamation"></i><span>Saldo vencido<strong id="ixOverdue">$0,00</strong></span></div><div class="warning"><i class="fas fa-calendar-day"></i><span>Próximos 7 días<strong id="ixUpcoming">$0,00</strong></span></div></div><div class="mg-list-heading"><span>ATENCIÓN REQUERIDA</span><small>Ordenado por vencimiento</small></div><div id="ixFixedList"><div class="gastos-empty"><i class="fas fa-spinner fa-spin"></i>Cargando...</div></div></section>
+    <section id="ixDailyView" class="hidden"><div id="ingresosSummary" class="gastos-summary hidden"><span class="gastos-summary-icon" style="background:#e8f7ec;color:#1a7f37;"><i class="fas fa-arrow-trend-up"></i></span><span class="sum-copy"><small>INGRESOS DE HOY</small><strong class="sum-count" id="ingresosSummaryCount"></strong></span><span class="sum-total" id="ingresosSummaryTotal" style="color:#1a7f37;"></span></div><div class="mg-list-heading"><span>MOVIMIENTOS REGISTRADOS</span><small>Más reciente primero</small></div><div id="ingresosList"></div></section>
+  </div>
+  <button class="gastos-fab hidden" id="nuevoIngresoFab" title="Nuevo ingreso" style="background:#1a7f37;"><i class="fas fa-plus"></i></button>
+  </div>
 </div>

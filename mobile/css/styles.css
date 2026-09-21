@@ -276,6 +276,16 @@ input::placeholder { color: var(--text-muted); }
 .mg-pay-balance { background:var(--bg3); border-radius:7px; padding:.75rem; font-weight:700; margin-bottom:.7rem; }
 .mg-cancelled { opacity:.5; text-decoration:line-through; }
 
+/* Gastos: selector de sección Gastos/Ingresos + acento verde para Ingresos */
+.gastos-sections { display:flex; gap:8px; background:var(--bg2); padding:.6rem .75rem; border-bottom:1px solid var(--border); flex-shrink:0; }
+.gastos-sections button { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--border); background:var(--bg3); color:var(--text-muted); border-radius:7px; padding:.55rem .4rem; font-weight:700; font-size:.8rem; }
+.gastos-sections button.active { background:var(--text); color:var(--bg1); border-color:var(--text); }
+#mgSectionIngresos .gastos-tabs button.active { color:#1a7f37; border-bottom-color:#1a7f37; }
+#mgSectionIngresos .mg-summary .success>i,#mgSectionIngresos .mg-money strong { color:#1a7f37; }
+#mgSectionIngresos .mg-fixed.upcoming { border-top-color:#1a7f37; }
+#mgSectionIngresos .mg-inline button,#mgSectionIngresos .mg-pay { background:#1a7f37; color:#fff; }
+#mgSectionIngresos .mg-method button.active { border-color:#1a7f37; color:#1a7f37; background:rgba(26,127,55,.1); }
+
 /* Gastos: lectura operativa */
 .gastos-header-title { display:flex; flex-direction:column; line-height:1.05; }
 .gastos-header-title small { color:var(--accent); font-size:.55rem; font-weight:800; margin-bottom:3px; }
