@@ -145,8 +145,14 @@
                     <h3 style="font-size: 1.3em;">
                         <i class="fas fa-receipt"></i> Ventas del Día
                     </h3>
-                    <div id="fechaActual" style="color: #666; font-weight: 600;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <button id="btnToggleConsolidar" class="btn btn-outline hidden" onclick="toggleModoConsolidar()"
+                            style="padding: 6px 12px; font-size: 0.82em;">
+                            <i class="fas fa-object-group"></i> Consolidar recibos
+                        </button>
+                        <div id="fechaActual" style="color: #666; font-weight: 600;">
 
+                        </div>
                     </div>
                 </div>
 
@@ -391,6 +397,47 @@
 </div>
 
 
+<!-- Barra flotante de selección para consolidar recibos -->
+<div id="barraConsolidar" class="hidden"
+    style="position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 100000;
+    background: #24282c; color: #fff; border-radius: 10px; padding: 14px 20px; display: flex; align-items: center;
+    gap: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.35);">
+    <span><strong id="barraConsolidarCantidad">0</strong> recibo(s) seleccionado(s) · <strong id="barraConsolidarTotal">$0.00</strong></span>
+    <button class="btn btn-secondary" onclick="toggleModoConsolidar()" style="padding: 8px 14px;">Cancelar</button>
+    <button class="btn btn-primary" id="barraConsolidarBtn" onclick="abrirModalConsolidar()" disabled
+        style="padding: 8px 16px; background: #d4a017; border-color: #d4a017;">
+        <i class="fas fa-object-group"></i> Consolidar seleccionadas
+    </button>
+</div>
+
+<!-- Modal de confirmación: Consolidar recibos -->
+<div id="modalConsolidar" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="fas fa-object-group"></i> Consolidar recibos</h2>
+            <button class="modal-close" onclick="cerrarModalConsolidar()">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+            <p style="color: #666; margin-bottom: 15px;">
+                Se combinará el detalle de estas ventas en un único recibo impreso. Las ventas originales
+                quedan intactas y marcadas como consolidadas; ya no podrán consolidarse de nuevo ni
+                convertirse individualmente a factura.
+            </p>
+            <div id="modalConsolidarLista" style="max-height: 260px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 15px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.1em; font-weight: 700; padding: 10px 4px;">
+                <span>Total a consolidar:</span>
+                <span id="modalConsolidarTotal" style="color: #28a745;">$0.00</span>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; padding: 0 20px 20px;">
+            <button class="btn btn-secondary" onclick="cerrarModalConsolidar()">Cancelar</button>
+            <button class="btn btn-primary" id="btnConfirmarConsolidar" onclick="confirmarConsolidar()">
+                <i class="fas fa-print"></i> Generar recibo consolidado
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="modalDetalleVenta" class="modal">
     <div class="modal-content" style="max-width: 800px;">
         <div class="modal-header">
@@ -552,6 +599,11 @@
         position: relative;
         overflow: hidden;
         border-left-width: 4px;
+    }
+
+    .venta-card.seleccionada-consolidar {
+        background: #fff8e1;
+        box-shadow: 0 0 0 2px #d4a017 inset;
     }
 
     /* Bordes según tipo y estado */
@@ -1218,6 +1270,8 @@
             filtroFecha: new Date(),
             filtroCodigo: '',
             cargando: false,
+            modoConsolidar: false,
+            seleccionConsolidar: new Set(),
             proyeccionCache: {
                 valor: null,
                 timestamp: null,
@@ -1246,6 +1300,9 @@
 
             // Configurar fecha actual en el header
             actualizarFechaActual();
+
+            // Consolidar recibos es solo para administradores
+            document.getElementById('btnToggleConsolidar')?.classList.toggle('hidden', !esAdminVentas());
 
             // Configurar event listeners
             setupVentasEventListeners();
@@ -1605,8 +1662,34 @@
                     else if (estado === 'AUTORIZADO') badgeClass += ' autorizado';
                     estadoBadge = `<span class="${badgeClass}">${venta.estado}</span>`;
                 }
+                if (venta.consolidacion_id) {
+                    estadoBadge += `<span class="estado-badge" style="background:#e3e8ff;color:#3949ab;" title="Ya forma parte de un recibo consolidado"><i class="fas fa-object-group"></i> Consolidada</span>`;
+                }
+
+                const elegibleConsolidar = esVentaElegibleConsolidar(venta);
+                const estaSeleccionada = ventasState.seleccionConsolidar.has(venta.id);
+                const checkboxConsolidar = ventasState.modoConsolidar ? `
+                    <label class="checkbox-consolidar" onclick="event.stopPropagation();"
+                        style="position:absolute; top:10px; right:10px; z-index:2; ${elegibleConsolidar ? '' : 'opacity:.35;'}"
+                        title="${elegibleConsolidar ? 'Seleccionar para consolidar' : 'No elegible: debe ser RECIBO, sin consolidar y no devuelta/anulada'}">
+                        <input type="checkbox" style="width:20px;height:20px;cursor:${elegibleConsolidar ? 'pointer' : 'not-allowed'};"
+                            ${elegibleConsolidar ? '' : 'disabled'}
+                            ${estaSeleccionada ? 'checked' : ''}
+                            onchange="toggleSeleccionVenta('${venta.id}', this.checked)">
+                    </label>
+                ` : '';
+                // Nota: el valor a alternar se calcula aquí (no dentro del
+                // string de onclick) porque el atributo inline se evalúa en
+                // scope global al hacer clic y no puede ver `ventasState`
+                // (vive dentro del IIFE de este módulo, no en window).
+                const cardOnclick = ventasState.modoConsolidar
+                    ? (elegibleConsolidar ? `onclick="toggleSeleccionVenta('${venta.id}', ${!estaSeleccionada})"` : '')
+                    : `onclick="verDetalleVenta('${venta.id}')"`;
+                const cardSeleccionadaClase = ventasState.modoConsolidar && estaSeleccionada ? ' seleccionada-consolidar' : '';
+
                 return `
-                <div class="${cardClass}" onclick="verDetalleVenta('${venta.id}')">
+                <div class="${cardClass}${cardSeleccionadaClase}" style="position:relative;" ${cardOnclick}>
+                    ${checkboxConsolidar}
                     <div class="venta-card-header">
                         <div class="venta-id">${venta.id_venta}</div>
                         <div>
@@ -1648,6 +1731,166 @@
                 </div>
             `;
             }).join('');
+        }
+
+        // =====================================================
+        // CONSOLIDAR RECIBOS (varias ventas RECIBO del mismo día → un
+        // solo comprobante impreso). Fase 1: solo recibo, sin factura.
+        // =====================================================
+
+        function esVentaElegibleConsolidar(venta) {
+            const estado = String(venta?.estado || '').toUpperCase();
+            return venta.tipo === 'RECIBO'
+                && !venta.consolidacion_id
+                && !['DEVUELTO', 'ANULADO', 'ANULADA', 'GUARDANDO'].includes(estado);
+        }
+
+        function toggleModoConsolidar() {
+            ventasState.modoConsolidar = !ventasState.modoConsolidar;
+            if (!ventasState.modoConsolidar) ventasState.seleccionConsolidar.clear();
+            document.getElementById('barraConsolidar').classList.toggle('hidden', !ventasState.modoConsolidar);
+            renderizarVentasGallery();
+            actualizarBarraConsolidar();
+        }
+
+        function toggleSeleccionVenta(ventaId, seleccionada) {
+            if (seleccionada) ventasState.seleccionConsolidar.add(ventaId);
+            else ventasState.seleccionConsolidar.delete(ventaId);
+            renderizarVentasGallery();
+            actualizarBarraConsolidar();
+        }
+
+        function actualizarBarraConsolidar() {
+            const seleccionadas = ventasState.ventas.filter(v => ventasState.seleccionConsolidar.has(v.id));
+            const total = seleccionadas.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+            document.getElementById('barraConsolidarCantidad').textContent = seleccionadas.length;
+            document.getElementById('barraConsolidarTotal').textContent = window.app.formatCurrency(total);
+            document.getElementById('barraConsolidarBtn').disabled = seleccionadas.length < 2;
+        }
+
+        function abrirModalConsolidar() {
+            const seleccionadas = ventasState.ventas.filter(v => ventasState.seleccionConsolidar.has(v.id));
+            if (seleccionadas.length < 2) {
+                window.app?.showToast?.('Selecciona al menos 2 recibos para consolidar', 'warning', 3000);
+                return;
+            }
+            const total = seleccionadas.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+            document.getElementById('modalConsolidarLista').innerHTML = seleccionadas.map(v => `
+                <div style="display:flex; justify-content:space-between; padding:10px 14px; border-bottom:1px solid #eee;">
+                    <span>${v.id_venta} <small style="color:#999;">· ${new Date(v.fecha_hora_venta).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</small></span>
+                    <strong>${window.app.formatCurrency(v.total)}</strong>
+                </div>
+            `).join('');
+            document.getElementById('modalConsolidarTotal').textContent = window.app.formatCurrency(total);
+            document.getElementById('modalConsolidar').classList.add('active');
+        }
+
+        function cerrarModalConsolidar() {
+            document.getElementById('modalConsolidar').classList.remove('active');
+        }
+
+        async function confirmarConsolidar() {
+            const btn = document.getElementById('btnConfirmarConsolidar');
+            const ventaIds = Array.from(ventasState.seleccionConsolidar);
+            if (ventaIds.length < 2) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consolidando...';
+            try {
+                if (typeof posApiRequest !== 'function') {
+                    throw new Error('Backend seguro no disponible para consolidar');
+                }
+                const respuesta = await posApiRequest('/api/consolidations', {
+                    method: 'POST',
+                    body: JSON.stringify({ ventaIds })
+                });
+                const data = respuesta?.data || {};
+
+                window.app?.showToast?.(`✅ Recibo consolidado ${data.id_consolidacion} generado (${data.ventas_consolidadas} ventas)`, 'success', 5000);
+                cerrarModalConsolidar();
+                await imprimirReciboConsolidado(data);
+
+                ventasState.modoConsolidar = false;
+                ventasState.seleccionConsolidar.clear();
+                document.getElementById('barraConsolidar').classList.add('hidden');
+                await cargarVentas();
+            } catch (error) {
+                console.error('Error al consolidar recibos:', error);
+                window.app?.showToast?.(`Error: ${error.message}`, 'error', 5000);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-print"></i> Generar recibo consolidado';
+            }
+        }
+
+        // Arma el recibo consolidado reutilizando exactamente la misma
+        // vista de impresión (recibo.html) que reimprimirRecibo() usa para
+        // una sola venta, pero con el detalle combinado de todas las
+        // ventas consolidadas.
+        async function imprimirReciboConsolidado(data) {
+            try {
+                const detalles = data.detalles || [];
+                const productosMap = data.productosMap || {};
+
+                const cantidades = [];
+                const servicios = [];
+                const p_units = [];
+                const p_total = [];
+
+                detalles.forEach(detalle => {
+                    cantidades.push(detalle.cantidad);
+                    const nombreProducto = (productosMap[detalle.producto_id] || detalle.producto_id).replace(/,/g, ".");
+                    servicios.push(encodeURIComponent(nombreProducto));
+                    p_units.push(parseFloat(detalle.precio).toFixed(2));
+                    p_total.push(parseFloat(detalle.subtotal).toFixed(2));
+                });
+
+                const formattedDate = new Date().toLocaleString('es-EC', {
+                    timeZone: 'America/Guayaquil',
+                    day: '2-digit', month: '2-digit', year: '2-digit',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                }).replace(/[/]/g, '/').replace(',', '');
+
+                const url = "/pc/views/recibo.html" +
+                    "?fecha=" + encodeURIComponent(formattedDate) +
+                    "&venta=" + encodeURIComponent(data.id_consolidacion) +
+                    "&subtotal=" + encodeURIComponent(Number(data.total).toFixed(2)) +
+                    "&descuento=0" +
+                    "&vendedor=" + encodeURIComponent((await window.app.db.auth.getUser())?.data?.user?.email || 'SISTEMA') +
+                    "&nombre_cliente=" + encodeURIComponent('CONSUMIDOR FINAL') +
+                    "&cedula_cliente=9999999999999" +
+                    "&direccion_cliente=S/N" +
+                    "&telefono_cliente=S/N" +
+                    "&cantidades=" + cantidades.join(',') +
+                    "&servicios=" + servicios.join(',') +
+                    "&p_units=" + p_units.join(',') +
+                    "&total=" + encodeURIComponent(Number(data.total).toFixed(2)) +
+                    "&p_total=" + p_total.join(',') +
+                    "&tipo_documento=RECIBO+CONSOLIDADO";
+
+                window.open(url, '_blank');
+                window.app?.showToast?.('🖨️ Imprimiendo recibo consolidado...', 'success', 2000);
+            } catch (error) {
+                console.error('Error al imprimir recibo consolidado:', error);
+                window.app?.showToast?.('Error al generar el recibo consolidado', 'error', 3000);
+            }
+        }
+
+        // Reimprime un recibo consolidado ya existente a partir de una de
+        // sus ventas miembro (botón "Ver recibo consolidado" del detalle).
+        async function reimprimirReciboConsolidadoDeVenta(consolidacionId) {
+            try {
+                if (typeof posApiRequest !== 'function') {
+                    throw new Error('Backend seguro no disponible');
+                }
+                const respuesta = await posApiRequest(`/api/consolidations/${encodeURIComponent(consolidacionId)}/detalle`, {
+                    method: 'GET'
+                });
+                await imprimirReciboConsolidado(respuesta?.data || {});
+            } catch (error) {
+                console.error('Error al recuperar el recibo consolidado:', error);
+                window.app?.showToast?.(`Error: ${error.message}`, 'error', 4000);
+            }
         }
 
         function esVentaContabilizable(venta) {
@@ -3091,8 +3334,20 @@
                     try { await obtenerMetodosTransferencia(); } catch (e) { /* usa el código tal cual */ }
                 }
 
+                // Referencia legible del recibo consolidado (si esta venta
+                // ya forma parte de uno). Un fallo aquí no debe impedir ver
+                // la venta -- simplemente no se muestra la nota.
+                let consolidacion = null;
+                if (venta.consolidacion_id) {
+                    try {
+                        const { data } = await db.from('ferre_ventas_consolidadas')
+                            .select('id_consolidacion').eq('id', venta.consolidacion_id).maybeSingle();
+                        consolidacion = data;
+                    } catch (e) { /* se omite la nota */ }
+                }
+
                 // Renderizar modal
-                mostrarModalDetalle(venta, detalles, productosMap);
+                mostrarModalDetalle(venta, detalles, productosMap, consolidacion);
 
             } catch (error) {
                 window.app.showToast('Error al cargar detalle de venta', 'danger', 3000);
@@ -3104,7 +3359,7 @@
             return metodo ? metodo.nombre : codigo;
         }
 
-        function mostrarModalDetalle(venta, detalles, productosMap) {
+        function mostrarModalDetalle(venta, detalles, productosMap, consolidacion = null) {
             const fecha = new Date(venta.fecha_hora_venta);
             const fechaFormateada = fecha.toLocaleString('es-EC');
 
@@ -3112,7 +3367,14 @@
             modalBody.innerHTML = `
             <div class="detalle-header-info">
                 <h3 style="margin-bottom: 15px; color: #d4a017;">Venta ${venta.id_venta}</h3>
-                
+                ${consolidacion ? `
+                <div style="background:#e3e8ff; color:#3949ab; border-radius:8px; padding:10px 14px; margin-bottom:15px; font-size:0.88em;">
+                    <i class="fas fa-object-group"></i> Esta venta forma parte del recibo consolidado
+                    <strong>${consolidacion.id_consolidacion}</strong>. Ya no puede consolidarse de nuevo ni convertirse
+                    individualmente a factura.
+                </div>
+                ` : ''}
+
                 <div class="detalle-info-grid">
                     <div class="detalle-info-item">
                         <label>Fecha y Hora</label>
@@ -3244,10 +3506,24 @@
                 <button class="btn btn-primary" onclick="reimprimirRecibo()">
                     <i class="fas fa-print"></i> Reimprimir Recibo
                 </button>
-                <button class="btn btn-accent" onclick="iniciarConversionAFactura()">
-                    <i class="fas fa-file-invoice"></i> Convertir a Factura
-                </button>
             `;
+                if (venta.consolidacion_id) {
+                    // Ya forma parte de un recibo consolidado: no se puede
+                    // volver a consolidar ni convertir individualmente a
+                    // factura (evita que el comprobante consolidado ya
+                    // impreso quede desincronizado con lo que el POS ofrece).
+                    botones += `
+                    <button class="btn btn-accent" onclick="reimprimirReciboConsolidadoDeVenta('${venta.consolidacion_id}')">
+                        <i class="fas fa-object-group"></i> Ver recibo consolidado
+                    </button>
+                `;
+                } else {
+                    botones += `
+                    <button class="btn btn-accent" onclick="iniciarConversionAFactura()">
+                        <i class="fas fa-file-invoice"></i> Convertir a Factura
+                    </button>
+                `;
+                }
             }
 
             const estadoPermiteConversion = !['DEVUELTO', 'ANULADO', 'ANULADA', 'GUARDANDO'].includes(estado);
@@ -5089,6 +5365,12 @@
         window.ocultarHistoricoMensual = ocultarHistoricoMensual;
         window.volverAListaMensual = volverAListaMensual;
         window.verDetalleMes = verDetalleMes;
+        window.toggleModoConsolidar = toggleModoConsolidar;
+        window.toggleSeleccionVenta = toggleSeleccionVenta;
+        window.abrirModalConsolidar = abrirModalConsolidar;
+        window.cerrarModalConsolidar = cerrarModalConsolidar;
+        window.confirmarConsolidar = confirmarConsolidar;
+        window.reimprimirReciboConsolidadoDeVenta = reimprimirReciboConsolidadoDeVenta;
 
     })(); // Fin del IIFE
 
