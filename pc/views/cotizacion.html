@@ -3632,17 +3632,26 @@
         <div class="custom-confirm-message">
             Resume lo que el cliente pidio o la duda que tuvo para mejorar nuestro stock.
         </div>
-        <div class="form-group" style="margin-bottom: 20px;">
-            <input type="text" id="inputEventualidad" class="form-input" 
-                placeholder="Ej: PIDIO SPRAY ROJO, PREGUNTO POR CANDADO..." 
+        <div class="form-group" style="margin-bottom: 10px;">
+            <input type="text" id="inputEventualidad" class="form-input"
+                placeholder="Ej: PIDIO SPRAY ROJO, PREGUNTO POR CANDADO..."
                 oninput="this.value = this.value.toUpperCase()"
                 style="font-weight: bold; border-radius: 10px; padding: 15px; border: 2px solid #6c5ce7;">
+        </div>
+        <div class="form-group" style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="checkEventualidadProveedor" onchange="window.toggleEventualidadProveedorCotizacion()">
+            <label for="checkEventualidadProveedor" style="margin: 0; cursor: pointer;">Incluir proveedor</label>
+        </div>
+        <div class="form-group" id="grupoEventualidadProveedor" style="display:none; margin-bottom: 20px;">
+            <select id="selectEventualidadProveedor" class="form-input" style="border-radius: 10px; padding: 12px; border: 2px solid #6c5ce7;">
+                <option value="">Cargando proveedores…</option>
+            </select>
         </div>
         <div class="custom-confirm-buttons">
             <button class="btn btn-secondary" onclick="window.cerrarModalEventualidadCotizacion()">
                 <i class="fas fa-times"></i> Cancelar
             </button>
-            <button class="btn btn-accent" id="btnGuardarEventualidad" onclick="window.guardarEventualidadCotizacion()" 
+            <button class="btn btn-accent" id="btnGuardarEventualidad" onclick="window.guardarEventualidadCotizacion()"
                 style="background: #6c5ce7; border-color: #6c5ce7;">
                 <i class="fas fa-check-circle"></i> REGISTRAR
             </button>
@@ -5492,6 +5501,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         window.abrirModalEventualidadCotizacion = abrirModalEventualidadCotizacion;
         window.cerrarModalEventualidadCotizacion = cerrarModalEventualidadCotizacion;
         window.guardarEventualidadCotizacion = guardarEventualidadCotizacion;
+        window.toggleEventualidadProveedorCotizacion = toggleEventualidadProveedorCotizacion;
         
         // Calendario y filtros de Historial
         window.actualizarCalendarioCotizaciones = actualizarCalendarioCotizaciones;
@@ -11670,12 +11680,33 @@ _Sistema de Gestión Ferrisoluciones_`;
     // GESTION DE EVENTUALIDADES
     // =====================================================
 
+    let eventualidadProveedoresCargadosCotizacion = false;
+    async function toggleEventualidadProveedorCotizacion() {
+        const checked = document.getElementById('checkEventualidadProveedor').checked;
+        const grupo = document.getElementById('grupoEventualidadProveedor');
+        grupo.style.display = checked ? 'block' : 'none';
+        if (!checked || eventualidadProveedoresCargadosCotizacion) return;
+        const select = document.getElementById('selectEventualidadProveedor');
+        try {
+            const db = window.app?.db;
+            const { data, error } = await db.from('ferre_proveedores').select('id, empresa').order('empresa', { ascending: true });
+            if (error) throw error;
+            select.innerHTML = (data || []).map((p) => `<option value="${p.id}">${p.empresa}</option>`).join('');
+            eventualidadProveedoresCargadosCotizacion = true;
+        } catch (error) {
+            console.error('Error al cargar proveedores para eventualidad:', error);
+            select.innerHTML = '<option value="">No se pudieron cargar los proveedores</option>';
+        }
+    }
+
     function abrirModalEventualidadCotizacion() {
         const modal = document.getElementById('modalEventualidadOverlay');
         const input = document.getElementById('inputEventualidad');
         modal.classList.add('active');
         input.value = '';
-        
+        document.getElementById('checkEventualidadProveedor').checked = false;
+        document.getElementById('grupoEventualidadProveedor').style.display = 'none';
+
         // Listener para Enter
         input.onkeydown = function(e) {
             if (e.key === 'Enter') {
@@ -11706,6 +11737,15 @@ _Sistema de Gestión Ferrisoluciones_`;
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
+        const incluirProveedor = document.getElementById('checkEventualidadProveedor').checked;
+        const proveedorId = incluirProveedor ? document.getElementById('selectEventualidadProveedor').value : null;
+        if (incluirProveedor && !proveedorId) {
+            window.app?.showToast?.('Selecciona un proveedor', 'warning', 2000);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> REGISTRAR';
+            return;
+        }
+
         try {
             const db = window.app?.db;
             const userResponse = await db?.auth?.getUser();
@@ -11713,9 +11753,10 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             const { error } = await db.from('ferre_eventualidades').insert({
                 descripcion: query,
-                usuario_id: userId
+                usuario_id: userId,
+                proveedor_id: proveedorId
             });
-            
+
             if (error) throw error;
 
             window.app?.showToast?.('Eventualidad registrada correctamente', 'success', 2000);
@@ -11733,6 +11774,7 @@ _Sistema de Gestión Ferrisoluciones_`;
     window.abrirModalEventualidadCotizacion = abrirModalEventualidadCotizacion;
     window.cerrarModalEventualidadCotizacion = cerrarModalEventualidadCotizacion;
     window.guardarEventualidadCotizacion = guardarEventualidadCotizacion;
+    window.toggleEventualidadProveedorCotizacion = toggleEventualidadProveedorCotizacion;
 
 
 

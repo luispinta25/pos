@@ -3424,17 +3424,26 @@
         <div class="custom-confirm-message">
             Resume lo que el cliente pidio o la duda que tuvo para mejorar nuestro stock.
         </div>
-        <div class="form-group" style="margin-bottom: 20px;">
-            <input type="text" id="inputEventualidad" class="form-input" 
-                placeholder="Ej: PIDIO SPRAY ROJO, PREGUNTO POR CANDADO..." 
+        <div class="form-group" style="margin-bottom: 15px;">
+            <input type="text" id="inputEventualidad" class="form-input"
+                placeholder="Ej: PIDIO SPRAY ROJO, PREGUNTO POR CANDADO..."
                 oninput="this.value = this.value.toUpperCase()"
                 style="font-weight: bold; border-radius: 10px; padding: 15px; border: 2px solid #6c5ce7;">
+        </div>
+        <div class="form-group" style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="checkEventualidadProveedor" onchange="window.toggleEventualidadProveedor()">
+            <label for="checkEventualidadProveedor" style="margin: 0; cursor: pointer;">Incluir proveedor</label>
+        </div>
+        <div class="form-group" id="grupoEventualidadProveedor" style="display:none; margin-bottom: 20px;">
+            <select id="selectEventualidadProveedor" class="form-input" style="border-radius: 10px; padding: 12px; border: 2px solid #6c5ce7;">
+                <option value="">Cargando proveedores…</option>
+            </select>
         </div>
         <div class="custom-confirm-buttons">
             <button class="btn btn-secondary" onclick="window.cerrarModalEventualidad()">
                 <i class="fas fa-times"></i> Cancelar
             </button>
-            <button class="btn btn-accent" id="btnGuardarEventualidad" onclick="window.guardarEventualidad()" 
+            <button class="btn btn-accent" id="btnGuardarEventualidad" onclick="window.guardarEventualidad()"
                 style="background: #6c5ce7; border-color: #6c5ce7;">
                 <i class="fas fa-check-circle"></i> REGISTRAR
             </button>
@@ -10592,7 +10601,9 @@ _Sistema de Gestión Ferrisoluciones_`;
         const input = document.getElementById('inputEventualidad');
         modal.classList.add('active');
         input.value = '';
-        
+        document.getElementById('checkEventualidadProveedor').checked = false;
+        document.getElementById('grupoEventualidadProveedor').style.display = 'none';
+
         // Listener para Enter
         input.onkeydown = function(e) {
             if (e.key === 'Enter') {
@@ -10608,10 +10619,35 @@ _Sistema de Gestión Ferrisoluciones_`;
         document.getElementById('modalEventualidadOverlay').classList.remove('active');
     }
 
+    let eventualidadProveedoresCargados = false;
+    async function toggleEventualidadProveedor() {
+        const checked = document.getElementById('checkEventualidadProveedor').checked;
+        const grupo = document.getElementById('grupoEventualidadProveedor');
+        grupo.style.display = checked ? 'block' : 'none';
+        if (!checked || eventualidadProveedoresCargados) return;
+
+        const select = document.getElementById('selectEventualidadProveedor');
+        try {
+            const db = window.app?.db;
+            const { data, error } = await db
+                .from('ferre_proveedores')
+                .select('id, empresa')
+                .order('empresa', { ascending: true });
+            if (error) throw error;
+            select.innerHTML = (data || [])
+                .map((p) => `<option value="${p.id}">${p.empresa}</option>`)
+                .join('');
+            eventualidadProveedoresCargados = true;
+        } catch (error) {
+            console.error('Error al cargar proveedores para eventualidad:', error);
+            select.innerHTML = '<option value="">No se pudieron cargar los proveedores</option>';
+        }
+    }
+
     async function guardarEventualidad() {
         const input = document.getElementById('inputEventualidad');
         const query = input.value.trim();
-        
+
         if (query.length < 3) {
             window.app?.showToast?.('Detalla la eventualidad (minimo 3 letras)', 'warning', 2000);
             return;
@@ -10619,6 +10655,13 @@ _Sistema de Gestión Ferrisoluciones_`;
 
         const btn = document.getElementById('btnGuardarEventualidad');
         if (btn.disabled) return;
+
+        const incluirProveedor = document.getElementById('checkEventualidadProveedor').checked;
+        const proveedorId = incluirProveedor ? document.getElementById('selectEventualidadProveedor').value : null;
+        if (incluirProveedor && !proveedorId) {
+            window.app?.showToast?.('Selecciona un proveedor', 'warning', 2000);
+            return;
+        }
 
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
@@ -10630,7 +10673,8 @@ _Sistema de Gestión Ferrisoluciones_`;
 
             const { error } = await db.from('ferre_eventualidades').insert({
                 descripcion: query,
-                usuario_id: userId
+                usuario_id: userId,
+                proveedor_id: proveedorId
             });
 
             if (error) throw error;
@@ -10823,5 +10867,6 @@ _Sistema de Gestión Ferrisoluciones_`;
     window.abrirModalEventualidad = abrirModalEventualidad;
     window.cerrarModalEventualidad = cerrarModalEventualidad;
     window.guardarEventualidad = guardarEventualidad;
+    window.toggleEventualidadProveedor = toggleEventualidadProveedor;
 
 </script>
