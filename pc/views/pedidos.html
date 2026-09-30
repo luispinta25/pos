@@ -41,6 +41,43 @@
         /* No se encoge */
     }
 
+    .btn-notas-proveedores {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        z-index: 2;
+        background: #2d2d2d;
+        color: #d4a017;
+        border: 2px solid #d4a017;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s;
+    }
+
+    .btn-notas-proveedores:hover {
+        background: #d4a017;
+        color: #1a1a1a;
+    }
+
+    .badge-notas-proveedores {
+        background: #c0392b;
+        color: #fff;
+        border-radius: 999px;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        font-size: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     .pedidos-header::before {
         content: '';
         position: absolute;
@@ -1654,6 +1691,11 @@
     <div class="pedidos-container">
         <!-- Header -->
         <div class="pedidos-header">
+            <button id="btnNotasProveedores" class="btn-notas-proveedores" onclick="window.pedidosAbrirModalNotas()">
+                <i class="fas fa-sticky-note"></i>
+                Notas de proveedores
+                <span id="badgeNotasProveedores" class="badge-notas-proveedores" style="display:none;">0</span>
+            </button>
             <h1 class="pedidos-title">
                 <i class="fas fa-clipboard-list"></i>
                 PEDIDOS A PROVEEDORES
@@ -1820,6 +1862,42 @@
                 style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);">
                 <i class="fas fa-plus"></i> Agregar
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Notas de proveedores -->
+<div id="modalNotasProveedoresOverlay" class="custom-modal-overlay" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; align-items: center; justify-content: center;">
+    <div class="custom-modal" style="max-width: 560px; width: 95%;">
+        <div class="custom-modal-header">
+            <div class="custom-modal-icon"><i class="fas fa-sticky-note"></i></div>
+            <div class="custom-modal-title">Notas de proveedores</div>
+            <button onclick="window.pedidosCerrarModalNotas()" style="background:none; border:none; color:white; font-size: 24px; cursor:pointer;">&times;</button>
+        </div>
+        <div class="custom-modal-content" style="padding: 25px; color: #333;">
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label class="form-label">Escribe la nota</label>
+                <textarea id="notaProveedorTexto" class="form-input" rows="3" maxlength="2000"
+                    placeholder="Ej. Falta confirmar precio nuevo de tornillería con el vendedor..."
+                    style="border-radius: 10px; padding: 12px; border: 2px solid #eee; resize: vertical;"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="notaProveedorIncluirCheck" onchange="window.pedidosToggleNotaProveedorSelect()">
+                <label for="notaProveedorIncluirCheck" style="margin: 0; cursor: pointer;">Incluir proveedor</label>
+            </div>
+            <div class="form-group" id="notaProveedorSelectGroup" style="display:none; margin-bottom: 15px;">
+                <label class="form-label">Proveedor</label>
+                <select id="notaProveedorSelect" class="form-input" style="border-radius: 10px; padding: 10px; border: 2px solid #eee;"></select>
+            </div>
+            <div id="notaProveedorError" style="color:#c0392b; font-size:0.85rem; margin-bottom:10px;"></div>
+            <button class="btn btn-accent" style="width:100%; margin-bottom:20px;" onclick="window.pedidosGuardarNotaProveedor()">
+                <i class="fas fa-save"></i> Guardar nota
+            </button>
+
+            <h4 style="margin: 0 0 10px; color:#1a1a1a; border-top: 1px solid #eee; padding-top: 15px;">Pendientes</h4>
+            <div id="listaNotasProveedoresPendientes" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                <p style="color:#999; font-size:0.85rem;">Cargando...</p>
+            </div>
         </div>
     </div>
 </div>
@@ -2056,6 +2134,9 @@
 
             // Cargar proveedores
             await cargarProveedores();
+
+            // Badge de notas pendientes (no bloqueante, se ve sin abrir el modal)
+            cargarNotasProveedoresPendientes().catch(() => {});
 
             // Cargar anotaciones de pedidos (Ahora antes o en paralelo al inventario si se desea, 
             // pero el usuario pidió que si no hay cache se consulte anotaciones)
@@ -3987,6 +4068,132 @@
             document.getElementById('cantidadAnotar').value = '0';
         }
 
+        // ======================= Notas de proveedores ===========================
+        // Nota rapida (texto libre, proveedor opcional). Se guarda via api-pos
+        // (ferre_notas_proveedores) para que la vea tambien inventario-compras
+        // cuando filtra ese proveedor, y se incluya en "Notificar visita".
+        function escaparHtml(texto) {
+            const div = document.createElement('div');
+            div.textContent = texto == null ? '' : String(texto);
+            return div.innerHTML;
+        }
+
+        function poblarSelectNotaProveedor() {
+            const select = document.getElementById('notaProveedorSelect');
+            if (!select) return;
+            select.innerHTML = (proveedores || [])
+                .map((p) => `<option value="${p.id}">${escaparHtml(p.empresa)}</option>`)
+                .join('');
+        }
+
+        function toggleNotaProveedorSelect() {
+            const checked = document.getElementById('notaProveedorIncluirCheck').checked;
+            document.getElementById('notaProveedorSelectGroup').style.display = checked ? 'block' : 'none';
+        }
+
+        function actualizarBadgeNotasProveedores(count) {
+            const badge = document.getElementById('badgeNotasProveedores');
+            if (!badge) return;
+            if (count > 0) {
+                badge.textContent = String(count);
+                badge.style.display = 'inline-flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        async function cargarNotasProveedoresPendientes() {
+            const lista = document.getElementById('listaNotasProveedoresPendientes');
+            if (!lista) return;
+            lista.innerHTML = '<p style="color:#999; font-size:0.85rem;">Cargando...</p>';
+            try {
+                const response = await posApiRequest('/api/provider-notes?estado=Pendiente', { method: 'GET' });
+                const notas = response?.data || [];
+                actualizarBadgeNotasProveedores(notas.length);
+                if (!notas.length) {
+                    lista.innerHTML = '<p style="color:#999; font-size:0.85rem;">No hay notas pendientes.</p>';
+                    return;
+                }
+                lista.innerHTML = notas.map((nota) => `
+                    <div style="border:1px solid #eee; border-radius:10px; padding:12px; background:#fafafa;">
+                        <div style="font-size:0.75rem; color:#999; margin-bottom:4px;">
+                            ${nota.proveedor?.empresa ? `<i class="fas fa-truck"></i> ${escaparHtml(nota.proveedor.empresa)}` : 'General'}
+                            · ${new Date(nota.created_at).toLocaleDateString('es-EC')}
+                        </div>
+                        <div style="margin-bottom:8px; white-space:pre-wrap;">${escaparHtml(nota.nota)}</div>
+                        <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.75rem;" onclick="window.pedidosResolverNotaProveedor('${nota.id}')">
+                            <i class="fas fa-check"></i> Resolver
+                        </button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                lista.innerHTML = `<p style="color:#c0392b; font-size:0.85rem;">${escaparHtml(error.message || 'No se pudieron cargar las notas.')}</p>`;
+            }
+        }
+
+        async function abrirModalNotasProveedores() {
+            const overlay = document.getElementById('modalNotasProveedoresOverlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+                overlay.classList.add('active');
+                document.body.classList.add('modal-open');
+            }
+            document.getElementById('notaProveedorTexto').value = '';
+            document.getElementById('notaProveedorIncluirCheck').checked = false;
+            document.getElementById('notaProveedorSelectGroup').style.display = 'none';
+            document.getElementById('notaProveedorError').textContent = '';
+            poblarSelectNotaProveedor();
+            await cargarNotasProveedoresPendientes();
+        }
+
+        function cerrarModalNotasProveedores() {
+            const overlay = document.getElementById('modalNotasProveedoresOverlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+                overlay.style.display = 'none';
+                document.body.classList.remove('modal-open');
+            }
+        }
+
+        async function guardarNotaProveedor() {
+            const textoInput = document.getElementById('notaProveedorTexto');
+            const errorDiv = document.getElementById('notaProveedorError');
+            const texto = textoInput.value.trim();
+            errorDiv.textContent = '';
+            if (texto.length < 3) {
+                errorDiv.textContent = 'Escribe al menos 3 caracteres.';
+                return;
+            }
+            const incluir = document.getElementById('notaProveedorIncluirCheck').checked;
+            const proveedorId = incluir ? document.getElementById('notaProveedorSelect').value : null;
+            if (incluir && !proveedorId) {
+                errorDiv.textContent = 'Selecciona un proveedor.';
+                return;
+            }
+            try {
+                await posApiRequest('/api/provider-notes', {
+                    method: 'POST',
+                    body: JSON.stringify({ nota: texto, proveedor_id: proveedorId })
+                });
+                textoInput.value = '';
+                document.getElementById('notaProveedorIncluirCheck').checked = false;
+                document.getElementById('notaProveedorSelectGroup').style.display = 'none';
+                await cargarNotasProveedoresPendientes();
+            } catch (error) {
+                errorDiv.textContent = error.message || 'No se pudo guardar la nota.';
+            }
+        }
+
+        async function resolverNotaProveedor(id) {
+            try {
+                await posApiRequest(`/api/provider-notes/${id}/resolve`, { method: 'POST' });
+                await cargarNotasProveedoresPendientes();
+            } catch (error) {
+                const errorDiv = document.getElementById('notaProveedorError');
+                if (errorDiv) errorDiv.textContent = error.message || 'No se pudo resolver la nota.';
+            }
+        }
+
         function buscarProductoAnotar(query) {
             const resultadosDiv = document.getElementById('resultadosAnotar');
             if (!query || query.trim().length < 2) {
@@ -4212,6 +4419,11 @@
         // Nueva funcionalidad de anotaciones
         window.pedidosAbrirModalAnotar = abrirModalAnotar;
         window.pedidosCerrarModalAnotar = cerrarModalAnotar;
+        window.pedidosAbrirModalNotas = abrirModalNotasProveedores;
+        window.pedidosCerrarModalNotas = cerrarModalNotasProveedores;
+        window.pedidosToggleNotaProveedorSelect = toggleNotaProveedorSelect;
+        window.pedidosGuardarNotaProveedor = guardarNotaProveedor;
+        window.pedidosResolverNotaProveedor = resolverNotaProveedor;
         window.pedidosSeleccionarProductoAnotar = seleccionarProductoAnotar;
         window.pedidosPrepararProductoNuevo = prepararProductoNuevo;
         window.pedidosGuardarAnotacion = guardarAnotacion;
