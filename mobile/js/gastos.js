@@ -73,7 +73,14 @@ function mgSelectMethod(kind, method) {
 
 async function saveMobileExpense(body) {
     const result = await posApiRequest('/api/expenses/payments', { method: 'POST', body: JSON.stringify(body) });
-    showToast(result.data?.codigo_transferencia ? `Registrado. ${result.data.codigo_transferencia} espera comprobante.` : 'Gasto registrado', 'success', 4500);
+    const piernas = Array.isArray(result.data?.transferencias) ? result.data.transferencias : [];
+    // El monto no cupo en una sola cuenta (ej. Pichincha/Deuna consolidadas):
+    // se dividió en varias transferencias reales, cada una con su propio
+    // comprobante pendiente.
+    const mensaje = piernas.length > 1
+        ? `Registrado y dividido entre ${piernas.length} cuentas: ${piernas.map(p => `${p.codigo} (${mgMoney(p.monto)})`).join(', ')}. Todas esperan comprobante.`
+        : (result.data?.codigo_transferencia ? `Registrado. ${result.data.codigo_transferencia} espera comprobante.` : 'Gasto registrado');
+    showToast(mensaje, 'success', piernas.length > 1 ? 7000 : 4500);
     await loadGastos();
 }
 

@@ -170,7 +170,17 @@ async function gxSavePayment(body){
   gx.saving=true;
   try{
     var r=await gxBlocked(function(){return posApiRequest('/api/expenses/payments',{method:'POST',body:JSON.stringify(body)});},'Guardando gasto…');
-    window.app?.showToast(r.data?.codigo_transferencia?'Registrado. '+r.data.codigo_transferencia+' espera comprobante.':'Gasto registrado','success',4500);
+    var piernas=Array.isArray(r.data?.transferencias)?r.data.transferencias:[];
+    var mensaje='Gasto registrado';
+    if(piernas.length>1){
+      // El monto no cupo en una sola cuenta (ej. Pichincha/Deuna consolidadas):
+      // se dividió en varias transferencias reales, cada una con su propio
+      // comprobante pendiente.
+      mensaje='Registrado y dividido entre '+piernas.length+' cuentas: '+piernas.map(function(p){return p.codigo+' ('+gxMoney(p.monto)+')';}).join(', ')+'. Todas esperan comprobante.';
+    }else if(r.data?.codigo_transferencia){
+      mensaje='Registrado. '+r.data.codigo_transferencia+' espera comprobante.';
+    }
+    window.app?.showToast(mensaje,'success',piernas.length>1?7000:4500);
     await gxLoad();
     return true;
   }catch(e){
