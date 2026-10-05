@@ -398,15 +398,12 @@
 
 
 <!-- Barra flotante de selección para consolidar recibos -->
-<div id="barraConsolidar" class="hidden"
-    style="position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 100000;
-    background: #24282c; color: #fff; border-radius: 10px; padding: 14px 20px; display: flex; align-items: center;
-    gap: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.35);">
-    <span><strong id="barraConsolidarCantidad">0</strong> recibo(s) seleccionado(s) · <strong id="barraConsolidarTotal">$0.00</strong></span>
-    <button class="btn btn-secondary" onclick="toggleModoConsolidar()" style="padding: 8px 14px;">Cancelar</button>
+<div id="barraConsolidar" class="consolidar-toast hidden" role="region" aria-label="Selección de recibos">
+    <span class="consolidar-toast-resumen" aria-live="polite"><strong id="barraConsolidarCantidad">0</strong> recibos seleccionados <strong id="barraConsolidarTotal">$0.00</strong></span>
+    <button class="btn btn-secondary" onclick="toggleModoConsolidar()">Cancelar</button>
     <button class="btn btn-primary" id="barraConsolidarBtn" onclick="abrirModalConsolidar()" disabled
-        style="padding: 8px 16px; background: #d4a017; border-color: #d4a017;">
-        <i class="fas fa-object-group"></i> Consolidar seleccionadas
+        style="background: #d4a017; border-color: #d4a017;">
+        <i class="fas fa-object-group"></i> Consolidar
     </button>
 </div>
 
@@ -582,6 +579,65 @@
 </div>
 
 <style>
+    #barraConsolidar.consolidar-toast {
+        position: fixed;
+        inset: auto 20px 20px auto;
+        transform: none;
+        width: max-content;
+        max-width: calc(100vw - 40px);
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        margin: 0;
+        padding: 14px;
+        box-sizing: border-box;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        background: #24282c;
+        color: #fff;
+        border: 1px solid #454b51;
+        border-radius: 8px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        z-index: 1900;
+    }
+
+    #barraConsolidar .consolidar-toast-resumen {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        font-size: 14px;
+    }
+
+    #barraConsolidarTotal {
+        margin-left: 8px;
+        color: #ffe08a;
+        font-size: 18px;
+    }
+
+    #barraConsolidar .btn {
+        width: auto;
+        min-height: 36px;
+        padding: 8px 12px;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 600px) {
+        #barraConsolidar.consolidar-toast {
+            inset: auto 12px 12px 12px;
+            width: auto;
+            max-width: none;
+        }
+
+        #barraConsolidar .consolidar-toast-resumen {
+            flex-basis: 100%;
+        }
+    }
+
     .ventas-gallery {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
