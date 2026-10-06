@@ -129,6 +129,9 @@
                 <span>Ver Dashboard Experto</span>
             </button>
 
+            <button class="btn btn-outline" onclick="mostrarConsolidados(true)" style="width:100%;margin-top:10px;">
+                <i class="fas fa-object-group"></i> Consolidados
+            </button>
             <button class="btn btn-secondary" onclick="mostrarHistoricoMensual()"
                 style="width: 100%; margin-top: 10px; padding: 15px; font-size: 1.1em; background: #3f51b5; color: white; border: none;">
                 <i class="fas fa-history"></i>
@@ -140,6 +143,15 @@
 
         <div style="overflow-y: auto; padding-right: 10px; height: 100%; scrollbar-width: thin;">
 
+            <section id="consolidadosView" class="hidden" style="padding:20px;">
+                <header style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+                    <button class="btn btn-outline" onclick="mostrarConsolidados(false)" title="Volver a ventas"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Recibos consolidados</h3>
+                    <span id="consolidadosFecha" style="color:#666;"></span>
+                    <button class="btn btn-outline" onclick="cargarConsolidados()" title="Actualizar"><i class="fas fa-sync-alt"></i></button>
+                </header>
+                <div id="consolidadosLista" class="ventas-gallery" aria-live="polite"></div>
+            </section>
             <div class="card" id="ventasListView">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3 style="font-size: 1.3em;">
@@ -1607,6 +1619,9 @@
         // =====================================================
 
         async function cargarVentas() {
+            if (document.getElementById('consolidadosView')?.dataset.activo === 'true') {
+                await cargarConsolidados();
+            }
             try {
                 ventasState.cargando = true;
                 mostrarLoading(true);
@@ -1664,6 +1679,74 @@
         // =====================================================
         // RENDERIZADO
         // =====================================================
+
+        function textoConsolidado(value) {
+            return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        async function mostrarConsolidados(activo) {
+            if (ventasState.modoConsolidar) toggleModoConsolidar();
+            const vista = document.getElementById('consolidadosView');
+            vista.dataset.activo = String(activo);
+            vista.classList.toggle('hidden', !activo);
+            document.getElementById('ventasListView').classList.toggle('hidden', activo);
+            document.getElementById('ventasListView').style.display = activo ? 'none' : 'block';
+            for (const id of ['dashboardView','historicoMensualView']) {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(id).style.display = 'none';
+            }
+            if (activo) await cargarConsolidados();
+        }
+
+        let consultaConsolidados = 0;
+        async function cargarConsolidados() {
+            const consulta = ++consultaConsolidados;
+            const lista = document.getElementById('consolidadosLista');
+            const fecha = new Date(ventasState.filtroFecha);
+            document.getElementById('consolidadosFecha').textContent = fecha.toLocaleDateString('es-EC');
+            lista.textContent = 'Cargando consolidados...';
+            fecha.setHours(0,0,0,0);
+            const fin = new Date(fecha); fin.setDate(fin.getDate()+1);
+            try {
+                const { data, error } = await window.app.db.from('ferre_ventas_consolidadas')
+                    .select('*,ferre_consolidacion_integrantes(venta_id,ferre_ventas(id_venta))')
+                    .gte('fecha_hora', fecha.toISOString()).lt('fecha_hora', fin.toISOString())
+                    .order('fecha_hora', {ascending:false});
+                if (error) throw error;
+                if (consulta !== consultaConsolidados) return;
+                lista.innerHTML = (data || []).map(c => {
+                    const anulada = c.estado === 'ANULADO';
+                    const elegible = !anulada && c.tipo === 'RECIBO' && c.estado === 'COMPLETADO' && !c.doc && !c.clave_acceso && !c.sri_microservice_response;
+                    return `<article class="venta-card" style="cursor:default;border-radius:8px;">
+                        <div class="venta-card-header"><strong>${textoConsolidado(c.id_consolidacion)}</strong></div>
+                        <p style="margin:12px 0;">${textoConsolidado(c.estado)} · ${c.ferre_consolidacion_integrantes?.length || 0} recibos</p>
+                        <strong style="font-size:1.4em;">${window.app.formatCurrency(c.total)}</strong>
+                        <details style="margin-top:12px;"><summary>Recibos originales</summary><ul style="padding-left:20px;">${(c.ferre_consolidacion_integrantes || []).map(v => `<li>${textoConsolidado(v.ferre_ventas?.id_venta || v.venta_id)}</li>`).join('')}</ul></details>
+                        <p style="margin:12px 0;">${textoConsolidado(c.creado_por_email)} · ${new Date(c.fecha_hora).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'})}</p>
+                        ${anulada ? `<p style="color:#b42318;">${textoConsolidado(c.motivo_anulacion)}</p>` : ''}
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
+                            ${!anulada ? `<button class="btn btn-outline" onclick="reimprimirReciboConsolidadoDeVenta('${c.id}')"><i class="fas fa-print"></i> Reimprimir</button>` : ''}
+                            ${elegible && esAdminVentas() ? `<button class="btn btn-outline" onclick="anularConsolidado('${c.id}')"><i class="fas fa-ban"></i> Anular</button>` : ''}
+                        </div>
+                    </article>`;
+                }).join('') || '<p>No hay consolidados para esta fecha.</p>';
+            } catch (error) {
+                if (consulta === consultaConsolidados) lista.textContent = 'No se pudieron cargar: ' + error.message;
+            }
+        }
+
+        async function anularConsolidado(id) {
+            if (!esAdminVentas()) return;
+            const motivo = window.prompt('Motivo de anulación (mínimo 5 caracteres):');
+            if (motivo === null) return;
+            if (motivo.trim().length < 5) return window.app.showToast('Indica un motivo de al menos 5 caracteres', 'warning');
+            if (!await window.showCustomConfirm('¿Anular esta consolidación? Se liberarán sus recibos originales, sin modificar inventario, pagos ni caja.')) return;
+            try {
+                await posApiRequest(`/api/consolidations/${encodeURIComponent(id)}/anular`, {method:'POST',body:JSON.stringify({motivo:motivo.trim()})});
+                window.app.showToast('Consolidación anulada; recibos liberados', 'success');
+                await cargarVentas();
+            } catch (error) { window.app.showToast(error.message, 'danger', 5000); }
+        }
 
         function renderizarVentasGallery() {
             const gallery = document.getElementById('ventasGallery');
@@ -4340,6 +4423,7 @@
         let dashboardDataCache = null; // Cache for modal usage
 
         async function mostrarDashboard() {
+            await mostrarConsolidados(false);
             document.getElementById('ventasListView').classList.add('hidden');
             document.getElementById('ventasListView').style.display = 'none';
             document.getElementById('dashboardView').classList.remove('hidden');
@@ -5059,6 +5143,7 @@
         let historicoVentasCache = [];
 
         async function mostrarHistoricoMensual() {
+            await mostrarConsolidados(false);
             document.getElementById('ventasListView').classList.add('hidden');
             document.getElementById('ventasListView').style.display = 'none';
             document.getElementById('historicoMensualView').classList.remove('hidden');
@@ -5427,6 +5512,9 @@
         window.cerrarModalConsolidar = cerrarModalConsolidar;
         window.confirmarConsolidar = confirmarConsolidar;
         window.reimprimirReciboConsolidadoDeVenta = reimprimirReciboConsolidadoDeVenta;
+        window.mostrarConsolidados = mostrarConsolidados;
+        window.cargarConsolidados = cargarConsolidados;
+        window.anularConsolidado = anularConsolidado;
 
     })(); // Fin del IIFE
 
