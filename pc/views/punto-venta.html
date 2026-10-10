@@ -3320,6 +3320,50 @@
             height: auto !important;
         }
     }
+    .btn-alerta-local {
+        position: fixed;
+        right: 30px;
+        width: 52px;
+        height: 52px;
+        border: 2px solid #1a1a1a;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        z-index: 10002;
+        box-shadow: 0 4px 12px rgba(0,0,0,.18);
+        font-size: 1.35rem;
+        color: #1a1a1a;
+    }
+    #btnAyudaVentas { bottom: 108px; background: #ffcf40; }
+    #btnPrecaucionLocal { bottom: 174px; background: #ef6656; }
+    .btn-alerta-local:disabled { opacity: .65; cursor: wait; }
+    .btn-alerta-local:focus-visible { outline: 3px solid #1685c2; outline-offset: 3px; }
+    #menuAlertasLocal {
+        position: fixed;
+        right: 94px;
+        bottom: 174px;
+        width: 300px;
+        max-width: calc(100vw - 32px);
+        height: auto !important;
+        background: white;
+        color: #222;
+        border: 1px solid #ccd0d5;
+        border-radius: 8px;
+        box-shadow: 0 6px 24px rgba(0,0,0,.2);
+        padding: 12px;
+        z-index: 10003;
+    }
+    #menuAlertasLocal header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    #menuAlertasLocal button { cursor:pointer; }
+    #menuAlertasLocal .alerta-opcion {
+        display:flex; align-items:center; gap:10px; width:100%; min-height:46px;
+        padding:10px; margin-top:6px; text-align:left; background:#f5f6f7;
+        border:1px solid #d7dce2; border-radius:6px; font-size:.95rem;
+    }
+    #menuAlertasLocal .alerta-grave { background:#fff0ee; border-color:#edb9b3; color:#aa2418; }
+    #menuAlertasLocal button:disabled { opacity:.6; cursor:wait; }
+    @media (max-width: 460px) { #menuAlertasLocal { right:16px; bottom:238px; } }
     /* Estilos para Eventualidades */
     .btn-flotante-eventualidad {
         position: fixed;
@@ -3408,6 +3452,19 @@
 </button>
 
 <!-- Boton Flotante Eventualidad -->
+<button type="button" id="btnAyudaVentas" class="btn-alerta-local" onclick="window.enviarAlertaLocal('AYUDA_VENTAS')" title="Pedir ayuda urgente para ventas" aria-label="Pedir ayuda urgente para ventas">
+    <i class="fas fa-bell" aria-hidden="true"></i>
+</button>
+<button type="button" id="btnPrecaucionLocal" class="btn-alerta-local" onclick="window.toggleAlertasLocal()" title="Avisos y alertas del local" aria-label="Avisos y alertas del local" aria-expanded="false" aria-controls="menuAlertasLocal">
+    <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+</button>
+<section id="menuAlertasLocal" class="hidden" aria-label="Avisos del local" onkeydown="if(event.key==='Escape') window.cerrarAlertasLocal()">
+    <header><strong>Alerta del local</strong><button type="button" class="btn btn-outline" onclick="window.cerrarAlertasLocal()" title="Cerrar" aria-label="Cerrar"><i class="fas fa-times"></i></button></header>
+    <button type="button" class="alerta-opcion" data-alerta-local="PROVEEDOR_NUEVO" onclick="window.enviarAlertaLocal('PROVEEDOR_NUEVO')"><i class="fas fa-truck"></i> Proveedor nuevo</button>
+    <button type="button" class="alerta-opcion" data-alerta-local="CLIENTE_PROBLEMATICO" onclick="window.enviarAlertaLocal('CLIENTE_PROBLEMATICO')"><i class="fas fa-user-times"></i> Cliente problemático</button>
+    <button type="button" class="alerta-opcion alerta-grave" data-alerta-local="PERSONA_SOSPECHOSA" onclick="window.enviarAlertaLocal('PERSONA_SOSPECHOSA')"><i class="fas fa-user-secret"></i> Persona sospechosa</button>
+    <button type="button" class="alerta-opcion alerta-grave" data-alerta-local="ROBO" onclick="window.enviarAlertaLocal('ROBO')"><i class="fas fa-exclamation-triangle"></i> Robo</button>
+</section>
 <button class="btn-flotante-eventualidad" onclick="window.abrirModalEventualidad()">
     <span class="eventualidad-alerta">AUDITORIA</span>
     <i class="fas fa-exclamation-circle"></i>
@@ -10593,6 +10650,62 @@ _Sistema de Gestión Ferrisoluciones_`;
     window.generarGarantia = generarGarantia;
 
     // =====================================================
+    // ALERTAS RAPIDAS DEL LOCAL
+    const alertasLocalEnCurso = new Set();
+    const alertasLocal = {
+        AYUDA_VENTAS: { texto: '*AYUDA URGENTE PARA VENTAS*\nSe necesita apoyo inmediato en el local para atender a los clientes.', confirmar: false },
+        PROVEEDOR_NUEVO: { texto: '*PROVEEDOR NUEVO EN EL LOCAL*\nSe solicita apoyo para atender a un proveedor nuevo.', confirmar: true },
+        CLIENTE_PROBLEMATICO: { texto: '*CLIENTE PROBLEMATICO EN EL LOCAL*\nSe necesita apoyo para atender una situacion con un cliente problematico.', confirmar: true },
+        PERSONA_SOSPECHOSA: { texto: '*ALERTA URGENTE: PERSONA SOSPECHOSA*\nSe reporta una persona sospechosa en el local. Se solicita apoyo inmediato.', confirmar: false },
+        ROBO: { texto: '*EMERGENCIA: ROBO EN EL LOCAL*\nSe reporta un robo en el local. Se necesita ayuda urgente.', confirmar: false }
+    };
+
+    function toggleAlertasLocal() {
+        const menu = document.getElementById('menuAlertasLocal');
+        if (!menu) return;
+        const abrir = menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', !abrir);
+        document.getElementById('btnPrecaucionLocal')?.setAttribute('aria-expanded', String(abrir));
+        if (abrir) menu.querySelector('.alerta-opcion')?.focus();
+    }
+
+    function cerrarAlertasLocal() {
+        document.getElementById('menuAlertasLocal')?.classList.add('hidden');
+        document.getElementById('btnPrecaucionLocal')?.setAttribute('aria-expanded','false');
+        document.getElementById('btnPrecaucionLocal')?.focus();
+    }
+
+    async function enviarAlertaLocal(tipo) {
+        const alerta = alertasLocal[tipo];
+        if (!alerta || alertasLocalEnCurso.has(tipo)) return;
+        const boton = tipo === 'AYUDA_VENTAS' ? document.getElementById('btnAyudaVentas')
+            : document.querySelector(`[data-alerta-local="${tipo}"]`);
+        alertasLocalEnCurso.add(tipo);
+        if (boton) boton.disabled = true;
+        try {
+            if (tipo !== 'AYUDA_VENTAS') cerrarAlertasLocal();
+            if (alerta.confirmar && !await window.showCustomConfirm('¿Enviar al grupo el aviso de ' + (tipo === 'PROVEEDOR_NUEVO' ? 'proveedor nuevo' : 'cliente problemático') + '?')) return;
+            if (typeof posApiRequest !== 'function') throw new Error('Servicio de avisos no disponible');
+            const usuario = obtenerUsuarioActual();
+            const fecha = new Date().toLocaleString('es-EC', {timeZone:'America/Guayaquil'});
+            const texto = alerta.texto + '\n\n*Solicita:* ' + (usuario?.nombre || usuario?.email || 'Usuario del POS') + '\n*Fecha y hora:* ' + fecha + '\nFerrisoluciones';
+            window.app?.showToast?.('Enviando aviso al grupo...', 'info', 2000);
+            await posApiRequest('/api/whatsapp/send-text', {
+                method:'POST', body:JSON.stringify({text:texto, delay:1000, linkPreview:false})
+            });
+            window.app?.showToast?.('Aviso enviado al grupo', 'success', 4000);
+        } catch (error) {
+            console.error('No se pudo enviar alerta del local:', error);
+            window.app?.showToast?.('No se pudo enviar el aviso: ' + error.message, 'danger', 6000);
+        } finally {
+            alertasLocalEnCurso.delete(tipo);
+            if (boton) boton.disabled = false;
+        }
+    }
+    window.toggleAlertasLocal = toggleAlertasLocal;
+    window.cerrarAlertasLocal = cerrarAlertasLocal;
+    window.enviarAlertaLocal = enviarAlertaLocal;
+
     // GESTION DE EVENTUALIDADES
     // =====================================================
 
