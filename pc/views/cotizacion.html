@@ -9347,7 +9347,22 @@ _Sistema de Gestión Ferrisoluciones_`;
         }, 100);
     }
 
+    let guardandoRegistroCliente = false;
+
     async function confirmarRegistroCliente() {
+        if (guardandoRegistroCliente) return;
+        guardandoRegistroCliente = true;
+        const boton = document.querySelector('#modalRegistroCliente button[onclick="confirmarRegistroCliente()"]');
+        if (boton) boton.disabled = true;
+        try {
+            await guardarDatosRegistroCliente();
+        } finally {
+            guardandoRegistroCliente = false;
+            if (boton) boton.disabled = false;
+        }
+    }
+
+    async function guardarDatosRegistroCliente() {
         // Obtener valores del formulario
         const cedula = document.getElementById('nuevoClienteCedula').value.trim();
         const razonSocial = document.getElementById('nuevoClienteNombre').value.trim();
@@ -9388,23 +9403,20 @@ _Sistema de Gestión Ferrisoluciones_`;
             // Obtener referencia a la base de datos
             const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
 
-            // Insertar en Supabase
+            // La identidad unica permite actualizar incluso con solicitudes concurrentes.
             const { data, error } = await db
                 .from('ferre_clientes')
-                .insert([{
+                .upsert([{
                     cedula: cedula.padStart(10, '0'),
                     razon_social: razonSocial,
                     direccion: direccion,
-                    telefono: telefono || null,
-                    correo: correo || null
-                }])
+                    ...(telefono ? { telefono } : {}),
+                    ...(correo ? { correo } : {})
+                }], { onConflict: 'cedula' })
                 .select()
                 .single();
 
             if (error) {
-                if (error.code === '23505') { // Duplicate key
-                    throw new Error('Este cliente ya está registrado');
-                }
                 throw error;
             }
 
@@ -9431,7 +9443,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             cargarClientesCompleto();
 
             // Mostrar confirmación
-            window.app.showToast(`✓ Cliente ${razonSocial} registrado exitosamente`, 'success', 3000);
+            window.app.showToast(`Cliente ${razonSocial} guardado exitosamente`, 'success', 3000);
 
             // Enfocar en búsqueda de productos
             setTimeout(() => {

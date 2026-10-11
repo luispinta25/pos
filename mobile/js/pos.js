@@ -206,23 +206,27 @@ function showRegisterForm(cedula) {
     setTimeout(() => $('newClientNombre').focus(), 100);
 }
 
+let guardandoClienteMovil = false;
+
 async function guardarCliente() {
+    if (guardandoClienteMovil) return;
     const cedula = $('newClientCedula').value.trim(), nombre = $('newClientNombre').value.trim(),
           direccion = $('newClientDireccion').value.trim(), telefono = $('newClientTelefono').value.trim(),
           correo = $('newClientCorreo').value.trim();
     if (!cedula || !nombre || !direccion || !correo) { showToast('Rellena los campos obligatorios', 'warning'); return; }
     if (!/^\d{10}$|^\d{13}$/.test(cedula)) { showToast('Cédula/RUC no válida', 'warning'); return; }
     if (!correo.includes('@')) { showToast('Correo no válido', 'warning'); return; }
+    guardandoClienteMovil = true;
     showLoader();
     try {
-        const { data, error } = await db.from('ferre_clientes').upsert([{ cedula, razon_social: nombre, direccion, telefono, correo }], { onConflict: 'cedula' }).select().single();
+        const { data, error } = await db.from('ferre_clientes').upsert([{ cedula, razon_social: nombre, direccion, ...(telefono ? { telefono } : {}), correo }], { onConflict: 'cedula' }).select().single();
         if (error) throw error;
         const idx = allClients.findIndex(c => c.cedula === cedula);
         if (idx !== -1) allClients[idx] = data; else allClients.push(data);
         selectClient(cedula);
         showToast('Cliente guardado', 'success');
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
-    finally { hideLoader(); }
+    finally { guardandoClienteMovil = false; hideLoader(); }
 }
 
 // ── Pago ───────────────────────────────────────────────
