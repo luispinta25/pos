@@ -109,6 +109,7 @@ function updateNavbarCounter(moduleName, value = null) {
  * Cargar un módulo HTML en el contenedor
  */
 async function loadModule(moduleName) {
+    window.billingValidity?.leave();
     try {
         // Marcar botón activo
         document.querySelectorAll('.nav-btn').forEach(btn => {

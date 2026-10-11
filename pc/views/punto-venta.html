@@ -5184,6 +5184,7 @@ _Sistema de Gestión Ferrisoluciones_`;
     }
 
     async function initPuntoVenta() {
+        window.billingValidity?.enter();
         // Resetear guards de eventos para permitir re-vinculación al recargar módulo
         window._clienteBusquedaListenerAdded = false;
         asegurarBotonBannerWhatsapp();
