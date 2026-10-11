@@ -10239,6 +10239,11 @@ _Sistema de Gestión Ferrisoluciones_`;
                     console.error('Emisión SRI pendiente de reintento:', error);
                     window.app?.showToast?.('La venta fue guardada. La factura queda pendiente y puede reintentarse desde Ventas.', 'warning', 7000);
                 }
+                if (typeof posApiRequest === 'function' && !resultado.success && !['RECHAZADO', 'DEVUELTA', 'NO AUTORIZADO'].includes(resultado.estado)) {
+                    posApiRequest('/api/billing/recovery', {
+                        method: 'POST', body: JSON.stringify({ ventaId: ventaInsertada.id })
+                    }).catch(() => {});
+                }
                 const docAutorizado = resultado.doc || resultado.data?.doc || '';
                 mostrarModalExitoVenta(ventaIdText, {
                     tipo: 'FACTURA',
