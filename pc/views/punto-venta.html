@@ -5957,6 +5957,13 @@ _Sistema de Gestión Ferrisoluciones_`;
             return;
         }
 
+        window.cxcAutorizacion.mount('creditoVenta', document.getElementById('creditoNotasInput').parentElement.parentElement,
+            () => ({ tipo: 'VENTA', monto: obtenerTotalVentaActual(), motivo: document.getElementById('creditoMotivoInput').value.trim() || 'Venta a crédito', notas: document.getElementById('creditoNotasInput').value.trim() || null }), deudor => {
+                ventaState.clienteSeleccionado = { cedula: deudor.cedula_ruc, razon_social: deudor.nombre, direccion: deudor.direccion, telefono: deudor.telefono, correo: deudor.email };
+                mostrarClienteSeleccionado();
+                document.getElementById('modalCreditoCliente').textContent = deudor.nombre + ' - ' + deudor.cedula_ruc;
+            });
+
         const abonoInput = document.getElementById('creditoAbonoInput');
         const vencimientoInput = document.getElementById('creditoVencimientoInput');
 
@@ -6117,14 +6124,6 @@ _Sistema de Gestión Ferrisoluciones_`;
     async function procesarVentaCredito() {
         if (ventaState.carrito.length === 0) {
             window.app.showToast('El carrito está vacío', 'warning');
-            return;
-        }
-
-        const cliente = ventaState.clienteSeleccionado;
-        if (!cliente || cliente.cedula === '9999999999999') {
-            window.app.showToast('Selecciona un cliente antes de registrar crédito', 'warning', 3500);
-            // Auto-activar búsqueda de cliente (como F3)
-            activarBusquedaCliente();
             return;
         }
 
@@ -6398,6 +6397,10 @@ _Sistema de Gestión Ferrisoluciones_`;
         const motivo = motivoInput && motivoInput.value.trim() ? motivoInput.value.trim() : 'Venta a crédito';
         const metodo = metodoSelect ? metodoSelect.value : 'EFECTIVO';
         const notas = notasInput && notasInput.value.trim() ? notasInput.value.trim() : '';
+        if (abono > 0 && ['TRANSFERENCIA', 'DEPOSITO'].includes(metodo)) {
+            window.app.showToast('Registra este abono desde CXC con su referencia y comprobante. Deja el abono inicial en cero.', 'warning', 6000);
+            return;
+        }
 
         const db = window.app ? window.app.db : (typeof getSupabaseClient === 'function' ? getSupabaseClient() : (typeof getDB === 'function' ? getDB() : supabaseClient));
         if (!db || typeof db.from !== 'function') {
@@ -6419,7 +6422,8 @@ _Sistema de Gestión Ferrisoluciones_`;
             console.log('🛒 Carrito:', ventaState.carrito);
             console.log('💰 Total:', total, 'Abono:', abono, 'Saldo:', saldo);
 
-            const deudor = await ensureDeudorParaCliente(db, cliente);
+            const autorizacion = await window.cxcAutorizacion.authorize('creditoVenta');
+            const deudor = autorizacion.deudor;
             console.log('✅ Deudor verificado/creado:', deudor);
 
             const ventaIdText = `S${Date.now()}`;
@@ -6508,6 +6512,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 tipo: 'VENTA',
                 motivo,
                 monto: normalizarMontoCredito(total),
+                autorizacion_id: autorizacion.autorizacionId,
                 saldo_pendiente: normalizarMontoCredito(total),
                 venta_id: ventaInsertada.id,
                 deudor_id: deudor.id,
@@ -6515,7 +6520,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                 fecha_otorgada: fechaActualISO,
                 fecha_vencimiento: vencimientoISO,
                 aprobado_por: usuario.nombre || usuario.email || 'Usuario',
-                otros_detalles: notas || 'Generado automáticamente desde Punto de Venta'
+                otros_detalles: notas || null
             };
 
             console.log('💳 Insertando cuenta por cobrar:', cuentaPayload);
@@ -6539,6 +6544,8 @@ _Sistema de Gestión Ferrisoluciones_`;
             }
 
             console.log('✅ Cuenta insertada:', cuentaInsertada);
+            window.cxcAutorizacion.notify('creditoVenta');
+            let abonoConfirmado = 0;
 
             if (abono > 0) {
                 const pagoPayload = {
@@ -6560,6 +6567,7 @@ _Sistema de Gestión Ferrisoluciones_`;
                     console.error('❌ Error registrando pago inicial:', pagoError);
                     window.app.showToast('Crédito creado, pero el pago inicial no se guardó. Regístralo manualmente.', 'warning', 6000);
                 } else {
+                    abonoConfirmado = abono;
                     console.log('✅ Pago inicial registrado');
                 }
             }
@@ -6573,13 +6581,13 @@ _Sistema de Gestión Ferrisoluciones_`;
                 cuenta: {
                     ...cuentaInsertada,
                     monto: total,
-                    saldo_pendiente: saldo,
-                    estado: estadoCuenta,
+                    saldo_pendiente: normalizarMontoCredito(total - abonoConfirmado),
+                    estado: abonoConfirmado >= total ? 'PAGADO' : abonoConfirmado > 0 ? 'PARCIAL' : 'PENDIENTE',
                     fecha_otorgada: fechaActualISO,
                     fecha_vencimiento: vencimientoISO
                 },
                 deudor,
-                abonoInicial: abono,
+                abonoInicial: abonoConfirmado,
                 usuario,
                 notas,
                 productos: ventaState.carrito,

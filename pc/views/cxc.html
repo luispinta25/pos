@@ -1353,7 +1353,18 @@
         return { email: null, nombre: 'Usuario' };
     }
 
+    let guardandoNuevaDeuda = false;
     async function guardarNuevaDeuda(event) {
+        event.preventDefault();
+        if (guardandoNuevaDeuda) return;
+        guardandoNuevaDeuda = true;
+        const button = selectors.formularios.nuevaDeuda.querySelector('button[type="submit"]');
+        if (button) button.disabled = true;
+        try { await guardarNuevaDeudaAutorizada(event); }
+        finally { guardandoNuevaDeuda = false; if (button) button.disabled = false; }
+    }
+
+    async function guardarNuevaDeudaAutorizada(event) {
         event.preventDefault();
         const campos = selectors.nuevaDeudaCampos;
         const documento = campos.documento.value.trim();
@@ -1378,6 +1389,10 @@
             showToast('El abono no puede ser mayor que el monto total', 'warning');
             return;
         }
+        if (abono > 0 && ['TRANSFERENCIA', 'DEPOSITO'].includes(campos.metodo.value)) {
+            showToast('Registra el abono por separado con referencia y comprobante; deja el abono inicial en cero.', 'warning', 6000);
+            return;
+        }
 
         try {
             const usuario = obtenerUsuarioActual();
@@ -1391,7 +1406,8 @@
                 notas: campos.notas.value.trim() || null
             };
 
-            const deudor = deudorActivoFormulario || await ensureDeudorExistente(deudorPayload);
+            const autorizacion = await window.cxcAutorizacion.authorize('cxc');
+            const deudor = autorizacion.deudor;
 
             const db = getDB();
             const codigoCuenta = generarCodigoCuenta(tipo);
@@ -1404,6 +1420,7 @@
                 tipo,
                 motivo,
                 monto,
+                autorizacion_id: autorizacion.autorizacionId,
                 saldo_pendiente: saldoPendiente,
                 venta_id: null,
                 deudor_id: deudor.id,
@@ -1423,6 +1440,7 @@
             if (errorCuenta) {
                 throw errorCuenta;
             }
+            window.cxcAutorizacion.notify('cxc');
 
             let pagoRegistrado = null;
             if (abono > 0) {
@@ -1448,18 +1466,19 @@
                 }
             }
 
-            await Promise.all([fetchCuentas(), fetchDeudores(), fetchPagos()]);
+            await Promise.all([fetchDeudores(), fetchPagos()]);
+            await fetchCuentas();
             closeModal(selectors.modals.nuevaDeuda);
             selectors.formularios.nuevaDeuda.reset();
             selectors.nuevaDeudaCampos.infoBox.hidden = true;
             deudorActivoFormulario = null;
 
             abrirTicketDeuda({
-                cuenta,
+                cuenta: obtenerCuentaPorId(cuenta.id) || cuenta,
                 deudor,
-                abonoInicial: abono,
+                abonoInicial: pagoRegistrado ? abono : 0,
                 usuario,
-                notas: campos.notas.value.trim() || null,
+                notas: cuenta.otros_detalles,
                 productos: []
             });
 
@@ -2199,6 +2218,19 @@
         }
 
         setupEventListeners();
+        window.cxcAutorizacion.mount('cxc', selectors.formularios.nuevaDeuda.querySelector('.modal-body'),
+            () => ({ tipo: selectors.nuevaDeudaCampos.tipo.value, monto: cleanNumber(selectors.nuevaDeudaCampos.monto.value), motivo: selectors.nuevaDeudaCampos.motivo.value.trim(), notas: selectors.nuevaDeudaCampos.notas.value.trim() || null }), deudor => {
+                deudorActivoFormulario = deudor;
+                selectors.nuevaDeudaCampos.documento.value = deudor.cedula_ruc;
+                fillNuevaDeudaForm(deudor);
+            });
+        selectors.nuevaDeudaCampos.documento.readOnly = true;
+        selectors.nuevaDeudaCampos.nombre.readOnly = true;
+        selectors.nuevaDeudaCampos.buscar.hidden = true;
+        selectors.nuevaDeudaCampos.buscar.style.display = 'none';
+        selectors.botones.nuevoDeudor.style.display = 'none';
+        document.getElementById('cxcDeudaDocumento').closest('.form-group').querySelector('.form-hint')?.remove();
+        document.querySelectorAll('[data-open="cxcModalDeudor"]').forEach(button => button.hidden = true);
         handleReimpresionTipo();
 
         await Promise.all([fetchDeudores(), fetchPagos()]);
