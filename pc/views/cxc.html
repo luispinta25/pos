@@ -422,6 +422,11 @@
                     <label for="cxcPagoNotas">Notas</label>
                     <textarea id="cxcPagoNotas" rows="3" placeholder="Observaciones opcionales"></textarea>
                 </div>
+                <div class="form-group" id="cxcPagoEvidenciaGrupo" hidden>
+                    <label for="cxcPagoEvidencia">Comprobante de transferencia o deposito <span class="required">*</span></label>
+                    <input type="file" id="cxcPagoEvidencia" accept="image/jpeg,image/png,image/webp,application/pdf">
+                </div>
+                <label><input type="checkbox" id="cxcPagoEntregarRecibo" required> Entregare el comprobante de este pago al cliente</label>
             </div>
             <div class="modal-footer form-actions">
                 <button type="button" class="btn btn-secondary" data-close="cxcModalPago">Cancelar</button>
@@ -1172,12 +1177,10 @@
             const { data: deudor, error } = await db
                 .from('ferre_deudores')
                 .select('*')
-                .eq('cedula_ruc', documento)
+                .eq('identidad_cxc', window.cxcIdentidad.normalizar(documento))
                 .maybeSingle();
 
-            if (error) {
-                console.warn('Error buscando deudor:', error);
-            }
+            if (error) throw error;
 
             if (deudor) {
                 return { tipo: 'deudor', data: deudor };
@@ -1274,12 +1277,10 @@
         const { data: deudorExistente, error: errorDeudor } = await db
             .from('ferre_deudores')
             .select('*')
-            .eq('cedula_ruc', documento)
+            .eq('identidad_cxc', window.cxcIdentidad.normalizar(documento))
             .maybeSingle();
 
-        if (errorDeudor) {
-            console.error('❌ Error verificando deudor:', errorDeudor);
-        }
+        if (errorDeudor) throw errorDeudor;
 
         if (deudorExistente) {
             console.log('✅ Deudor encontrado:', deudorExistente);
@@ -1319,6 +1320,10 @@
             .single();
 
         if (errorInsert) {
+            if (errorInsert.code === '23505') {
+                const existente = await window.cxcIdentidad.buscar(db, documento);
+                if (existente) return existente;
+            }
             console.error('❌ Error creando deudor:', errorInsert);
             throw errorInsert;
         }
@@ -1537,10 +1542,11 @@
         window.open(url, '_blank');
     }
 
-    function abrirTicketPago(pago, cuenta, deudor) {
+    function abrirTicketPago(pago, cuenta, deudor, ventanaDestino = null) {
         if (!pago) return;
         const params = new URLSearchParams();
         params.set('codigo', cuenta?.codigo || '');
+        params.set('pago_id', pago.id || '');
         params.set('motivo', cuenta?.motivo || '');
         params.set('monto_pago', cleanNumber(pago.monto_pago));
         params.set('forma_pago', pago.forma_pago || '');
@@ -1553,7 +1559,8 @@
         params.set('notas', pago.notas || '');
 
         const url = `/pc/views/ticket_cxc_pago.html?${params.toString()}`;
-        window.open(url, '_blank');
+        if (ventanaDestino && !ventanaDestino.closed) ventanaDestino.location.href = url;
+        else window.open(url, '_blank');
     }
 
     function abrirTicketConsolidado(deudor, cuentas, pagos, filtros) {
@@ -1675,6 +1682,7 @@
                                     <div class="pago-detalle"><strong>Referencia:</strong> ${pago.numero_referencia || '-'}</div>
                                     <div class="pago-detalle"><strong>Recibido por:</strong> ${pago.recibido_por || '-'}</div>
                                     <div class="pago-detalle"><strong>Notas:</strong> ${pago.notas || '-'}</div>
+                                    ${pago.comprobante_path ? `<button type="button" class="btn btn-secondary" data-cxc-evidencia="${pago.id}"><i class="fas fa-file-image"></i> Comprobante</button>` : ''}
                                 </div>
                             </div>
                         `).join('')}
@@ -1685,6 +1693,28 @@
 
         selectors.detalle.contenedor.innerHTML = detallesHTML;
         openModal(selectors.modals.detalle);
+    }
+
+    let solicitudPagoId = null;
+    let comprobantePagoCache = null;
+
+    function actualizarEvidenciaPago() {
+        const requerido = ['TRANSFERENCIA', 'DEPOSITO'].includes(selectors.pagoCampos.metodo.value);
+        document.getElementById('cxcPagoEvidenciaGrupo').hidden = !requerido;
+        document.getElementById('cxcPagoEvidencia').required = requerido;
+        selectors.pagoCampos.referencia.required = requerido;
+    }
+
+    async function guardarEvidenciaPago(db, cuenta, file) {
+        if (comprobantePagoCache?.file === file) return comprobantePagoCache.path;
+        const extensiones = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/pdf': 'pdf' };
+        const ext = extensiones[file.type];
+        if (!ext || file.size > 4194304) throw new Error('Usa JPG, PNG, WebP o PDF de hasta 4 MB.');
+        const path = `${cuenta.id}/${crypto.randomUUID()}.${ext}`;
+        const { error } = await db.storage.from('cxc-comprobantes').upload(path, file, { contentType: file.type, upsert: false });
+        if (error) throw error;
+        comprobantePagoCache = { file, path };
+        return path;
     }
 
     function prepararFormularioPago(cuenta) {
@@ -1699,6 +1729,11 @@
         campos.metodo.value = 'EFECTIVO';
         campos.referencia.value = '';
         campos.notas.value = '';
+        solicitudPagoId = crypto.randomUUID();
+        comprobantePagoCache = null;
+        document.getElementById('cxcPagoEvidencia').value = '';
+        document.getElementById('cxcPagoEntregarRecibo').checked = false;
+        actualizarEvidenciaPago();
     }
 
     async function registrarPago(event) {
@@ -1720,6 +1755,16 @@
         const metodo = selectors.pagoCampos.metodo.value;
         const referencia = selectors.pagoCampos.referencia.value.trim();
         const notas = selectors.pagoCampos.notas.value.trim();
+        const requiereEvidencia = ['TRANSFERENCIA', 'DEPOSITO'].includes(metodo);
+        const evidencia = document.getElementById('cxcPagoEvidencia').files[0];
+        if (!document.getElementById('cxcPagoEntregarRecibo').checked) {
+            showToast('Debes entregar el comprobante al cliente.', 'warning');
+            return;
+        }
+        if (requiereEvidencia && (!referencia || !evidencia)) {
+            showToast('Ingresa la referencia y adjunta el comprobante.', 'warning');
+            return;
+        }
 
         if (!monto || monto <= 0) {
             showToast('Ingresa un monto válido', 'warning');
@@ -1731,7 +1776,11 @@
             return;
         }
 
+        let ventanaRecibo = null;
+        let pagoConfirmado = false;
         try {
+            ventanaRecibo = window.open('about:blank', '_blank');
+            if (!ventanaRecibo) throw new Error('Permite las ventanas emergentes para emitir el comprobante antes de cobrar.');
             // Bloquear interfaz
             procesandoPago = true;
             const btnSubmit = selectors.formularios.pago.querySelector('button[type="submit"]');
@@ -1745,24 +1794,44 @@
             
             const usuario = obtenerUsuarioActual();
             const db = getDB();
+            solicitudPagoId ||= crypto.randomUUID();
+            const previo = await db.from('ferre_pagos_cuentas_por_cobrar').select('*').eq('id', solicitudPagoId).maybeSingle();
+            if (previo.error) throw previo.error;
+            if (previo.data && (previo.data.cuenta_id !== cuenta.id || Number(previo.data.monto_pago) !== monto || previo.data.forma_pago !== metodo)) {
+                throw new Error('Esta solicitud ya fue registrada con otros datos. Revisa el historial.');
+            }
+            const comprobantePath = previo.data?.comprobante_path || (requiereEvidencia ? await guardarEvidenciaPago(db, cuenta, evidencia) : null);
             const payload = {
+                id: solicitudPagoId || (solicitudPagoId = crypto.randomUUID()),
                 cuenta_id: cuenta.id,
                 monto_pago: monto,
                 forma_pago: metodo,
                 numero_referencia: referencia || null,
                 notas: notas || null,
-                recibido_por: usuario.nombre || usuario.email || 'Usuario'
+                recibido_por: usuario.nombre || usuario.email || 'Usuario',
+                comprobante_path: comprobantePath
             };
 
-            const { data: pago, error } = await db
+            let { data: pago, error } = previo.data ? { data: previo.data, error: null } : await db
                 .from('ferre_pagos_cuentas_por_cobrar')
                 .insert([payload])
                 .select()
                 .single();
 
             if (error) {
+                if (error.code === '23505') {
+                    const existente = await db.from('ferre_pagos_cuentas_por_cobrar').select('*').eq('id', payload.id).single();
+                    pago = existente.data;
+                    error = existente.error;
+                }
+            }
+            if (error) {
                 throw error;
             }
+            pagoConfirmado = true;
+            closeModal(selectors.modals.pago);
+            const saldoRecibo = { ...cuenta, saldo_pendiente: Math.max(0, cleanNumber(cuenta.saldo_pendiente) - monto) };
+            abrirTicketPago(pago, saldoRecibo, obtenerDeudorPorId(cuenta.deudor_id), ventanaRecibo);
 
             // Esperar explícitamente a que se completen todas las actualizaciones
             await Promise.all([fetchPagos(), fetchDeudores()]);
@@ -1794,11 +1863,13 @@
                 }, 300);
             }
             
-            // Abrir ticket
-            abrirTicketPago(pago, cuentaActualizada || cuenta, deudor);
         } catch (error) {
             console.error('Error registrando pago:', error);
-            showToast('No se pudo registrar el pago: ' + (error.message || error), 'danger', 6000);
+            if (pagoConfirmado) showToast('Pago guardado. No repitas el cobro; actualiza el historial para comprobarlo.', 'warning', 8000);
+            else {
+                ventanaRecibo?.close();
+                showToast('No se pudo confirmar el pago: ' + (error.message || error), 'danger', 6000);
+            }
         } finally {
             // Desbloquear interfaz
             procesandoPago = false;
@@ -1824,6 +1895,11 @@
 
         try {
             const db = getDB();
+            const existente = await window.cxcIdentidad.buscar(db, documento);
+            if (existente) {
+                showToast('Esta persona ya existe como ' + existente.nombre + '. Usa su registro actual.', 'warning');
+                return;
+            }
             const payload = {
                 cedula_ruc: documento,
                 nombre,
@@ -2063,6 +2139,22 @@
         });
 
         selectors.formularios.nuevaDeuda.addEventListener('submit', guardarNuevaDeuda);
+        selectors.pagoCampos.metodo.addEventListener('change', actualizarEvidenciaPago);
+        selectors.detalle.contenedor.addEventListener('click', async event => {
+            const button = event.target.closest('[data-cxc-evidencia]');
+            if (!button) return;
+            const pago = state.pagos.find(p => p.id === button.dataset.cxcEvidencia);
+            if (!pago?.comprobante_path) return;
+            const ventana = window.open('about:blank', '_blank');
+            try {
+                const { data, error } = await getDB().storage.from('cxc-comprobantes').createSignedUrl(pago.comprobante_path, 60);
+                if (error) throw error;
+                if (ventana) ventana.location.href = data.signedUrl;
+            } catch (_) {
+                ventana?.close();
+                showToast('No se pudo abrir el comprobante.', 'danger');
+            }
+        });
         selectors.formularios.pago.addEventListener('submit', registrarPago);
         selectors.formularios.deudor?.addEventListener('submit', crearDeudorManual);
 
@@ -2101,14 +2193,16 @@
 
     async function initCxc() {
         if (state.initialized) {
-            await Promise.all([fetchCuentas(), fetchDeudores(), fetchPagos()]);
+            await Promise.all([fetchDeudores(), fetchPagos()]);
+            await fetchCuentas();
             return;
         }
 
         setupEventListeners();
         handleReimpresionTipo();
 
-        await Promise.all([fetchCuentas(), fetchDeudores(), fetchPagos()]);
+        await Promise.all([fetchDeudores(), fetchPagos()]);
+        await fetchCuentas();
 
         state.initialized = true;
     }

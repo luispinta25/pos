@@ -6235,7 +6235,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         const { data: deudorExistente, error: errorDeudor } = await db
             .from('ferre_deudores')
             .select('*')
-            .eq('cedula_ruc', documento)
+            .eq('identidad_cxc', window.cxcIdentidad.normalizar(documento))
             .maybeSingle();
 
         if (errorDeudor) {
@@ -6282,6 +6282,10 @@ _Sistema de Gestión Ferrisoluciones_`;
             .single();
 
         if (errorInsert) {
+            if (errorInsert.code === '23505') {
+                const existente = await window.cxcIdentidad.buscar(db, documento);
+                if (existente) return existente;
+            }
             console.error('❌ Error creando deudor:', errorInsert);
             throw errorInsert;
         }

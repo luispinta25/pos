@@ -127,6 +127,7 @@
             <div class="row"><span>Código de cuenta</span><span id="pagoCuenta">---</span></div>
             <div class="row"><span>Motivo</span><span id="pagoMotivo">---</span></div>
             <div class="row"><span>Fecha</span><span id="pagoFecha">---</span></div>
+            <div>Identificador del pago:<br><span id="pagoId" style="font-family:monospace;font-size:9px;overflow-wrap:anywhere">---</span></div>
             <div class="row"><span>Recibido por</span><span id="pagoRecibido">---</span></div>
             <div class="row"><span>Monto del pago</span><span id="pagoMonto">$ 0,00</span></div>
             <div class="row"><span>Método</span><span id="pagoMetodo">---</span></div>
@@ -177,6 +178,7 @@
             $('pagoCuenta').textContent = get('codigo') || '---';
             $('pagoMotivo').textContent = get('motivo') || '---';
             $('pagoFecha').textContent = formatDateTime(get('fecha_pago'));
+            $('pagoId').textContent = get('pago_id') || '---';
             $('pagoRecibido').textContent = get('recibido_por') || '---';
             $('pagoMetodo').textContent = get('forma_pago') || '---';
             $('pagoReferencia').textContent = get('referencia') || '---';
