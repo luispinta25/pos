@@ -1,6 +1,6 @@
 (function () {
     const contexts = new Map();
-    const call = (path, body) => window.posApiRequest('/cxc-authorization/' + path, body ? { method: 'POST', body: JSON.stringify(body) } : {});
+    const call = (path, body) => window.posApiRequest('/api/cxc-authorization/' + path, body ? { method: 'POST', body: JSON.stringify(body) } : {});
     const fingerprint = p => JSON.stringify([p.deudorId, p.tipo, Math.round(Number(p.monto) * 100), p.autorizador, p.motivo, p.notas || null]);
     async function mount(key, container, proposal, selected) {
         if (!container) return;
