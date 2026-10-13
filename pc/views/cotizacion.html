@@ -497,6 +497,7 @@
             <div class="modal-cotizacion-col credit-col">
                 <div class="cotizacion-section">
                     <h3><i class="fas fa-user-check"></i> Cliente</h3>
+                    <div id="creditoAutorizacionPanel"></div>
                     <div class="cliente-info-card" id="modalCreditoCliente"></div>
                 </div>
                 <div class="cotizacion-section">
@@ -6296,7 +6297,7 @@ _Sistema de Gestión Ferrisoluciones_`;
             return;
         }
 
-        window.cxcAutorizacion.mount('creditoCotizacion', document.getElementById('creditoNotasInput').parentElement.parentElement,
+        window.cxcAutorizacion.mount('creditoCotizacion', document.getElementById('creditoAutorizacionPanel'),
             () => ({ tipo: 'VENTA', monto: obtenerTotalCotizacionActual(), motivo: document.getElementById('creditoMotivoInput').value.trim() || 'Cotización a crédito', notas: document.getElementById('creditoNotasInput').value.trim() || null }), deudor => {
                 cotizacionState.clienteSeleccionado = { cedula: deudor.cedula_ruc, razon_social: deudor.nombre, direccion: deudor.direccion, telefono: deudor.telefono, correo: deudor.email };
                 mostrarClienteSeleccionadoCotizacion();
@@ -6506,22 +6507,8 @@ _Sistema de Gestión Ferrisoluciones_`;
         if (saldoResumen) saldoResumen.textContent = window.app.formatCurrency(total);
         if (saldoDisplay) saldoDisplay.textContent = window.app.formatCurrency(total);
 
-        const cliente = cotizacionState.clienteSeleccionado;
-        clienteCard.innerHTML = `
-            <div class="cliente-nombre">${cliente.razon_social}</div>
-            <div class="cliente-detalle">
-                <i class="fas fa-id-card"></i>
-                <span>${cliente.cedula}</span>
-            </div>
-            <div class="cliente-detalle">
-                <i class="fas fa-envelope"></i>
-                <span>${cliente.correo || 'Sin correo'}</span>
-            </div>
-            <div class="cliente-detalle">
-                <i class="fas fa-phone"></i>
-                <span>${cliente.telefono || 'Sin teléfono'}</span>
-            </div>
-        `;
+        window.cxcAutorizacion.reset('creditoCotizacion');
+        clienteCard.textContent = 'Selecciona un deudor autorizado en la botonera.';
 
         limpiarAvisoCredito();
         mostrarAvisoCredito('Confirma para enviar esta cotización al módulo de Cuentas por Cobrar.', 'info');
@@ -6529,8 +6516,7 @@ _Sistema de Gestión Ferrisoluciones_`;
         modal.classList.add('active');
 
         setTimeout(() => {
-            abonoInput.focus();
-            abonoInput.select();
+            modal.querySelector('[data-people] button')?.focus();
         }, 120);
     }
 

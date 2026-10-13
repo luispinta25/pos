@@ -283,12 +283,14 @@ function cvOpenCambio() {
 }
 
 async function cvLoadBankMethods() {
+    var select = document.getElementById('cvCambioBanco');
+    if (!select) return;
     try {
         var response = await posApiRequest('/api/payment-methods/transfer', { method:'GET' });
+        if (!select.isConnected) return;
         cvBankMethods = Array.isArray(response && response.data) ? response.data : [];
         cvBankMethodNames = {};
         cvBankMethods.forEach(function(method){ cvBankMethodNames[method.codigo] = method.nombre; });
-        var select = document.getElementById('cvCambioBanco');
         var selected = select.value;
         select.innerHTML = '<option value="">Selecciona el banco</option>' + cvBankMethods.map(function(method){
             return '<option value="' + cvEsc(method.codigo) + '">' + cvEsc(method.nombre) + '</option>';
@@ -301,8 +303,10 @@ async function cvLoadBankMethods() {
 
 async function cvLoadBankBalances() {
     var card = document.getElementById('cvBankBalancesCard');
+    if (!card) return;
     try {
         var response = await posApiRequest('/api/payment-methods/transfer/balances', { method:'GET' });
+        if (!card.isConnected) return;
         cvBankBalancesData = Array.isArray(response && response.data) ? response.data : [];
         cvBalanceSettings.consolidar_pichincha_deuna = response && response.settings
             ? response.settings.consolidar_pichincha_deuna === true
@@ -319,7 +323,7 @@ async function cvLoadBankBalances() {
     } catch (error) {
         // 403 = el backend decidio que este usuario no puede ver saldos (no es
         // admin/contador y el admin no activo "mostrar a todo el personal").
-        card.style.display = 'none';
+        if (card.isConnected) card.style.display = 'none';
     }
 }
 
@@ -428,6 +432,7 @@ function cvConsolidatedBankBalances(balances) {
 
 function cvRenderBankBalances() {
     var card = document.getElementById('cvBankBalancesCard');
+    if (!card) return;
     var balances = cvConsolidatedBankBalances(cvBankBalancesData);
     card.style.display = 'block';
     document.getElementById('cvBankBalanceMode').textContent = cvBalanceSettings.consolidar_pichincha_deuna ? 'Vista consolidada' : 'Por cuenta';
@@ -983,7 +988,9 @@ async function cvLoad() {
     var resumenCard = document.getElementById('cvResumenCard');
     if (resumenCard) resumenCard.style.display = 'none';
     await cvLoadBankMethods();
+    if (!listEl.isConnected) return;
     await cvLoadBankBalances();
+    if (!listEl.isConnected) return;
 
     try {
         var hoy = new Date();
@@ -995,6 +1002,7 @@ async function cvLoad() {
             .gte('fechahora', inicio)
             .lte('fechahora', fin)
             .order('fechahora', { ascending: false });
+        if (!listEl.isConnected) return;
         if (res.error) throw res.error;
         cvRender(res.data || []);
     } catch (err) {

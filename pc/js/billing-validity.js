@@ -53,7 +53,7 @@
         active = true;
         const current = generation;
         try {
-            const status = await window.posApiRequest('/billing/api-key-validity');
+            const status = await window.posApiRequest('/api/billing/api-key-validity');
             if (!active || current !== generation) return;
             cache = status;
             const checked = Date.parse(status.checkedAt);

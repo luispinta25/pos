@@ -1228,6 +1228,7 @@
     }
 
     function resetNuevaDeudaForm() {
+        window.cxcAutorizacion.reset('cxc');
         selectors.formularios.nuevaDeuda.reset();
         selectors.nuevaDeudaCampos.infoBox.hidden = true;
         selectors.nuevaDeudaCampos.infoNombre.textContent = '';
