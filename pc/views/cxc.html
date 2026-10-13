@@ -1056,6 +1056,11 @@
             // Recalcular saldo pendiente basándose en los pagos
             state.cuentas.forEach(cuenta => {
                 if (!cuenta) return;
+                // Cancelar/archivar extingue el saldo sin registrar un pago.
+                if (cuenta.estado === 'CANCELADO') {
+                    cuenta.saldo_pendiente = 0;
+                    return;
+                }
                 const pagosDelaCuenta = state.pagos.filter(p => p.cuenta_id === cuenta.id);
                 const totalPagos = pagosDelaCuenta.reduce((sum, p) => sum + cleanNumber(p.monto_pago), 0);
                 const saldoCalculado = cleanNumber(cuenta.monto) - totalPagos;
