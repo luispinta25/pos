@@ -8,7 +8,7 @@
         contexts.set(key, state);
         const panel = document.createElement('div');
         panel.className = 'form-group';
-        panel.innerHTML = '<strong>Deudor autorizado</strong><div data-people style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0"></div><label>Autorizado por</label><select data-author required><option value="">Selecciona quien autoriza</option></select><div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="btn btn-secondary" data-request><i class="fab fa-whatsapp"></i> Solicitar codigo</button><input data-code type="password" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Codigo recibido" style="min-width:0;flex:1"></div><div data-status role="status"></div>';
+        panel.innerHTML = '<strong>Deudor autorizado</strong><div data-people style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0"></div><label class="form-label">Autorizado por</label><select class="form-select" data-author required><option value="">Selecciona quien autoriza</option></select><div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="btn btn-secondary" data-request><i class="fab fa-whatsapp"></i> Solicitar codigo</button><input class="form-input" data-code type="password" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Codigo recibido" style="min-width:0;flex:1"></div><div data-status role="status"></div>';
         container.prepend(panel);
         state.panel = panel;
         const author = panel.querySelector('[data-author]');
@@ -26,7 +26,7 @@
                     state.person = person; state.challenge = null; state.verified = null;
                     panel.querySelector('[data-code]').value = '';
                     panel.querySelector('[data-status]').textContent = '';
-                    panel.querySelectorAll('[data-people] button').forEach(b => { b.classList.toggle('btn-primary', b === button); b.setAttribute('aria-pressed', String(b === button)); });
+                    panel.querySelectorAll('[data-people] button').forEach(b => { b.classList.toggle('btn-primary', b === button); b.classList.toggle('btn-secondary', b !== button); b.setAttribute('aria-pressed', String(b === button)); });
                     for (const option of author.options) { const a = allowed.autorizadores.find(a => a.key === option.value); option.disabled = !!a && a.deudorId === person.id; }
                     if (author.selectedOptions[0]?.disabled) author.value = '';
                     selected(person);
@@ -68,7 +68,7 @@
     }
     function notify(key) {
         const state = contexts.get(key);
-        if (state) { state.challenge = null; state.verified = null; state.person = null; state.panel.querySelector('[data-code]').value = ''; state.panel.querySelector('[data-author]').value = ''; state.panel.querySelector('[data-status]').textContent = ''; state.panel.querySelectorAll('[data-people] button').forEach(b => { b.classList.remove('btn-primary'); b.setAttribute('aria-pressed', 'false'); }); }
+        if (state) { state.challenge = null; state.verified = null; state.person = null; state.panel.querySelector('[data-code]').value = ''; state.panel.querySelector('[data-author]').value = ''; state.panel.querySelector('[data-status]').textContent = ''; state.panel.querySelectorAll('[data-people] button').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-secondary'); b.setAttribute('aria-pressed', 'false'); }); }
         call('notify', {}).catch(() => window.app.showToast('Deuda guardada; aviso al grupo pendiente de envio.', 'warning', 5000));
     }
     window.cxcAutorizacion = { mount, authorize, notify };
