@@ -78,7 +78,7 @@
                     <i class="fas fa-hourglass-half"></i>
                 </div>
                 <div class="stat-info">
-                    <h4>Saldo pendiente</h4>
+                    <h4 id="cxcSaldoLabel">Saldo pendiente</h4>
                     <div class="stat-value" id="cxcSaldoPendiente">$0.00</div>
                 </div>
             </div>
@@ -87,7 +87,7 @@
                     <i class="fas fa-chart-line"></i>
                 </div>
                 <div class="stat-info">
-                    <h4>Pagos del mes</h4>
+                    <h4 id="cxcPagosLabel">Pagos del mes</h4>
                     <div class="stat-value" id="cxcPagosMes">$0.00</div>
                 </div>
             </div>
@@ -96,7 +96,7 @@
                     <i class="fas fa-exclamation-circle"></i>
                 </div>
                 <div class="stat-info">
-                    <h4>Cuentas vencidas</h4>
+                    <h4 id="cxcVencidasLabel">Cuentas vencidas</h4>
                     <div class="stat-value" id="cxcCuentasVencidas">0</div>
                 </div>
             </div>
@@ -528,6 +528,7 @@
         initialized: false,
         cuentas: [],
         deudores: [],
+        autorizados: null, // Set de deudor_id autorizados para crédito (null = aún no cargado)
         pagos: [],
         vistaActiva: 'dashboard',
         filtros: {
@@ -810,6 +811,7 @@
     function renderCuentas() {
         const cuentas = applyFilters();
         selectors.cuentasContainer.innerHTML = '';
+        updateFilteredStats(cuentas);
 
         if (!cuentas.length) {
             selectors.cuentasEmpty.classList.remove('hidden');
@@ -1014,32 +1016,115 @@
             totalPendiente
         };
 
+        // Cabecera y contador del menú: siempre el total global del módulo.
+        // Las tarjetas de abajo siguen los filtros (ver updateFilteredStats).
         selectors.stats.headerTotal.textContent = formatCurrency(saldoPendiente);
         selectors.stats.headerPendientes.textContent = formatCurrency(totalPendiente);
         selectors.stats.headerVencidas.textContent = String(cuentasVencidas);
-        selectors.stats.saldoPendiente.textContent = formatCurrency(saldoPendiente);
-        selectors.stats.pagosMes.textContent = formatCurrency(pagosMes);
-        selectors.stats.cuentasVencidas.textContent = String(cuentasVencidas);
-        selectors.stats.clientesAlDia.textContent = String(clientesAlDia);
 
         if (window.app && typeof window.app.updateNavbarCounter === 'function') {
             window.app.updateNavbarCounter('cxc', saldoPendiente);
         }
+
+        updateFilteredStats();
+    }
+
+    function filtrosPorDefecto() {
+        const f = state.filtros;
+        return f.estado === 'activos' && f.deudorId === 'todos' && !f.desde && !f.hasta && !f.texto;
+    }
+
+    // Tarjetas de resumen: deuda, pagos y vencidas de las cuentas que el
+    // filtro deja a la vista. Sin filtros (vista por defecto) se comportan
+    // como siempre: deuda activa total y pagos del mes.
+    function updateFilteredStats(cuentasFiltradas) {
+        const cuentas = cuentasFiltradas || applyFilters();
+        const porDefecto = filtrosPorDefecto();
+        const ids = new Set(cuentas.map(c => c.id));
+        const activa = c => ['PENDIENTE', 'PARCIAL', 'VENCIDO'].includes(c.estado);
+
+        const saldoPendiente = cuentas.filter(activa).reduce((sum, c) => sum + cleanNumber(c.saldo_pendiente), 0);
+        const cuentasVencidas = cuentas.filter(c => c.estado === 'VENCIDO').length;
+
+        // Un abono por devolución reduce la deuda pero no es dinero cobrado.
+        const cobros = state.pagos.filter(p => p && p.forma_pago !== 'DEVOLUCION');
+        let pagos;
+        if (porDefecto) {
+            const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+            pagos = cobros.filter(p => p.fecha_pago && p.fecha_pago >= inicioMes);
+        } else {
+            pagos = cobros.filter(p => ids.has(p.cuenta_id));
+        }
+        const totalPagos = pagos.reduce((sum, p) => sum + cleanNumber(p.monto_pago), 0);
+
+        let clientesAlDia;
+        if (state.filtros.deudorId !== 'todos') {
+            const d = state.deudores.find(x => x.id === state.filtros.deudorId);
+            clientesAlDia = d && cleanNumber(d.deuda_activa) <= 0 ? 1 : 0;
+        } else {
+            clientesAlDia = state.deudores.filter(d => d && cleanNumber(d.deuda_activa) <= 0).length;
+        }
+
+        selectors.stats.saldoPendiente.textContent = formatCurrency(saldoPendiente);
+        selectors.stats.pagosMes.textContent = formatCurrency(totalPagos);
+        selectors.stats.cuentasVencidas.textContent = String(cuentasVencidas);
+        selectors.stats.clientesAlDia.textContent = String(clientesAlDia);
+        document.getElementById('cxcSaldoLabel').textContent = porDefecto ? 'Saldo pendiente' : 'Saldo pendiente (filtro)';
+        document.getElementById('cxcPagosLabel').textContent = porDefecto ? 'Pagos del mes' : 'Pagos de estas cuentas';
+        document.getElementById('cxcVencidasLabel').textContent = porDefecto ? 'Cuentas vencidas' : 'Vencidas (filtro)';
+
+        state.metrics = { ...state.metrics, saldoPendiente, pagosMes: totalPagos, cuentasVencidas, clientesAlDia };
     }
 
     function populateDeudorSelects() {
         const optionsHtml = ['<option value="todos">Todos</option>'];
         const reimpresionDeudorOptions = ['<option value="">Selecciona un deudor</option>'];
 
+        // El filtro de la pantalla solo lista deudores autorizados para
+        // crédito (ferre_cxc_deudores_permitidos). Si se abrió "Ver cuentas"
+        // de un deudor no autorizado desde la pestaña Deudores, se conserva
+        // como opción para que el filtro activo y el selector coincidan.
+        // Reimpresiones sigue listando a todos: hay historial que reimprimir.
+        const filtroActivo = state.filtros.deudorId;
         state.deudores
             .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
             .forEach(deudor => {
-                optionsHtml.push(`<option value="${deudor.id}">${deudor.nombre || deudor.cedula_ruc}</option>`);
-                reimpresionDeudorOptions.push(`<option value="${deudor.id}">${deudor.nombre || deudor.cedula_ruc}</option>`);
+                const etiqueta = deudor.nombre || deudor.cedula_ruc;
+                const autorizado = !state.autorizados || state.autorizados.has(deudor.id);
+                if (autorizado) {
+                    optionsHtml.push(`<option value="${deudor.id}">${etiqueta}</option>`);
+                } else if (deudor.id === filtroActivo) {
+                    optionsHtml.push(`<option value="${deudor.id}">${etiqueta} (no autorizado)</option>`);
+                }
+                reimpresionDeudorOptions.push(`<option value="${deudor.id}">${etiqueta}</option>`);
             });
 
         selectors.filtros.deudor.innerHTML = optionsHtml.join('');
         selectors.reimpresion.deudor.innerHTML = reimpresionDeudorOptions.join('');
+        // Reescribir las opciones reinicia el select a "Todos": se restaura la
+        // selección vigente para que no se desincronice del filtro aplicado.
+        if ([...selectors.filtros.deudor.options].some(o => o.value === filtroActivo)) {
+            selectors.filtros.deudor.value = filtroActivo;
+        } else {
+            state.filtros.deudorId = 'todos';
+        }
+    }
+
+    async function fetchAutorizados() {
+        try {
+            const { data, error } = await getDB()
+                .from('ferre_cxc_deudores_permitidos')
+                .select('deudor_id')
+                .eq('activo', true);
+            if (error) throw error;
+            state.autorizados = new Set((data || []).map(r => r.deudor_id));
+        } catch (error) {
+            // Si no se pueden leer, el filtro lista a todos antes que quedar
+            // vacío, pero se avisa: no es lo que se quiere ver.
+            console.error('Error cargando deudores autorizados:', error);
+            state.autorizados = null;
+            showToast('No se pudo cargar la lista de deudores autorizados; el filtro muestra a todos.', 'warning', 6000);
+        }
     }
 
     async function fetchCuentas() {
@@ -2004,8 +2089,10 @@
             deudorActivoFormulario = deudor;
             openModal(selectors.modals.nuevaDeuda);
         } else if (action === 'ver-cuentas') {
-            selectors.filtros.deudor.value = id;
             state.filtros.deudorId = id;
+            // Si el deudor no está autorizado, populateDeudorSelects lo agrega
+            // como opción "(no autorizado)" mientras sea el filtro vigente.
+            populateDeudorSelects();
             switchTab(document.querySelector('.cxc-tab[data-view="dashboard"]'));
             renderCuentas();
         } else if (action === 'reimprimir') {
@@ -2206,6 +2293,7 @@
 
     async function initCxc() {
         if (state.initialized) {
+            await fetchAutorizados();
             await Promise.all([fetchDeudores(), fetchPagos()]);
             await fetchCuentas();
             return;
@@ -2227,6 +2315,7 @@
         document.querySelectorAll('[data-open="cxcModalDeudor"]').forEach(button => button.hidden = true);
         handleReimpresionTipo();
 
+        await fetchAutorizados();
         await Promise.all([fetchDeudores(), fetchPagos()]);
         await fetchCuentas();
 
