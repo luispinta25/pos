@@ -686,6 +686,22 @@
         return Number.isFinite(num) ? num : 0;
     }
 
+    // Una cuenta de tipo VENTA nace de una venta a crédito del Punto de Venta
+    // y guarda su venta_id. Las anteriores a ese enlace no lo tienen.
+    function ventaIdDeCuenta(cuenta) {
+        return String(cuenta?.tipo || '').toUpperCase() === 'VENTA' && cuenta?.venta_id ? cuenta.venta_id : null;
+    }
+
+    function abrirVentaDeCuenta(ventaId) {
+        if (!ventaId) return;
+        closeModal(selectors.modals.detalle);
+        if (window.app && typeof window.app.openVentaDetail === 'function') {
+            window.app.openVentaDetail(ventaId);
+        } else {
+            showToast('No se pudo abrir el módulo de Ventas. Recarga la página e inténtalo de nuevo.', 'danger', 5000);
+        }
+    }
+
     function getCuentaTipoLabel(tipo) {
         const labels = {
             VENTA: 'Venta POS',
@@ -862,6 +878,7 @@
                 </div>
                 <div class="cuenta-footer">
                     <span><i class="fas fa-calendar"></i> ${formatDateTime(cuenta.fecha_otorgada)}</span>
+                    ${ventaIdDeCuenta(cuenta) ? `<button type="button" class="btn btn-secondary btn-small" data-cxc-ver-venta="${ventaIdDeCuenta(cuenta)}" title="Abrir esta venta en el módulo de Ventas"><i class="fas fa-receipt"></i> Ver venta</button>` : ''}
                     <span class="cuenta-hint"><i class="fas fa-external-link-alt"></i> Ver detalle</span>
                 </div>
             `;
@@ -1759,6 +1776,15 @@
                         <span class="label">Aprobado por</span>
                         <span class="value">${cuenta.aprobado_por || '-'}</span>
                     </div>
+                    ${ventaIdDeCuenta(cuenta) ? `
+                    <div class="detalle-item">
+                        <span class="label">Venta</span>
+                        <span class="value"><button type="button" class="btn btn-secondary btn-small" data-cxc-ver-venta="${ventaIdDeCuenta(cuenta)}"><i class="fas fa-receipt"></i> Ver venta</button></span>
+                    </div>` : (String(cuenta.tipo || '').toUpperCase() === 'VENTA' ? `
+                    <div class="detalle-item">
+                        <span class="label">Venta</span>
+                        <span class="value">Sin enlace (cuenta anterior al registro de la venta)</span>
+                    </div>` : '')}
                 </div>
                 <div class="detalle-card full-width">
                     <h4><i class="fas fa-sticky-note"></i> Notas</h4>
@@ -2048,6 +2074,12 @@
     }
 
     function handleCuentasClick(event) {
+        const ventaBtn = event.target.closest('[data-cxc-ver-venta]');
+        if (ventaBtn) {
+            event.stopPropagation();
+            abrirVentaDeCuenta(ventaBtn.dataset.cxcVerVenta);
+            return;
+        }
         const card = event.target.closest('.cuenta-card');
         if (!card) return;
         const id = card.dataset.id;
@@ -2058,6 +2090,8 @@
 
     function handleCuentasKeydown(event) {
         if (!['Enter', ' ', 'Spacebar'].includes(event.key)) return;
+        // El botón "Ver venta" se activa con su propio click nativo.
+        if (event.target.closest('[data-cxc-ver-venta]')) return;
         const card = event.target.closest('.cuenta-card');
         if (!card) return;
         event.preventDefault();
@@ -2241,6 +2275,8 @@
         selectors.formularios.nuevaDeuda.addEventListener('submit', guardarNuevaDeuda);
         selectors.pagoCampos.metodo.addEventListener('change', actualizarEvidenciaPago);
         selectors.detalle.contenedor.addEventListener('click', async event => {
+            const ventaBtn = event.target.closest('[data-cxc-ver-venta]');
+            if (ventaBtn) { abrirVentaDeCuenta(ventaBtn.dataset.cxcVerVenta); return; }
             const button = event.target.closest('[data-cxc-evidencia]');
             if (!button) return;
             const pago = state.pagos.find(p => p.id === button.dataset.cxcEvidencia);

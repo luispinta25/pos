@@ -230,6 +230,25 @@ async function loadModule(moduleName) {
 }
 
 /**
+ * Abre el detalle de una venta en el módulo Ventas desde cualquier otro
+ * módulo (ej. Cuentas por cobrar), sin importar la fecha de la venta.
+ * Ventas lee window.__ventaPendienteDetalle al iniciar (initVentas), posiciona
+ * el calendario en el día de esa venta y abre su modal.
+ */
+async function openVentaDetail(ventaId) {
+    if (!ventaId) return;
+    window.__ventaPendienteDetalle = String(ventaId);
+    try {
+        await loadModule('ventas');
+    } finally {
+        // initVentas ya lo consumió (lo lee de forma síncrona al arrancar);
+        // si el módulo no cargó, no debe quedar pendiente para una visita
+        // posterior a Ventas.
+        window.__ventaPendienteDetalle = null;
+    }
+}
+
+/**
  * Convertir nombre de módulo a PascalCase
  */
 function toPascalCase(str) {
@@ -1006,6 +1025,7 @@ function showCustomPrompt(message, defaultValue = '', title = 'Ingrese valor', p
 
 window.app = {
     loadModule,
+    openVentaDetail,
     reloadCurrentModule,
     updateNavbarCounter,
     formatCurrency,

@@ -1375,11 +1375,70 @@
             // Configurar event listeners
             setupVentasEventListeners();
 
+            // Si se llegó desde otro módulo con una venta específica (ej.
+            // Cuentas por cobrar), se posiciona en su día y se abre su modal;
+            // si no se encuentra, se muestra el día de hoy como siempre.
+            const ventaPendiente = window.__ventaPendienteDetalle;
+            window.__ventaPendienteDetalle = null;
+            const abierta = ventaPendiente ? await abrirVentaDesdeOtroModulo(ventaPendiente) : false;
+
             // Cargar ventas del día
-            await cargarVentas();
+            if (!abierta) await cargarVentas();
 
             // Actualizar contador del navbar
             actualizarContadorNavbar();
+        }
+
+        // Abre el modal de una venta de cualquier fecha: ubica la vista de
+        // Ventas en el día de esa venta (para que la lista y el calendario
+        // coincidan con lo que se ve) y luego abre su detalle. Devuelve false
+        // si la venta no existe.
+        async function abrirVentaDesdeOtroModulo(ventaId) {
+            try {
+                const { data, error } = await window.app.db
+                    .from('ferre_ventas')
+                    .select('fecha_hora_venta')
+                    .eq('id', ventaId)
+                    .maybeSingle();
+                if (error) throw error;
+                if (!data) {
+                    window.app?.showToast?.('No se encontró la venta enlazada a esta cuenta', 'warning', 4000);
+                    return false;
+                }
+
+                // Día local de la venta (el mismo criterio que usa cargarVentas)
+                const fecha = new Date(data.fecha_hora_venta);
+                const anio = fecha.getFullYear(), mes = fecha.getMonth(), dia = fecha.getDate();
+
+                const anioSelect = document.getElementById('anioSelect');
+                const mesSelect = document.getElementById('mesSelect');
+                // El selector solo ofrece el año actual y los 2 anteriores:
+                // una venta más antigua necesita su propia opción.
+                if (![...anioSelect.options].some(o => o.value === String(anio))) {
+                    const option = document.createElement('option');
+                    option.value = String(anio);
+                    option.textContent = anio;
+                    anioSelect.appendChild(option);
+                }
+                anioSelect.value = String(anio);
+                actualizarMesesDisponibles();
+                mesSelect.value = String(mes);
+
+                ventasState.filtroCodigo = '';
+                const codigoInput = document.getElementById('codigoVentaInput');
+                if (codigoInput) codigoInput.value = '';
+                ventasState.filtroFecha = new Date(anio, mes, dia);
+                actualizarFechaActual();
+                actualizarCalendario();
+
+                await cargarVentas();
+                await verDetalleVenta(ventaId);
+                return true;
+            } catch (error) {
+                console.error('Error abriendo la venta desde otro módulo:', error);
+                window.app?.showToast?.('No se pudo abrir la venta: ' + (error.message || error), 'danger', 5000);
+                return false;
+            }
         }
 
         function inicializarSelectoresFecha() {
