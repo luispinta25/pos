@@ -2,9 +2,9 @@
     const contexts = new Map();
     const call = (path, body) => window.posApiRequest('/api/cxc-authorization/' + path, body ? { method: 'POST', body: JSON.stringify(body) } : {});
     const fingerprint = p => JSON.stringify([p.deudorId, p.tipo, Math.round(Number(p.monto) * 100), p.autorizador, p.motivo, p.notas || null]);
-    async function mount(key, container, proposal, selected) {
+    async function mount(key, container, proposal, selected, options = {}) {
         if (!container) return;
-        const state = { proposal, selected, person: null, authorizer: '', challenge: null, verified: null };
+        const state = { proposal, selected, options, pendingId: null, person: null, authorizer: '', challenge: null, verified: null };
         contexts.set(key, state);
         const panel = document.createElement('div');
         panel.className = 'form-group';
@@ -13,7 +13,7 @@
         state.panel = panel;
         try {
             const allowed = await call('allowed');
-            if (!panel.isConnected) return;
+            if (!panel.isConnected || contexts.get(key) !== state) return;
             state.allowed = allowed;
             for (const a of allowed.autorizadores) {
                 const button = document.createElement('button'); button.type = 'button'; button.className = 'btn btn-secondary'; button.textContent = a.nombre;
@@ -26,13 +26,17 @@
             }
             for (const person of allowed.deudores) {
                 const button = document.createElement('button'); button.type = 'button'; button.className = 'btn btn-secondary'; button.textContent = person.nombre;
+                button.dataset.personId = person.id;
                 button.style.whiteSpace = 'normal'; button.style.minHeight = '52px';
                 button.addEventListener('click', () => {
+                    state.pendingId = null;
                     state.person = person; state.challenge = null; state.verified = null;
                     panel.querySelector('[data-code]').value = '';
                     panel.querySelector('[data-status]').textContent = '';
                     panel.querySelectorAll('[data-people] button').forEach(b => { b.classList.toggle('btn-primary', b === button); b.classList.toggle('btn-secondary', b !== button); b.setAttribute('aria-pressed', String(b === button)); });
                     if (allowed.autorizadores.find(a => a.key === state.authorizer)?.deudorId === person.id) state.authorizer = '';
+                    const eligible = allowed.autorizadores.filter(a => a.deudorId !== person.id);
+                    if (options.autoCross && eligible.length === 1) state.authorizer = eligible[0].key;
                     renderAuthors(state);
                     selected(person);
                 });
@@ -52,6 +56,7 @@
                 } catch (error) { window.app.showToast(error.message, 'warning', 5000); }
                 finally { button.disabled = false; }
             });
+            if (state.pendingId) select(key, state.pendingId);
         } catch (_) { panel.querySelector('[data-status]').textContent = 'No se pudieron cargar los deudores autorizados. Recarga antes de continuar.'; }
     }
     async function authorize(key) {
@@ -86,11 +91,24 @@
     }
     function reset(key) {
         const state = contexts.get(key);
-        if (state) { clearChallenge(state); state.person = null; state.authorizer = ''; renderAuthors(state); state.panel.querySelectorAll('[data-people] button').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-secondary'); b.setAttribute('aria-pressed', 'false'); }); }
+        if (state) { clearChallenge(state); state.pendingId = null; state.person = null; state.authorizer = ''; renderAuthors(state); state.panel.querySelectorAll('[data-people] button').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-secondary'); b.setAttribute('aria-pressed', 'false'); }); }
+    }
+    function select(key, personId) {
+        const state = contexts.get(key);
+        if (!state || !personId || personId === 'todos') return false;
+        if (!state.allowed) { state.pendingId = personId; return false; }
+        state.pendingId = null;
+        const button = [...state.panel.querySelectorAll('[data-person-id]')].find(b => b.dataset.personId === personId);
+        if (!button) {
+            state.panel.querySelector('[data-status]').textContent = 'El deudor filtrado no esta autorizado para nuevas deudas. Selecciona uno de la botonera.';
+            return false;
+        }
+        button.click();
+        return true;
     }
     function notify(key) {
         reset(key);
         call('notify', {}).catch(() => window.app.showToast('Deuda guardada; aviso al grupo pendiente de envio.', 'warning', 5000));
     }
-    window.cxcAutorizacion = { mount, authorize, notify, reset };
+    window.cxcAutorizacion = { mount, authorize, notify, reset, select };
 })();

@@ -270,6 +270,7 @@
         </div>
         <form id="cxcFormNuevaDeuda">
             <div class="modal-body">
+                <div id="cxcDeudaAutorizacionPanel"></div>
                 <div class="info-box" id="cxcNuevaDeudaEstadoBox" hidden>
                     <div class="info-item">
                         <span class="info-label">Deudor seleccionado</span>
@@ -278,43 +279,6 @@
                     <div class="info-item">
                         <span class="info-label">Crédito disponible</span>
                         <span class="info-value" id="cxcNuevaDeudaDisponible">$0.00</span>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="cxcDeudaDocumento">Cédula / RUC <span class="required">*</span></label>
-                        <div class="input-with-button">
-                            <input type="text" id="cxcDeudaDocumento" placeholder="Ej: 0102030405" required>
-                            <button type="button" class="btn-icon" id="cxcBuscarDeudor"><i class="fas fa-search"></i></button>
-                        </div>
-                        <span class="form-hint">Si no existe en deudores, se buscará en clientes automáticamente.</span>
-                    </div>
-                    <div class="form-group">
-                        <label for="cxcDeudaNombre">Nombre / Razón Social <span class="required">*</span></label>
-                        <input type="text" id="cxcDeudaNombre" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="cxcDeudaDireccion">Dirección</label>
-                        <input type="text" id="cxcDeudaDireccion" placeholder="Dirección principal">
-                    </div>
-                    <div class="form-group">
-                        <label for="cxcDeudaTelefono">Teléfono</label>
-                        <input type="text" id="cxcDeudaTelefono" placeholder="0999999999">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="cxcDeudaEmail">Correo electrónico</label>
-                        <input type="email" id="cxcDeudaEmail" placeholder="cliente@ejemplo.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="cxcDeudaLimite">Límite de crédito</label>
-                        <input type="number" min="0" step="0.01" id="cxcDeudaLimite" placeholder="Opcional">
                     </div>
                 </div>
 
@@ -621,13 +585,6 @@
             deudor: document.getElementById('cxcFormDeudor')
         },
         nuevaDeudaCampos: {
-            documento: document.getElementById('cxcDeudaDocumento'),
-            buscar: document.getElementById('cxcBuscarDeudor'),
-            nombre: document.getElementById('cxcDeudaNombre'),
-            direccion: document.getElementById('cxcDeudaDireccion'),
-            telefono: document.getElementById('cxcDeudaTelefono'),
-            email: document.getElementById('cxcDeudaEmail'),
-            limite: document.getElementById('cxcDeudaLimite'),
             tipo: document.getElementById('cxcDeudaTipo'),
             motivo: document.getElementById('cxcDeudaMotivo'),
             monto: document.getElementById('cxcDeudaMonto'),
@@ -1306,17 +1263,6 @@
         }
     }
 
-    function fillNuevaDeudaForm(data) {
-        const campos = selectors.nuevaDeudaCampos;
-        campos.nombre.value = data.nombre || '';
-        campos.direccion.value = data.direccion || '';
-        campos.telefono.value = data.telefono || '';
-        campos.email.value = data.email || '';
-        if (data.limite_credito !== undefined && data.limite_credito !== null) {
-            campos.limite.value = Number(data.limite_credito || 0);
-        }
-    }
-
     function resetNuevaDeudaForm() {
         window.cxcAutorizacion.reset('cxc');
         selectors.formularios.nuevaDeuda.reset();
@@ -1326,37 +1272,11 @@
         deudorActivoFormulario = null;
     }
 
-    async function handleBuscarDeudor() {
-        const documento = selectors.nuevaDeudaCampos.documento.value.trim();
-        if (!documento) {
-            showToast('Ingresa un número de cédula o RUC', 'warning');
-            return;
-        }
-
-        const resultado = await buscarDeudor(documento);
-        if (!resultado) {
-            showToast('No se encontró información. Puedes completar los datos manualmente.', 'info');
-            fillNuevaDeudaForm({});
-            selectors.nuevaDeudaCampos.infoBox.hidden = true;
-            deudorActivoFormulario = null;
-            return;
-        }
-
-        if (resultado.tipo === 'deudor') {
-            const deudor = resultado.data;
-            deudorActivoFormulario = deudor;
-            fillNuevaDeudaForm(deudor);
-            selectors.nuevaDeudaCampos.infoNombre.textContent = deudor.nombre || '';
-            selectors.nuevaDeudaCampos.infoCredito.textContent = formatCurrency(deudor.credito_disponible);
-            selectors.nuevaDeudaCampos.infoBox.hidden = false;
-            showToast('Deudor encontrado y cargado', 'success');
-        } else if (resultado.tipo === 'cliente') {
-            const cliente = resultado.data;
-            deudorActivoFormulario = null;
-            fillNuevaDeudaForm(cliente);
-            selectors.nuevaDeudaCampos.infoBox.hidden = true;
-            showToast('Cliente encontrado. Completa los datos y guarda la deuda.', 'info');
-        }
+    function abrirNuevaDeuda(deudorId = state.filtros.deudorId) {
+        resetNuevaDeudaForm();
+        openModal(selectors.modals.nuevaDeuda);
+        selectors.modals.nuevaDeuda.querySelector('.modal-content').scrollTop = 0;
+        if (deudorId && deudorId !== 'todos') window.cxcAutorizacion.select('cxc', deudorId);
     }
 
     async function ensureDeudorExistente(payload) {
@@ -1458,15 +1378,17 @@
     async function guardarNuevaDeudaAutorizada(event) {
         event.preventDefault();
         const campos = selectors.nuevaDeudaCampos;
-        const documento = campos.documento.value.trim();
-        const nombre = campos.nombre.value.trim();
         const monto = cleanNumber(campos.monto.value);
         const abono = cleanNumber(campos.abono.value);
         const vencimiento = campos.vencimiento.value;
         const motivo = campos.motivo.value.trim();
         const tipo = campos.tipo.value;
 
-        if (!documento || !nombre || !monto || !vencimiento || !motivo) {
+        if (!deudorActivoFormulario) {
+            showToast('Selecciona un deudor autorizado en la botonera', 'warning');
+            return;
+        }
+        if (!monto || !vencimiento || !motivo) {
             showToast('Completa todos los campos obligatorios', 'warning');
             return;
         }
@@ -1487,16 +1409,6 @@
 
         try {
             const usuario = obtenerUsuarioActual();
-            const deudorPayload = {
-                cedula_ruc: documento,
-                nombre,
-                direccion: campos.direccion.value.trim() || null,
-                telefono: campos.telefono.value.trim() || null,
-                email: campos.email.value.trim() || null,
-                limite_credito: campos.limite.value ? cleanNumber(campos.limite.value) : 0,
-                notas: campos.notas.value.trim() || null
-            };
-
             const autorizacion = await window.cxcAutorizacion.authorize('cxc');
             const deudor = autorizacion.deudor;
 
@@ -2110,18 +2022,7 @@
         if (!deudor) return;
 
         if (action === 'nueva-deuda') {
-            resetNuevaDeudaForm();
-            selectors.nuevaDeudaCampos.documento.value = deudor.cedula_ruc || '';
-            selectors.nuevaDeudaCampos.nombre.value = deudor.nombre || '';
-            selectors.nuevaDeudaCampos.direccion.value = deudor.direccion || '';
-            selectors.nuevaDeudaCampos.telefono.value = deudor.telefono || '';
-            selectors.nuevaDeudaCampos.email.value = deudor.email || '';
-            selectors.nuevaDeudaCampos.limite.value = deudor.limite_credito || 0;
-            selectors.nuevaDeudaCampos.infoNombre.textContent = deudor.nombre || '';
-            selectors.nuevaDeudaCampos.infoCredito.textContent = formatCurrency(deudor.credito_disponible || 0);
-            selectors.nuevaDeudaCampos.infoBox.hidden = false;
-            deudorActivoFormulario = deudor;
-            openModal(selectors.modals.nuevaDeuda);
+            abrirNuevaDeuda(deudor.id);
         } else if (action === 'ver-cuentas') {
             state.filtros.deudorId = id;
             // Si el deudor no está autorizado, populateDeudorSelects lo agrega
@@ -2217,10 +2118,7 @@
             tab.addEventListener('click', () => switchTab(tab));
         });
 
-        selectors.botones.nuevaDeuda.addEventListener('click', () => {
-            resetNuevaDeudaForm();
-            openModal(selectors.modals.nuevaDeuda);
-        });
+        selectors.botones.nuevaDeuda.addEventListener('click', () => abrirNuevaDeuda());
 
         selectors.botones.nuevoDeudor?.addEventListener('click', () => {
             selectors.formularios.deudor.reset();
@@ -2264,13 +2162,6 @@
         selectors.filtros.desde.addEventListener('change', handleFiltroChange);
         selectors.filtros.hasta.addEventListener('change', handleFiltroChange);
         selectors.filtros.texto.addEventListener('input', e => handleTextoFiltro(e.target.value));
-
-        selectors.nuevaDeudaCampos.buscar.addEventListener('click', handleBuscarDeudor);
-        selectors.nuevaDeudaCampos.documento.addEventListener('blur', () => {
-            if (selectors.nuevaDeudaCampos.documento.value.trim()) {
-                handleBuscarDeudor();
-            }
-        });
 
         selectors.formularios.nuevaDeuda.addEventListener('submit', guardarNuevaDeuda);
         selectors.pagoCampos.metodo.addEventListener('change', actualizarEvidenciaPago);
@@ -2336,18 +2227,14 @@
         }
 
         setupEventListeners();
-        window.cxcAutorizacion.mount('cxc', selectors.formularios.nuevaDeuda.querySelector('.modal-body'),
+        window.cxcAutorizacion.mount('cxc', document.getElementById('cxcDeudaAutorizacionPanel'),
             () => ({ tipo: selectors.nuevaDeudaCampos.tipo.value, monto: cleanNumber(selectors.nuevaDeudaCampos.monto.value), motivo: selectors.nuevaDeudaCampos.motivo.value.trim(), notas: selectors.nuevaDeudaCampos.notas.value.trim() || null }), deudor => {
                 deudorActivoFormulario = deudor;
-                selectors.nuevaDeudaCampos.documento.value = deudor.cedula_ruc;
-                fillNuevaDeudaForm(deudor);
-            });
-        selectors.nuevaDeudaCampos.documento.readOnly = true;
-        selectors.nuevaDeudaCampos.nombre.readOnly = true;
-        selectors.nuevaDeudaCampos.buscar.hidden = true;
-        selectors.nuevaDeudaCampos.buscar.style.display = 'none';
+                selectors.nuevaDeudaCampos.infoNombre.textContent = deudor.nombre;
+                selectors.nuevaDeudaCampos.infoCredito.textContent = formatCurrency(deudor.credito_disponible || 0);
+                selectors.nuevaDeudaCampos.infoBox.hidden = false;
+            }, { autoCross: true });
         selectors.botones.nuevoDeudor.style.display = 'none';
-        document.getElementById('cxcDeudaDocumento').closest('.form-group').querySelector('.form-hint')?.remove();
         document.querySelectorAll('[data-open="cxcModalDeudor"]').forEach(button => button.hidden = true);
         handleReimpresionTipo();
 
