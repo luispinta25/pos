@@ -1155,6 +1155,7 @@
             }
 
             state.deudores = data || [];
+            actualizarCreditoNuevaDeuda();
             populateDeudorSelects();
             renderDeudores();
         } catch (error) {
@@ -1261,6 +1262,13 @@
             showToast('No se pudo buscar el documento ingresado', 'danger');
             return null;
         }
+    }
+
+    function actualizarCreditoNuevaDeuda() {
+        if (!deudorActivoFormulario) return;
+        const resumen = obtenerDeudorPorId(deudorActivoFormulario.id);
+        const disponible = resumen ? Math.max(0, cleanNumber(deudorActivoFormulario.limite_credito) - cleanNumber(resumen.total_deuda)) : null;
+        selectors.nuevaDeudaCampos.infoCredito.textContent = disponible === null ? 'Pendiente de consultar' : formatCurrency(disponible);
     }
 
     function resetNuevaDeudaForm() {
@@ -2231,9 +2239,9 @@
             () => ({ tipo: selectors.nuevaDeudaCampos.tipo.value, monto: cleanNumber(selectors.nuevaDeudaCampos.monto.value), motivo: selectors.nuevaDeudaCampos.motivo.value.trim(), notas: selectors.nuevaDeudaCampos.notas.value.trim() || null }), deudor => {
                 deudorActivoFormulario = deudor;
                 selectors.nuevaDeudaCampos.infoNombre.textContent = deudor.nombre;
-                selectors.nuevaDeudaCampos.infoCredito.textContent = formatCurrency(deudor.credito_disponible || 0);
+                actualizarCreditoNuevaDeuda();
                 selectors.nuevaDeudaCampos.infoBox.hidden = false;
-            }, { autoCross: true });
+            }, { autoCross: true, fields: { tipo: 'cxcDeudaTipo', monto: 'cxcDeudaMonto', motivo: 'cxcDeudaMotivo', notas: 'cxcDeudaNotas' } });
         selectors.botones.nuevoDeudor.style.display = 'none';
         document.querySelectorAll('[data-open="cxcModalDeudor"]').forEach(button => button.hidden = true);
         handleReimpresionTipo();

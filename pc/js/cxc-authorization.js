@@ -47,13 +47,24 @@
                 try {
                     if (!state.person || !state.authorizer) throw new Error('Selecciona deudor y autorizador.');
                     const p = { ...proposal(), deudorId: state.person.id, autorizador: state.authorizer };
+                    clearChallenge(state);
+                    const invalid = validateRequest(p);
+                    if (invalid) {
+                        const field = document.getElementById(options.fields?.[invalid.field] || '');
+                        field?.focus();
+                        field?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                        throw new Error(invalid.message);
+                    }
                     button.disabled = true;
                     state.challenge = null; state.verified = null;
                     const result = await call('request-code', p);
                     if (state.person?.id !== p.deudorId || state.authorizer !== p.autorizador) return;
                     state.challenge = { ...result, expiresAt: new Date(Date.now() + Date.parse(result.expiresAt) - Date.parse(result.checkedAt)).toISOString(), fingerprint: fingerprint(p) };
                     panel.querySelector('[data-status]').textContent = 'Codigo enviado al WhatsApp del autorizador. Vence en 5 minutos.';
-                } catch (error) { window.app.showToast(error.message, 'warning', 5000); }
+                } catch (error) {
+                    panel.querySelector('[data-status]').textContent = error.message;
+                    window.app.showToast(error.message, 'warning', 5000);
+                }
                 finally { button.disabled = false; }
             });
             if (state.pendingId) select(key, state.pendingId);
@@ -74,6 +85,15 @@
             state.panel.querySelector('[data-code]').value = '';
         }
         return { autorizacionId: state.verified.autorizacionId, deudor: person };
+    }
+    function validateRequest(proposal) {
+        if (!['VENTA', 'EFECTIVO', 'OTROS'].includes(proposal.tipo)) return { field: 'tipo', message: 'Selecciona el tipo de obligacion antes de solicitar el codigo.' };
+        const amount = Math.round(Number(proposal.monto) * 100) / 100;
+        if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000) return { field: 'monto', message: 'Ingresa un monto mayor que cero (maximo $1.000.000) antes de solicitar el codigo.' };
+        const reason = String(proposal.motivo || '').trim();
+        if (!reason || reason.length > 500) return { field: 'motivo', message: 'Completa el motivo de la deuda (maximo 500 caracteres) antes de solicitar el codigo.' };
+        if (String(proposal.notas || '').length > 2000) return { field: 'notas', message: 'Las notas no pueden superar los 2000 caracteres.' };
+        return null;
     }
     function clearChallenge(state) {
         state.challenge = null; state.verified = null;
