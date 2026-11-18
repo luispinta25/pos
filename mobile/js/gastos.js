@@ -1,5 +1,7 @@
 'use strict';
 let mgData = null, mgPeriod = null, mgTab = 'fixed', mgDailyMethod = 'EFECTIVO', mgFixedMethod = 'EFECTIVO';
+let mgSaving = false;
+const mgPlans = {};
 const mgMoney = value => new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(Number(value || 0));
 const mgDate = value => new Intl.DateTimeFormat('es-EC', { weekday: 'short', day: '2-digit', month: 'short' }).format(new Date(`${value}T12:00:00`));
 const mgTime = value => value ? new Intl.DateTimeFormat('es-EC', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Guayaquil' }).format(new Date(value)) : '';
@@ -63,15 +65,26 @@ function fillMobileExpenseOptions() {
     $('gastoCategoriaInput').innerHTML = (mgData.categories || []).map(c => `<option value="${escHtml(c.codigo)}">${escHtml(c.nombre)}</option>`).join('');
     const options = '<option value="">Selecciona una cuenta</option>' + (mgData.accounts || []).map(a => `<option value="${escHtml(a.codigo)}">${escHtml(a.nombre)}</option>`).join('');
     $('mgDailyAccount').innerHTML = options; $('mgFixedAccount').innerHTML = options;
+    for (const kind of ['Daily', 'Fixed']) {
+        let container = $('mg' + kind + 'Plan');
+        if (!container) { container = document.createElement('div'); container.id = 'mg' + kind + 'Plan'; $('mg' + kind + 'Account').after(container); }
+        mgPlans[kind]?.destroy();
+        mgPlans[kind] = window.createExpenseAccounts({ select: $('mg' + kind + 'Account'), amount: $(kind === 'Daily' ? 'gastoMontoInput' : 'mgPayAmount'), container, accounts: mgData.accounts || [], money: mgMoney, request: posApiRequest });
+    }
 }
 
 function mgSelectMethod(kind, method) {
     if (kind === 'daily') mgDailyMethod = method; else mgFixedMethod = method;
     document.querySelectorAll(`[data-mg-${kind}-method]`).forEach(btn => btn.classList.toggle('active', btn.dataset[`mg${kind[0].toUpperCase()}${kind.slice(1)}Method`] === method));
     $(`mg${kind[0].toUpperCase()}${kind.slice(1)}AccountWrap`).classList.toggle('hidden', method !== 'TRANSFERENCIA');
+    const planner = mgPlans[kind === 'daily' ? 'Daily' : 'Fixed'];
+    if (method === 'TRANSFERENCIA') planner?.refresh(); else planner?.reset();
 }
 
 async function saveMobileExpense(body) {
+    if (mgSaving) return;
+    mgSaving = true;
+    try {
     const result = await posApiRequest('/api/expenses/payments', { method: 'POST', body: JSON.stringify(body) });
     const piernas = Array.isArray(result.data?.transferencias) ? result.data.transferencias : [];
     // El monto no cupo en una sola cuenta (ej. Pichincha/Deuna consolidadas):
@@ -82,13 +95,15 @@ async function saveMobileExpense(body) {
         : (result.data?.codigo_transferencia ? `Registrado. ${result.data.codigo_transferencia} espera comprobante.` : 'Gasto registrado');
     showToast(mensaje, 'success', piernas.length > 1 ? 7000 : 4500);
     await loadGastos();
+    } finally { mgSaving = false; }
 }
 
 async function guardarGasto() {
+    if (mgSaving) return;
     const body = { monto: Number($('gastoMontoInput').value), motivo: $('gastoMotivoInput').value.trim(), categoria_codigo: $('gastoCategoriaInput').value, beneficiario: $('gastoBeneficiarioInput').value.trim(), metodo_pago: mgDailyMethod, metodo_transferencia_codigo: $('mgDailyAccount').value || null, aplicaciones: [] };
     if (!body.monto || !body.motivo) return showToast('Completa monto y motivo', 'error');
     if (mgDailyMethod === 'TRANSFERENCIA' && !body.metodo_transferencia_codigo) return showToast('Selecciona la cuenta de origen', 'error');
-    try { await saveMobileExpense(body); hideModal('nuevoGastoModal'); } catch (error) { showToast(error.message, 'error', 4500); }
+    try { if (mgDailyMethod === 'TRANSFERENCIA') body.cuentas_transferencia = mgPlans.Daily.allocation(); await saveMobileExpense(body); hideModal('nuevoGastoModal'); } catch (error) { showToast(error.message, 'error', 4500); if (mgDailyMethod === 'TRANSFERENCIA') mgPlans.Daily?.refresh(); }
 }
 
 function openMobileFixedPayment(id) {
@@ -100,10 +115,10 @@ function openMobileFixedPayment(id) {
 }
 
 async function confirmMobileFixedPayment() {
-    if (!mgPeriod) return; const amount = Number($('mgPayAmount').value), account = $('mgFixedAccount').value, note = $('mgPayNote').value.trim();
+    if (!mgPeriod || mgSaving) return; const amount = Number($('mgPayAmount').value), account = $('mgFixedAccount').value, note = $('mgPayNote').value.trim();
     if (!amount || amount > Number(mgPeriod.saldo) + .005) return showToast('El monto supera el saldo', 'error');
     if (mgFixedMethod === 'TRANSFERENCIA' && !account) return showToast('Selecciona la cuenta de origen', 'error');
-    try { await saveMobileExpense({ monto: amount, motivo: `Pago ${mgPeriod.template.nombre}${note ? ` - ${note}` : ''}`, categoria_codigo: mgPeriod.template.categoria_codigo, beneficiario: mgPeriod.template.beneficiario, metodo_pago: mgFixedMethod, metodo_transferencia_codigo: account || null, aplicaciones: [{ programado_id: mgPeriod.id, monto: amount }] }); hideModal('gastoFijoPagoModal'); mgPeriod = null; } catch (error) { showToast(error.message, 'error', 4500); }
+    try { const cuentas = mgFixedMethod === 'TRANSFERENCIA' ? mgPlans.Fixed.allocation() : null; await saveMobileExpense({ monto: amount, motivo: `Pago ${mgPeriod.template.nombre}${note ? ` - ${note}` : ''}`, categoria_codigo: mgPeriod.template.categoria_codigo, beneficiario: mgPeriod.template.beneficiario, metodo_pago: mgFixedMethod, ...(cuentas ? { cuentas_transferencia: cuentas } : {}), aplicaciones: [{ programado_id: mgPeriod.id, monto: amount }] }); hideModal('gastoFijoPagoModal'); mgPeriod = null; } catch (error) { showToast(error.message, 'error', 4500); if (mgFixedMethod === 'TRANSFERENCIA') mgPlans.Fixed?.refresh(); }
 }
 
 async function saveMobileVariableAmount(id) {
