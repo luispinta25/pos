@@ -79,8 +79,16 @@
 
 
                     <div id="clienteBusquedaBox" style="display: none;">
-                        <input type="text" id="clienteCedula" class="form-input"
-                            placeholder="Buscar por cédula o nombre..." maxlength="50" autocomplete="off">
+                        <div class="cliente-busqueda-fila">
+                            <input type="text" id="clienteCedula" class="form-input"
+                                placeholder="Buscar por cédula o nombre..." maxlength="50" autocomplete="off">
+                            <button type="button" id="btnBuscarPorNombre" class="btn-buscar-nombre"
+                                onclick="buscarPorNombreRegistro()"
+                                title="Buscar la cédula de una persona por sus apellidos y nombre en el registro público">
+                                <i class="fa-solid fa-address-card"></i>
+                                <span>Por nombre</span>
+                            </button>
+                        </div>
 
 
                         <div id="clienteSearchResults" class="search-results"
@@ -1102,6 +1110,84 @@
         background: #f8f9fa;
         border-color: #d4a017;
         transform: translateX(5px);
+    }
+
+    /* ---- Busqueda por nombre en registro publico ---- */
+    .cliente-busqueda-fila {
+        display: flex;
+        gap: 8px;
+        align-items: stretch;
+    }
+
+    .cliente-busqueda-fila .form-input {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .btn-buscar-nombre {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 14px;
+        border: 1px solid #d4a017;
+        border-radius: 8px;
+        background: #fffaf0;
+        color: #8a6500;
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-buscar-nombre:hover:not(:disabled) {
+        background: #d4a017;
+        color: #fff;
+    }
+
+    .btn-buscar-nombre:disabled {
+        opacity: 0.6;
+        cursor: wait;
+    }
+
+    .registro-publico-item {
+        padding: 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        background: #fff;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+    }
+
+    .registro-publico-item:hover,
+    .registro-publico-item:focus {
+        background: #f8f9fa;
+        border-color: #d4a017;
+        outline: none;
+    }
+
+    .registro-publico-item strong {
+        display: block;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+        overflow-wrap: break-word;
+    }
+
+    .registro-publico-item small {
+        color: #666;
+    }
+
+    .registro-publico-item.fallecido {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .registro-publico-aviso {
+        color: #666;
+        font-size: 0.85em;
+        padding: 6px 4px 10px;
+        text-align: center;
     }
 
     /* ---- Verificación de correo en resultados de búsqueda ---- */
@@ -7311,6 +7397,122 @@ _Sistema de Gestión Ferrisoluciones_`;
         }
     }
 
+    // =====================================================
+    // BÚSQUEDA POR NOMBRE EN REGISTRO PÚBLICO
+    // Solo recupera la cédula: la selección sigue el flujo normal
+    // (cliente existente, o consulta por cédula + registro).
+    // =====================================================
+    let busquedaNombreEnCurso = false;
+
+    function escaparHtmlRegistro(texto) {
+        return String(texto ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    async function buscarPorNombreRegistro() {
+        if (busquedaNombreEnCurso) return;
+        const input = document.getElementById('clienteCedula');
+        const container = document.getElementById('clienteSearchResults');
+        const boton = document.getElementById('btnBuscarPorNombre');
+        const texto = (input?.value || '').trim().replace(/\s+/g, ' ');
+
+        if (!texto || /^\d+$/.test(texto)) {
+            window.app.showToast('Escriba apellidos y nombre para buscar por nombre', 'warning', 3500);
+            input?.focus();
+            return;
+        }
+        if (texto.split(' ').filter(p => p.length >= 2).length < 2) {
+            window.app.showToast('Escriba al menos dos palabras: apellidos y nombre', 'warning', 3500);
+            input?.focus();
+            return;
+        }
+
+        busquedaNombreEnCurso = true;
+        if (boton) boton.disabled = true;
+        ventaState.clientesBusqueda = [];
+        ventaState.clienteSeleccionadoIndex = -1;
+        container.innerHTML = '<p class="registro-publico-aviso"><i class="fa-solid fa-spinner fa-spin"></i> Buscando en el registro público...</p>';
+
+        try {
+            const result = await posApiRequest(`/api/identity/nombre?q=${encodeURIComponent(texto)}`, { method: 'GET' });
+            // Si el usuario cambió el texto mientras tanto, descartar la respuesta
+            if ((input?.value || '').trim().replace(/\s+/g, ' ') !== texto) return;
+            mostrarResultadosRegistroPublico(result?.data || [], texto, Boolean(result?.truncated));
+        } catch (error) {
+            console.warn('Búsqueda por nombre:', error.message);
+            container.innerHTML = `<p class="registro-publico-aviso" style="color:#c0392b;"><i class="fa-solid fa-triangle-exclamation"></i> ${escaparHtmlRegistro(error.message || 'No fue posible buscar por nombre')}</p>`;
+        } finally {
+            busquedaNombreEnCurso = false;
+            if (boton) boton.disabled = false;
+        }
+    }
+
+    function mostrarResultadosRegistroPublico(lista, texto, truncado) {
+        const container = document.getElementById('clienteSearchResults');
+        if (!lista.length) {
+            container.innerHTML = '<p class="registro-publico-aviso">No se encontraron personas con ese nombre en el registro público. Verifique el orden: apellidos primero, luego nombres.</p>';
+            return;
+        }
+        container.innerHTML = '<p class="registro-publico-aviso">Resultados del registro público. Elija a la persona para continuar con el registro del cliente.</p>'
+            + lista.map(item => `
+                <div class="registro-publico-item${item.fallecido ? ' fallecido' : ''}"
+                     tabindex="0" role="button"
+                     data-cedula="${escaparHtmlRegistro(item.cedula)}"
+                     data-fallecido="${item.fallecido ? '1' : '0'}">
+                    <strong>${escaparHtmlRegistro(item.nombre)}</strong>
+                    <small>CI: ${escaparHtmlRegistro(item.cedula)}${item.fallecido ? ' · Registrado como fallecido' : ''}</small>
+                </div>`).join('')
+            + (truncado
+                ? '<p class="registro-publico-aviso">Hay más coincidencias. Agregue más apellidos o el nombre para acotar la búsqueda.</p>'
+                : '');
+    }
+
+    async function elegirResultadoRegistroPublico(cedula, fallecido) {
+        if (!/^\d{10}$/.test(String(cedula || ''))) return;
+        if (fallecido) {
+            window.app.showToast('Esa persona figura como fallecida en el registro', 'warning', 4000);
+            return;
+        }
+        try {
+            // Si ya es cliente, usar el flujo normal de selección
+            const db = window.app ? window.app.db : (typeof getDB === 'function' ? getDB() : supabaseClient);
+            const { data: existente } = await db
+                .from('ferre_clientes')
+                .select('cedula')
+                .eq('cedula', cedula)
+                .maybeSingle();
+            if (existente) {
+                window.app.showToast('La persona ya es cliente, se selecciona el registro existente', 'info', 2500);
+                await seleccionarCliente(cedula);
+                return;
+            }
+        } catch (error) {
+            console.warn('Verificación de cliente existente:', error.message);
+        }
+        document.getElementById('clienteSearchResults').innerHTML = '';
+        await consultarYRegistrarCliente(cedula);
+    }
+
+    // La vista se vuelve a ejecutar al entrar al módulo: registrar los listeners una sola vez
+    // y apuntar siempre a la función de la ejecución más reciente.
+    window._elegirResultadoRegistroPublico = elegirResultadoRegistroPublico;
+    if (!window._registroPublicoListeners) {
+        window._registroPublicoListeners = true;
+        document.addEventListener('click', function (event) {
+            const item = event.target.closest?.('.registro-publico-item');
+            if (item) window._elegirResultadoRegistroPublico(item.dataset.cedula, item.dataset.fallecido === '1');
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            const item = event.target.closest?.('.registro-publico-item');
+            if (item) {
+                event.preventDefault();
+                window._elegirResultadoRegistroPublico(item.dataset.cedula, item.dataset.fallecido === '1');
+            }
+        });
+    }
+
     let identidadAlternativasPendientes = null;
 
     function construirDatosCedula(cedula, response, correoCompartido = '') {
@@ -7455,7 +7657,15 @@ _Sistema de Gestión Ferrisoluciones_`;
         const clientes = ventaState.clientesBusqueda || [];
 
         if (!clientes || clientes.length === 0) {
-            container.innerHTML = '<p style="color: #999; text-align: center; padding: 15px; margin: 10px 0;">No se encontraron clientes</p>';
+            const textoBusqueda = (document.getElementById('clienteCedula')?.value || '').trim();
+            const puedeBuscarEnRegistro = !/^\d+$/.test(textoBusqueda) && textoBusqueda.split(/\s+/).filter(Boolean).length >= 2;
+            container.innerHTML = '<p style="color: #999; text-align: center; padding: 15px; margin: 10px 0;">No se encontraron clientes</p>'
+                + (puedeBuscarEnRegistro
+                    ? '<div style="text-align:center; margin-bottom: 10px;">'
+                        + '<button type="button" class="btn-buscar-nombre" onclick="buscarPorNombreRegistro()" style="padding: 10px 16px;">'
+                        + '<i class="fa-solid fa-address-card"></i> <span>Buscar en el registro público</span>'
+                        + '</button></div>'
+                    : '');
             return;
         }
 
@@ -7800,6 +8010,8 @@ _Sistema de Gestión Ferrisoluciones_`;
         const esNumerico = /^\d+$/.test(query);
         if (esNumerico && (query.length === 10 || query.length === 13)) {
             await consultarYRegistrarCliente(query);
+        } else if (!esNumerico && query.split(/\s+/).filter(Boolean).length >= 2) {
+            await buscarPorNombreRegistro();
         } else {
             window.app.showToast('No se encontraron clientes', 'warning');
         }
@@ -8053,6 +8265,7 @@ _Sistema de Gestión Ferrisoluciones_`;
 
     // Exportar funciones al scope global
     window.buscarCliente = buscarCliente;
+    window.buscarPorNombreRegistro = buscarPorNombreRegistro;
     window.seleccionarCliente = seleccionarCliente;
     window.buscarClienteDirecto = buscarClienteDirecto;
     window.cambiarCliente = cambiarCliente;
